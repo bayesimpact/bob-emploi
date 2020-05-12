@@ -104,6 +104,7 @@ class ServerTestCase(unittest.TestCase):
                 'minSalary': 17400.0
             }
         })
+        server._clear_cache()  # pylint: disable=protected-access
         self._logging = mock.patch(server.__name__ + '.logging', spec=True)
         self._logging.start()
 

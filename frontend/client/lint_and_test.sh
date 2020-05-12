@@ -4,8 +4,8 @@ EXIT=0
 echo "Running lint…"
 npm run --silent lint || EXIT=$?
 
-echo "Extracting translations…"
-npm run --silent i18n || EXIT=$?
+echo "Checking for new or unused translations…"
+./diff_i18n_folder.sh || EXIT=$?
 
 echo "Running tests…"
 npm --silent test || EXIT=$?

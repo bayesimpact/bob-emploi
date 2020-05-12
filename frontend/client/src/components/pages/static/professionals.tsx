@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types'
 import React, {useCallback, useMemo, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import {useDispatch} from 'react-redux'
 
 import {DispatchAllActions, sendProfessionalFeedback} from 'store/actions'
@@ -29,11 +30,12 @@ const FeedbackBase = (props: FeedbackProps): React.ReactElement => {
   const {style} = props
   const dispatch = useDispatch<DispatchAllActions>()
   const [feedback, setFeedback] = useState('')
+  const {t} = useTranslation()
 
   const submitFeedback = useCallback((): void => {
-    dispatch(sendProfessionalFeedback({feedback}))
+    dispatch(sendProfessionalFeedback({feedback}, t))
     setFeedback('')
-  }, [dispatch, feedback])
+  }, [dispatch, feedback, t])
 
   const containerStyle = useMemo((): React.CSSProperties => ({
     padding: '50px 10px 0',

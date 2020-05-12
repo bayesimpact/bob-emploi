@@ -195,6 +195,13 @@ class MissingDiplomaTestCase(filters_test.FilterTestBase):
         self.persona.project.target_job.job_group.rome_id = \
             'A1234' if is_diploma_required else 'B5678'
 
+    def test_undefined_project(self) -> None:
+        """User that don't know what to do raise an error."""
+
+        self.persona.project.ClearField('target_job')
+        self.persona.project.kind = project_pb2.FIND_A_NEW_JOB
+        self._assert_missing_fields({'projects.0.targetJob.jobGroup.romeId'})
+
     def test_no_required_diploma(self) -> None:
         """User that don't require a diploma doesn't fall in this category."""
 
@@ -204,12 +211,16 @@ class MissingDiplomaTestCase(filters_test.FilterTestBase):
     def test_already_got_diploma(self) -> None:
         """User with all the needed diplomas doesn't fall in this category."""
 
+        if not self.persona.project.target_job.job_group.rome_id:
+            self._set_job_group(is_diploma_required=True)
         self.persona.project.training_fulfillment_estimate = project_pb2.ENOUGH_DIPLOMAS
         self._assert_fail_filter()
 
     def test_almost_got_diploma(self) -> None:
         """User currently getting the needed diplomas doesn't fall in this category."""
 
+        if not self.persona.project.target_job.job_group.rome_id:
+            self._set_job_group(is_diploma_required=True)
         self.persona.project.training_fulfillment_estimate = project_pb2.CURRENTLY_IN_TRAINING
         self._assert_fail_filter()
 
@@ -222,6 +233,8 @@ class MissingDiplomaTestCase(filters_test.FilterTestBase):
     def test_old_experienced(self) -> None:
         """Older user with much related experience fails."""
 
+        if not self.persona.project.target_job.job_group.rome_id:
+            self._set_job_group(is_diploma_required=True)
         self._set_persona_age(50)
         self.persona.project.seniority = project_pb2.EXPERT
         self._assert_fail_filter()
@@ -255,6 +268,7 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
         self._db.diagnostic_category.insert_many([
             {
                 'categoryId': 'stuck-in-village',
+                'relevanceScoringModel': 'constant(0)',
                 'filters': ['for-women'],
             },
         ])
@@ -350,6 +364,7 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
         self._db.diagnostic_category.insert_many([
             {
                 'categoryId': 'enhance-methods-to-interview',
+                'relevanceScoringModel': 'relevance-enhance-methods',
                 'filters': ['for-women'],
             },
         ])
@@ -383,6 +398,7 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
 
         self._db.diagnostic_category.insert_one({
             'categoryId': 'stuck-market',
+            'relevanceScoringModel': 'relevance-market-stress',
             'filters': ['for-women'],
         })
         self._db.local_diagnosis.insert_one({
@@ -422,6 +438,7 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
         self._db.diagnostic_category.insert_one({
             'categoryId': 'find-what-you-like',
             'filters': ['for-women'],
+            'relevanceScoringModel': 'relevance-find-what-you-like',
         })
         self._db.local_diagnosis.insert_one({
             '_id': '31:A1234',
@@ -461,6 +478,170 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
         }
         categories = self._get_categories_relevance(use_case_json)
         self.assertEqual({'find-what-you-like': 'NEUTRAL_RELEVANCE'}, categories)
+
+    def test_search_methods(self) -> None:
+        """Check search-methods various relevances."""
+
+        self._db.diagnostic_category.insert_many([
+            {
+                'categoryId': 'enhance-methods-to-interview',
+                'relevanceScoringModel': 'relevance-enhance-methods',
+                'filters': ['for-women'],
+            },
+        ])
+
+        use_case_json = {
+            'useCaseId': '2019-01-20_00',
+            'userData': {'projects': [{}], 'profile': {'gender': 'FEMININE'}},
+        }
+        categories = self._get_categories_relevance(use_case_json)
+        self.assertEqual({'enhance-methods-to-interview': 'NEEDS_ATTENTION'}, categories)
+
+        use_case_json = {
+            'useCaseId': '2019-01-20_00',
+            'userData': {'projects': [{'jobSearchHasNotStarted': True}]},
+        }
+        categories = self._get_categories_relevance(use_case_json)
+        self.assertEqual({'enhance-methods-to-interview': 'NEUTRAL_RELEVANCE'}, categories)
+
+        use_case_json = {
+            'useCaseId': '2019-01-20_00',
+            'userData': {'projects': [{
+                'createdAt': '2019-07-17T17:24:12Z',
+                'jobSearchStartedAt': '2019-01-12T12:12:12Z',
+            }]},
+        }
+        categories = self._get_categories_relevance(use_case_json)
+        self.assertEqual({'enhance-methods-to-interview': 'RELEVANT_AND_GOOD'}, categories)
+
+    def test_master_category(self) -> None:
+        """Check that a master category forces other categories to be irrelevant."""
+
+        self._db.diagnostic_category.insert_many([
+            {
+                'categoryId': 'attention-needed-category',
+                'relevanceScoringModel': 'relevance-enhance-methods',
+                'filters': ['for-women'],
+            },
+            {
+                'categoryId': 'all-good-category',
+                'relevanceScoringModel': 'constant(3)',
+                'filters': ['not-for-women'],
+            },
+            {
+                'categoryId': 'master-category',
+                'isLastRelevant': True,
+                'relevanceScoringModel': 'relevance-enhance-methods',
+                'filters': ['for-women'],
+            },
+            {
+                'categoryId': 'thus-neutral-category',
+                'relevanceScoringModel': 'relevance-enhance-methods',
+                'filters': ['for-women'],
+            },
+            {
+                'categoryId': 'good-to-neutral-category',
+                'relevanceScoringModel': 'constant(3)',
+                'filters': ['not-for-women'],
+            }
+        ])
+
+        use_case_json = {
+            'useCaseId': '2019-01-20_00',
+            'userData': {'projects': [{}], 'profile': {'gender': 'FEMININE'}},
+        }
+        categories = self._get_categories_relevance(use_case_json)
+        self.assertEqual(
+            {
+                'all-good-category': 'RELEVANT_AND_GOOD',
+                'attention-needed-category': 'NEEDS_ATTENTION',
+                'master-category': 'NEEDS_ATTENTION',
+                'thus-neutral-category': 'NEUTRAL_RELEVANCE',
+                'good-to-neutral-category': 'NEUTRAL_RELEVANCE',
+            }, categories)
+
+    def test_master_category_without_attention(self) -> None:
+        """Check that a neutral master category can't neutralize other categories."""
+
+        self._db.diagnostic_category.insert_many([
+            {
+                'categoryId': 'master-category',
+                'isLastRelevant': True,
+                'relevanceScoringModel': 'relevance-enhance-methods',
+                'filters': ['for-driver'],
+            },
+            {
+                'categoryId': 'thus-neutral-category',
+                'relevanceScoringModel': 'relevance-enhance-methods',
+                'filters': ['for-women'],
+            },
+        ])
+
+        use_case_json = {
+            'useCaseId': '2019-01-20_00',
+            'userData': {'projects': [{}], 'profile': {'gender': 'FEMININE'}},
+        }
+        categories = self._get_categories_relevance(use_case_json)
+        self.assertEqual(
+            {
+                'master-category': 'NEUTRAL_RELEVANCE',
+                'thus-neutral-category': 'NEEDS_ATTENTION',
+            }, categories)
+
+    def test_master_category_on_irrelevant(self) -> None:
+        """Check that a master category can't make an irrelevant category neutral."""
+
+        self._db.diagnostic_category.insert_many([
+            {
+                'categoryId': 'master-category',
+                'isLastRelevant': True,
+                'relevanceScoringModel': 'constant(0)',
+                'filters': ['not-for-women'],
+            },
+            {
+                'categoryId': 'not-relevant-category',
+                'relevanceScoringModel': 'constant(0)',
+                'filters': ['for-women'],
+            },
+        ])
+
+        use_case_json = {
+            'useCaseId': '2019-01-20_00',
+            'userData': {'projects': [{}], 'profile': {'gender': 'MASCULINE'}},
+        }
+        categories = self._get_categories_relevance(use_case_json)
+        self.assertEqual(
+            {
+                'master-category': 'NEEDS_ATTENTION',
+                'not-relevant-category': 'NOT_RELEVANT',
+            }, categories)
+
+    def test_master_category_on_no_relevance_model(self) -> None:
+        """Check that a master category make category without relevant model neutral."""
+
+        self._db.diagnostic_category.insert_many([
+            {
+                'categoryId': 'master-category',
+                'isLastRelevant': True,
+                'relevanceScoringModel': 'constant(0)',
+                'filters': ['for-women'],
+            },
+            {
+                'categoryId': 'no-relevance-category',
+                'filters': ['not-for-women'],
+            },
+        ])
+
+        use_case_json = {
+            'useCaseId': '2019-01-20_00',
+            'userData': {'projects': [{}], 'profile': {'gender': 'FEMININE'}},
+        }
+        categories = self._get_categories_relevance(use_case_json)
+        self.assertEqual(
+            {
+                'master-category': 'NEEDS_ATTENTION',
+                'no-relevance-category': 'NEUTRAL_RELEVANCE',
+            }, categories)
 
 
 if __name__ == '__main__':

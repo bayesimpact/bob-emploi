@@ -1,6 +1,7 @@
 """Unit tests for the diagnostic part of bob_emploi.frontend.advisor module."""
 
 import logging
+from typing import List
 import unittest
 from unittest import mock
 
@@ -13,6 +14,8 @@ from bob_emploi.frontend.server import diagnostic
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.server.test import base_test
+
+# TODO(cyrille): Put quick-diagnostic tests in a different module.
 
 
 class NeverEnoughDataScoringModel(scoring_base.ModelBase):
@@ -28,6 +31,19 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
         self.database = mongomock.MongoClient().test
+        self.database.diagnostic_category.insert_many([
+            {
+                'categoryId': 'women',
+                'strategiesIntroduction': 'Voici vos strats',
+                'filters': ['for-women'],
+                'order': 1,
+            },
+            {
+                'categoryId': 'bravo',
+                'strategiesIntroduction': 'Voici vos stratégies',
+                'order': 2,
+            },
+        ])
         self.database.action_templates.insert_one({
             '_id': 'rec1CWahSiEtlwEHW',
             'goal': 'Reorientation !',
@@ -52,178 +68,6 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         self.assertFalse(diagnostic.maybe_diagnose(self.user, project, self.database))
         self.assertEqual('', str(project.diagnostic))
 
-    @mock.patch(diagnostic.logging.__name__ + '.error')
-    def test_missing_subdiagnostic_scoring_model(self, mock_logging_error: mock.MagicMock) -> None:
-        """An unknown scoring model raises a logging error but silently."""
-
-        project = project_pb2.Project()
-        self.database.diagnostic_submetrics_scorers.insert_many([
-            {
-                '_id': 'recJ3ugOeIIM6BlN3',
-                'triggerScoringModel': 'unknown-scoring-model',
-                'submetric': 'MARKET_DIAGNOSTIC',
-                'weight': 1,
-            },
-            {
-                '_id': 'rechFiNr6aEXMp0Gu',
-                'triggerScoringModel': 'constant(1)',
-                'submetric': 'PROFILE_DIAGNOSTIC',
-                'weight': 1,
-            },
-        ])
-
-        self.assertTrue(diagnostic.maybe_diagnose(self.user, project, self.database))
-        self.assertGreater(project.diagnostic.overall_score, 0)
-        self.assertLess(project.diagnostic.overall_score, 100)
-        self.assertTrue(mock_logging_error.called)
-        self.assertTrue(any(
-            'unknown-scoring-model' in call[0][0] % call[0][1:]
-            for call in mock_logging_error.call_args_list), msg=mock_logging_error.call_args_list)
-
-    def test_subdiagnostic_text_with_filters(self) -> None:
-        """Generate a text for a sub-diagnostic from filters."""
-
-        project = project_pb2.Project()
-        self.database.diagnostic_sentences.insert_one({
-            'sentenceTemplate': 'You are a star',
-            'order': 1,
-        })
-        self.database.diagnostic_submetrics_scorers.insert_one({
-            '_id': 'rechFiNr6aEXMp0Gv',
-            'triggerScoringModel': 'constant(3)',
-            'submetric': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-            'weight': 1,
-        })
-        self.database.diagnostic_submetrics_sentences_new.insert_many([
-            {
-                'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-                'sentenceTemplate': "Votre métier n'est pas du futur",
-                'filters': ['constant(0)']
-            },
-            {
-                'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-                'sentenceTemplate': 'Votre métier est du futur',
-                'filters': ['constant(3)']
-            }
-        ])
-        self.assertTrue(diagnostic.maybe_diagnose(self.user, project, self.database))
-
-        sub_diagnostics = project.diagnostic.sub_diagnostics
-        topic = diagnostic_pb2.JOB_OF_THE_FUTURE_DIAGNOSTIC
-        sub_diagnostic = next(
-            (sub for sub in sub_diagnostics if sub.topic == topic),
-            None)
-
-        assert sub_diagnostic
-        self.assertEqual('Votre métier est du futur', sub_diagnostic.text)
-
-    def test_subdiagnostic_observations(self) -> None:
-        """Generate observations for a sub-diagnostic."""
-
-        project = project_pb2.Project()
-        self.database.diagnostic_sentences.insert_one({
-            'sentenceTemplate': 'You are a star',
-            'order': 1,
-        })
-        self.database.diagnostic_submetrics_scorers.insert_many([
-            {
-                '_id': 'rechFiNr6aEXMp0Gv',
-                'triggerScoringModel': 'constant(3)',
-                'submetric': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-                'weight': 1,
-            },
-            {
-                '_id': 'rechFiNr6aEXMp0GW',
-                'triggerScoringModel': 'constant(0)',
-                'submetric': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-                'weight': 1,
-            },
-        ])
-        self.database.diagnostic_observations.insert_many([
-            {
-                'filters': ['constant(3)'],
-                'isAttentionNeeded': True,
-                'sentenceTemplate': "Il vous manque des compétences d'avenir",
-                'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-            },
-            {
-                'filters': ['constant(3)'],
-                'sentenceTemplate': "Votre métier est d'avenir",
-                'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-            },
-            {
-                'filters': ['constant(0)'],
-                'sentenceTemplate': "Vous n'êtes pas prêt pour ce job",
-                'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-            },
-        ])
-        self.assertTrue(diagnostic.maybe_diagnose(self.user, project, self.database))
-
-        sub_diagnostics = project.diagnostic.sub_diagnostics
-        topic = diagnostic_pb2.JOB_OF_THE_FUTURE_DIAGNOSTIC
-        sub_diagnostic = next(
-            (sub for sub in sub_diagnostics if sub.topic == topic),
-            None)
-
-        assert sub_diagnostic
-        self.assertEqual(2, len(sub_diagnostic.observations))
-        self.assertEqual(
-            ["Il vous manque des compétences d'avenir"],
-            [obs.text for obs in sub_diagnostic.observations if obs.is_attention_needed])
-        self.assertEqual(
-            ["Votre métier est d'avenir"],
-            [obs.text for obs in sub_diagnostic.observations if not obs.is_attention_needed])
-
-    @mock.patch('logging.warning')
-    def test_missing_observation(self, mock_warning: mock.MagicMock) -> None:
-        """Warn if no observation as found for a submetric topic."""
-
-        self.database.diagnostic_overall.insert_one({
-            'sentenceTemplate': 'Projet à préciser',
-            'score': 50,
-            'textTemplate': 'Je ne sais rien sur vous, mais continuez comme ça.',
-        })
-        self.database.diagnostic_observations.insert_one({
-            'sentenceTemplate': 'Vous faites un métier du futur',
-            'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-        })
-        self.database.diagnostic_submetrics_sentences_new.insert_many([
-            {
-                'sentenceTemplate': 'Voici des conseils pour votre futur.',
-                'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-            },
-            {
-                'sentenceTemplate': 'Voici des conseils pour votre recherche.',
-                'topic': 'JOB_SEARCH_DIAGNOSTIC',
-            },
-        ])
-        self.database.diagnostic_submetrics_scorers.insert_many([
-            {
-                'submetric': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-                'triggerScoringModel': 'constant(2.7)',
-                'weight': 1,
-            },
-            {
-                'submetric': 'JOB_SEARCH_DIAGNOSTIC',
-                'triggerScoringModel': 'constant(1.5)',
-                'weight': 1,
-            },
-        ])
-        project = self.user.projects.add(title='Pompier de Paris')
-        self.assertTrue(diagnostic.maybe_diagnose(self.user, project, self.database))
-        self.assertEqual(2, len(project.diagnostic.sub_diagnostics))
-        future_diagnostic = next(
-            sd for sd in project.diagnostic.sub_diagnostics
-            if sd.topic == diagnostic_pb2.JOB_OF_THE_FUTURE_DIAGNOSTIC)
-        self.assertTrue(future_diagnostic.observations)
-        search_diagnostic = next(
-            sd for sd in project.diagnostic.sub_diagnostics
-            if sd.topic == diagnostic_pb2.JOB_SEARCH_DIAGNOSTIC)
-        self.assertFalse(search_diagnostic.observations)
-        mock_warning.assert_called_once()
-        self.assertIn(
-            'Pompier de Paris', mock_warning.call_args[0][0] % mock_warning.call_args[0][1:])
-
     def test_no_diagnostic_sentence(self) -> None:
         """Don't generate a general sentence if database is not populated."""
 
@@ -231,134 +75,8 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         self.assertTrue(diagnostic.maybe_diagnose(self.user, project, self.database))
         self.assertFalse(project.diagnostic.overall_sentence)
 
-    def test_diagnostic_text_tutoie(self) -> None:
-        """Generate a text for diagnostic and a subdiagnostic using tutoiement."""
-
-        project = project_pb2.Project()
-        self.database.diagnostic_sentences.insert_one({
-            'sentenceTemplate': 'Vous êtes une star',
-            'order': 1,
-        })
-        self.database.diagnostic_submetrics_scorers.insert_many([
-            {
-                'triggerScoringModel': 'constant(3)',
-                'submetric': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-                'weight': 1,
-            },
-            {
-                'triggerScoringModel': 'constant(0)',
-                'submetric': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-                'weight': 1,
-            },
-        ])
-        self.database.diagnostic_submetrics_sentences_new.insert_one({
-            'filters': ['constant(3)'],
-            'sentenceTemplate': "Votre métier est d'avenir",
-            'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-        })
-        self.database.translations.insert_many([
-            {
-                'string': 'Vous êtes une star',
-                'fr@tu': 'Tu es une star',
-            },
-            {
-                'string': "Votre métier est d'avenir",
-                'fr@tu': "Ton métier est d'avenir",
-            },
-        ])
-        self.user.profile.can_tutoie = True
-        self.assertTrue(diagnostic.maybe_diagnose(self.user, project, self.database))
-
-        self.assertEqual('Tu es une star', project.diagnostic.text)
-
-        sub_diagnostics = project.diagnostic.sub_diagnostics
-        topic = diagnostic_pb2.JOB_OF_THE_FUTURE_DIAGNOSTIC
-        sub_diagnostic = next((sub for sub in sub_diagnostics if sub.topic == topic), None)
-
-        self.assertGreater(project.diagnostic.overall_score, 0)
-        assert sub_diagnostic
-        self.assertEqual("Ton métier est d'avenir", sub_diagnostic.text)
-
-    @mock.patch('logging.warning')
-    def test_missing_submetric_sentence(self, mock_warning: mock.MagicMock) -> None:
-        """Logs a warning if no submetric sentence is found."""
-
-        self.database.diagnostic_submetrics_sentences_new.insert_one({
-            'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-            'sentenceTemplate': "Votre métier n'est pas du futur",
-            'filters': ['constant(0)']
-        })
-        self.database.diagnostic_observations.insert_one({
-            'sentenceTemplate': 'Vous faites un métier du futur.',
-            'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-        })
-        self.database.diagnostic_submetrics_scorers.insert_one({
-            'triggerScoringModel': 'constant(3)',
-            'submetric': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-            'weight': 1,
-        })
-        project = project_pb2.Project(title='Pompier de Paris')
-        self.assertTrue(diagnostic.maybe_diagnose(self.user, project, self.database))
-        topic = diagnostic_pb2.JOB_OF_THE_FUTURE_DIAGNOSTIC
-        sub_diagnostic = next(
-            (sub for sub in project.diagnostic.sub_diagnostics if sub.topic == topic), None)
-
-        assert sub_diagnostic
-        self.assertFalse(sub_diagnostic.text)
-        mock_warning.assert_called_once()
-        self.assertIn(
-            'Pompier de Paris', mock_warning.call_args[0][0] % mock_warning.call_args[0][1:])
-
-    def test_diagnostic(self) -> None:
-        """Compute the diagnostic."""
-
-        project = project_pb2.Project()
-        self.database.diagnostic_sentences.insert_one({
-            'sentenceTemplate': 'You are a star',
-            'order': 1,
-        })
-        self.database.diagnostic_submetrics_scorers.insert_many([
-            {
-                '_id': 'recJ3ugOeIIM6BlN3',
-                'triggerScoringModel': 'constant(1.1)',
-                'submetric': 'PROFILE_DIAGNOSTIC',
-                'weight': 1,
-            },
-            {
-                '_id': 'recJ3ugOeIIM6BlN4',
-                'triggerScoringModel': 'constant(2.1)',
-                'submetric': 'PROJECT_DIAGNOSTIC',
-                'weight': 1,
-            },
-            {
-                '_id': 'recJ3ugOeIIM6BlN5',
-                'triggerScoringModel': 'constant(0.5)',
-                'submetric': 'JOB_SEARCH_DIAGNOSTIC',
-                'weight': 1,
-            },
-            {
-                '_id': 'rechFiNr6aEXMp0Gu',
-                'triggerScoringModel': 'constant(1)',
-                'submetric': 'MARKET_DIAGNOSTIC',
-                'weight': 1,
-            },
-            {
-                '_id': 'rechFiNr6aEXMp0Gv',
-                'triggerScoringModel': 'constant(3)',
-                'submetric': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-                'weight': 1,
-            },
-        ])
-        self.assertTrue(diagnostic.maybe_diagnose(self.user, project, self.database))
-        self.assertGreater(project.diagnostic.overall_score, 0)
-        self.assertLess(project.diagnostic.overall_score, 100)
-        self.assertEqual(5, len(project.diagnostic.sub_diagnostics))
-        self.assertEqual(5, len({
-            sub_diagnostic.topic for sub_diagnostic in project.diagnostic.sub_diagnostics}))
-        self.assertEqual('You are a star', project.diagnostic.text)
-
     @mock.patch('logging.exception')
-    def test_diagnostic_overall(self, mock_logging: mock.MagicMock) -> None:
+    def test_diagnostic(self, mock_logging: mock.MagicMock) -> None:
         """Compute a nice diagnostic with overall sentence."""
 
         project = project_pb2.Project()
@@ -382,7 +100,7 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
 
         project = project_pb2.Project()
         self.user.profile.gender = user_pb2.FEMININE
-        self.user.profile.can_tutoie = True
+        self.user.profile.locale = 'fr@tu'
         self.database.diagnostic_overall.insert_one({
             'filters': ['for-women'],
             'score': 50,
@@ -443,34 +161,31 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         self.assertTrue(diagnostic.maybe_diagnose(self.user, project, self.database))
         self.assertEqual('Vous devriez réfléchir à vos méthodes', project.diagnostic.text)
 
-    def test_overall_overrides_score(self) -> None:
-        """The score given from a DiagnosticTemplate override the one computed from the submetrics.
-        """
+    def test_diagnostic_overall_sorted(self) -> None:
+        """Get the overall sentence in order."""
 
         project = project_pb2.Project()
         self.user.profile.gender = user_pb2.FEMININE
-        project.target_job.name = 'Directrice technique'
-        self.database.diagnostic_submetrics_scorers.insert_one({
-            '_id': 'recJ3ugOeIIM6BlN3',
-            'triggerScoringModel': 'constant(2.1)',
-            'submetric': 'PROFILE_DIAGNOSTIC',
-            'weight': 1,
-        })
-        self.database.diagnostic_overall.insert_one({
-            'filters': ['for-women'],
-            'score': 50,
-            'sentenceTemplate': 'Manque de précision dans la recherche',
-            'textTemplate': 'Vous devriez réfléchir à vos méthodes',
-        })
+        self.database.diagnostic_overall.insert_many([
+            {
+                '_order': 1,
+                'sentenceTemplate': 'Overall text for women if nothing triggered',
+            },
+            {
+                '_order': 0,
+                'sentenceTemplate': 'Overall text for women as first pass',
+            },
+        ])
         self.assertTrue(diagnostic.maybe_diagnose(self.user, project, self.database))
-        self.assertEqual(50, project.diagnostic.overall_score, msg=project.diagnostic)
+        self.assertEqual(
+            'Overall text for women as first pass', project.diagnostic.overall_sentence)
 
     def test_diagnostic_overall_restrict_to_category(self) -> None:
         """Get the overall sentence for a specific category."""
 
         project = project_pb2.Project()
         self.user.profile.gender = user_pb2.FEMININE
-        self.user.profile.can_tutoie = True
+        self.user.profile.locale = 'fr@tu'
         self.database.translations.insert_many([
             {
                 'string': 'Voici vos stratégies',
@@ -509,6 +224,7 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
 
         project = project_pb2.Project()
         self.user.profile.gender = user_pb2.FEMININE
+        self.database.diagnostic_category.drop()
         self.database.diagnostic_category.insert_one({
             'categoryId': 'not-men',
             'filters': ['for-women'],
@@ -534,12 +250,19 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
 
         project = project_pb2.Project()
         self.user.profile.gender = user_pb2.FEMININE
-        self.database.diagnostic_category.insert_one({
-            'areStrategiesForAlphaOnly': True,
-            'categoryId': 'women',
-            'filters': ['for-women'],
-            'order': 1,
-        })
+        self.database.diagnostic_category.drop()
+        self.database.diagnostic_category.insert_many([
+            {
+                'areStrategiesForAlphaOnly': True,
+                'categoryId': 'women',
+                'filters': ['for-women'],
+                'order': 1,
+            },
+            {
+                'categoryId': 'bravo',
+                'order': 1,
+            },
+        ])
         self.database.diagnostic_overall.insert_many([
             {
                 'categoryId': 'women',
@@ -554,6 +277,7 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         self.assertTrue(diagnostic.maybe_diagnose(self.user, project, self.database))
         self.assertEqual(
             'Overall text for women if no category', project.diagnostic.overall_sentence)
+        self.assertEqual('bravo', project.diagnostic.category_id)
 
     def test_diagnostic_text(self) -> None:
         """Compute a nice diagnostic text."""
@@ -635,65 +359,13 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
 
         self.assertEqual('Nous allons vous aider.', project.diagnostic.text)
 
-    def test_text_filtering_uses_overall_score(self) -> None:
-        """The filtering of sentences uses the overall score."""
-
-        project = project_pb2.Project()
-        self.database.diagnostic_sentences.insert_many([
-            {
-                'sentenceTemplate': 'All good',
-                'order': 1,
-                'filters': ['for-good-overall-score(50)'],
-            },
-            {
-                'sentenceTemplate': 'Bad',
-                'order': 1,
-            },
-        ])
-        self.database.diagnostic_submetrics_scorers.insert_one({
-            '_id': 'recJ3ugOeIIM6BlN3',
-            'triggerScoringModel': 'constant(3)',
-            'submetric': 'PROFILE_DIAGNOSTIC',
-            'weight': 1,
-        })
-
-        diagnostic.maybe_diagnose(self.user, project, self.database)
-
-        self.assertEqual('All good', project.diagnostic.text)
-
-    def test_text_filtering_uses_bad_overall_score(self) -> None:
-        """The filtering of sentences uses the bad overall score."""
-
-        project = project_pb2.Project()
-        self.database.diagnostic_sentences.insert_many([
-            {
-                'sentenceTemplate': 'All good',
-                'order': 1,
-                'filters': ['for-good-overall-score(50)'],
-            },
-            {
-                'sentenceTemplate': 'Bad',
-                'order': 1,
-            },
-        ])
-        self.database.diagnostic_submetrics_scorers.insert_one({
-            '_id': 'recJ3ugOeIIM6BlN3',
-            'triggerScoringModel': 'constant(0)',
-            'submetric': 'PROFILE_DIAGNOSTIC',
-            'weight': 1,
-        })
-
-        diagnostic.maybe_diagnose(self.user, project, self.database)
-
-        self.assertEqual('Bad', project.diagnostic.text)
-
     @mock.patch(logging.__name__ + '.exception')
     def test_diagnostic_text_tutoiement_missing_translation(
             self, mock_logging: mock.MagicMock) -> None:
         """Compute diagnostic text for tutoiement, but one tranlsation is missing."""
 
         project = project_pb2.Project()
-        self.user.profile.can_tutoie = True
+        self.user.profile.locale = 'fr@tu'
         self.database.diagnostic_sentences.insert_many([
             {
                 'sentenceTemplate': 'Vous êtes jeune.',
@@ -718,21 +390,87 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         """Compute the diagnostic category for a project."""
 
         project = project_pb2.Project()
+        self.user.profile.ClearField('gender')
+        self.user.profile.locale = ''
+        self.database.diagnostic_category.drop()
         self.database.diagnostic_category.insert_one({
+            'blockerSentence': 'bad profile',
             'categoryId': 'everyone',
             'filters': ['constant(3)'],
+            'metricDetails': 'Libéré·e',
             'order': 1,
         })
+        self.database.translations.insert_many([
+            {
+                'string': 'Libéré·e_FEMININE',
+                'fr': 'Libérée',
+            },
+            {
+                'string': 'Libéré·e_MASCULINE',
+                'fr': 'Libéré',
+            },
+        ])
         diagnostic.maybe_diagnose(self.user, project, self.database)
         self.assertEqual('everyone', project.diagnostic.category_id)
         self.assertEqual(['everyone'], [c.category_id for c in project.diagnostic.categories])
+        self.assertEqual('Libéré·e', project.diagnostic.categories[0].metric_details)
         self.assertEqual(diagnostic_pb2.NEEDS_ATTENTION, project.diagnostic.categories[0].relevance)
         self.assertTrue(project.diagnostic.categories[0].is_highlighted)
+        self.assertEqual('bad profile', project.diagnostic.categories[0].blocker_sentence)
+
+    def test_diagnostic_category_translation(self) -> None:
+        """Translate the diagnostic category for a project."""
+
+        project = project_pb2.Project()
+        self.user.profile.ClearField('gender')
+        self.user.profile.locale = 'nl'
+        self.database.diagnostic_category.drop()
+        self.database.diagnostic_category.insert_one({
+            'blockerSentence': 'bad profile',
+            'categoryId': 'everyone',
+            'filters': ['constant(3)'],
+            'metricDetails': 'Libéré·e',
+            'order': 1,
+        })
+        self.database.translations.insert_many([
+            {
+                'string': 'bad profile',
+                'nl': 'slecht profiel',
+            }
+        ])
+        diagnostic.maybe_diagnose(self.user, project, self.database)
+        self.assertEqual('slecht profiel', project.diagnostic.categories[0].blocker_sentence)
+
+    def test_diagnostic_category_genderized(self) -> None:
+        """Compute the diagnostic category for a project and use its genderized details."""
+
+        project = project_pb2.Project()
+        self.user.profile.gender = user_pb2.MASCULINE
+        self.database.diagnostic_category.drop()
+        self.database.diagnostic_category.insert_one({
+            'categoryId': 'everyone',
+            'filters': ['constant(3)'],
+            'metricDetails': 'Libéré·e',
+            'order': 1,
+        })
+        self.database.translations.insert_many([
+            {
+                'string': 'Libéré·e_FEMININE',
+                'fr': 'Libérée',
+            },
+            {
+                'string': 'Libéré·e_MASCULINE',
+                'fr': 'Libéré',
+            },
+        ])
+        diagnostic.maybe_diagnose(self.user, project, self.database)
+        self.assertEqual(['Libéré'], [c.metric_details for c in project.diagnostic.categories])
 
     def test_missing_diagnostic_category(self) -> None:
         """Does not set a category ID if none is found."""
 
         project = project_pb2.Project()
+        self.database.diagnostic_category.drop()
         self.database.diagnostic_category.insert_one({
             'categoryId': 'noone',
             'filters': ['constant(0)'],
@@ -748,16 +486,17 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         """Compute the diagnostic category for a project."""
 
         project = project_pb2.Project()
+        self.database.diagnostic_category.drop()
         self.database.diagnostic_category.insert_many([
-            {
-                'categoryId': 'first',
-                'filters': ['constant(2)'],
-                'order': 1,
-            },
             {
                 'categoryId': 'second',
                 'filters': ['constant(0)'],
                 'order': 2,
+            },
+            {
+                'categoryId': 'first',
+                'filters': ['constant(2)'],
+                'order': 1,
             },
             {
                 'categoryId': 'third',
@@ -879,9 +618,47 @@ class FindCategoryTestCase(base_test.ServerTestCase):
             'categoryId': 'always-raises',
             'filters': ['fake-scorer'],
         })
-        categories = diagnostic.set_categories_relevance(self.user, database=self._db)
-        self.assertEqual(1, len(list(categories)))
-        self.assertEqual({'projects.0'}, categories.missing_fields)
+        categories_iterator = diagnostic.set_categories_relevance(self.user, database=self._db)
+        unused_category, missing_fields = next(categories_iterator)
+        self.assertEqual(1, len(missing_fields))
+        self.assertEqual('projects.0', missing_fields[0].field)
+
+        # Only one category.
+        self.assertFalse(next(categories_iterator, None))
+
+    @mock.patch.dict(scoring_base.SCORING_MODELS, {'fake-scorer': NeverEnoughDataScoringModel()})
+    def test_fields_priority(self) -> None:
+        """Missing fields have priority according to where they are wrt the main blocker."""
+
+        self._db.diagnostic_category.insert_many([
+            {
+                'categoryId': 'always-raises',
+                'filters': ['fake-scorer'],
+                'order': 0,
+            },
+            {
+                'categoryId': 'always-scores',
+                'filters': [],
+                'order': 1,
+            },
+            {
+                'categoryId': 'always-raises-again',
+                'filters': ['fake-scorer'],
+                'order': 2,
+            },
+        ])
+        categories: List[diagnostic_pb2.DiagnosticCategory] = []
+        missing_fields: List[List[user_pb2.MissingField]] = []
+        for category, fields in diagnostic.set_categories_relevance(self.user, database=self._db):
+            categories.append(category)
+            missing_fields.append(fields)
+        self.assertEqual(3, len(categories))
+        self.assertEqual(
+            [['projects.0'], [], ['projects.0']],
+            [[mf.field for mf in fields] for fields in missing_fields])
+        self.assertEqual(
+            [[2], [], [1]],
+            [[mf.priority for mf in fields] for fields in missing_fields])
 
 
 if __name__ == '__main__':

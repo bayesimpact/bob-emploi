@@ -1,11 +1,9 @@
 """Functions for manipulating users. Assume to be in a flask app."""
 
-import collections
 import datetime
 import itertools
 import os
 import re
-import time
 import typing
 from typing import Literal
 from urllib import parse
@@ -22,15 +20,13 @@ from bob_emploi.frontend.server import diagnostic
 from bob_emploi.frontend.server import jobs
 from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import proto
-from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server import strategist
+from bob_emploi.frontend.server import tick
 from bob_emploi.frontend.api import feedback_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
 
 SERVER_TAG = {'_server': os.getenv('SERVER_VERSION', 'dev')}
-
-_Tick = collections.namedtuple('Tick', ['name', 'time'])
 
 _TEST_USER_REGEXP = re.compile(os.getenv('TEST_USER_REGEXP', r'@(bayes.org|example.com)$'))
 _ALPHA_USER_REGEXP = re.compile(os.getenv('ALPHA_USER_REGEXP', r'@example.com$'))
@@ -101,13 +97,6 @@ def _populate_feature_flags(user_proto: user_pb2.User) -> None:
         user_proto.features_enabled.pole_emploi = True
     if _EXCLUDE_FROM_ANALYTICS_REGEXP.search(user_proto.profile.email):
         user_proto.features_enabled.exclude_from_analytics = True
-    if user_proto.features_enabled.strat_two == user_pb2.CONTROL:
-        # Keep control users from strat_two.
-        return
-    if any(p.strategies for p in user_proto.projects):
-        user_proto.features_enabled.strat_two = user_pb2.ACTIVE
-    else:
-        user_proto.features_enabled.ClearField('strat_two')
 
 
 def get_user_data(user_id: str) -> user_pb2.User:
@@ -122,20 +111,7 @@ def get_user_data(user_id: str) -> user_pb2.User:
 
     _populate_feature_flags(user_proto)
 
-    # TODO(cyrille): Remove this once we've generated observations for old users.
-    for project in user_proto.projects:
-        if not project.diagnostic.sub_diagnostics:
-            continue
-        scoring_project = scoring.ScoringProject(
-            project, user_proto, flask.current_app.config['DATABASE'])
-        for sub_diagnostic in project.diagnostic.sub_diagnostics:
-            if not sub_diagnostic.observations:
-                sub_diagnostic.observations.extend(
-                    diagnostic.compute_sub_diagnostic_observations(
-                        scoring_project, sub_diagnostic.topic))
-
-    # TODO(pascal): Remove the fields completely after this has been live for a
-    # week.
+    # TODO(pascal): Remove the fields completely after this has been live for a week.
     user_proto.profile.ClearField('city')
     user_proto.profile.ClearField('latest_job')
     user_proto.profile.ClearField('situation')
@@ -161,6 +137,16 @@ def _update_returning_user(
     if user_data.profile.email:
         user_data.hashed_email = auth.hash_user_email(user_data.profile.email)
 
+    if last_connection.ToDatetime() < datetime.datetime(2019, 10, 25) and \
+            user_data.features_enabled.strat_two != user_pb2.ACTIVE:
+        for project in user_data.projects:
+            _save_project(project, project, user_data)
+
+    if user_data.profile.can_tutoie:
+        user_data.profile.ClearField('can_tutoie')
+        if not user_data.profile.locale or user_data.profile.locale == 'fr':
+            user_data.profile.locale = 'fr@tu'
+
     if has_set_email:
         base_url = parse.urljoin(flask.request.base_url, '/')[:-1]
         advisor.maybe_send_late_activation_emails(
@@ -172,10 +158,6 @@ def _update_returning_user(
     _save_low_level(user_data)
 
     return last_connection
-
-
-def _tick(tick_name: str) -> None:
-    flask.g.ticks.append(_Tick(tick_name, time.time()))
 
 
 def _is_test_user(user_proto: user_pb2.User) -> bool:
@@ -208,7 +190,7 @@ def _save_project(
     # TODO(cyrille): Check for completeness here, rather than in client.
     if project.is_incomplete:
         return project
-    _tick('Process project start')
+    tick.tick('Process project start')
     rome_id = project.target_job.job_group.rome_id
     departement_id = project.city.departement_id
     if not project.project_id:
@@ -228,24 +210,24 @@ def _save_project(
             project.job_search_started_at.nanos = 0
 
     database = flask.current_app.config['DATABASE']
-    _tick('Populate local stats')
+    tick.tick('Populate local stats')
     if previous_project.city.departement_id != departement_id or \
             previous_project.target_job.job_group.rome_id != rome_id:
         project.ClearField('local_stats')
     if not project.HasField('local_stats'):
         project.local_stats.CopyFrom(jobs.get_local_stats(database, departement_id, rome_id))
 
-    _tick('Diagnostic')
+    tick.tick('Diagnostic')
     diagnostic.maybe_diagnose(user_data, project, database)
 
-    _tick('Advisor')
+    tick.tick('Advisor')
     advisor.maybe_advise(
         user_data, project, database, parse.urljoin(flask.request.base_url, '/')[:-1])
 
-    _tick('Strategies')
+    tick.tick('Strategies')
     strategist.maybe_strategize(user_data, project, database)
 
-    _tick('New feedback')
+    tick.tick('New feedback')
     if project.feedback.text and not previous_project.feedback.text:
         stars = ':star:' * project.feedback.score
         user_url = parse.urljoin(
@@ -261,7 +243,7 @@ def _save_project(
                 score=project.feedback.score),
             slack_text=slack_text)
 
-    _tick('Process project end')
+    tick.tick('Process project end')
     return project
 
 
@@ -269,12 +251,12 @@ def save_user(user_data: user_pb2.User, is_new_user: bool) \
         -> user_pb2.User:
     """Save a user, updating all the necessary computed fields while doing so."""
 
-    _tick('Save user start')
+    tick.tick('Save user start')
 
     if is_new_user:
         previous_user_data = user_data
     else:
-        _tick('Load old user data')
+        tick.tick('Load old user data')
         previous_user_data = get_user_data(user_data.user_id)
         if user_data.revision and previous_user_data.revision > user_data.revision:
             # Do not overwrite newer data that was saved already: just return it.
@@ -313,6 +295,11 @@ def save_user(user_data: user_pb2.User, is_new_user: bool) \
     if user_data.profile.email:
         user_data.hashed_email = auth.hash_user_email(user_data.profile.email)
 
+    if user_data.profile.can_tutoie:
+        user_data.profile.ClearField('can_tutoie')
+        if not user_data.profile.locale or user_data.profile.locale == 'fr':
+            user_data.profile.locale = 'fr@tu'
+
     if not is_new_user:
         _assert_no_credentials_change(previous_user_data, user_data)
         _copy_unmodifiable_fields(previous_user_data, user_data)
@@ -325,9 +312,9 @@ def save_user(user_data: user_pb2.User, is_new_user: bool) \
 
     user_data.revision += 1
 
-    _tick('Save user')
+    tick.tick('Save user')
     _save_low_level(user_data, is_new_user=is_new_user)
-    _tick('Return user proto')
+    tick.tick('Return user proto')
 
     return user_data
 

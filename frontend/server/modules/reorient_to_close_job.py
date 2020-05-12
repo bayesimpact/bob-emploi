@@ -25,7 +25,7 @@ class _AdviceReorientToClose(scoring_base.ModelBase):
             # Here the market score improvement
             # (job that the user is searching for vs recommended job)
             # is overly simplified as offers gain.
-            # TODO(marielaure): Find a way to explain the market score improvement to the user.
+            # TODO(sil): Find a way to explain the market score improvement to the user.
             # TODO(cyrille): Replace offers_percent_gain by stress_percent_loss to simplify
             #   client-side computations.
             offers_gain = 100 * (

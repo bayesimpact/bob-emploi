@@ -48,7 +48,7 @@ class JobbingTest(mail_blast_test.CampaignTestBase):
                         'masculineName': 'Aide caviste',
                         'feminineName': 'Aide caviste',
                         'name': 'Aide caviste',
-                        'marketScore': 6,
+                        'marketScore': 10,
                     },
                     {
                         'romeId': 'A1401',
@@ -92,6 +92,14 @@ class JobbingTest(mail_blast_test.CampaignTestBase):
             'jobs': [{'name': 'Aide caviste'}, {'name': 'Aide arboricole'}],
         })
 
+    def test_undefined_project(self) -> None:
+        """Undefined project."""
+
+        self.project.ClearField('target_job')
+        self._assert_user_receives_focus()
+
+        self.assertEqual('de definir votre projet professionnel', self._variables['ofJobName'])
+
     @mock.patch.dict(scoring.SCORING_MODELS, _SCORING_MODELS_EXCEPT_JOBBING, clear=True)
     def test_missing_scoring_model(self) -> None:
         """Our scoring model is missing."""
@@ -104,7 +112,7 @@ class JobbingTest(mail_blast_test.CampaignTestBase):
         self.project.target_job.job_group.rome_id = 'M1602'
         self.database.local_diagnosis.insert_one({
             '_id': '31:M1602',
-            'imt': {'yearlyAvgOffersPer10Candidates': 9},
+            'imt': {'yearlyAvgOffersPer10Candidates': 12},
         })
 
         self._assert_user_receives_focus(should_be_sent=False)

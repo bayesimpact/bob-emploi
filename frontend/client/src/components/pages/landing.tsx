@@ -1,10 +1,10 @@
 import _memoize from 'lodash/memoize'
+import CloseIcon from 'mdi-react/CloseIcon'
 import PropTypes from 'prop-types'
-import React, {useCallback, useMemo, useState} from 'react'
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import LazyLoad from 'react-lazyload'
-import {connect} from 'react-redux'
-import {RouteComponentProps, withRouter} from 'react-router'
-import ReactRouterPropTypes from 'react-router-prop-types'
+import {useDispatch, useSelector} from 'react-redux'
+import {useLocation, useParams} from 'react-router'
 import {Swipeable} from 'react-swipeable'
 import VisibilitySensor from 'react-visibility-sensor'
 
@@ -12,6 +12,7 @@ import {DispatchAllActions, RootState, landingPageSectionIsShown,
   loadLandingPage} from 'store/actions'
 import {getLanguage, prepareT} from 'store/i18n'
 import {parseQueryString} from 'store/parse'
+import {makeCancelable} from 'store/promise'
 
 import bobBlueImage from 'images/bob-logo.svg?fill=#1888ff' // colors.BOB_BLUE
 import step1Image from 'images/landing_step_1.svg'
@@ -42,6 +43,7 @@ import {StaticPage, TitleSection} from 'components/static'
 import {fetchFirstSuggestedJob} from 'components/suggestions'
 import {ExternalLink, Img, MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING,
   SmoothTransitions} from 'components/theme'
+import {Routes} from 'components/url'
 
 
 const emStyle: React.CSSProperties = {
@@ -243,6 +245,7 @@ const StepBase = ({children, image, step, title}: StepProps): React.ReactElement
     </div>}
     <div style={stepNumberStyle}>{step}</div>
     <div style={contentStyle}>
+      {/* i18next-extract-disable-next-line */}
       <Trans parent="h3" style={stepTitleStyle} i18nKey={title} components={titleMainWord} />
       {children}
     </div>
@@ -328,7 +331,7 @@ const iconTextStyle = {
   alignItems: 'center',
   display: 'flex',
 }
-// TODO(marielaure): Generalize and factorize with spontaneous stars.
+// TODO(sil): Generalize and factorize with spontaneous stars.
 const getFillPercentage = _memoize(
   (starIndex: number, score: number): number => {
     if (starIndex < Math.trunc(score)) {
@@ -467,7 +470,7 @@ const ratingsContainerStyle: React.CSSProperties = {
   justifyContent: 'space-between',
 }
 
-// TODO(marielaure): Make rating dynamics.
+// TODO(sil): Make rating dynamics.
 const TestimonialsSectionBase = (): React.ReactElement => {
   const numEmploiStoreReviews = 90
   const numInAppReviews = 3568
@@ -823,29 +826,76 @@ const SpeakingAboutBobSectionBase = (): React.ReactElement => {
 const SpeakingAboutBobSection = React.memo(SpeakingAboutBobSectionBase)
 
 
+const externaLinkStyle: React.CSSProperties = {
+  color: colors.BOB_BLUE,
+  fontWeight: 'bold',
+  textDecoration: 'none',
+}
+const covidNameStyle: React.CSSProperties = {
+  alignItems: 'center',
+  alignSelf: 'stretch',
+  backgroundColor: colors.YELLOW_ORANGE_TWO,
+  borderRadius: '4px 0 0 4px',
+  color: '#fff',
+  display: 'flex',
+  padding: 20,
+}
+const closeIconStyle: React.CSSProperties = {
+  backgroundColor: colors.SLATE,
+  borderRadius: 15,
+  color: '#fff',
+  cursor: 'pointer',
+  margin: 15,
+  padding: 2,
+}
+
+
+const CovidBannerBase = (): React.ReactElement => {
+  const [isShown, setIsShown] = useState(false)
+  const hide = useCallback((): void => setIsShown(false), [])
+  useEffect((): (() => void) => {
+    const timeout = window.setTimeout((): void => setIsShown(true), 200)
+    return (): void => clearTimeout(timeout)
+  }, [])
+  const covidBannerContainerStyle: React.CSSProperties = {
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 4,
+    bottom: 50,
+    boxShadow: '5px 3px 20px 0 rgba(0, 0, 0, 0.25)',
+    color: colors.DARK_TWO,
+    display: 'flex',
+    fontSize: 13,
+    fontWeight: 'bold',
+    left: '50%',
+    position: 'fixed',
+    transform: `translate(-50%, ${isShown ? '0' : '200%'}`,
+    width: 'fit-content',
+    ...SmoothTransitions,
+  }
+  return <Trans style={covidBannerContainerStyle}>
+    <strong style={covidNameStyle}>COVID19</strong>
+    <span style={{flex: 1, paddingLeft: 22}}>
+      Découvrez nos astuces pour continuer votre recherche d'emploi malgré le
+      confinement. <ExternalLink href={Routes.COVID_PAGE} style={externaLinkStyle}>
+        Lire l'article
+      </ExternalLink>
+    </span>
+    <CloseIcon onClick={hide} style={closeIconStyle} />
+  </Trans>
+}
+const CovidBanner = React.memo(CovidBannerBase)
+
+
 interface LandingRouteParams {
   romeId?: string
   specificJobName?: string
 }
 
 
-interface LandingPageProps extends RouteComponentProps<LandingRouteParams>{
-  children?: never
-  dispatch: DispatchAllActions
-  hasLoadedApp?: boolean
-}
-
-
 interface FullLandingPageState extends LandingPageContent {
   kind: LandingPageKind
   title: React.ReactNode
-}
-
-
-interface LandingPageState {
-  isForSpecificJob?: boolean
-  isScrollNavBarShown: boolean
-  landingPageContent: FullLandingPageState
 }
 
 
@@ -858,199 +908,190 @@ const horizBarStyle: React.CSSProperties = {
 }
 
 
-class LandingPageBase extends React.PureComponent<LandingPageProps, LandingPageState> {
-  // Figure out what landing page kind should be displayed and return the
-  // corresponding state vars.
-  private static getLandingPageContentState({
-    location: {search},
-    match: {params: {romeId, specificJobName}},
-  }: LandingPageProps): Pick<LandingPageState, 'isForSpecificJob'|'landingPageContent'> {
-    if (specificJobName) {
-      return {
-        isForSpecificJob: true,
-        landingPageContent: LandingPageBase.getLandingPageContentForSpecificJob(
-          romeId, specificJobName),
-      }
-    }
-    const {utm_content: utmContent = ''} = parseQueryString(search)
-    return {
-      landingPageContent: LandingPageBase.getLandingPageContentForUtmContent(utmContent),
-    }
+function getLandingPageContentForSpecificJob(
+  romeId: string|undefined, specificJobName: string,
+): FullLandingPageState {
+  // Special langing pages for a specific job.
+  const landingPageKind: LandingPageKind = 'specific-job'
+  const landingPageContent = {
+    ...landingPageContents[landingPageKind],
+    kind: landingPageKind,
+    // Customize title with job name.
+    title: <span style={emStyle}>
+      Obtenez des conseils personnalisés pour trouver un poste de {specificJobName}
+    </span>,
   }
-
-  private static getLandingPageContentForSpecificJob(
-    romeId: string|undefined, specificJobName: string,
-  ): FullLandingPageState {
-    // Special langing pages for a specific job.
-    const landingPageKind: LandingPageKind = 'specific-job'
-    const landingPageContent = {
-      ...landingPageContents[landingPageKind],
-      kind: landingPageKind,
-      // Customize title with job name.
-      title: <span style={emStyle}>
-        Obtenez des conseils personnalisés pour trouver un poste de {specificJobName}
-      </span>,
-    }
-    return landingPageContent
-  }
-
-  private static getLandingPageContentForUtmContent(utmContent?: string): FullLandingPageState {
-    // Special wording for the landing page depending on the utm_content value.
-    const landingPageKind: LandingPageKind = kinds.find(
-      (landingPageKind: LandingPageKind): boolean => {
-        const {match} = landingPageContents[landingPageKind]
-        return !!match && !!utmContent && match.test(utmContent)
-      },
-    ) || ''
-    const landingPageContent = {
-      ...landingPageContents[landingPageKind],
-      kind: landingPageKind,
-    }
-    return landingPageContent as FullLandingPageState
-  }
-
-  public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    // eslint-disable-next-line react/no-unused-prop-types
-    location: ReactRouterPropTypes.location.isRequired,
-    match: ReactRouterPropTypes.match.isRequired,
-  }
-
-  public state: LandingPageState = {
-    ...LandingPageBase.getLandingPageContentState(this.props),
-    isScrollNavBarShown: false,
-  }
-
-  public static getDerivedStateFromProps(
-    props: LandingPageProps, {landingPageContent: {kind = undefined} = {}}):
-    Pick<LandingPageState, 'isForSpecificJob'|'landingPageContent'>|null {
-    const newContent = LandingPageBase.getLandingPageContentState(props)
-    if (newContent.landingPageContent && newContent.landingPageContent.kind !== kind) {
-      return newContent
-    }
-    return null
-  }
-
-  public componentDidMount(): void {
-    const landingPageKind = this.state.landingPageContent.kind
-    this.maybeFetchSpecificJob().then((specificJob): void => {
-      this.props.dispatch(loadLandingPage(landingPageKind, specificJob))
-    })
-  }
-
-  // Fetch job info if this is a landing page about a specific job.
-  private maybeFetchSpecificJob(): Promise<bayes.bob.Job|null> {
-    const {specificJobName} = this.props.match.params
-    if (!specificJobName) {
-      return Promise.resolve(null)
-    }
-    // Return null for the fetched job if any error happens.
-    return fetchFirstSuggestedJob(specificJobName).catch((): bayes.bob.Job|null => null)
-  }
-
-  private handleVisibility = _memoize((sectionName): ((i?: boolean) => void) =>
-    (isVisible?: boolean): void => {
-      if (!isVisible) {
-        return
-      }
-      this.props.dispatch(landingPageSectionIsShown(sectionName))
-    })
-
-  private handleTopVisibilityChange = (isTopShown?: boolean): void =>
-    this.setState({isScrollNavBarShown: !isTopShown})
-
-  private renderScrollNavBar(isVisible: boolean): React.ReactNode {
-    const style: React.CSSProperties = {
-      backgroundColor: '#fff',
-      boxShadow: '0 0 5px 0 rgba(0, 0, 0, 0.2)',
-      color: colors.DARK,
-      fontSize: 14,
-      height: 70,
-      left: 0,
-      opacity: isVisible ? 1 : 0,
-      padding: '0 20px',
-      position: 'fixed',
-      right: 0,
-      top: isVisible ? 0 : -80,
-      zIndex: 2,
-      ...SmoothTransitions,
-    }
-    const contentStyle: React.CSSProperties = {
-      alignItems: 'center',
-      display: 'flex',
-      height: style.height,
-      margin: '0 auto',
-      maxWidth: MAX_CONTENT_WIDTH,
-    }
-    return <div style={style}>
-      <div style={contentStyle}>
-        <img src={bobBlueImage} height={30} alt={config.productName} />
-        <span style={{flex: 1}} />
-
-        <LoginButton isSignUp={true} visualElement="scrolling-nav-bar" type="validation">
-          <Trans parent="">Commencer</Trans>
-        </LoginButton>
-      </div>
-    </div>
-  }
-
-  public render(): React.ReactNode {
-    const {isScrollNavBarShown, landingPageContent} = this.state
-    // TODO(pascal): Add a language toggler.
-    return <StaticPage
-      page="landing" isContentScrollable={false} isNavBarTransparent={true}
-      style={{backgroundColor: '#fff', overflow: 'hidden'}} isChatButtonShown={true}
-      isCookieDisclaimerShown={!!isMobileVersion}>
-
-      {/* NOTE: The beginning of the DOM is what Google use in its snippet,
-        make sure it's important. */}
-
-      <VisibilitySensor
-        onChange={this.handleTopVisibilityChange}
-        intervalDelay={250} partialVisibility={true}>
-        <div style={{height: 70, position: 'absolute', width: '100%'}} />
-      </VisibilitySensor>
-
-      <TitleSection isLoginButtonShown={true} pageContent={landingPageContent} />
-
-      <VisibilitySensor
-        onChange={this.handleVisibility('steps')} partialVisibility={true}
-        intervalDelay={250}>
-        <StepsSection />
-      </VisibilitySensor>
-
-      <VisibilitySensor
-        onChange={this.handleVisibility('testimonials')} partialVisibility={true}
-        intervalDelay={250}>
-        <TestimonialsSection />
-      </VisibilitySensor>
-
-      <div style={{backgroundColor: colors.PALE_GREY}}>
-        <div style={horizBarStyle} />
-      </div>
-
-      <VisibilitySensor
-        onChange={this.handleVisibility('speaking-about')} partialVisibility={true}
-        intervalDelay={250}>
-        <SpeakingAboutBobSection />
-      </VisibilitySensor>
-
-      <VisibilitySensor
-        onChange={this.handleVisibility('partners')} partialVisibility={true}
-        intervalDelay={250}>
-        <PartnersSection />
-      </VisibilitySensor>
-
-      {isMobileVersion ? null : <CookieMessageOverlay />}
-
-      {this.renderScrollNavBar(isScrollNavBarShown)}
-    </StaticPage>
-  }
+  return landingPageContent
 }
-const LandingPage = connect(({app: {hasLoadedApp = false}}: RootState): {hasLoadedApp: boolean} =>
-  ({
-    hasLoadedApp,
-  }))(withRouter(LandingPageBase))
+
+
+function getLandingPageContentForUtmContent(utmContent?: string): FullLandingPageState {
+  // Special wording for the landing page depending on the utm_content value.
+  const landingPageKind: LandingPageKind = kinds.find(
+    (landingPageKind: LandingPageKind): boolean => {
+      const {match} = landingPageContents[landingPageKind]
+      return !!match && !!utmContent && match.test(utmContent)
+    },
+  ) || ''
+  const landingPageContent = {
+    ...landingPageContents[landingPageKind],
+    kind: landingPageKind,
+  }
+  return landingPageContent as FullLandingPageState
+}
+
+
+// Figure out what landing page kind should be displayed and return the
+// corresponding state vars.
+function getLandingPageContentState(
+  search: string,
+  {romeId, specificJobName}: LandingRouteParams,
+): FullLandingPageState {
+  if (specificJobName) {
+    return getLandingPageContentForSpecificJob(romeId, specificJobName)
+  }
+  const {utm_content: utmContent = ''} = parseQueryString(search)
+  return getLandingPageContentForUtmContent(utmContent)
+}
+
+
+interface SectionProps {
+  children: React.ReactNode
+  name: string
+  onChange: (name: string, isVisible: boolean) => void
+}
+
+
+const VisibilitySectionBase = (props: SectionProps): React.ReactElement => {
+  const {children, name, onChange} = props
+  const handleChange = useCallback((isVisible: boolean): void => {
+    onChange(name, isVisible)
+  }, [name, onChange])
+  return <VisibilitySensor onChange={handleChange} partialVisibility={true} intervalDelay={250}>
+    {children}
+  </VisibilitySensor>
+}
+const VisibilitySection = React.memo(VisibilitySectionBase)
+
+
+const LandingPageBase = (): React.ReactElement => {
+  const dispatch = useDispatch<DispatchAllActions>()
+  const {search} = useLocation()
+  const params = useParams<LandingRouteParams>()
+  const landingPageContent = getLandingPageContentState(search, params)
+  const landingPageKind = landingPageContent.kind
+
+  const [isScrollNavBarShown, setIsScrollNavBarShown] = useState(false)
+  const hasLoadedApp = useSelector(
+    ({app: {hasLoadedApp = false}}: RootState): boolean => hasLoadedApp,
+  )
+
+  useEffect((): (() => void) => {
+    // Fetch job info if this is a landing page about a specific job.
+    const maybeFetchSpecificJob: Promise<bayes.bob.Job|null> = params.specificJobName ?
+      fetchFirstSuggestedJob(params.specificJobName).
+        // Return null for the fetched job if any error happens.
+        catch((): bayes.bob.Job|null => null) :
+      Promise.resolve(null)
+
+    const cancelablePromise = makeCancelable(maybeFetchSpecificJob)
+    cancelablePromise.promise.then((specificJob): void => {
+      hasLoadedApp || dispatch(loadLandingPage(landingPageKind, specificJob))
+    })
+    return cancelablePromise.cancel
+  }, [dispatch, hasLoadedApp, landingPageKind, params.specificJobName])
+
+  const handleVisibility = useCallback((sectionName: string, isVisible: boolean): void => {
+    if (!isVisible) {
+      return
+    }
+    dispatch(landingPageSectionIsShown(sectionName))
+  }, [dispatch])
+
+  const topSpaceRef = useRef<HTMLDivElement>(null)
+  const handleTopVisibilityChange = useCallback((isTopShown?: boolean): void => {
+    // When first loading the page, isTopShown is false because the div has no height yet.
+    setIsScrollNavBarShown(!isTopShown && !!topSpaceRef.current?.clientHeight)
+  }, [])
+
+  const scrollNavBarStyle: React.CSSProperties = {
+    backgroundColor: '#fff',
+    boxShadow: '0 0 5px 0 rgba(0, 0, 0, 0.2)',
+    color: colors.DARK,
+    fontSize: 14,
+    height: 70,
+    left: 0,
+    opacity: isScrollNavBarShown ? 1 : 0,
+    padding: '0 20px',
+    position: 'fixed',
+    right: 0,
+    top: isScrollNavBarShown ? 0 : -80,
+    zIndex: 2,
+    ...SmoothTransitions,
+  }
+  const scrollNavBarContentStyle: React.CSSProperties = {
+    alignItems: 'center',
+    display: 'flex',
+    height: scrollNavBarStyle.height,
+    margin: '0 auto',
+    maxWidth: MAX_CONTENT_WIDTH,
+  }
+  const scrollNavBar = <div style={scrollNavBarStyle}>
+    <div style={scrollNavBarContentStyle}>
+      <img src={bobBlueImage} height={30} alt={config.productName} />
+      <span style={{flex: 1}} />
+
+      <LoginButton isSignUp={true} visualElement="scrolling-nav-bar" type="validation">
+        <Trans parent="">Commencer</Trans>
+      </LoginButton>
+    </div>
+  </div>
+
+  // TODO(pascal): Add a language toggler.
+  return <StaticPage
+    page="landing" isContentScrollable={false} isNavBarTransparent={true}
+    style={{backgroundColor: '#fff', overflow: 'hidden'}} isChatButtonShown={true}
+    isCookieDisclaimerShown={!!isMobileVersion}>
+
+    {/* NOTE: The beginning of the DOM is what Google use in its snippet,
+      make sure it's important. */}
+
+    <VisibilitySensor
+      onChange={handleTopVisibilityChange}
+      intervalDelay={250} partialVisibility={true}>
+      <div style={{height: 70, position: 'absolute', width: '100%'}} ref={topSpaceRef} />
+    </VisibilitySensor>
+
+    <TitleSection isLoginButtonShown={true} pageContent={landingPageContent} />
+
+    <VisibilitySection onChange={handleVisibility} name="steps">
+      <StepsSection />
+    </VisibilitySection>
+
+    <VisibilitySection onChange={handleVisibility} name="testimonials">
+      <TestimonialsSection />
+    </VisibilitySection>
+
+    <div style={{backgroundColor: colors.PALE_GREY}}>
+      <div style={horizBarStyle} />
+    </div>
+
+    <VisibilitySection onChange={handleVisibility} name="speaking-about">
+      <SpeakingAboutBobSection />
+    </VisibilitySection>
+
+    <VisibilitySection onChange={handleVisibility} name="partners">
+      <PartnersSection />
+    </VisibilitySection>
+
+    {isMobileVersion ? null : <CookieMessageOverlay />}
+
+    <CovidBanner />
+
+    {scrollNavBar}
+  </StaticPage>
+}
+const LandingPage = React.memo(LandingPageBase)
 
 
 export default LandingPage

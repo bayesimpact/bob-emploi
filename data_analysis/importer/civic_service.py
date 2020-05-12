@@ -32,7 +32,7 @@ MONTHS = {
 }
 
 
-# TODO(marielaure): Test the checks individually.
+# TODO(sil): Test the checks individually.
 def check_coverage(missions: pd.DataFrame) -> bool:
     """Report if the new data are not dropping too much the expected coverage.
 

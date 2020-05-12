@@ -64,6 +64,9 @@ bigquery_credentials.dat
 # TODO: Refactor to avoid this.
 /data_analysis/bob_emploi/frontend/
 
+# File automatically created when running frontend/release/build.sh
+/frontend/release/nginx.conf
+
 # Files containing personal credentials related to this project.
 /frontend/release/openrc.sh
 /frontend/client/ssl

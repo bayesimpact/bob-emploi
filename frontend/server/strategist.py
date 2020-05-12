@@ -8,11 +8,9 @@ from typing import Dict, List, Optional, Tuple
 
 import pymongo
 
-from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import strategy_pb2
 from bob_emploi.frontend.api import user_pb2
-from bob_emploi.frontend.server import diagnostic
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring
 
@@ -83,16 +81,8 @@ def maybe_strategize(
         -> bool:
     """Check if a project needs strategies and populate the strategies if so."""
 
-    if user.features_enabled.strat_two == user_pb2.CONTROL or \
-            project.is_incomplete or project.strategies:
+    if project.is_incomplete or project.strategies:
         return False
-    if not user.features_enabled.alpha and project.diagnostic.category_id:
-        category = next(
-            (c for c in diagnostic.list_categories(database)
-             if c.category_id == project.diagnostic.category_id),
-            diagnostic_pb2.DiagnosticCategory())
-        if category.are_strategies_for_alpha_only:
-            return False
     strategize(user, project, database)
     return True
 
@@ -111,7 +101,7 @@ def strategize(
     scoring_project.details.strategies.sort(key=lambda s: -s.score)
     if not scoring_project.details.strategies:
         if category_modules:
-            logging.warning('We could not find *any* strategy for a project:\n%s', scoring_project)
+            logging.error('We could not find *any* strategy for a project:\n%s', scoring_project)
         return
     scoring_project.details.strategies[0].is_principal = True
 

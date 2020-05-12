@@ -205,7 +205,6 @@ def _get_self_development_vars(user: user_pb2.User, now: datetime.datetime, **un
         'isYoungNotWoman': campaign.as_template_boolean(
             age <= max_young and user.profile.gender != user_pb2.FEMININE),
         'jobName': genderized_job_name,
-        'ofJobName': french.maybe_contract_prefix('de ', "d'", genderized_job_name),
     })
 
 
@@ -304,11 +303,8 @@ def _get_galita2_vars(user: user_pb2.User, **unused_kwargs: Any) -> Optional[Dic
     if project.kind not in {project_pb2.FIND_A_FIRST_JOB, project_pb2.REORIENTATION} and \
             project.previous_job_similarity != project_pb2.NEVER_DONE:
         return None
-    genderized_job_name = french.lower_first_letter(french.genderize_job(
-        project.target_job, user.profile.gender))
     return dict(campaign.get_default_coaching_email_vars(user), **{
-        'isReorienting': campaign.as_template_boolean(project.kind == project_pb2.REORIENTATION),
-        'ofJobName': french.maybe_contract_prefix('de ', "d'", genderized_job_name)})
+        'isReorienting': campaign.as_template_boolean(project.kind == project_pb2.REORIENTATION)})
 
 
 def _get_galita3_vars(user: user_pb2.User, **unused_kwargs: Any) -> Optional[Dict[str, str]]:
@@ -512,7 +508,7 @@ _CAMPAIGNS = {
         sender_name='Joanna de Bob',
         sender_email='joanna@bob-emploi.fr',
     ),
-    # TODO(marielaure): Make it a coaching email when the partnership is on again.
+    # TODO(sil): Make it a coaching email when the partnership is on again.
     'open-classrooms': campaign.Campaign(
         mailjet_template='536272',
         mongo_filters={

@@ -121,7 +121,7 @@ interface TitleComponents {
 const createProjectTitleComponents =
   (project: bayes.bob.Project, t: TFunction, gender?: bayes.bob.Gender):
   TitleComponents => {
-    const {cityName, prefix} = inCityPrefix(project.city && project.city.name || '')
+    const {cityName, prefix} = inCityPrefix(project.city && project.city.name || '', t)
     const where = prefix + cityName
     if (project.targetJob) {
       const {long = undefined} = project.seniority && SENIORITY[project.seniority] || {}
@@ -150,7 +150,10 @@ const createProjectTitleComponents =
         where,
       }
     }
-    return {}
+    return {
+      what: t('Trouver un emploi'),
+      where,
+    }
   }
 
 

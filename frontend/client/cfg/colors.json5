@@ -3,9 +3,7 @@
   BOB_BLUE: '#1888ff',
   BOB_BLUE_HOVER: '#287cda',
   BRIGHT_LIGHT_BLUE: '#18f0ff',
-  BRIGHT_TEAL: '#07eac4',
   BUTTERSCOTCH: '#ffbc4c',
-  CANDY_PINK: '#ff54d0',
   CHARCOAL_GREY: '#383f52',
   COOL_GREY: '#9596a0',
   DARK: '#21293d',
@@ -54,6 +52,6 @@
   SQUASH: '#ffb800',
   SUN_YELLOW_80: '#f8e71c',
   VERY_LIGHT_BLUE: '#d8ebff',
-  VIVID_PURPLE: '#9013fe',
   WARM_GREY: '#858585',
+  YELLOW_ORANGE_TWO: '#f5b103',
 }

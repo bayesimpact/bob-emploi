@@ -1,18 +1,17 @@
 #!/bin/bash
 # Runs mypy in the relevant docker, depending on where the file to check is.
 
-readonly project_path=$1
-readonly file_path=$2
+readonly cli_dir="$( dirname "${BASH_SOURCE[0]}" )"
+readonly service="$( "$cli_dir/find_service.sh" "$@" test )"
 
-if [[ $file_path == $project_path/frontend* ]]; then
+if [[ "$service" == "frontend-flask-test" ]]; then
     folder="bob_emploi/frontend/server"
-    service="frontend-flask-test"
-elif [[ $file_path == $project_path/analytics* ]]; then
+elif [[ "$service" == "analytics" ]]; then
     folder="bob_emploi/analytics"
-    service="analytics"
-else
+elif [[ "$service" == "data-analysis-prepare" ]]; then
     folder="bob_emploi/data_analysis"
-    service="data-analysis-prepare"
+else
+    folder="bob_emploi"
 fi
 
 docker-compose run --rm --no-deps $service mypy $folder --strict --ignore-missing-imports --implicit-reexport

@@ -7,14 +7,12 @@ import {RadiumExternalLink} from 'components/radium'
 import {ExternalLink, GrowingNumber, Tag} from 'components/theme'
 import Picto from 'images/advices/picto-find-a-jobboard.svg'
 
-import {CardProps, CardWithContentProps, MethodSuggestionList,
-  connectExpandedCardWithContent} from './base'
+import {CardProps, MethodSuggestionList, useAdviceData} from './base'
 
 
-const JobBoardsMethod: React.FC<CardWithContentProps<bayes.bob.JobBoards>> =
-(props: CardWithContentProps<bayes.bob.JobBoards>): React.ReactElement => {
+const JobBoardsMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
   const {targetJob: {name: jobName} = {name: ''}} = props.project
-  const {jobBoards = []} = props.adviceData
+  const {jobBoards = []} = useAdviceData<bayes.bob.JobBoards>(props)
   const {handleExplore, t} = props
 
   const googleJobSearchUrl = useMemo((): string => {
@@ -39,7 +37,7 @@ const JobBoardsMethod: React.FC<CardWithContentProps<bayes.bob.JobBoards>> =
         style={{fontWeight: 'bold'}} number={numSpecializedJobBoards} isSteady={true} />
       {{specialized}}
     </Trans> :
-    <Trans parent={null} t={t}>
+    <Trans parent={null} t={t} count={jobBoards.length}>
       <GrowingNumber number={jobBoards.length} isSteady={true} /> site
       {{specialized: hasOnlySpecialized ? specialized : null}} {{forYou}}
     </Trans>
@@ -62,9 +60,6 @@ const JobBoardsMethod: React.FC<CardWithContentProps<bayes.bob.JobBoards>> =
   </MethodSuggestionList>
 }
 JobBoardsMethod.propTypes = {
-  adviceData: PropTypes.shape({
-    jobBoards: PropTypes.arrayOf(PropTypes.object.isRequired),
-  }).isRequired,
   handleExplore: PropTypes.func.isRequired,
   project: PropTypes.shape({
     targetJob: PropTypes.shape({
@@ -73,8 +68,7 @@ JobBoardsMethod.propTypes = {
   }).isRequired,
   t: PropTypes.func.isRequired,
 }
-const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<bayes.bob.JobBoards, CardProps>(React.memo(JobBoardsMethod))
+const ExpandedAdviceCardContent = React.memo(JobBoardsMethod)
 
 
 interface LinkProps {

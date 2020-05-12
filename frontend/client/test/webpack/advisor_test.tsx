@@ -3,7 +3,6 @@ import {Provider} from 'react-redux'
 import ShallowRenderer from 'react-test-renderer/shallow'
 import configureStore from 'redux-mock-store'
 
-import {vouvoyer} from 'store/french'
 import {ADVICE_MODULES} from 'components/advisor'
 
 
@@ -42,7 +41,6 @@ describe('Advice module', (): void => {
             handleExplore={noExplore}
             profile={{}}
             project={{projectId: '0'}}
-            userYou={vouvoyer}
             t={noOpTranslate} />
         </Provider>)
       })

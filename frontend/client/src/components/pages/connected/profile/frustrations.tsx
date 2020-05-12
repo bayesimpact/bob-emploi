@@ -1,5 +1,4 @@
 import {TFunction} from 'i18next'
-import _memoize from 'lodash/memoize'
 import React, {useCallback, useState} from 'react'
 import PropTypes from 'prop-types'
 
@@ -7,7 +6,7 @@ import {Trans} from 'components/i18n'
 import {Checkbox, Input} from 'components/theme'
 import {CheckboxList, FieldSet} from 'components/pages/connected/form_utils'
 
-import {ProfileStepProps, ProfileUpdater, Step} from './step'
+import {ProfileStepProps, useProfileChangeCallback, useProfileUpdater, Step} from './step'
 
 // This is a stunt to acknowledge that we do not name what could be a named
 // React component (an alternative would be to systimatically disable the
@@ -15,7 +14,13 @@ import {ProfileStepProps, ProfileUpdater, Step} from './step'
 const unnamedComponent = (c: React.ReactNode): React.ReactNode => c
 
 
-const jobSearchFrustrationOptions = [
+interface FrustrationOption {
+  name: (gender?: bayes.bob.Gender) => React.ReactNode
+  value: bayes.bob.Frustration
+}
+
+
+const jobSearchFrustrationOptions: readonly FrustrationOption[] = [
   {
     name: (): React.ReactNode => unnamedComponent(<Trans parent="span">
       Le <strong>manque d'offres</strong>, correspondant à mes critères
@@ -71,9 +76,10 @@ const jobSearchFrustrationOptions = [
     </Trans>),
     value: 'EXPERIENCE',
   },
-]
+] as const
 
-const personalFrustrationOptions = [
+
+const personalFrustrationOptions: readonly FrustrationOption[] = [
   {
     name: (): React.ReactNode => unnamedComponent(<Trans parent="span">
       <strong>Ne pas rentrer dans les cases</strong> des recruteurs
@@ -98,7 +104,7 @@ const personalFrustrationOptions = [
     </Trans>),
     value: 'STAY_AT_HOME_PARENT',
   },
-]
+] as const
 
 
 const parentSituation: Set<bayes.bob.FamilySituation> =
@@ -110,13 +116,13 @@ const isPotentialLongTermMom = ({familySituation, gender}: bayes.bob.UserProfile
 
 interface SelectOption {
   name: React.ReactNode
-  value: string
+  value: bayes.bob.Frustration
 }
 
 
 interface GenderizableSelectOption {
   name: (gender?: bayes.bob.Gender) => React.ReactNode
-  value: string
+  value: bayes.bob.Frustration
 }
 
 
@@ -131,15 +137,10 @@ const genderizedOptions =
         (isPotentialLongTermMom(profile) || value !== 'STAY_AT_HOME_PARENT'))
 
 
-const frustrationsUpdater = new ProfileUpdater({
-  customFrustrations: false,
-  frustrations: false,
-})
-
-
 interface CustomFrustrationProps {
-  onChange?: (value: string) => void
-  onRemove?: () => void
+  index: number
+  onChange?: (index: number, value: string) => void
+  onRemove?: (index: number) => void
   t: TFunction
   value?: string
 }
@@ -160,27 +161,37 @@ const inputStyle = {
 
 
 const CustomFrustrationBase = (props: CustomFrustrationProps): React.ReactElement => {
-  const {onChange, onRemove, t, value} = props
+  const {index, onChange, onRemove, t, value} = props
   const [isSelected, setIsSelected] = useState(!!value)
   const handleEditValue = useCallback((v: string): void => {
     isSelected === !v && setIsSelected(!!v)
   }, [isSelected])
 
+  const handleChange = useCallback(
+    (value: string): void => onChange?.(index, value),
+    [index, onChange],
+  )
+
+  const handleRemove = useCallback(
+    (): void => onRemove?.(index),
+    [index, onRemove],
+  )
+
   const removeEmpty = useCallback((): void => {
     if (!isSelected) {
-      onRemove && onRemove()
+      handleRemove()
     }
-  }, [isSelected, onRemove])
+  }, [handleRemove, isSelected])
 
   return <div style={customFrustrationStyle}>
     <Checkbox
       isSelected={isSelected}
-      onClick={isSelected ? onRemove : undefined} />
+      onClick={isSelected ? handleRemove : undefined} />
     <Input
       value={value} style={inputStyle}
       placeholder={t('Autre…')} onChangeDelayMillisecs={1000}
       onEdit={handleEditValue}
-      onChange={onChange} onBlur={removeEmpty} />
+      onChange={handleChange} onBlur={removeEmpty} />
   </div>
 }
 CustomFrustrationBase.propTypes = {
@@ -198,106 +209,108 @@ interface MaybeShownFrustration {
 }
 
 
-interface StepState {
-  maybeShownCustomFrustrations: MaybeShownFrustration[]
-}
-
-
-class FrustrationsStep extends React.PureComponent<ProfileStepProps, StepState> {
-  public static propTypes = {
-    isShownAsStepsDuringOnboarding: PropTypes.bool,
-    profile: PropTypes.shape({
-      customFrustrations: PropTypes.arrayOf(PropTypes.string.isRequired),
-      frustrations: PropTypes.arrayOf(PropTypes.string.isRequired),
-      gender: PropTypes.string,
-    }),
-    t: PropTypes.func.isRequired,
+const computeCustomFrustrations =
+  (maybeShownCustomFrustrations: readonly MaybeShownFrustration[]): readonly string[] => {
+    return maybeShownCustomFrustrations.
+      filter(({isShown, value}): boolean => isShown && !!value).map(({value}): string => value)
   }
 
-  public state = {
-    maybeShownCustomFrustrations: (this.props.profile.customFrustrations || []).
+
+const fieldsRequired = {
+  customFrustrations: false,
+  frustrations: false,
+} as const
+
+
+const FrustrationsStepBase = (props: ProfileStepProps): React.ReactElement => {
+  const {isShownAsStepsDuringOnboarding, onBack, onChange, onSubmit, profile, t} = props
+  const {handleBack, handleSubmit} = useProfileUpdater(fieldsRequired, profile, onSubmit, onBack)
+
+  const [maybeShownCustomFrustrations, setMaybeShownCustomFrustrations] = useState(
+    (profile.customFrustrations || []).
       map((value: string): MaybeShownFrustration => ({isShown: true, value})),
-  }
+  )
 
-  private updater_ = frustrationsUpdater.attachToComponent(this)
+  const handleChangeFrustrations = useProfileChangeCallback('frustrations', profile, onChange)
+  const handleChangeCustomFrustrations =
+    useProfileChangeCallback('customFrustrations', profile, onChange)
+  const hasFrustrations = !!(profile.frustrations || []).length
 
-  private fastForward = (): void => {
-    if ((this.props.profile.frustrations || []).length) {
-      this.updater_.handleSubmit()
+  const fastForward = useCallback((): void => {
+    if (hasFrustrations) {
+      handleSubmit()
       return
     }
-    const frustrations: string[] = []
+    const frustrations: bayes.bob.Frustration[] = []
     jobSearchFrustrationOptions.concat(personalFrustrationOptions).forEach(
       (frustration): void => {
         if (Math.random() > .5) {
           frustrations.push(frustration.value)
         }
       })
-    this.updater_.handleChange('frustrations')(frustrations)
-  }
+    handleChangeFrustrations(frustrations)
+  }, [handleChangeFrustrations, handleSubmit, hasFrustrations])
 
-  private customFrustrations = (): string[] => {
-    return this.state.maybeShownCustomFrustrations.
-      filter(({isShown, value}): boolean => isShown && !!value).map(({value}): string => value)
-  }
+  const handleChangeCustomFrustration = useCallback((index: number, value: string): void => {
+    const newMaybeShownCustomFrustrations = index >= maybeShownCustomFrustrations.length ?
+      maybeShownCustomFrustrations.concat({isShown: true, value}) :
+      maybeShownCustomFrustrations.
+        map(({isShown, value: oldValue}, i): MaybeShownFrustration =>
+          ({isShown, value: (i === index) ? value : oldValue}))
+    setMaybeShownCustomFrustrations(newMaybeShownCustomFrustrations)
+    handleChangeCustomFrustrations(computeCustomFrustrations(newMaybeShownCustomFrustrations))
+  }, [handleChangeCustomFrustrations, maybeShownCustomFrustrations])
 
-  private handleChangeCustomFrustration = _memoize((index: number): ((value: string) => void) =>
-    (value: string): void => {
-      const {maybeShownCustomFrustrations = []} = this.state
-      const newMaybeShownCustomFrustrations = index >= maybeShownCustomFrustrations.length ?
-        maybeShownCustomFrustrations.concat({isShown: true, value}) :
-        maybeShownCustomFrustrations.
-          map(({isShown, value: oldValue}, i): MaybeShownFrustration =>
-            ({isShown, value: (i === index) ? value : oldValue}))
-      this.setState(
-        {maybeShownCustomFrustrations: newMaybeShownCustomFrustrations},
-        (): void => this.updater_.handleChange('customFrustrations')(this.customFrustrations()))
-    })
-
-  private handleRemoveCustomFrustration = _memoize((index: number): (() => void) => (): void => {
-    const {maybeShownCustomFrustrations = []} = this.state
+  const handleRemoveCustomFrustration = useCallback((index: number): void => {
     if (index >= maybeShownCustomFrustrations.length) {
       return
     }
-    maybeShownCustomFrustrations[index].isShown = false
-    this.setState({maybeShownCustomFrustrations}, (): void =>
-      this.updater_.handleChange('customFrustrations')(this.customFrustrations()))
-  })
+    const newMaybeShownCustomFrustrations = maybeShownCustomFrustrations.
+      map(({isShown, value}, i): MaybeShownFrustration =>
+        ({isShown: i !== index && isShown, value}))
+    setMaybeShownCustomFrustrations(newMaybeShownCustomFrustrations)
+    handleChangeCustomFrustrations(computeCustomFrustrations(newMaybeShownCustomFrustrations))
+  }, [handleChangeCustomFrustrations, maybeShownCustomFrustrations])
 
-  public render(): React.ReactNode {
-    const {maybeShownCustomFrustrations = []} = this.state
-    const {isShownAsStepsDuringOnboarding, profile, t} = this.props
-    const {frustrations} = profile
-    const genderizedFrustrationOptions = genderizedOptions(
-      jobSearchFrustrationOptions.concat(personalFrustrationOptions), profile)
-    const explanation = isShownAsStepsDuringOnboarding ? <Trans>
-      Y a-t-il des choses qui vous bloquent dans votre recherche d'emploi&nbsp;?<br />
-    </Trans> : null
-    const maybeShownCustomFrustrationsPlusOne = maybeShownCustomFrustrations.
-      some(({isShown, value}): boolean => isShown && !value) ? maybeShownCustomFrustrations :
-      maybeShownCustomFrustrations.concat([{isShown: true, value: ''}])
-    const label = isShownAsStepsDuringOnboarding ? '' : t('Éléments bloquants de votre recherche')
-    return <Step
-      title={t('Vos éventuelles difficultés')}
-      explanation={explanation}
-      fastForward={this.fastForward}
-      onNextButtonClick={this.updater_.handleSubmit}
-      onPreviousButtonClick={this.updater_.getBackHandler()}
-      {...this.props}>
-      <FieldSet isInline={isShownAsStepsDuringOnboarding} label={label}>
-        <CheckboxList
-          options={genderizedFrustrationOptions}
-          values={frustrations}
-          onChange={this.updater_.handleChange('frustrations')} />
-      </FieldSet>
-      {maybeShownCustomFrustrationsPlusOne.map(({isShown, value}, index): React.ReactNode =>
-        isShown ? <CustomFrustration
-          key={index} value={value} t={t}
-          onChange={this.handleChangeCustomFrustration(index)}
-          onRemove={this.handleRemoveCustomFrustration(index)} /> : null)}
-    </Step>
-  }
+  const {frustrations} = profile
+  const genderizedFrustrationOptions = genderizedOptions(
+    jobSearchFrustrationOptions.concat(personalFrustrationOptions), profile)
+  const explanation = isShownAsStepsDuringOnboarding ? <Trans>
+    Y a-t-il des choses qui vous bloquent dans votre recherche d'emploi&nbsp;?<br />
+  </Trans> : null
+  const maybeShownCustomFrustrationsPlusOne = maybeShownCustomFrustrations.
+    some(({isShown, value}): boolean => isShown && !value) ? maybeShownCustomFrustrations :
+    maybeShownCustomFrustrations.concat([{isShown: true, value: ''}])
+  const label = isShownAsStepsDuringOnboarding ? '' : t('Éléments bloquants de votre recherche')
+  return <Step
+    title={t('Vos éventuelles difficultés')}
+    explanation={explanation}
+    fastForward={fastForward}
+    onNextButtonClick={handleSubmit}
+    onPreviousButtonClick={handleBack}
+    {...props}>
+    <FieldSet isInline={isShownAsStepsDuringOnboarding} label={label}>
+      <CheckboxList<bayes.bob.Frustration>
+        options={genderizedFrustrationOptions}
+        values={frustrations}
+        onChange={handleChangeFrustrations} />
+    </FieldSet>
+    {maybeShownCustomFrustrationsPlusOne.map(({isShown, value}, index): React.ReactNode =>
+      isShown ? <CustomFrustration
+        key={index} value={value} t={t} index={index}
+        onChange={handleChangeCustomFrustration}
+        onRemove={handleRemoveCustomFrustration} /> : null)}
+  </Step>
 }
+FrustrationsStepBase.propTypes = {
+  isShownAsStepsDuringOnboarding: PropTypes.bool,
+  profile: PropTypes.shape({
+    customFrustrations: PropTypes.arrayOf(PropTypes.string.isRequired),
+    frustrations: PropTypes.arrayOf(PropTypes.string.isRequired),
+    gender: PropTypes.string,
+  }),
+}
+const FrustrationsStep = React.memo(FrustrationsStepBase)
 
 
 export {FrustrationsStep}

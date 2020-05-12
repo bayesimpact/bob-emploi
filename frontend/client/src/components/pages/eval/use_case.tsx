@@ -186,8 +186,8 @@ const UseCaseBase = (props: UseCaseProps): React.ReactElement => {
     totalInterviewCountText ? `${totalInterviewCountText} entretiens décroché(s)` : null,
   ], [project, t, totalInterviewCountText])
 
-  // TODO(marielaure): Refactor links if needed.
-  // TODO(marielaure): Fix links alignment.
+  // TODO(sil): Refactor links if needed.
+  // TODO(sil): Fix links alignment.
   const projectElements = useMemo((): readonly React.ReactNode[] => {
     const employmentStatus = (project.employmentTypes || []).map((employmentType): string => (
       getOptionName(localizeOptions(t, PROJECT_EMPLOYMENT_TYPE_OPTIONS), employmentType) || ''
@@ -234,7 +234,7 @@ const UseCaseBase = (props: UseCaseProps): React.ReactElement => {
   }, [profile])
 
   const json = useMemo((): string => {
-    // TODO (Marie Laure): Use a helper function instead of this manual approach.
+    // TODO(sil): Use a helper function instead of this manual approach.
     const remainingData = {
       ...userData,
       profile: profile && cleanProfile(profile),

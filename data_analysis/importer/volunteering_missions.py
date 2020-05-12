@@ -41,7 +41,10 @@ def get_missions_dicts() -> List[Dict[str, Any]]:
         distinct missions.
     """
 
-    xml = requests.get('http://www.tousbenevoles.org/linkedin_webservice/xml/linkedin.xml')
+    headers = {'user-agent': 'Bayes Impact collaboration'}
+    xml = requests.get(
+        'https://www.tousbenevoles.org/linkedin_webservice/xml/linkedin.xml',
+        headers=headers)
     xml.raise_for_status()
     dataset = xmltodict.parse(xml.text)
     missions = pd.DataFrame(dataset['jobs']['job'])

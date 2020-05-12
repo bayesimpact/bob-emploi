@@ -1,10 +1,10 @@
 import CloseIcon from 'mdi-react/CloseIcon'
 import PropTypes from 'prop-types'
 import React from 'react'
-import {connect} from 'react-redux'
+import {useSelector} from 'react-redux'
 import {Link} from 'react-router-dom'
 
-import {RootState, acceptCookiesUsageAction} from 'store/actions'
+import {RootState, acceptCookiesUsageAction, useDispatch} from 'store/actions'
 
 import {Banner} from 'components/banner'
 import {Trans} from 'components/i18n'
@@ -13,16 +13,20 @@ import {Button, SmoothTransitions} from 'components/theme'
 import {Routes} from 'components/url'
 
 
-const connectCookieMessage = connect(
-  ({app, user}: RootState): {isMessageShown: boolean} => ({
-    isMessageShown: !(user.userId || app.userHasAcceptedCookiesUsage),
-  }),
-  (dispatch): {onAcceptCookieUsage: () => void} => ({
-    onAcceptCookieUsage: (): void => {
-      dispatch(acceptCookiesUsageAction)
-    },
-  }),
-)
+interface CookieMessageStore {
+  isMessageShown: boolean
+  onAcceptCookieUsage: () => void
+}
+
+const useCookieStore = (): CookieMessageStore => {
+  const isMessageShown = useSelector(({app, user}: RootState) =>
+    !(user.userId || app.userHasAcceptedCookiesUsage))
+  const dispatch = useDispatch()
+  const onAcceptCookieUsage = (): void => {
+    dispatch(acceptCookiesUsageAction)
+  }
+  return {isMessageShown, onAcceptCookieUsage}
+}
 
 
 const SimpleCookieMessageBase: React.FC<{}> = (): React.ReactElement => {
@@ -50,23 +54,20 @@ const SimpleCookieMessage = React.memo(SimpleCookieMessageBase)
 
 
 interface CookieMessageProps {
-  isMessageShown: boolean
-  onAcceptCookieUsage: () => void
   style?: React.CSSProperties
 }
 
 
-// TODO(marielaure): Check if this is used in desktop.
 const CookieMessageBase: React.FC<CookieMessageProps> =
-  (props: CookieMessageProps): React.ReactElement|null => {
-    const {isMessageShown, onAcceptCookieUsage} = props
+  ({style}: CookieMessageProps): React.ReactElement|null => {
+    const {isMessageShown, onAcceptCookieUsage} = useCookieStore()
     if (!isMessageShown) {
       return null
     }
     const cookieBoxStyle = {
       background: colors.CHARCOAL_GREY,
       color: isMobileVersion ? '#fff' : colors.SILVER,
-      ...props.style,
+      ...style,
     }
     return <Banner
       style={cookieBoxStyle} onClose={onAcceptCookieUsage} hasRoundButton={isMobileVersion}>
@@ -74,65 +75,49 @@ const CookieMessageBase: React.FC<CookieMessageProps> =
     </Banner>
   }
 CookieMessageBase.propTypes = {
-  isMessageShown: PropTypes.bool,
-  onAcceptCookieUsage: PropTypes.func.isRequired,
   style: PropTypes.object,
 }
-const CookieMessage = connectCookieMessage(React.memo(CookieMessageBase))
+const CookieMessage = React.memo(CookieMessageBase)
 
 
-
-
-interface CookieMessageOverlayProps {
-  isMessageShown: boolean
-  onAcceptCookieUsage: () => void
-  style?: React.CSSProperties
-}
-
-
-const CookieMessageOverlayBase: React.FC<CookieMessageOverlayProps> =
-  (props: CookieMessageOverlayProps): React.ReactElement => {
-    const {isMessageShown, onAcceptCookieUsage} = props
-    const containerStyle: React.CSSProperties = {
-      backgroundColor: '#fff',
-      borderRadius: 2,
-      bottom: isMessageShown ? 15 : -200,
-      boxShadow: '0 18px 25px 0 rgba(0, 0, 0, 0.15)',
-      color: colors.DARK,
-      fontSize: 14,
-      left: 15,
-      opacity: isMessageShown ? 1 : 0,
-      padding: '25px 20px',
-      position: 'fixed',
-      width: 360,
-      zIndex: 1,
-      ...SmoothTransitions,
-    }
-    const closeButtonStyle: React.CSSProperties & {':hover': React.CSSProperties} = {
-      ':hover': {
-        backgroundColor: colors.COOL_GREY,
-      },
-      'backgroundColor': colors.MODAL_PROJECT_GREY,
-      'borderRadius': 50,
-      'height': 30,
-      'padding': 3,
-      'position': 'absolute',
-      'right': -15,
-      'top': -15,
-      'width': 30,
-    }
-    return <div style={containerStyle}>
-      <Button onClick={onAcceptCookieUsage} aria-label="Fermer" style={closeButtonStyle}>
-        <CloseIcon color={colors.DARK} />
-      </Button>
-      <SimpleCookieMessage />
-    </div>
+const CookieMessageOverlayBase: React.FC = (): React.ReactElement => {
+  const {isMessageShown, onAcceptCookieUsage} = useCookieStore()
+  const containerStyle: React.CSSProperties = {
+    backgroundColor: '#fff',
+    borderRadius: 2,
+    bottom: isMessageShown ? 15 : -200,
+    boxShadow: '0 18px 25px 0 rgba(0, 0, 0, 0.15)',
+    color: colors.DARK,
+    fontSize: 14,
+    left: 15,
+    opacity: isMessageShown ? 1 : 0,
+    padding: '25px 20px',
+    position: 'fixed',
+    width: 360,
+    zIndex: 1,
+    ...SmoothTransitions,
   }
-CookieMessageOverlayBase.propTypes = {
-  isMessageShown: PropTypes.bool.isRequired,
-  onAcceptCookieUsage: PropTypes.func.isRequired,
+  const closeButtonStyle: React.CSSProperties & {':hover': React.CSSProperties} = {
+    ':hover': {
+      backgroundColor: colors.COOL_GREY,
+    },
+    'backgroundColor': colors.MODAL_PROJECT_GREY,
+    'borderRadius': 50,
+    'height': 30,
+    'padding': 3,
+    'position': 'absolute',
+    'right': -15,
+    'top': -15,
+    'width': 30,
+  }
+  return <div style={containerStyle}>
+    <Button onClick={onAcceptCookieUsage} aria-label="Fermer" style={closeButtonStyle}>
+      <CloseIcon color={colors.DARK} />
+    </Button>
+    <SimpleCookieMessage />
+  </div>
 }
-const CookieMessageOverlay = connectCookieMessage(React.memo(CookieMessageOverlayBase))
+const CookieMessageOverlay = React.memo(CookieMessageOverlayBase)
 
 
 export {CookieMessage, CookieMessageOverlay}

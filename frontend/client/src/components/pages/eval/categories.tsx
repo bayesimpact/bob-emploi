@@ -1,18 +1,18 @@
 import {TFunction} from 'i18next'
-import _isEqual from 'lodash/isEqual'
 import _keyBy from 'lodash/keyBy'
-import _memoize from 'lodash/memoize'
 import _pick from 'lodash/pick'
 import PropTypes from 'prop-types'
-import React, {useCallback, useMemo, useState} from 'react'
+import React, {useCallback, useEffect, useMemo, useState} from 'react'
 import ReactDragList from 'react-drag-list'
-import {connect} from 'react-redux'
+import {useTranslation} from 'react-i18next'
+import {connect, useSelector} from 'react-redux'
 import {InputActionMeta} from 'react-select'
 import {Link} from 'react-router-dom'
 
 import {DispatchAllEvalActions, EvalRootState, getEvalFiltersUseCases,
   getUseCaseDistribution} from 'store/actions'
 import {getUseCaseTitle} from 'store/eval'
+import {useSafeDispatch} from 'store/promise'
 
 import {Button, CircularProgress, Input, GrowingNumber, UpDownIcon} from 'components/theme'
 import {Select} from 'components/pages/connected/form_utils'
@@ -99,11 +99,20 @@ const UseCaseSelector = connect(
   ): {isFetching: boolean} => ({isFetching}))(React.memo(UseCaseSelectorBase))
 
 
-interface FiltersProps {
-  children: readonly string[]
-  initial: readonly string[]
-  onChange: (filters: readonly string[]) => void
-}
+const filterElementStyle: React.CSSProperties = {
+  backgroundColor: colors.MODAL_PROJECT_GREY,
+  borderRadius: 2,
+  margin: 2,
+  padding: '2px 5px',
+  whiteSpace: 'nowrap',
+} as const
+const changeStyle = (change: 'added'|'removed'|''): React.CSSProperties => ({
+  color: change === 'removed' ? colors.GREENISH_TEAL : colors.RED_PINK,
+  cursor: 'pointer',
+  fontWeight: 'bold',
+  padding: '0 .2em',
+  textDecoration: 'none',
+})
 
 
 interface FilterDiff {
@@ -112,132 +121,122 @@ interface FilterDiff {
 }
 
 
-interface FiltersState {
-  filters: readonly FilterDiff[]
-  hasInput: boolean
-  inputValue: string
-  validFilters: readonly string[]
+interface FilterProps extends FilterDiff {
+  onChange: (filter: string, shouldRemove: boolean) => void
 }
 
 
-class Filters extends React.PureComponent<FiltersProps> {
-  public static propTypes = {
-    children: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
-    initial: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
-    onChange: PropTypes.func,
-  }
+const FilterBase = (props: FilterProps): React.ReactElement => {
+  const {change, filter, onChange} = props
+  const handleFilterChange = useCallback((): void => {
+    onChange(filter, change !== 'removed')
+  }, [change, filter, onChange])
+  const filterStyle = (change: 'added'|'removed'|''): React.CSSProperties => ({
+    color: change === 'added' ? colors.GREENISH_TEAL : 'initial',
+    textDecoration: change === 'removed' ? 'line-through' : 'initial',
+  })
+  return <div style={filterElementStyle}>
+    <span style={filterStyle(change)}>{filter}</span>
+    <span
+      onClick={handleFilterChange}
+      style={changeStyle(change)}>
+      {change === 'removed' ? '+' : '-'}
+    </span>
+  </div>
+}
+const Filter = React.memo(FilterBase)
 
-  private static makeFiltersState(
-    children: readonly string[] = [], initial: readonly string[] = []): readonly FilterDiff[] {
-    const childrenSet = new Set(children)
-    const initialSet = new Set(initial)
-    const filters = initial.map(
-      (filter: string): FilterDiff => ({change: childrenSet.has(filter) ? '' : 'removed', filter}))
-    children.forEach((filter): void => {
-      if (!initialSet.has(filter)) {
-        filters.push({change: 'added', filter})
-      }
-    })
-    return filters
-  }
 
-  public state: FiltersState = {
-    filters: Filters.makeFiltersState(this.props.children, this.props.initial),
-    hasInput: false,
-    inputValue: '',
-    validFilters: [],
-  }
+interface FiltersProps {
+  children: readonly string[]
+  initial: readonly string[]
+  onChange: (filters: readonly string[]) => void
+}
 
-  public static getDerivedStateFromProps(
-    unusedProps: FiltersProps, {filters, validFilters: previous}: FiltersState):
-    Pick<FiltersState, 'validFilters'>|null {
-    const validFilters = filters.
-      filter(({change}): boolean => !change || change === 'added').
-      map(({filter}): string => filter)
-    if (_isEqual(validFilters, previous)) {
-      return null
+
+function makeFiltersState(
+  children: readonly string[] = [], initial: readonly string[] = []): readonly FilterDiff[] {
+  const childrenSet = new Set(children)
+  const initialSet = new Set(initial)
+  const filters = initial.map(
+    (filter: string): FilterDiff => ({change: childrenSet.has(filter) ? '' : 'removed', filter}))
+  children.forEach((filter): void => {
+    if (!initialSet.has(filter)) {
+      filters.push({change: 'added', filter})
     }
-    return {validFilters}
-  }
+  })
+  return filters
+}
 
-  private addFilter = (): void => {
-    if (!this.state.inputValue) {
+
+const FiltersBase = (props: FiltersProps): React.ReactElement => {
+  const {children, initial, onChange} = props
+  const [filters, setFilters] = useState(
+    (): readonly FilterDiff[] => makeFiltersState(children, initial),
+  )
+  const [hasInput, setHasInput] = useState(false)
+  const [inputValue, setInputValue] = useState('')
+
+  const validFilters = useMemo(
+    (): readonly string[] => filters.
+      filter(({change}): boolean => !change || change === 'added').
+      map(({filter}): string => filter),
+    [filters],
+  )
+
+  const addFilter = useCallback((): void => {
+    if (!inputValue) {
       return
     }
-    this.setState(({filters, inputValue}: FiltersState):
-    Pick<FiltersState, 'filters'|'hasInput'|'inputValue'> => ({
-      filters: [...filters, {change: 'added', filter: inputValue}],
-      hasInput: false,
-      inputValue: '',
-    }), (): void => this.props.onChange && this.props.onChange(this.state.validFilters))
-  }
+    setFilters((filters: readonly FilterDiff[]): readonly FilterDiff[] =>
+      [...filters, {change: 'added', filter: inputValue}])
+    setHasInput(false)
+    setInputValue('')
+  }, [inputValue])
 
-  private onChange = (): void => {
-    const {onChange} = this.props
-    onChange && onChange(this.state.validFilters)
-  }
+  useEffect((): void => onChange?.(validFilters), [onChange, validFilters])
 
-  private handleInputChange =
-  ({currentTarget: {value}}: React.ChangeEvent<HTMLInputElement>): void =>
-    value.endsWith(' ') ? this.addFilter() : this.setState({inputValue: value})
+  const handleInputChange = useCallback(
+    ({currentTarget: {value}}: React.ChangeEvent<HTMLInputElement>): void =>
+      value.endsWith(' ') ? addFilter() : setInputValue(value),
+    [addFilter],
+  )
 
-  private handleFilterChange = _memoize(
-    (filter, shouldRemove): (() => void) => (): void => {
-      const initial = new Set(this.props.initial)
-      this.setState(({filters}: FiltersState): Pick<FiltersState, 'filters'> => ({
-        filters: filters.map((filterState: FilterDiff): FilterDiff =>
-          filterState.filter === filter ? {
-            change: shouldRemove ? 'removed' : initial.has(filter) ? '' : 'added',
-            filter,
-          } : filterState),
-      }), this.onChange)
-    },
-    (filter, shouldRemove): string => `${filter}:${shouldRemove}`)
+  const handleFilterChange = useCallback((filter: string, shouldRemove: boolean): void => {
+    const initialSet = new Set(initial)
+    setFilters((filters: readonly FilterDiff[]): readonly FilterDiff[] => filters.
+      map((filterState: FilterDiff): FilterDiff =>
+        filterState.filter === filter ? {
+          change: shouldRemove ? 'removed' : initialSet.has(filter) ? '' : 'added',
+          filter,
+        } : filterState),
+    )
+  }, [initial])
 
-  private handleShowInput = _memoize((hasInput: boolean): (() => void) =>
-    (): void => this.setState({hasInput}))
+  const toggleInput = useCallback(
+    (): void => setHasInput((hasInput: boolean): boolean => !hasInput),
+    [],
+  )
 
-  public render(): React.ReactNode {
-    const {filters, hasInput, inputValue} = this.state
-    const filterElementStyle: React.CSSProperties = {
-      backgroundColor: colors.MODAL_PROJECT_GREY,
-      borderRadius: 2,
-      margin: 2,
-      padding: '2px 5px',
-      whiteSpace: 'nowrap',
-    }
-    const filterStyle = (change: 'added'|'removed'|''): React.CSSProperties => ({
-      color: change === 'added' ? colors.GREENISH_TEAL : 'initial',
-      textDecoration: change === 'removed' ? 'line-through' : 'initial',
-    })
-    const changeStyle = (change: 'added'|'removed'|''): React.CSSProperties => ({
-      color: change === 'removed' ? colors.GREENISH_TEAL : colors.RED_PINK,
-      cursor: 'pointer',
-      fontWeight: 'bold',
-      padding: '0 .2em',
-      textDecoration: 'none',
-    })
-    return <React.Fragment>
-      {filters.map(({change, filter}): React.ReactNode =>
-        <div key={filter} style={filterElementStyle}>
-          <span style={filterStyle(change)}>{filter}</span>
-          <span
-            onClick={this.handleFilterChange(filter, change !== 'removed')}
-            style={changeStyle(change)}>
-            {change === 'removed' ? '+' : '-'}
-          </span>
-        </div>)}
-      {hasInput ? <form onSubmit={this.addFilter}>
-        <input
-          value={inputValue} onBlur={this.handleShowInput(false)}
-          onChange={this.handleInputChange} />
-      </form> :
-        <div
-          onClick={this.handleShowInput(true)}
-          style={filterElementStyle}><span style={changeStyle('removed')}>+</span></div>}
-    </React.Fragment>
-  }
+  return <React.Fragment>
+    {filters.map(({change, filter}): React.ReactNode =>
+      <Filter key={filter} filter={filter} change={change} onChange={handleFilterChange} />)}
+    {hasInput ? <form onSubmit={addFilter}>
+      <input
+        value={inputValue} onBlur={toggleInput}
+        onChange={handleInputChange} />
+    </form> :
+      <div
+        onClick={toggleInput}
+        style={filterElementStyle}><span style={changeStyle('removed')}>+</span></div>}
+  </React.Fragment>
 }
+FiltersBase.propTypes = {
+  children: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
+  initial: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
+  onChange: PropTypes.func,
+}
+const Filters = React.memo(FiltersBase)
 
 
 interface BobThinkStatsProps {
@@ -405,26 +404,24 @@ interface ComparedValueProps {
 }
 
 
-class ComparedValue extends React.PureComponent<ComparedValueProps> {
-  public static propTypes = {
-    children: PropTypes.node,
-    isHigherUp: PropTypes.bool,
-    old: PropTypes.number,
-    value: PropTypes.number.isRequired,
-  }
-
-  public render(): React.ReactNode {
-    const {children, isHigherUp, old, value} = this.props
-    const isNew = typeof old === 'undefined'
-    const isUp = isHigherUp ? value > (old || 0) : value < (old || 0)
-    const color = isUp ? colors.GREENISH_TEAL : colors.RED_PINK
-    return <div style={{alignItems: 'center', display: 'flex'}}>
-      {children}
-      {isNew || old === value ? null :
-        <UpDownIcon style={{color}} icon="menu" isUp={isUp} />}
-    </div>
-  }
+const ComparedValueBase = (props: ComparedValueProps): React.ReactElement => {
+  const {children, isHigherUp, old, value} = props
+  const isNew = typeof old === 'undefined'
+  const isUp = isHigherUp ? value > (old || 0) : value < (old || 0)
+  const color = isUp ? colors.GREENISH_TEAL : colors.RED_PINK
+  return <div style={{alignItems: 'center', display: 'flex'}}>
+    {children}
+    {isNew || old === value ? null :
+      <UpDownIcon style={{color}} icon="menu" isUp={isUp} />}
+  </div>
 }
+ComparedValueBase.propTypes = {
+  children: PropTypes.node,
+  isHigherUp: PropTypes.bool,
+  old: PropTypes.number,
+  value: PropTypes.number.isRequired,
+}
+const ComparedValue = React.memo(ComparedValueBase)
 
 
 interface Category extends bayes.bob.DiagnosticCategory {
@@ -447,52 +444,57 @@ function hasCategoryId(c?: Category): c is ValidCategory {
 }
 
 
+interface BobThinkStatsIndexedProps extends Omit<BobThinkStatsProps, 'onChange'> {
+  onChange: (index: number, change: Partial<ValidCategory>) => void
+  index: number
+}
+
+
+const BobThinkStatsIndexedBase = (props: BobThinkStatsIndexedProps): React.ReactElement => {
+  const {index, onChange, ...extraProps} = props
+  const handleChange = useCallback(
+    (change: Partial<ValidCategory>): void => onChange(index, change),
+    [index, onChange],
+  )
+  return <BobThinkStats {...extraProps} onChange={handleChange} />
+}
+const BobThinkStatsIndexed = React.memo(BobThinkStatsIndexedBase)
+
+
 interface CategoriesDistributionProps {
-  dispatch: DispatchAllEvalActions
-  isFetchingDistribution: boolean
   style: React.CSSProperties
-  t: TFunction
 }
 
 
-interface CategoriesDistributionState {
-  categories: readonly ValidCategory[]
-  initialCategories: {[categoryId: string]: ValidCategory}
-  initialMissing?: Category
-  lastCategories?: bayes.bob.DiagnosticCategory[]
-  maxCount: number
-  missingUseCases: {}
-  newCategory?: string
-  sendableCategories: readonly bayes.bob.DiagnosticCategory[]
-  totalCount: number
-}
+const CategoriesDistributionBase = (props: CategoriesDistributionProps):
+React.ReactElement|null => {
+  const isFetchingDistribution = useSelector(
+    ({asyncState: {isFetching}}: EvalRootState): boolean =>
+      !!isFetching['GET_USE_CASE_DISTRIBUTION'],
+  )
+  const dispatch = useSafeDispatch<DispatchAllEvalActions>()
+  const {t} = useTranslation()
 
+  const [maxCount, setMaxCount] = useState(10)
+  const [totalCount, setTotalCount] = useState(0)
+  const [categories, setCategories] = useState<readonly ValidCategory[]>([])
+  const [{categories: initialCategories, missing: initialMissing}, setInitial] =
+    useState<{categories: {[categoryId: string]: ValidCategory}; missing?: Category}>(
+      {categories: {}},
+    )
+  const [missingUseCases, setMissingUseCases] = useState({})
+  const [newCategory, setNewCategory] = useState('')
+  const sendableCategories = useMemo(
+    (): readonly bayes.bob.DiagnosticCategory[] => categories.map(makeSendableCategory),
+    [categories],
+  )
 
-class CategoriesDistributionBase
-  extends React.PureComponent<CategoriesDistributionProps, CategoriesDistributionState> {
-  public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    isFetchingDistribution: PropTypes.bool,
-    style: PropTypes.object,
-  }
-
-  public state: CategoriesDistributionState = {
-    categories: [],
-    initialCategories: {},
-    maxCount: 10,
-    missingUseCases: {},
-    sendableCategories: [],
-    totalCount: 0,
-  }
-
-  public static getDerivedStateFromProps(
-    unusedProps: CategoriesDistributionProps, {categories}: CategoriesDistributionState):
-    Pick<CategoriesDistributionState, 'sendableCategories'> {
-    return {sendableCategories: categories.map(makeSendableCategory)}
-  }
-
-  public componentDidMount(): void {
-    this.props.dispatch(getUseCaseDistribution([], this.state.maxCount)).then(
+  const hasCategories = !!categories.length
+  useEffect((): void => {
+    if (isFetchingDistribution && !hasCategories) {
+      return
+    }
+    dispatch(getUseCaseDistribution([], maxCount)).then(
       (response): void => {
         if (!response) {
           return
@@ -507,23 +509,20 @@ class CategoriesDistributionBase
             order: index + 1,
             totalCount,
           }))
-        this.setState({
-          categories: initialCategories,
-          initialCategories: _keyBy(initialCategories, 'categoryId'),
-          initialMissing: {...missingUseCases, totalCount},
-          lastCategories: initialCategories.map(makeSendableCategory),
-          maxCount: totalCount,
-          missingUseCases,
-          totalCount,
+        setCategories(initialCategories)
+        setInitial({
+          categories: _keyBy(initialCategories, 'categoryId'),
+          missing: {...missingUseCases, totalCount},
         })
+        setMaxCount(totalCount)
+        setTotalCount(totalCount)
       },
     )
-  }
+  }, [dispatch, hasCategories, isFetchingDistribution, maxCount])
 
-  private recompute = (event?: React.FormEvent): void => {
+  const recompute = useCallback((event?: React.FormEvent): void => {
     event && event.preventDefault && event.preventDefault()
-    const {categories, maxCount, sendableCategories} = this.state
-    this.props.dispatch(getUseCaseDistribution(sendableCategories, maxCount)).then(
+    dispatch(getUseCaseDistribution(sendableCategories, maxCount)).then(
       (response): void => {
         if (!response) {
           return
@@ -536,119 +535,104 @@ class CategoriesDistributionBase
             ...distribution[categoryId],
             totalCount,
           }))
-        this.setState({
-          categories: newCategories,
-          lastCategories: categories.map(makeSendableCategory),
-          maxCount: totalCount,
-          missingUseCases,
-          totalCount,
-        })
+        setCategories(newCategories)
+        setMaxCount(totalCount)
+        setTotalCount(totalCount)
+        setMissingUseCases(missingUseCases)
       },
     )
-  }
+  }, [categories, dispatch, maxCount, sendableCategories])
 
-  private addCategory = (event?: React.SyntheticEvent): void => {
+  const addCategory = useCallback((event?: React.SyntheticEvent): void => {
     event && event.preventDefault && event.preventDefault()
-    this.setState(({categories, newCategory, totalCount}):
-    Pick<CategoriesDistributionState, 'categories'|'newCategory'>|null => {
-      if (!newCategory) {
-        return null
-      }
-      return {
-        categories: [...categories, {
-          categoryId: newCategory,
-          filters: [],
-          order: categories.length + 1,
-          totalCount,
-        }],
-        newCategory: '',
-      }
-    })
-  }
+    if (!newCategory) {
+      return
+    }
+    setCategories([
+      ...categories, {
+        categoryId: newCategory,
+        filters: [],
+        order: categories.length + 1,
+        totalCount,
+      }])
+    setNewCategory('')
+  }, [categories, newCategory, totalCount])
 
-  private handleCategoryChange = _memoize(
-    (changedIndex: number): ((c: Partial<Category>) => void) =>
-      (change: Partial<Category>): void => {
-        this.setState(({categories}): Pick<CategoriesDistributionState, 'categories'> => ({
-          categories: categories.map((category, index): ValidCategory => index === changedIndex ? {
-            ...category,
-            ...change,
-          } : category),
-        }))
-      })
+  const handleCategoryChange = useCallback(
+    (changedIndex: number, change: Partial<Category>): void => {
+      setCategories(categories.map((category, index): ValidCategory => index === changedIndex ? {
+        ...category,
+        ...change,
+      } : category))
+    },
+    [categories],
+  )
 
-  private handleDrag = (unusedEvent: object, categories: readonly object[]): void => {
-    this.setState({
-      categories: (categories as readonly ValidCategory[]).
-        map((category: ValidCategory, index: number): ValidCategory =>
-          ({...category, order: index + 1})),
-    })
-  }
+  const handleDrag = useCallback((unusedEvent: object, categories: readonly object[]): void => {
+    setCategories((categories as readonly ValidCategory[]).
+      map((category: ValidCategory, index: number): ValidCategory =>
+        ({...category, order: index + 1})))
+  }, [])
 
-  private handleNewCategoryChange = (newCategory: string): void => this.setState({newCategory})
+  const handleMaxCountChange = useCallback(
+    (maxCountString: string): void => setMaxCount(Number.parseInt(maxCountString || '0')),
+    [],
+  )
 
-  private handleMaxCountChange = (maxCountString: string): void =>
-    this.setState({maxCount: parseInt(maxCountString || '0')})
-
-  private renderStats = (row: object, index: number): React.ReactElement => {
+  const renderStats = useCallback((row: object, index: number): React.ReactElement => {
     const category = row as Category & {categoryId: string}
-    return <BobThinkStats
-      style={{backgroundColor: '#fff'}} onChange={this.handleCategoryChange(index)}
-      initial={this.state.initialCategories[category.categoryId]} t={this.props.t} {...category} />
-  }
+    return <BobThinkStatsIndexed
+      style={{backgroundColor: '#fff'}} onChange={handleCategoryChange} index={index}
+      initial={initialCategories[category.categoryId]} t={t} {...category} />
+  }, [handleCategoryChange, initialCategories, t])
 
-  private getMutableCategories = _memoize(
-    (categories: readonly ValidCategory[]): ValidCategory[] => [...categories])
+  const mutableCategories = useMemo((): ValidCategory[] => [...categories], [categories])
 
-  public render(): React.ReactNode {
-    const {isFetchingDistribution, style, t} = this.props
-    const {categories, initialMissing, newCategory, maxCount, missingUseCases,
-      totalCount}: CategoriesDistributionState = this.state
-    if (isFetchingDistribution) {
-      return <CircularProgress />
-    }
-    if (!totalCount) {
-      return null
-    }
-    return <div style={{padding: 10, ...style}}>
-      {/* TODO(pascal): Fix ReactDragList so that it does not modify its props! */}
-      <ReactDragList
-        dataSource={this.getMutableCategories(categories)}
-        handles={false}
-        rowKey="categoryId"
-        row={this.renderStats}
-        onUpdate={this.handleDrag} />
-      <BobThinkStats
-        {...{...missingUseCases, totalCount}} initial={initialMissing} isEmptyThink={true}
-        categoryId="In need of a category" t={t} />
-      <form onSubmit={this.addCategory} style={{alignItems: 'center', display: 'flex'}}>
-        <Input
-          placeholder="Nouvelle catégorie" value={newCategory}
-          style={{backgroundColor: '#fff', maxWidth: 220}}
-          onChange={this.handleNewCategoryChange} />
-        <Button
-          disabled={!newCategory} onClick={this.addCategory}
-          type="navigation" style={{margin: 20}}>
-          Ajouter
-        </Button>
-      </form>
-      <form onSubmit={this.recompute}>
-        Nombre de cas à évaluer
-        <Input
-          style={{margin: '0 10px 0', width: 50}}
-          value={maxCount.toString()}
-          onChange={this.handleMaxCountChange} />
-        <Button
-          onClick={this.recompute} type="validation" style={{marginTop: 20}} disabled={!maxCount}>
-          Recalculer</Button>
-      </form>
-    </div>
+  const {style} = props
+  if (isFetchingDistribution) {
+    return <CircularProgress />
   }
+  if (!totalCount) {
+    return null
+  }
+  return <div style={{padding: 10, ...style}}>
+    {/* TODO(pascal): Fix ReactDragList so that it does not modify its props! */}
+    <ReactDragList
+      dataSource={mutableCategories}
+      handles={false}
+      rowKey="categoryId"
+      row={renderStats}
+      onUpdate={handleDrag} />
+    <BobThinkStats
+      {...{...missingUseCases, totalCount}} initial={initialMissing} isEmptyThink={true}
+      categoryId="In need of a category" t={t} />
+    <form onSubmit={addCategory} style={{alignItems: 'center', display: 'flex'}}>
+      <Input
+        placeholder="Nouvelle catégorie" value={newCategory}
+        style={{backgroundColor: '#fff', maxWidth: 220}}
+        onChange={setNewCategory} />
+      <Button
+        disabled={!newCategory} onClick={addCategory}
+        type="navigation" style={{margin: 20}}>
+        Ajouter
+      </Button>
+    </form>
+    <form onSubmit={recompute}>
+      Nombre de cas à évaluer
+      <Input
+        style={{margin: '0 10px 0', width: 50}}
+        value={maxCount.toString()}
+        onChange={handleMaxCountChange} />
+      <Button
+        onClick={recompute} type="validation" style={{marginTop: 20}} disabled={!maxCount}>
+        Recalculer</Button>
+    </form>
+  </div>
 }
-const CategoriesDistribution = connect(
-  ({asyncState: {isFetching}}: EvalRootState): {isFetchingDistribution: boolean} => ({
-    isFetchingDistribution: !!isFetching['GET_USE_CASE_DISTRIBUTION'],
-  }))(CategoriesDistributionBase)
+CategoriesDistributionBase.propTypes = {
+  style: PropTypes.object,
+}
+const CategoriesDistribution = React.memo(CategoriesDistributionBase)
 
 
 export {CategoriesDistribution, UseCaseSelector}

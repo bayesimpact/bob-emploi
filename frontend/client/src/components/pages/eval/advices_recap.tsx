@@ -1,8 +1,5 @@
 import _groupBy from 'lodash/groupBy'
-import _mapKeys from 'lodash/mapKeys'
-import _mapValues from 'lodash/mapValues'
-import _memoize from 'lodash/memoize'
-import React from 'react'
+import React, {useCallback, useMemo, useRef, useState} from 'react'
 import PropTypes from 'prop-types'
 
 import {ValidAdvice, isValidAdvice} from 'store/advice'
@@ -35,6 +32,7 @@ const ADVICE_GROUP_PROPS = {
 type NumStars = '1'|'2'|'3'
 
 const emptyArray = [] as const
+const emptyObject = {} as const
 
 interface AdvicesRecapProps {
   adviceEvaluations: {
@@ -52,44 +50,151 @@ interface AdvicesRecapProps {
 }
 
 
-class AdvicesRecap extends React.PureComponent<AdvicesRecapProps> {
-  public static propTypes = {
-    adviceEvaluations: PropTypes.objectOf(PropTypes.object.isRequired).isRequired,
-    advices: PropTypes.array.isRequired,
-    moduleNewScores: PropTypes.objectOf(PropTypes.number.isRequired).isRequired,
-    onEvaluateAdvice: PropTypes.func.isRequired,
-    onRescoreAdvice: PropTypes.func.isRequired,
-    profile: PropTypes.object.isRequired,
-    project: PropTypes.object.isRequired,
-    style: PropTypes.object,
+const AdvicesRecapBase = (props: AdvicesRecapProps): React.ReactElement => {
+  const {advices, adviceEvaluations, moduleNewScores, onRescoreAdvice,
+    onEvaluateAdvice, profile, project, style} = props
+  const containerStyle = useMemo((): React.CSSProperties => ({
+    backgroundColor: '#fff',
+    padding: 10,
+    ...style,
+  }), [style])
+  const adviceGroups: {[K in NumStars]?: readonly bayes.bob.Advice[]} =
+    _groupBy(
+      advices.filter(({numStars}: bayes.bob.Advice): boolean =>
+        !!numStars && !!ADVICE_GROUP_PROPS[(numStars + '') as NumStars]),
+      'numStars')
+  const groupKeys = Object.keys(ADVICE_GROUP_PROPS).sort().reverse() as NumStars[]
+  return <div style={containerStyle}>
+    <div>
+      {groupKeys.map((numStars: NumStars): React.ReactNode => (
+        <AdvicesRecapSection
+          key={`section-${numStars}-stars`} advices={adviceGroups[numStars] || emptyArray}
+          {...{adviceEvaluations, moduleNewScores, numStars,
+            onEvaluateAdvice, onRescoreAdvice, profile, project}} />
+      ))}
+    </div>
+  </div>
+}
+AdvicesRecapBase.propTypes = {
+  adviceEvaluations: PropTypes.objectOf(PropTypes.object.isRequired).isRequired,
+  advices: PropTypes.array.isRequired,
+  moduleNewScores: PropTypes.objectOf(PropTypes.number.isRequired).isRequired,
+  onEvaluateAdvice: PropTypes.func.isRequired,
+  onRescoreAdvice: PropTypes.func.isRequired,
+  profile: PropTypes.object.isRequired,
+  project: PropTypes.object.isRequired,
+  style: PropTypes.object,
+}
+const AdvicesRecap = React.memo(AdvicesRecapBase)
+
+
+interface EvalAdviceScoreButtonProps extends Omit<EvalElementButtonProps, 'onClick'> {
+  adviceId: string
+  onRescore: (adviceId: string, value: string) => void
+  value: string
+}
+
+
+const EvalAdviceScoreButtonBase = (props: EvalAdviceScoreButtonProps): React.ReactElement => {
+  const {adviceId, onRescore, value, ...otherProps} = props
+  const handleClick = useCallback(
+    (): void => onRescore(adviceId, value),
+    [adviceId, onRescore, value],
+  )
+  return <EvalElementButton onClick={handleClick} {...otherProps} />
+}
+const EvalAdviceScoreButton = React.memo(EvalAdviceScoreButtonBase)
+
+
+interface AdviceRecapProps {
+  advice: ValidAdvice
+  evaluation: bayes.bob.AdviceEvaluation
+  onEvaluateAdvice: (adviceId: string, evaluation: bayes.bob.AdviceEvaluation) => void
+  onRescoreAdvice: (adviceId: string, newScore: string) => void
+  sectionScore: NumStars
+  score: string
+}
+
+
+const AdviceRecapBase = (props: AdviceRecapProps): React.ReactElement => {
+  const {advice, evaluation: {comment, shouldBeOptimized}, onEvaluateAdvice, onRescoreAdvice,
+    sectionScore, score} = props
+  const {adviceId} = advice
+  const handleToggleAdviceToOptimize = useCallback((): void => {
+    adviceId && onEvaluateAdvice(adviceId, {shouldBeOptimized: !shouldBeOptimized})
+  }, [adviceId, onEvaluateAdvice, shouldBeOptimized])
+  const handleCommentChange = useCallback((comment: string): void => {
+    adviceId && onEvaluateAdvice(adviceId, {comment})
+  }, [adviceId, onEvaluateAdvice])
+  const [isCommentShown, setIsCommentShown] = useState(false)
+  // TODO(florian): focus directly inside the comment box when switching on.
+  const toggleCommentShown =
+    useCallback((): void => setIsCommentShown((wasShown: boolean): boolean => !wasShown), [])
+
+  const textareaStyle = {
+    borderColor: colors.BOB_BLUE,
+    fontSize: 14,
+    marginTop: -10,
+    width: '100%',
   }
 
-  public render(): React.ReactNode {
-    const {advices, adviceEvaluations, moduleNewScores, onRescoreAdvice,
-      onEvaluateAdvice, profile, project, style} = this.props
-    const containerStyle = {
-      backgroundColor: '#fff',
-      padding: 10,
-      ...style,
-    }
-    const adviceGroups: {[K in NumStars]?: readonly bayes.bob.Advice[]} =
-      _groupBy(
-        advices.filter(({numStars}: bayes.bob.Advice): boolean =>
-          !!numStars && !!ADVICE_GROUP_PROPS[(numStars + '') as NumStars]),
-        'numStars')
-    const groupKeys = Object.keys(ADVICE_GROUP_PROPS).sort().reverse() as NumStars[]
-    return <div style={containerStyle}>
-      <div>
-        {groupKeys.map((numStars: NumStars): React.ReactNode => (
-          <AdvicesRecapSection
-            key={`section-${numStars}-stars`} advices={adviceGroups[numStars] || emptyArray}
-            {...{adviceEvaluations, moduleNewScores, numStars,
-              onEvaluateAdvice, onRescoreAdvice, profile, project}} />
-        ))}
-      </div>
+  return <div>
+    <div style={{display: 'flex', fontSize: 15, padding: 5}}>
+      <span style={{flex: 1}}>
+        {advice.adviceId}
+      </span>
+      {ADVICE_SCORES.map(({image, value}): React.ReactNode => {
+        return <EvalAdviceScoreButton
+          key={`rescore-${value}-stars`}
+          isPreselected={value === (sectionScore + '')}
+          isSelected={value === score}
+          onRescore={onRescoreAdvice} adviceId={adviceId} value={value}>
+          <img src={image} alt={`${sectionScore}*`} />
+        </EvalAdviceScoreButton>
+      })}
+      <EvalElementButton
+        isSelected={shouldBeOptimized}
+        onClick={handleToggleAdviceToOptimize}>
+        <img src={optimizeImage} alt="À optimiser" />
+      </EvalElementButton>
+      <EvalElementButton
+        isSelected={!!comment || isCommentShown}
+        onClick={toggleCommentShown}>
+        <img src={commentImage} alt="Commenter" />
+      </EvalElementButton>
     </div>
-  }
+    {isCommentShown ? <Textarea
+      style={textareaStyle} value={comment || ''} onChange={handleCommentChange} />
+      : null}
+  </div>
 }
+const AdviceRecap = React.memo(AdviceRecapBase)
+
+
+interface ExtraAdviceProps {
+  adviceId: string
+  onClear: (adviceId: string) => void
+}
+const extraAdviceStyle = {
+  border: `solid 1px ${colors.BOB_BLUE}`,
+  margin: '5px 0',
+  padding: 6,
+}
+
+
+const ExtraAdviceBase = (props: ExtraAdviceProps): React.ReactElement => {
+  const {adviceId, onClear} = props
+  const handleClear = useCallback((): void => onClear(adviceId), [adviceId, onClear])
+  return <div style={extraAdviceStyle}>
+    <div style={{alignItems: 'center', display: 'flex'}}>
+      <span style={{flex: 1}}>{adviceId}</span>
+      <span
+        style={{cursor: 'pointer', padding: 5}}
+        onClick={handleClear}>×</span>
+    </div>
+  </div>
+}
+const ExtraAdvice = React.memo(ExtraAdviceBase)
 
 
 interface AdvicesRecapSectionProps {
@@ -108,187 +213,73 @@ interface AdvicesRecapSectionProps {
 }
 
 
-interface AdvicesRecapSectionState {
-  [adviceId: string]: boolean
-}
+const AdvicesRecapSectionBase = (props: AdvicesRecapSectionProps): React.ReactElement => {
+  const {adviceEvaluations, advices, moduleNewScores, numStars, onEvaluateAdvice,
+    onRescoreAdvice} = props
+  const extraAdviceInput = useRef<HTMLInputElement>(null)
 
-
-class AdvicesRecapSection
-  extends React.Component<AdvicesRecapSectionProps, AdvicesRecapSectionState> {
-  public static propTypes = {
-    adviceEvaluations: PropTypes.objectOf(PropTypes.shape({
-      comment: PropTypes.string,
-    }).isRequired).isRequired,
-    advices: PropTypes.array.isRequired,
-    moduleNewScores: PropTypes.objectOf(PropTypes.number.isRequired).isRequired,
-    numStars: PropTypes.oneOf(Object.keys(ADVICE_GROUP_PROPS)).isRequired,
-    onEvaluateAdvice: PropTypes.func.isRequired,
-    onRescoreAdvice: PropTypes.func.isRequired,
-  }
-
-  public state = _mapKeys(
-    _mapValues(this.props.adviceEvaluations, ({comment}): boolean => !!comment),
-    (comment: boolean, adviceId: string): string => `isCommentShown-${adviceId}`)
-
-  private extraAdviceInput: React.RefObject<HTMLInputElement> = React.createRef()
-
-  private handleAddAdvice = (adviceId: string): void => {
-    const {numStars, onRescoreAdvice} = this.props
+  const handleAddAdvice = useCallback((adviceId: string): void => {
     onRescoreAdvice(adviceId, numStars)
-    if (this.extraAdviceInput.current) {
-      this.extraAdviceInput.current.value = ''
+    if (extraAdviceInput.current) {
+      extraAdviceInput.current.value = ''
     }
+  }, [onRescoreAdvice, numStars])
+
+  const handleClearAdvice =
+    useCallback((adviceId: string): void => onRescoreAdvice(adviceId, ''), [onRescoreAdvice])
+
+  const handleExtraInputKeyPress =
+  useCallback(({key, currentTarget}: React.KeyboardEvent<HTMLInputElement>): void => {
+    (key === 'Enter') && handleAddAdvice(currentTarget.value)
+  }, [handleAddAdvice])
+
+  const advicesShown =
+    new Set(advices.filter(isValidAdvice).map(({adviceId}): string => adviceId))
+  const rescoredAdvices = Object.keys(moduleNewScores)
+  const extraAdvices = rescoredAdvices.filter(
+    (adviceId: string): boolean => !advicesShown.has(adviceId) &&
+    (moduleNewScores[adviceId] + '') === (numStars + ''))
+
+  const {image, title} = ADVICE_GROUP_PROPS[numStars]
+  const headerStyle = {
+    display: 'flex',
+    justifyContent: 'center',
+    padding: '15px 0px',
   }
-
-  private handleRescoreAdvice = _memoize(
-    (adviceId, value): (() => void) => (): void => this.props.onRescoreAdvice(adviceId, value),
-    (adviceId, value): string => `${adviceId}:${value}`)
-
-  private handleToggleAdviceToOptimize = _memoize((adviceId: string): (() => void) =>
-    (): void => {
-      const {adviceEvaluations: {[adviceId]: {shouldBeOptimized = false} = {}},
-        onEvaluateAdvice} = this.props
-      onEvaluateAdvice(adviceId, {shouldBeOptimized: !shouldBeOptimized})
-    })
-
-  private handleToggleCommentShown = _memoize((adviceId: string): (() => void) => (): void => {
-    // TODO(florian): focus directly inside the comment box when switching on.
-    const commentState = `isCommentShown-${adviceId}`
-    this.setState({[commentState]: !this.state[commentState]})
-  })
-
-  private handleCommentAdvice = _memoize((adviceId: string): ((comment: string) => void) =>
-    (comment: string): void => this.props.onEvaluateAdvice(adviceId, {comment}))
-
-  private handleExtraInputKeyPress =
-  ({key, currentTarget}: React.KeyboardEvent<HTMLInputElement>): void => {
-    (key === 'Enter') && this.handleAddAdvice(currentTarget.value)
-  }
-
-  private renderRescoreButtons = ({adviceId}: ValidAdvice): React.ReactNode => {
-    const {moduleNewScores, numStars} = this.props
-    const newScore = moduleNewScores[adviceId] + ''
-    return ADVICE_SCORES.map(({image, value}): React.ReactNode => {
-      return <EvalElementButton
-        key={`rescore-${adviceId}-${value}-stars`}
-        isPreselected={value === (numStars + '')}
-        isSelected={value === newScore}
-        onClick={this.handleRescoreAdvice(adviceId, value)}>
-        <img src={image} alt={`${numStars}*`} />
-      </EvalElementButton>
-    })
-  }
-
-  private renderOptimizeButton = ({adviceId}: ValidAdvice): React.ReactNode => {
-    const {adviceEvaluations} = this.props
-    const adviceEvaluation = adviceEvaluations[adviceId] || {}
-    const shouldBeOptimized = adviceEvaluation.shouldBeOptimized
-    return <EvalElementButton
-      key={`optimize-${adviceId}`}
-      isSelected={shouldBeOptimized}
-      onClick={this.handleToggleAdviceToOptimize(adviceId)}>
-      <img src={optimizeImage} alt="À optimiser" />
-    </EvalElementButton>
-  }
-
-  private renderCommentButton = ({adviceId}: ValidAdvice): React.ReactNode => {
-    const {adviceEvaluations} = this.props
-    const adviceEvaluation = adviceEvaluations[adviceId] || {}
-    const {comment} = adviceEvaluation
-    const {[`isCommentShown-${adviceId}`]: isCommentShown = false} = this.state
-    return <EvalElementButton
-      key={`comment-${adviceId}`}
-      isSelected={!!comment || isCommentShown}
-      onClick={this.handleToggleCommentShown(adviceId)}>
-      <img src={commentImage} alt="Commenter" />
-    </EvalElementButton>
-  }
-
-  private renderComment = ({adviceId}: ValidAdvice): React.ReactNode => {
-    const {[`isCommentShown-${adviceId}`]: isCommentShown} = this.state
-    if (!isCommentShown) {
-      return null
-    }
-
-    const {adviceEvaluations} = this.props
-    const adviceEvaluation = adviceEvaluations[adviceId] || {}
-    const {comment} = adviceEvaluation
-    const textareaStyle = {
-      borderColor: colors.BOB_BLUE,
-      fontSize: 14,
-      marginTop: -10,
-      width: '100%',
-    }
-    return <Textarea
-      style={textareaStyle} value={comment || ''} onChange={this.handleCommentAdvice(adviceId)} />
-  }
-
-  private renderAdvice = (advice: bayes.bob.Advice): React.ReactNode => {
-    if (!isValidAdvice(advice)) {
-      return
-    }
-    return <div key={advice.adviceId}>
-      <div style={{display: 'flex', fontSize: 15, padding: 5}}>
-        <span style={{flex: 1}}>
-          {advice.adviceId}
-        </span>
-        {this.renderRescoreButtons(advice)}
-        {this.renderOptimizeButton(advice)}
-        {this.renderCommentButton(advice)}
-      </div>
-      {this.renderComment(advice)}
+  return <div>
+    <div style={headerStyle}>
+      {image
+        ? <img src={image} style={{height: 63, width: 63}} alt={title} />
+        : <span style={{fontSize: 36, fontWeight: 'bold'}}>{title}</span>
+      }
     </div>
-  }
-
-  private renderExtraAdvices(): React.ReactNode {
-    const {advices, moduleNewScores, numStars} = this.props
-    const advicesShown =
-      new Set(advices.filter(isValidAdvice).map(({adviceId}): string => adviceId))
-    const rescoredAdvices = Object.keys(moduleNewScores)
-    const extraAdvices = rescoredAdvices.filter(
-      (adviceId: string): boolean => !advicesShown.has(adviceId) &&
-      (moduleNewScores[adviceId] + '') === (numStars + ''))
-    const extraAdviceStyle = {
-      border: `solid 1px ${colors.BOB_BLUE}`,
-      margin: '5px 0',
-      padding: 6,
-    }
-    return <div style={{display: 'flex', flexDirection: 'column'}}>
-      {extraAdvices.map((adviceId): React.ReactNode => <div key={adviceId} style={extraAdviceStyle}>
-        <div style={{alignItems: 'center', display: 'flex'}}>
-          <span style={{flex: 1}}>{adviceId}</span>
-          <span
-            style={{cursor: 'pointer', padding: 5}}
-            onClick={this.handleRescoreAdvice(adviceId, '')}>×</span>
-        </div>
-      </div>)}
+    {advices.map((advice): React.ReactElement|null =>
+      isValidAdvice(advice) ? <AdviceRecap
+        key={advice.adviceId} advice={advice}
+        evaluation={adviceEvaluations[advice.adviceId] || emptyObject}
+        onEvaluateAdvice={onEvaluateAdvice} onRescoreAdvice={onRescoreAdvice}
+        sectionScore={numStars} score={moduleNewScores[advice.adviceId] + ''} /> : null)}
+    <div style={{display: 'flex', flexDirection: 'column'}}>
+      {extraAdvices.map((adviceId): React.ReactNode => <ExtraAdvice
+        key={adviceId} adviceId={adviceId} onClear={handleClearAdvice} />)}
       <input
-        ref={this.extraAdviceInput} style={{fontSize: 14, marginTop: 10, padding: 8}}
+        ref={extraAdviceInput} style={{fontSize: 14, marginTop: 10, padding: 8}}
         placeholder="+ Saisir un autre conseil à ajouter"
-        onKeyPress={this.handleExtraInputKeyPress} />
+        onKeyPress={handleExtraInputKeyPress} />
     </div>
-  }
-
-  public render(): React.ReactNode {
-    const {advices, numStars} = this.props
-    const {image, title} = ADVICE_GROUP_PROPS[numStars]
-    const headerStyle = {
-      display: 'flex',
-      justifyContent: 'center',
-      padding: '15px 0px',
-    }
-    return <div>
-      <div style={headerStyle}>
-        {image
-          ? <img src={image} style={{height: 63, width: 63}} alt={title} />
-          : <span style={{fontSize: 36, fontWeight: 'bold'}}>{title}</span>
-        }
-      </div>
-      {advices.map(this.renderAdvice)}
-      {this.renderExtraAdvices()}
-    </div>
-  }
+  </div>
 }
+AdvicesRecapSectionBase.propTypes = {
+  adviceEvaluations: PropTypes.objectOf(PropTypes.shape({
+    comment: PropTypes.string,
+  }).isRequired).isRequired,
+  advices: PropTypes.array.isRequired,
+  moduleNewScores: PropTypes.objectOf(PropTypes.number.isRequired).isRequired,
+  numStars: PropTypes.oneOf(Object.keys(ADVICE_GROUP_PROPS)).isRequired,
+  onEvaluateAdvice: PropTypes.func.isRequired,
+  onRescoreAdvice: PropTypes.func.isRequired,
+}
+const AdvicesRecapSection = React.memo(AdvicesRecapSectionBase)
 
 
 interface EvalElementButtonProps {
@@ -300,33 +291,31 @@ interface EvalElementButtonProps {
 }
 
 
-class EvalElementButton extends React.PureComponent<EvalElementButtonProps> {
-  public static propTypes = {
-    children: PropTypes.node.isRequired,
-    isPreselected: PropTypes.bool,
-    isSelected: PropTypes.bool,
-    onClick: PropTypes.func.isRequired,
-    style: PropTypes.object,
-  }
-
-  public render(): React.ReactNode {
-    const {children, isPreselected, isSelected, onClick, style} = this.props
-    const containerStyle = {
-      ':hover': {
-        filter: 'initial',
-        opacity: 1,
-      },
-      'cursor': 'pointer',
-      'filter': isSelected ? 'initial' : 'grayscale(100%)',
-      'opacity': (isPreselected && !isSelected) ? .5 : 1,
-      'padding': 5,
-      ...style,
-    }
-    return <RadiumDiv onClick={onClick} style={containerStyle}>
-      {children}
-    </RadiumDiv>
-  }
+const EvalElementButtonBase = (props: EvalElementButtonProps): React.ReactElement => {
+  const {children, isPreselected, isSelected, onClick, style} = props
+  const containerStyle = useMemo((): RadiumCSSProperties => ({
+    ':hover': {
+      filter: 'initial',
+      opacity: 1,
+    },
+    'cursor': 'pointer',
+    'filter': isSelected ? 'initial' : 'grayscale(100%)',
+    'opacity': (isPreselected && !isSelected) ? .5 : 1,
+    'padding': 5,
+    ...style,
+  }), [isPreselected, isSelected, style])
+  return <RadiumDiv onClick={onClick} style={containerStyle}>
+    {children}
+  </RadiumDiv>
 }
+EvalElementButtonBase.propTypes = {
+  children: PropTypes.node.isRequired,
+  isPreselected: PropTypes.bool,
+  isSelected: PropTypes.bool,
+  onClick: PropTypes.func.isRequired,
+  style: PropTypes.object,
+}
+const EvalElementButton = React.memo(EvalElementButtonBase)
 
 
 export {AdvicesRecap, EvalElementButton}

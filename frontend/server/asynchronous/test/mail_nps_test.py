@@ -34,7 +34,7 @@ _USER_PENDING_NPS_DICT = {
 }
 
 
-# TODO(marielaure): Add tests for slack report.
+# TODO(sil): Add tests for slack report.
 @mock.patch(report.__name__ + '.requests.post')
 @mock.patch(report.__name__ + '._SLACK_WEBHOOK_URL', 'https://slack.example.com/webhook')
 @mock.patch(campaign.__name__ + '.BASE_URL', 'http://localhost:3000')

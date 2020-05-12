@@ -2,6 +2,8 @@
 load-plugins=pylint_quotes,pylint_doc_spacing,pylint_import_modules
 
 # TODO(pascal): Find a way to enforce import order of module before specific classes.
+# TODO(cyrille): Find a way to enforce constants naming convention,
+#   since pylint has decided top-level variables are no more constants.
 
 [REPORTS]
 output=colorized

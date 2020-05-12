@@ -1,17 +1,16 @@
 import _range from 'lodash/range'
 import _isEqual from 'lodash/isEqual'
-import _memoize from 'lodash/memoize'
 import _without from 'lodash/without'
 import CheckIcon from 'mdi-react/CheckIcon'
 import CloseIcon from 'mdi-react/CloseIcon'
 import PropTypes from 'prop-types'
-import React, {useMemo} from 'react'
+import React, {useCallback, useMemo, useRef} from 'react'
 import ReactSelect from 'react-select'
 
 import {WithLocalizableName} from 'store/i18n'
 
 import {isMobileVersion} from 'components/mobile'
-import {LabeledToggle} from 'components/theme'
+import {LabeledToggle, LabeledToggleProps} from 'components/theme'
 
 const getName = ({name}: {name: string}): string => name
 const getIsDisabled = ({disabled}: {disabled?: boolean}): boolean => !!disabled
@@ -31,77 +30,70 @@ interface CheckboxListProps<T> {
 
 
 const emptyArray = [] as const
+const typedMemo: <T>(c: T) => T = React.memo
 
 
-interface CheckboxListState<T> {
-  values: readonly T[]
-  valuesSelected: Set<T>
+interface CheckboxListItemProps<T> extends Omit<LabeledToggleProps, 'onClick'|'type'> {
+  onClick: (value: T) => void
+  value: T
 }
 
 
-class CheckboxList<T = string>
-  extends React.PureComponent<CheckboxListProps<T>, CheckboxListState<T>> {
-  public static propTypes = {
-    onChange: PropTypes.func.isRequired,
-    // The sorted list of selectable options.
-    options: PropTypes.arrayOf(PropTypes.shape({
-      name: PropTypes.node.isRequired,
-      value: PropTypes.string,
-    })),
-    selectedCheckboxStyle: PropTypes.object,
-    style: PropTypes.object,
-    values: PropTypes.arrayOf(PropTypes.string),
-  }
+const CheckboxListItemBase = <T extends string>(
+  props: CheckboxListItemProps<T>): React.ReactElement => {
+  const {onClick, value, ...otherProps} = props
+  const handleClick = useCallback((): void => {
+    onClick?.(value)
+  }, [onClick, value])
+  return <LabeledToggle type="checkbox" onClick={handleClick} {...otherProps} />
+}
+const CheckboxListItem = typedMemo(CheckboxListItemBase)
 
-  public state: CheckboxListState<T> = {
-    values: [],
-    valuesSelected: new Set(),
-  }
 
-  public static getDerivedStateFromProps<T>(
-    {values = emptyArray}: CheckboxListProps<T>, {values: prevValues}: CheckboxListState<T>):
-    CheckboxListState<T>|null {
-    if (values === prevValues) {
-      return null
-    }
-    return {
-      values: values || emptyArray,
-      valuesSelected: new Set(values),
-    }
-  }
+const CheckboxListBase =
+<T extends string = string>(props: CheckboxListProps<T>): React.ReactElement => {
+  const {options, checkboxStyle, onChange, selectedCheckboxStyle, values = emptyArray,
+    ...extraProps} = props
+  const valuesSelected = useMemo((): Set<T> => new Set(values), [values])
 
-  private handleChange = _memoize((optionValue: T): (() => void) => (): void => {
-    const {values, valuesSelected} = this.state
+  const handleChange = useCallback((optionValue: T): void => {
     const isSelected = valuesSelected.has(optionValue)
     const newValues = isSelected ?
       _without(values, optionValue) :
       [optionValue].concat(values)
-    this.props.onChange(newValues)
-  })
+    onChange(newValues)
+  }, [onChange, values, valuesSelected])
 
-  public render(): React.ReactNode {
-    const {options, checkboxStyle, onChange: omittedOnChange, selectedCheckboxStyle,
-      values: omittedValues, ...extraProps} = this.props
-    const {valuesSelected} = this.state
-    const labelStyle = {
-      marginTop: isMobileVersion ? 10 : 0,
-    }
-
-    return <div {...extraProps}>
-      {(options || []).map((option, index): React.ReactNode => {
-        const isSelected = valuesSelected.has(option.value)
-        return <LabeledToggle
-          key={option.value + ''} label={option.name} type="checkbox"
-          style={{
-            ...labelStyle,
-            ...(typeof checkboxStyle === 'function' ? checkboxStyle(index) : checkboxStyle),
-            ...isSelected && selectedCheckboxStyle,
-          }}
-          isSelected={isSelected} onClick={this.handleChange(option.value)} />
-      })}
-    </div>
+  const labelStyle = {
+    marginTop: isMobileVersion ? 10 : 0,
   }
+
+  return <div {...extraProps}>
+    {(options || []).map((option, index): React.ReactNode => {
+      const isSelected = valuesSelected.has(option.value)
+      return <CheckboxListItem<T>
+        key={option.value + ''} label={option.name}
+        style={{
+          ...labelStyle,
+          ...(typeof checkboxStyle === 'function' ? checkboxStyle(index) : checkboxStyle),
+          ...isSelected && selectedCheckboxStyle,
+        }}
+        isSelected={isSelected} onClick={handleChange} value={option.value} />
+    })}
+  </div>
 }
+CheckboxListBase.propTypes = {
+  onChange: PropTypes.func.isRequired,
+  // The sorted list of selectable options.
+  options: PropTypes.arrayOf(PropTypes.shape({
+    name: PropTypes.node.isRequired,
+    value: PropTypes.string,
+  })),
+  selectedCheckboxStyle: PropTypes.object,
+  style: PropTypes.object,
+  values: PropTypes.arrayOf(PropTypes.string),
+}
+const CheckboxList = typedMemo(CheckboxListBase)
 
 
 interface FieldCheckProps {
@@ -253,51 +245,35 @@ interface SelectProps<T> extends Omit<ReactSelectProps<SelectOption<T>>, 'onChan
 type ReactSelectCSSProperties = React.CSSProperties & {'&:hover': React.CSSProperties}
 
 
-class Select<T = string> extends React.PureComponent<SelectProps<T>> {
-  public static propTypes = {
-    areUselessChangeEventsMuted: PropTypes.bool.isRequired,
-    // Number of options to scroll the menu when first opened.
-    defaultMenuScroll: PropTypes.number,
-    isMulti: PropTypes.bool,
-    onChange: PropTypes.func.isRequired,
-    options: PropTypes.arrayOf(PropTypes.shape({
-      disabled: PropTypes.bool,
-      name: PropTypes.string.isRequired,
-      value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-    })).isRequired,
-    style: PropTypes.object,
-    value: PropTypes.oneOfType(
-      [PropTypes.string, PropTypes.number, PropTypes.arrayOf(PropTypes.string.isRequired)]),
-  }
+const SelectBase = <T extends {} = string>(props: SelectProps<T>): React.ReactElement => {
+  const {areUselessChangeEventsMuted = true, defaultMenuScroll, isMulti, onChange, options, style,
+    value, ...otherProps} = props
 
-  public static defaultProps = {
-    areUselessChangeEventsMuted: true,
-  }
-
-  private handleChange = (option?: SelectOption<T>|readonly SelectOption<T>[]|null): void => {
-    if (!option) {
-      return
-    }
-    const {areUselessChangeEventsMuted, isMulti, onChange, value: oldValue} = this.props
-    if (isMulti) {
-      const values = (option as readonly SelectOption<T>[]).
-        map(({value}: SelectOption<T>): T => value)
-      if (!areUselessChangeEventsMuted || !_isEqual(values, oldValue)) {
-        (onChange as ((value: readonly T[]) => void))(values)
+  const handleChange = useCallback(
+    (option?: SelectOption<T>|readonly SelectOption<T>[]|null): void => {
+      if (!option) {
+        return
       }
-      return
-    }
-    const {value} = option as SelectOption<T>
-    if (!areUselessChangeEventsMuted || (value !== oldValue)) {
-      (onChange as ((value: T) => void))(value)
-    }
-  }
+      if (isMulti) {
+        const values = (option as readonly SelectOption<T>[]).
+          map(({value}: SelectOption<T>): T => value)
+        if (!areUselessChangeEventsMuted || !_isEqual(values, value)) {
+          (onChange as ((value: readonly T[]) => void))(values)
+        }
+        return
+      }
+      const {value: newValue} = option as SelectOption<T>
+      if (!areUselessChangeEventsMuted || (newValue !== value)) {
+        (onChange as ((value: T) => void))(newValue)
+      }
+    },
+    [areUselessChangeEventsMuted, isMulti, onChange, value],
+  )
 
-  private subComponent: React.RefObject<ReactSelect<SelectOption<T>>> = React.createRef()
+  const subComponent = useRef<ReactSelect<SelectOption<T>>>()
 
-  private handleMenuOpen = (): void => {
-    const {defaultMenuScroll, options, value} = this.props
-    const {select = undefined} = this.subComponent && this.subComponent.current || {}
+  const handleMenuOpen = useCallback((): void => {
+    const {select = undefined} = subComponent.current || {}
     if (!select) {
       return
     }
@@ -317,10 +293,9 @@ class Select<T = string> extends React.PureComponent<SelectProps<T>> {
         },
       )
     })
-  }
+  }, [defaultMenuScroll, options, value])
 
-  private makeValueProp = (): SelectOption<T> | SelectOption<T>[] | undefined => {
-    const {isMulti, options, value} = this.props
+  const valueProp = useMemo((): SelectOption<T> | SelectOption<T>[] | undefined => {
     if (isMulti) {
       return (value as T[]).
         map((v): SelectOption<T> | undefined =>
@@ -328,56 +303,67 @@ class Select<T = string> extends React.PureComponent<SelectProps<T>> {
         filter((v): v is SelectOption<T> => !!v)
     }
     return options.find(({value: optionValue}): boolean => value === optionValue)
-  }
+  }, [isMulti, options, value])
 
-  public render(): React.ReactNode {
-    const {defaultMenuScroll: omittedDefaultScroll, onChange: omittedOnChange, options, style,
-      value: omittedValue, ...otherProps} = this.props
-    const selectStyle = {
-      color: colors.CHARCOAL_GREY,
-      height: 41,
-      lineHeight: 1.5,
-      width: '100%',
-      ...style,
-    }
-    const menuContainerStyle = {
-      borderBottomLeftRadius: 0,
-      borderBottomRightRadius: 0,
-    }
-    // TODO(pascal): Fix type of ReactSelect exported component.
-    const ref = (this.subComponent as unknown) as React.RefObject<ReactSelect<SelectOption<T>>>
-    return <ReactSelect<SelectOption<T>>
-      onChange={this.handleChange}
-      value={this.makeValueProp()}
-      getOptionLabel={getName}
-      isOptionDisabled={getIsDisabled}
-      styles={{
-        container: (base): React.CSSProperties => ({...base, ...selectStyle}),
-        control: (base, {isFocused, isSelected}): ReactSelectCSSProperties => ({
-          ...base,
-          '&:hover': {
-            ...(base as ReactSelectCSSProperties)['&:hover'],
-            borderColor: (isFocused || isSelected) ? colors.BOB_BLUE : colors.COOL_GREY,
-          },
-          'borderColor': (isFocused || isSelected) ? colors.BOB_BLUE : colors.SILVER,
-          'borderRadius': 0,
-          'boxShadow': 'initial',
-          'height': selectStyle.height,
-        }),
-        placeholder: (base): React.CSSProperties => ({
-          ...base,
-          color: colors.COOL_GREY,
-        }),
-      }}
-      options={options}
-      clearable={false}
-      menuContainerStyle={menuContainerStyle}
-      onMenuOpen={this.handleMenuOpen}
-      ref={ref}
-      {...otherProps} />
+  const selectStyle = {
+    color: colors.CHARCOAL_GREY,
+    height: 41,
+    lineHeight: 1.5,
+    width: '100%',
+    ...style,
   }
+  const menuContainerStyle = {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  }
+  // TODO(pascal): Fix type of ReactSelect exported component.
+  const ref = (subComponent as unknown) as React.Ref<ReactSelect<SelectOption<T>>>
+  return <ReactSelect<SelectOption<T>>
+    onChange={handleChange}
+    value={valueProp}
+    getOptionLabel={getName}
+    isOptionDisabled={getIsDisabled}
+    styles={{
+      container: (base): React.CSSProperties => ({...base, ...selectStyle}),
+      control: (base, {isFocused, isSelected}): ReactSelectCSSProperties => ({
+        ...base,
+        '&:hover': {
+          ...(base as ReactSelectCSSProperties)['&:hover'],
+          borderColor: (isFocused || isSelected) ? colors.BOB_BLUE : colors.COOL_GREY,
+        },
+        'borderColor': (isFocused || isSelected) ? colors.BOB_BLUE : colors.SILVER,
+        'borderRadius': 0,
+        'boxShadow': 'initial',
+        'height': selectStyle.height,
+      }),
+      placeholder: (base): React.CSSProperties => ({
+        ...base,
+        color: colors.COOL_GREY,
+      }),
+    }}
+    options={options}
+    clearable={false}
+    menuContainerStyle={menuContainerStyle}
+    onMenuOpen={handleMenuOpen}
+    ref={ref} isMulti={isMulti}
+    {...otherProps} />
 }
-
+SelectBase.propTypes = {
+  areUselessChangeEventsMuted: PropTypes.bool,
+  // Number of options to scroll the menu when first opened.
+  defaultMenuScroll: PropTypes.number,
+  isMulti: PropTypes.bool,
+  onChange: PropTypes.func.isRequired,
+  options: PropTypes.arrayOf(PropTypes.shape({
+    disabled: PropTypes.bool,
+    name: PropTypes.string.isRequired,
+    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  })).isRequired,
+  style: PropTypes.object,
+  value: PropTypes.oneOfType(
+    [PropTypes.string, PropTypes.number, PropTypes.arrayOf(PropTypes.string.isRequired)]),
+}
+const Select = typedMemo(SelectBase)
 
 
 interface BirthYearSelectOption {

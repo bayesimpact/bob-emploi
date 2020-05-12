@@ -1,3 +1,5 @@
+import i18n from 'i18next'
+
 function cleanHtmlError(htmlErrorPage: string): string {
   const page = document.createElement('html')
   page.innerHTML = htmlErrorPage
@@ -31,7 +33,14 @@ function handleJsonResponse<T>(response: HTTPResponse): Promise<T> {
 }
 
 const fetchWithoutCookies = (path: string, request: HTTPRequest): Promise<HTTPResponse> =>
-  fetch(path, {credentials: 'omit', ...request})
+  fetch(path, {
+    credentials: 'omit',
+    ...request,
+    headers: {
+      ...request.headers,
+      ...(i18n.languages ? {'Accept-language': i18n.languages.join(',')} : undefined),
+    },
+  })
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function postJson(path: string, data: any, isExpectingResponse: false, authToken?: string):
@@ -124,6 +133,10 @@ Promise<bayes.bob.UseCase> {
   return postJson('/api/eval/use-case/create', request, true, googleIdToken)
 }
 
+function diagnosticCategoriesPost(user: bayes.bob.User): Promise<bayes.bob.DiagnosticCategories> {
+  return postJson('/api/diagnostic/categories', user, true)
+}
+
 function evalUseCasePoolsGet(authToken: string): Promise<readonly bayes.bob.UseCasePool[]> {
   return getJson<bayes.bob.UseCasePools>('/api/eval/use-case-pools', authToken).
     then((response): readonly bayes.bob.UseCasePool[] => response.useCasePools || [])
@@ -175,6 +188,10 @@ function jobsGet(romeId: string): Promise<bayes.bob.JobGroup> {
 
 function applicationModesGet(romeId: string): Promise<bayes.bob.JobGroup> {
   return getJson(`/api/job/application-modes/${romeId}`)
+}
+
+function authTokensGet(userId: string, authToken: string): Promise<bayes.bob.AuthTokens> {
+  return getJson(`/api/user/${userId}/generate-auth-tokens`, authToken)
 }
 
 function markUsedAndRetrievePost(userId: string, authToken: string): Promise<bayes.bob.User> {
@@ -283,7 +300,7 @@ function userAuthenticate(authRequest: bayes.bob.AuthRequest): Promise<bayes.bob
     })
 }
 
-function feedbackPost(feedback: bayes.bob.Feedback, authToken: string): Promise<{}> {
+function feedbackPost(feedback: bayes.bob.Feedback, authToken?: string): Promise<{}> {
   return postJson('/api/feedback', feedback, false, authToken)
 }
 
@@ -305,9 +322,11 @@ export {
   adviceTipsGet,
   aliUserDataPost,
   applicationModesGet,
+  authTokensGet,
   convertUserWithAdviceSelectionFromProtoPost,
   convertUserWithAdviceSelectionToProtoPost,
   createEvalUseCasePost,
+  diagnosticCategoriesPost,
   evalFiltersUseCasesPost,
   evalUseCasePoolsGet,
   evalUseCasesGet,

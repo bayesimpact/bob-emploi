@@ -25,7 +25,7 @@ message UsersCount {
   // Number of users that have had a specific number of interviews.
   // Deprecated, use medium_search_interview_counts and
   // long_search_interview_counts instead.
-  // TODO(marielaure): Clean this after importing the new ones.
+  // TODO(sil): Clean this after importing the new ones.
   map<string, int32> interview_counts = 8 [deprecated = true];
 
   // Number of users searching for 6-8 months that have had a specific

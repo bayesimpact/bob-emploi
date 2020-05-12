@@ -56,6 +56,36 @@ class FeedbackReportTestCase(unittest.TestCase):
         self.assertFalse(mock_sentry_logging.called)
         self.assertIn('0 users answered the NPS survey', output.getvalue())
 
+    def test_exclude_alpha_users(
+            self, unused_mock_sentry_logging: mock.MagicMock, mock_post: mock.MagicMock) -> None:
+        """Test computing the NPS report on alpha user."""
+
+        self._db.user.insert_one({
+            '_id': mongomock.ObjectId('123400000012340000001234'),
+            'registeredAt': '2017-11-01T12:00:00Z',
+            'featuresEnabled': {
+                'excludeFromAnalytics': True,
+            },
+            'profile': {'email': 'pascal@example.com'},
+            'netPromoterScoreSurveyResponse': {
+                'respondedAt': '2017-11-01T16:00:00Z',
+                'score': 0,
+                'generalFeedbackComment': 'The app was blocked for me :-(',
+            },
+            'emailsSent': [{
+                'campaignId': 'nps',
+                'sentAt': '2017-11-01T13:00:00Z',
+            }],
+        })
+        feedback_report.main(
+            ['nps', '--from', '2017-10-30', '--to', '2017-11-07', '--no-dry-run'], io.StringIO())
+        slack_json = mock_post.call_args[1]['json']
+        self.assertEqual(
+            '0 users answered the NPS survey (out of 0 - 0% answer rate) '
+            'for a global NPS of *0%*\n\n'
+            'There are no individual comments.',
+            slack_json['attachments'][0]['text'])
+
     def test_compute_nps_report(
             self, unused_mock_sentry_logging: mock.MagicMock, mock_post: mock.MagicMock) -> None:
         """Test computing the NPS report on multiple user feedback."""

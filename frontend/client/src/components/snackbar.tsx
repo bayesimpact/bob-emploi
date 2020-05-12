@@ -1,8 +1,40 @@
 import PropTypes from 'prop-types'
-import React from 'react'
+import React, {useCallback, useEffect, useState} from 'react'
 
 import {isMobileVersion} from 'components/mobile'
 import {OutsideClickHandler} from './theme'
+
+
+// Hook to handle a queue of items. Items are queued at render time and the queue is popped by
+// callback.
+// @param item: The item to queue, it is queued only when it changes.
+// @return [the current item, a callback function to pop the first (current) element]
+function useQueue<T>(item: T): [T|undefined, () => boolean] {
+  const [currentItem, setCurrentItem] = useState<T|undefined>(item)
+  const [queue] = useState<T[]>([])
+  const popQueue = useCallback((): boolean => {
+    if (queue.length) {
+      setCurrentItem(queue.shift())
+      return true
+    }
+    setCurrentItem(undefined)
+    return false
+  }, [queue])
+
+  useEffect((): void => {
+    const lastInsertedItem = queue.length ? queue[queue.length - 1] : currentItem
+    if (lastInsertedItem === item || !item) {
+      return
+    }
+    if (currentItem) {
+      queue.push(item)
+    } else {
+      setCurrentItem(item)
+    }
+  }, [currentItem, queue, item])
+
+  return [currentItem, popQueue]
+}
 
 
 interface SnackbarProps {
@@ -13,124 +45,87 @@ interface SnackbarProps {
 }
 
 
-interface SnackbarState {
-  isVisible: boolean
-  nextSnacks: readonly React.ReactNode[]
-  snack?: React.ReactNode
-}
+const SnackbarBase = (props: SnackbarProps): React.ReactElement => {
+  const {onHide, snack, style, timeoutMillisecs, ...otherProps} = props
+  const [isVisible, setIsVisible] = useState(!!snack)
+  const [visibleSnack, nextSnack] = useQueue(snack)
 
-
-class Snackbar extends React.PureComponent<SnackbarProps, SnackbarState> {
-  public static propTypes = {
-    onHide: PropTypes.func.isRequired,
-    snack: PropTypes.node,
-    style: PropTypes.object,
-    timeoutMillisecs: PropTypes.number.isRequired,
-  }
-
-  public state: SnackbarState = {
-    isVisible: false,
-    nextSnacks: [],
-  }
-
-  public componentDidMount(): void {
-    this.componentDidUpdate({}, {isVisible: false})
-  }
-
-  public componentDidUpdate(
-    {snack: previousSnack}: Pick<SnackbarProps, 'snack'>,
-    {isVisible: wasVisible}: Pick<SnackbarState, 'isVisible'>): void {
-    const {snack, timeoutMillisecs} = this.props
-    const {isVisible, nextSnacks, snack: visibleSnack} = this.state
-
-    // Start timer just after isVisible becomes true.
-    if (isVisible && !wasVisible) {
-      clearTimeout(this.timer)
-      this.timer = window.setTimeout(this.hide, timeoutMillisecs)
-    }
-
-    // Handle new snack content.
-    if (snack && previousSnack !== snack) {
-      if (!isVisible && !visibleSnack && !nextSnacks.length) {
-        this.setState({isVisible: true, snack})
-        return
-      }
-      this.setState({nextSnacks: nextSnacks.concat([snack])})
-    }
-  }
-
-  public componentWillUnmount(): void {
-    clearTimeout(this.timer)
-  }
-
-  private timer?: number
-
-  private hide = (): void => {
-    if (!this.state.isVisible) {
+  const hide = useCallback((): void => {
+    if (!isVisible) {
       return
     }
-    clearTimeout(this.timer)
-    this.setState({isVisible: false})
-    this.props.onHide()
-  }
+    setIsVisible(false)
+    onHide()
+  }, [isVisible, onHide])
 
-  private handleTransitionEnd = (): void => {
-    const {isVisible, nextSnacks, snack} = this.state
+  // When starting to show, set a timeout to hide ater a moment.
+  useEffect((): (() => void)|void => {
+    if (!isVisible) {
+      return
+    }
+    const timeout = window.setTimeout(hide, timeoutMillisecs)
+    return (): void => {
+      clearTimeout(timeout)
+    }
+  }, [hide, isVisible, timeoutMillisecs])
+
+  // If there's a new snack, show it.
+  useEffect((): void => {
+    if (visibleSnack) {
+      setIsVisible(true)
+    }
+  }, [visibleSnack])
+
+  // After hiding the snack bar, switch to the next snack.
+  const handleTransitionEnd = useCallback((): void => {
     if (isVisible) {
       return
     }
-    if (snack) {
-      const nextSnack = nextSnacks.length && nextSnacks[0]
-      this.setState({
-        isVisible: !!nextSnack,
-        nextSnacks: nextSnacks.slice(1),
-        snack: nextSnack || null,
-      })
-    } else {
-      this.setState({snack: null})
-    }
-  }
+    setIsVisible(nextSnack())
+  }, [isVisible, nextSnack])
 
-  public render(): React.ReactNode {
-    const {snack, isVisible} = this.state
-    const {onHide: omittedOnHide, snack: omittedSnack, style,
-      timeoutMillisecs: omittedTimeoutMillisecs, ...otherProps} = this.props
-    const containerStyle: React.CSSProperties = {
-      bottom: 0,
-      display: 'flex',
-      height: snack ? 'initial' : 0,
-      justifyContent: 'center',
-      left: 0,
-      position: 'fixed',
-      right: 0,
-      zIndex: 999,
-    }
-    const labelStyle: React.CSSProperties = {
-      color: '#fff',
-      fontSize: 14,
-      lineHeight: '24px',
-    }
-    const snackStyle: React.CSSProperties = {
-      backgroundColor: 'rgba(0, 0, 0, 0.9)',
-      borderRadius: isMobileVersion ? 'initial' : '2px',
-      maxWidth: 'calc(100% - 48px)',
-      minWidth: 288,
-      padding: '13px 24px',
-      transform: isVisible ? 'translate(0, 0)' : 'translate(0, 100%)',
-      transition: 'transform 200ms ease-out',
-      width: isMobileVersion ? 'calc(100% - 48px)' : 'auto',
-      willChange: 'transform',
-    }
-    return <OutsideClickHandler onOutsideClick={this.hide} style={containerStyle} {...otherProps}>
-      <div
-        style={{...snackStyle, ...(style || {})}}
-        onTransitionEnd={this.handleTransitionEnd}
-      >
-        <span style={labelStyle}>{snack}</span>
-      </div>
-    </OutsideClickHandler>
+  const containerStyle: React.CSSProperties = {
+    bottom: 0,
+    display: 'flex',
+    height: visibleSnack ? 'initial' : 0,
+    justifyContent: 'center',
+    left: 0,
+    position: 'fixed',
+    right: 0,
+    zIndex: 999,
   }
+  const labelStyle: React.CSSProperties = {
+    color: '#fff',
+    fontSize: 14,
+    lineHeight: '24px',
+  }
+  const snackStyle: React.CSSProperties = {
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    borderRadius: isMobileVersion ? 'initial' : '2px',
+    maxWidth: 'calc(100% - 48px)',
+    minWidth: 288,
+    padding: '13px 24px',
+    transform: isVisible ? 'translate(0, 0)' : 'translate(0, 100%)',
+    transition: 'transform 200ms ease-out',
+    width: isMobileVersion ? 'calc(100% - 48px)' : 'auto',
+    willChange: 'transform',
+  }
+  return <OutsideClickHandler onOutsideClick={hide} style={containerStyle} {...otherProps}>
+    <div
+      style={{...snackStyle, ...(style || {})}}
+      onTransitionEnd={handleTransitionEnd}
+    >
+      <span style={labelStyle}>{visibleSnack}</span>
+    </div>
+  </OutsideClickHandler>
 }
+SnackbarBase.propTypes = {
+  onHide: PropTypes.func.isRequired,
+  snack: PropTypes.node,
+  style: PropTypes.object,
+  timeoutMillisecs: PropTypes.number.isRequired,
+}
+const Snackbar = React.memo(SnackbarBase)
 
 
 export {Snackbar}

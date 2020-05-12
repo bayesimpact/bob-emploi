@@ -205,6 +205,7 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
     case 'FINISH_PROJECT_CRITERIA': // Fallthrough intended.
     case 'FINISH_PROJECT_GOAL': // Fallthrough intended.
     case 'FINISH_PROJECT_EXPERIENCE': // Fallthrough intended.
+    case 'FINISH_PROJECT_SELF_DIAGNOSTIC': // Fallthrough intended.
     case 'EDIT_FIRST_PROJECT': {
       if (state.projects && state.projects.length && !state.projects[0].isIncomplete) {
         // Project already exists: we cannot edit it anymore.

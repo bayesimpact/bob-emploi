@@ -1,8 +1,8 @@
+import {TFunction, TOptions} from 'i18next'
 import PropTypes from 'prop-types'
 import React, {useCallback, useMemo} from 'react'
 
-import {genderize} from 'store/french'
-
+import {Trans} from 'components/i18n'
 import {Button, GrowingNumber} from 'components/theme'
 import Picto from 'images/advices/picto-personality-test.svg'
 
@@ -13,6 +13,7 @@ interface TestCardProps {
   children: React.ReactNode
   handleExplore: () => void
   style?: React.CSSProperties
+  t: TFunction
   title: string
   url: string
 }
@@ -25,31 +26,39 @@ const headerStyle: React.CSSProperties = {
 }
 const contentStyle: React.CSSProperties = {
   backgroundColor: colors.BACKGROUND_GREY,
+  display: 'flex',
+  flex: 1,
+  flexDirection: 'column',
   padding: 15,
 }
 const buttonStyle: React.CSSProperties = {
   display: 'block',
   margin: '15px auto 0',
 }
+const testCardChildrenStyle: React.CSSProperties = {
+  flex: 1,
+}
 
 
 const TestCardBase: React.FC<TestCardProps> = (props: TestCardProps): React.ReactElement => {
-  const {children, handleExplore, style, title, url} = props
+  const {children, handleExplore, style, t, title, url} = props
   const handleButtonClick = useCallback((): void => {
     handleExplore()
     window.open(url, '_blank')
   }, [handleExplore, url])
-  const containerStyle = useMemo(() => ({
+  const containerStyle = useMemo((): React.CSSProperties => ({
     border: `1px solid ${colors.BACKGROUND_GREY}`,
+    display: 'flex',
+    flexDirection: 'column',
     maxWidth: 280,
     ...style,
   }), [style])
   return <div style={containerStyle}>
     <header style={headerStyle}>{title}</header>
     <div style={contentStyle}>
-      <p>{children}</p>
+      <p style={testCardChildrenStyle}>{children}</p>
       <Button type="navigation" onClick={handleButtonClick} style={buttonStyle}>
-        Faire le test
+        {t('Faire le test')}
       </Button>
     </div>
   </div>
@@ -77,47 +86,46 @@ const coverallStyle: React.CSSProperties = {
 
 
 const PersonalityTest: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
-  const {handleExplore, profile: {gender}, userYou} = props
-  const easyGenderize = useCallback(
-    (her: string, his: string): string => genderize(`${his}·${her}`, her, his, gender),
-    [gender],
-  )
-  const maybeE = easyGenderize('e', '')
+  const {handleExplore, profile: {gender}, t} = props
+  const tOptions = useMemo((): TOptions => ({context: gender}), [gender])
+  // TODO(cyrile): Use MethodSuggestionList.
   return <div>
-    <p>
-      Introverti{maybeE}, intuiti{easyGenderize('ve', 'f')}, extraverti{maybeE},
-      observat{easyGenderize('rice', 'eur')}, stratège, curieu{easyGenderize('se', 'x')},
-      enthousiaste ou réfléchi{maybeE}&hellip; Mieux {userYou('te', 'vous')} connaître
-      {userYou(" t'", ' vous ')}aidera à bien orienter {userYou('ta', 'votre')} recherche.
-      Bonus&nbsp;: les résultats des tests {userYou("t'", 'vous ')}aideront à bien
-      présenter {userYou('tes', 'vos')} forces et {userYou('tes', 'vos')} faiblesses en entretien.
-    </p>
+    <Trans parent="p" t={t} tOptions={tOptions}>
+      Introverti·e, intuitif·ve, extraverti·e, observateur·rice, stratège, curieux·se,
+      enthousiaste ou réfléchi·e&hellip; Mieux vous connaître vous aidera à bien orienter votre
+      recherche. Bonus&nbsp;: les résultats des tests vous aideront à bien présenter vos forces et
+      vos faiblesses en entretien.
+    </Trans>
     <section>
-      <header><p style={{fontSize: 14}}>
-        Nous avons sélectionné pour {userYou('toi ', 'vous ')}
+      <header><Trans parent="p" t={t} style={{fontSize: 14}}>
+        Nous avons sélectionné pour vous{' '}
         <GrowingNumber style={{fontWeight: 'bold'}} number={2} /> tests gratuits&nbsp;:
-      </p></header>
+      </Trans></header>
       <div style={testsContainerStyle}>
         <TestCard
-          title="16 personnalités" handleExplore={handleExplore('test')}
-          url="https://www.16personalities.com/fr/test-de-personnalite">
-          Découvrir les raisons pour lesquelles {userYou('tu fais', 'vous faites')} les choses de
-          la façon dont {userYou('tu les fais', 'vous les faites')}.
+          title={t('16 personnalités')} handleExplore={handleExplore('test')}
+          url="https://www.16personalities.com/fr/test-de-personnalite" t={t}>
+          <Trans parent={null} t={t}>
+            Découvrir les raisons pour lesquelles vous faites les choses de la façon dont vous les
+            faites.
+          </Trans>
         </TestCard>
         <TestCard
-          title="Boussole" handleExplore={handleExplore('test')}
-          url="https://www.wake-up.io/boussole/" style={{marginLeft: 30}}>
-          Trouver {userYou('ton', 'votre')} "Talent d'or" pour {userYou("t'", 'vous ')}aider à
-          identifier {userYou('ta', 'votre')} position clé en entreprise.
+          title={t('Boussole')} handleExplore={handleExplore('test')}
+          url="https://www.wake-up.io/boussole/" style={{marginLeft: 30}} t={t}>
+          <Trans parent={null} t={t}>
+            Trouver votre "Talent d'or" pour vous aider à identifier votre position clé en
+            entreprise.
+          </Trans>
         </TestCard>
       </div>
     </section>
     <section style={{marginTop: 10}}>
-      <header><p>
-        Dans cette vidéo, Paul Duan, un des inventeurs de {config.productName}, raconte
-        comment <span style={{fontWeight: 'bold'}}>apprendre à mieux se connaître</span> lui a
-        permis de retrouver un métier qu'il aime&nbsp;:
-      </p></header>
+      <header><Trans parent="p" t={t}>
+        Dans cette vidéo, Paul Duan, un des inventeurs de {{productName: config.productName}},
+        raconte comment <span style={{fontWeight: 'bold'}}>apprendre à mieux se connaître</span>
+        {' '}lui a permis de retrouver un métier qu'il aime&nbsp;:
+      </Trans></header>
       {/* TODO(cyrille): Use VideoFrame from theme. */}
       <div style={{height: 0, paddingBottom: '56.25%', position: 'relative'}}>
         <iframe
@@ -134,7 +142,7 @@ PersonalityTest.propTypes = {
   profile: PropTypes.shape({
     gender: PropTypes.string,
   }).isRequired,
-  userYou: PropTypes.func.isRequired,
+  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(PersonalityTest)
 

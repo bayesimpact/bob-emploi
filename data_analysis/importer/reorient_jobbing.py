@@ -81,7 +81,7 @@ def csv2dicts(
 
     # Inside each job group only get the job with the most offers to give at least
     # one concrete example to the user.
-    # TODO(marielaure): Check if we could benefit from proposing more than one job
+    # TODO(sil): Check if we could benefit from proposing more than one job
     # name.
     best_job_in_group = job_offers_per_dep.groupby(['rome_id', 'departement_id'])\
         .first()\

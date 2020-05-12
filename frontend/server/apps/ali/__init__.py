@@ -11,7 +11,7 @@ from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import mail
 from bob_emploi.frontend.server import proto
 
-app = flask.Blueprint('ali', __name__)  # pylint: disable=invalid-name
+app = flask.Blueprint('ali', __name__)
 
 
 def _send_email(
@@ -26,7 +26,7 @@ def _send_email(
     return True
 
 
-# TODO(marielaure): Maybe return which email has been sent.
+# TODO(sil): Maybe return which email has been sent.
 def _send_data_by_email(user_data: ali_pb2.User) -> ali_pb2.EmailStatuses:
     user_email = user_data.user_email
     user_profile = user_pb2.UserProfile(email=user_email)

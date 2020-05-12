@@ -1,6 +1,7 @@
 """Tests for filters in the bob_emploi.frontend.scoring module."""
 
 import datetime
+from typing import Set
 import unittest
 from unittest import mock
 
@@ -32,6 +33,9 @@ class FilterTestBase(scoring_test.ScoringModelTestBase):
     def _assert_fail_filter(self) -> None:
         score = self._score_persona(self.persona)
         self.assertLessEqual(score, 0, msg=f'Failed for "{self.persona.name}"')
+
+    def _assert_missing_fields(self, missing_fields: Set[str]) -> None:
+        self._assert_missing_fields_to_score_persona(missing_fields, self.persona)
 
 
 class ActiveSearcherFilterTestCase(FilterTestBase):
@@ -2075,6 +2079,30 @@ class ForWithResumeFilterTests(FilterTestBase):
         """We don't know whether user has a resume or not."""
 
         self.persona.project.ClearField('has_resume')
+        self._assert_missing_fields({'projects.0.hasResume'})
+
+
+class ForAutonomousTestCase(FilterTestBase):
+    """Tests for the autonomy filter."""
+
+    model_id = 'for-autonomous'
+
+    def test_autonomy_unknown(self) -> None:
+        """We don't know whether user is autonomous."""
+
+        self.persona.user_profile.ClearField('is_autonomous')
+        self._assert_missing_fields_to_score_persona({'profile.isAutonomous'}, self.persona)
+
+    def test_autonomous(self) -> None:
+        """User is autonomous."""
+
+        self.persona.user_profile.is_autonomous = project_pb2.TRUE
+        self._assert_pass_filter()
+
+    def test_not_autonomous(self) -> None:
+        """User is not autonomous."""
+
+        self.persona.user_profile.is_autonomous = project_pb2.FALSE
         self._assert_fail_filter()
 
 

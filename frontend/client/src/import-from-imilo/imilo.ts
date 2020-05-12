@@ -169,7 +169,8 @@ function convertImiloPropsToBobProps(imiloProps: ImiloProps): bayes.bob.User {
       // TODO(florian): Add FROM_ML_COUNSELOR.
       origin: 'FROM_PE_COUNSELOR',
       // Convert from '10/01/1990' to 1990.
-      yearOfBirth: parseInt((imilo(['Identité', 'identity', 'birthDate'], '//')).split('/')[2], 10),
+      yearOfBirth: Number.parseInt(
+        (imilo(['Identité', 'identity', 'birthDate'], '//')).split('/')[2], 10),
     },
     // TODO(cyrille): Add a `searchStartedAt` field.
     projects: [{

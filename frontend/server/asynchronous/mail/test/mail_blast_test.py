@@ -207,7 +207,8 @@ class CampaignTestBase(unittest.TestCase):
             field, 'https://www.bob-emploi.fr/statut/mise-a-jour',
             user=self.user.user_id,
             token=re.compile(r'\d+\.[a-f0-9]+'),
-            gender=user_pb2.Gender.Name(self.user.profile.gender))
+            gender=user_pb2.Gender.Name(self.user.profile.gender),
+            hl=self.user.profile.locale or 'fr')
 
     def _assert_has_logged_url(self, field: str = 'loginUrl', path: str = '') -> None:
         self._assert_url_field(

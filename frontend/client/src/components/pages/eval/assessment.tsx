@@ -1,8 +1,7 @@
-import PlusIcon from 'mdi-react/PlusIcon'
 import PropTypes from 'prop-types'
 import React, {useCallback, useMemo, useState} from 'react'
 
-import {ScoreComponent, colorFromPercent, computeBobScore} from 'store/score'
+import {colorFromPercent, computeBobScore} from 'store/score'
 import {BobScoreCircle, Markdown, Textarea} from 'components/theme'
 
 import commentImage from 'images/comment-picto.svg'
@@ -76,7 +75,7 @@ function useComment(
   {diagnosticEvaluations, onEvaluateSection}: EvaluationProps, sectionId: string,
   alt?: string, Icon?: IconType,
 ): [React.ReactElement, React.ReactElement] {
-  const [isCommentShown, setIsCommentShown] = useState()
+  const [isCommentShown, setIsCommentShown] = useState(false)
   const onChange = useCallback(
     (value: string): void => onEvaluateSection(sectionId, {comment: value}),
     [onEvaluateSection, sectionId],
@@ -98,37 +97,6 @@ interface SectionEvaluations {
 }
 
 type SectionEvaluate = (sectionId: string, evaluation: bayes.bob.GenericEvaluation) => void
-
-
-interface ComponentCommentSectionProps extends ScoreComponent {
-  evalProps: EvaluationProps
-}
-
-
-const ComponentCommentSectionBase = (props: ComponentCommentSectionProps): React.ReactElement => {
-  const {evalProps, observations, percent, shortTitle, topic} = props
-  const [scoreCommentButton, scoreComment] =
-    useComment(evalProps, `${topic}-score`, 'Commenter le score')
-  const [observationsCommentButton, observationsComment] =
-    useComment(evalProps, `${topic}-observations`, 'Ajouter des observations', PlusIcon)
-  return <div>
-    <h4 style={{position: 'relative'}}>
-      {shortTitle} ({percent}%)
-      {scoreCommentButton}
-      {scoreComment}
-    </h4>
-    <ul style={{position: 'relative'}}>
-      {(observations || []).map(({text, isAttentionNeeded}, index): React.ReactNode =>
-        <li key={index} style={{color: isAttentionNeeded ? colors.RED_PINK : 'initial'}}>
-          {text}
-        </li>,
-      )}
-      {observationsCommentButton}
-      {observationsComment}
-    </ul>
-  </div>
-}
-const ComponentCommentSection = React.memo(ComponentCommentSectionBase)
 
 
 const bobScoreStyle: React.CSSProperties = {
@@ -178,7 +146,7 @@ const AssessmentBase = (props: AssessmentProps): React.ReactElement => {
   const [textCommentButton, textComment] = useComment(evalProps, 'text')
 
   const {categoryId, text} = diagnostic
-  const {components = [], percent, shortTitle} = computeBobScore(diagnostic)
+  const {percent, shortTitle} = computeBobScore(diagnostic)
   return <div style={{color: colors.DARK_TWO, display: 'flex', flexDirection: 'column'}}>
     <div style={{alignSelf: 'center', fontWeight: 'bold', marginBottom: 10}}>
       BobThink&nbsp;: {categoryId || 'Aucun'}
@@ -208,10 +176,6 @@ const AssessmentBase = (props: AssessmentProps): React.ReactElement => {
         <Markdown content={text} />
         {textComment}
       </div>
-    </div>
-    <div>
-      {components.map((props: ScoreComponent) => <ComponentCommentSection
-        {...props} evalProps={evalProps} key={props.topic} />)}
     </div>
   </div>
 }

@@ -172,12 +172,12 @@ class SyncTestCase(unittest.TestCase):
                 'randomGroup': .42,
                 'profile': {
                     'ageGroup': 'D. 35-44',
-                    'canTutoie': True,
                     'coachingEmailFrequency': 'EMAIL_MAXIMUM',
                     'frustrations': [],
                     'gender': 'MASCULINE',
                     'hasHandicap': False,
                     'highestDegree': '6 - DEA_DESS_MASTER_PHD',
+                    'locale': 'fr@tu',
                     'origin': 'FROM_A_FRIEND',
                 },
                 'project': {

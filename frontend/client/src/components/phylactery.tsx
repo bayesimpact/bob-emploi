@@ -1,6 +1,6 @@
-import _memoize from 'lodash/memoize'
 import PropTypes from 'prop-types'
-import React, {useCallback, useMemo, useRef, useState} from 'react'
+import React, {useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef,
+  useState} from 'react'
 
 import {FastTransitions} from 'components/theme'
 import bobHeadImage from 'images/bob-head.svg'
@@ -11,6 +11,7 @@ const computeSentenceDuration =
 
 
 interface ElementProps {
+  children?: React.ReactNode
   isFastForwarded?: boolean
   isClosingConversation?: boolean
   isOpeningConversation?: boolean
@@ -23,13 +24,11 @@ interface ElementProps {
 }
 
 
+type CallbackArray = readonly (() => void)[]
+
+
 interface PhylacteryProps extends Omit<ElementProps, 'style'> {
   children: readonly (React.ReactElement<ElementProps> | null)[]
-}
-
-
-interface PhylacteryState {
-  lastShownStep: number
 }
 
 
@@ -37,88 +36,86 @@ interface PhylacteryState {
 // each given props 'isShown' and 'onDone'. 'isShown' tells the child component if it should appear.
 // 'onDone' should be called once the next child should be shown. A GrowingPhylactery can be child
 // of another one, so it also has 'isShown' and 'onDone' as props.
-class GrowingPhylactery extends React.PureComponent<PhylacteryProps, PhylacteryState> {
-  public static propTypes = {
-    children: PropTypes.arrayOf(PropTypes.element).isRequired,
-    isFastForwarded: PropTypes.bool,
-    isShown: PropTypes.bool,
-    onDone: PropTypes.func,
-    onShown: PropTypes.func,
-    onUpdate: PropTypes.func,
-    setDiscussing: PropTypes.func,
-  }
+const GrowingPhylacteryBase = (props: PhylacteryProps): React.ReactElement => {
+  const {children, isFastForwarded, isShown = true, onDone, onShown, onUpdate,
+    setDiscussing} = props
+  const [lastShownStep, setLastShownStep] = useState(-1)
 
-  public static defaultProps = {
-    isShown: true,
-  }
+  const realChildren = children.
+    filter((child): child is React.ReactElement<ElementProps> => !!child)
+  const realChildrenLength = realChildren.length
 
-  public state: PhylacteryState = {
-    lastShownStep: -1,
-  }
-
-  public static getDerivedStateFromProps(
-    {children, isFastForwarded, isShown}: PhylacteryProps,
-    {lastShownStep}: PhylacteryState): PhylacteryState|null {
+  useLayoutEffect((): void => {
     if (isFastForwarded) {
-      return {lastShownStep: children.filter((child): boolean => !!child).length}
+      setLastShownStep(realChildrenLength)
     }
+  }, [isFastForwarded, realChildrenLength])
+
+  useLayoutEffect((): void => {
     if (isShown && lastShownStep < 0) {
-      return {lastShownStep: 0}
+      setLastShownStep(0)
     }
-    return null
-  }
+  }, [isShown, lastShownStep])
 
-  public componentDidUpdate(
-    {isFastForwarded: alreadyDone, isShown: wasShown}: PhylacteryProps): void {
-    const {isFastForwarded, isShown, onDone, onShown, onUpdate} = this.props
-    if (isShown && !wasShown) {
-      onShown && onShown()
+  useEffect((): void => {
+    if (isShown) {
+      onShown?.()
     }
-    if (!alreadyDone && isFastForwarded) {
-      onUpdate && onUpdate()
-      onDone && onDone()
-    }
-  }
+  }, [isShown, onShown])
 
-  private getOnChildDoneHandler = _memoize((index: number): (() => void) => {
-    // TODO(pascal): Fix not to memoize those props.
-    const {children, onDone, onUpdate} = this.props
-    if (index === (children.filter((child): boolean => !!child).length - 1)) {
+  useEffect((): void => {
+    if (isFastForwarded) {
+      onUpdate?.()
+      onDone?.()
+    }
+  }, [isFastForwarded, onUpdate, onDone])
+
+  const onChildDoneHandlers = useMemo((): CallbackArray => {
+    return realChildren.map((unusedChild, index: number): (() => void) => {
+      if (index === realChildren.length - 1) {
+        return (): void => {
+          onUpdate?.()
+          onDone?.()
+        }
+      }
       return (): void => {
-        onUpdate && onUpdate()
-        onDone && onDone()
+        if (lastShownStep <= index) {
+          setLastShownStep(index + 1)
+          onUpdate?.()
+        }
       }
-    }
-    return (): void => {
-      if (this.state.lastShownStep <= index) {
-        this.setState({lastShownStep: index + 1}, onUpdate)
-      }
-    }
-  })
+    })
+  }, [lastShownStep, realChildren, onDone, onUpdate])
 
-  public render(): React.ReactNode {
-    const {children, isFastForwarded, onUpdate, setDiscussing} = this.props
-    const {lastShownStep} = this.state
-    // WARNING: Children of global bubble div are in reverse order, to allow the presence of a
-    // scrollbar.
-    return <React.Fragment>
-      {children.filter((child): child is React.ReactElement<ElementProps> => !!child).map(
-        (child: React.ReactElement<ElementProps>, index: number):
-        {child: React.ReactElement<ElementProps>; index: number} => ({child, index}),
-      ).reverse().map(({child, index}): React.ReactElement<ElementProps> =>
-        React.cloneElement(child, {
-          isFastForwarded,
-          isShown: index <= lastShownStep,
-          key: index,
-          onDone: this.getOnChildDoneHandler(index),
-          onUpdate,
-          setDiscussing,
-          style: {flex: '0 0 auto', ...child.props.style},
-        }),
-      )}
-    </React.Fragment>
-  }
+  // WARNING: Children of global bubble div are in reverse order, to allow the presence of a
+  // scrollbar.
+  return <React.Fragment>
+    {realChildren.map(
+      (child: React.ReactElement<ElementProps>, index: number):
+      {child: React.ReactElement<ElementProps>; index: number} => ({child, index}),
+    ).reverse().map(({child, index}): React.ReactElement<ElementProps> =>
+      React.cloneElement(child, {
+        isFastForwarded,
+        isShown: index <= lastShownStep,
+        key: index,
+        onDone: onChildDoneHandlers[index],
+        onUpdate,
+        setDiscussing,
+        style: {flex: '0 0 auto', ...child.props.style},
+      }),
+    )}
+  </React.Fragment>
 }
+GrowingPhylacteryBase.propTypes = {
+  children: PropTypes.arrayOf(PropTypes.element).isRequired,
+  isFastForwarded: PropTypes.bool,
+  isShown: PropTypes.bool,
+  onDone: PropTypes.func,
+  onShown: PropTypes.func,
+  onUpdate: PropTypes.func,
+  setDiscussing: PropTypes.func,
+}
+const GrowingPhylactery = React.memo(GrowingPhylacteryBase)
 
 
 // A group of elements in a growing phylactery which should be seen as a whole bubble once expanded.
@@ -162,16 +159,54 @@ const notDiscussingEllipsisStyle: React.CSSProperties = {
   opacity: 0,
 }
 
+
+function scrollDown(): void {
+  window.scrollTo(0, document.body.scrollHeight)
+}
+
+
+function useBottomScrollSticker(): (() => void) {
+  const [isStuckToBottom, setIsStuckToBottom] = useState(true)
+
+  const onScroll = useCallback((): void => {
+    const pageHeight = document.documentElement.offsetHeight
+    const windowHeight = window.innerHeight
+    const scrollPosition = window.scrollY ||
+      window.pageYOffset ||
+      document.body.scrollTop + (document.documentElement.scrollTop || 0)
+    const isAtBottom = pageHeight <= windowHeight + scrollPosition
+    setIsStuckToBottom(isAtBottom)
+  }, [])
+
+  useEffect((): (() => void) => {
+    if (isStuckToBottom) {
+      return (): void => void 0
+    }
+    const interval = window.setInterval(scrollDown, 100)
+    return (): void => clearInterval(interval)
+  }, [isStuckToBottom])
+
+  useEffect((): (() => void) => {
+    document.addEventListener('scroll', onScroll)
+    return (): void => document.removeEventListener('scroll', onScroll)
+  }, [onScroll])
+
+  const stick = useCallback((): void => {
+    if (!isStuckToBottom) {
+      setIsStuckToBottom(true)
+      scrollDown()
+    }
+  }, [isStuckToBottom])
+  return stick
+}
+
 // A Component containing a growing phylactery. This allows to have scrolling with stuck-at-bottom
 // and disappearing top and bottom in a fixed height setting.
 const DiscussionBase: React.FC<DiscussionProps> = (props): React.ReactElement => {
   const {children, headWidth = 75, isFastForwarded, isOneBubble, style,
     ...otherProps} = props
   const [isDiscussing, setDiscussing] = useState(false)
-  const scrollSticker = useRef<BottomScrollSticker>(null)
-  const stickScrollToBottom = useCallback((): void => {
-    scrollSticker.current && scrollSticker.current.stick()
-  }, [scrollSticker])
+  const stick = useBottomScrollSticker()
   const scrollableStyle = useMemo((): React.CSSProperties => ({
     display: 'flex',
     flexDirection: 'column-reverse',
@@ -181,7 +216,6 @@ const DiscussionBase: React.FC<DiscussionProps> = (props): React.ReactElement =>
   const Container = isOneBubble ? DiscussionBubble : GrowingPhylactery
 
   return <div style={scrollableStyle}>
-    <BottomScrollSticker ref={scrollSticker} />
     <img
       src={bobHeadImage} style={{
         alignSelf: 'center',
@@ -191,7 +225,7 @@ const DiscussionBase: React.FC<DiscussionProps> = (props): React.ReactElement =>
     <Container
       {...{isFastForwarded, ...otherProps}}
       setDiscussing={setDiscussing}
-      onUpdate={stickScrollToBottom}>
+      onUpdate={stick}>
       {children}
     </Container>
   </div>
@@ -206,108 +240,42 @@ DiscussionBase.propTypes = {
 const Discussion = React.memo(DiscussionBase)
 
 
-// A pseudo-component that keeps the document's main scroll to the bottom except if
-// the user manually changes the scroll.
-// TODO(cyrille): Replace with custom hook.
-class BottomScrollSticker extends React.PureComponent<{}, {isStuckToBottom: boolean}> {
-  public state = {
-    isStuckToBottom: true,
-  }
-
-  public componentDidMount(): void {
-    this.interval = window.setInterval(this.maybeScrollDown, 100)
-    document.addEventListener('scroll', this.onScroll)
-  }
-
-  public componentWillUnmount(): void {
-    document.removeEventListener('scroll', this.onScroll)
-    clearInterval(this.interval)
-  }
-
-  private interval?: number
-
-  public stick(): void {
-    if (!this.state.isStuckToBottom) {
-      this.setState({isStuckToBottom: true})
-      this.scrollDown()
-    }
-  }
-
-  private maybeScrollDown = (): void => {
-    if (!this.state.isStuckToBottom) {
-      return
-    }
-    this.scrollDown()
-  }
-
-  private scrollDown(): void {
-    window.scrollTo(0, document.body.scrollHeight)
-  }
-
-  private onScroll = (): void => {
-    const pageHeight = document.documentElement.offsetHeight
-    const windowHeight = window.innerHeight
-    const scrollPosition = window.scrollY ||
-      window.pageYOffset ||
-      document.body.scrollTop + (document.documentElement.scrollTop || 0)
-    const isAtBottom = pageHeight <= windowHeight + scrollPosition
-    if (isAtBottom !== this.state.isStuckToBottom) {
-      this.setState({isStuckToBottom: isAtBottom})
-    }
-  }
-
-  public render(): React.ReactNode {
-    return null
-  }
-}
-
-
 interface WaitingElementProps extends ElementProps {
+  children?: React.ReactElement
   waitingMillisec: number
 }
 
 
 // A growing phylactery element whose children are only shown for a given duration, to make the
 // user wait before the next element is shown.
-class WaitingElement extends React.PureComponent<WaitingElementProps> {
-  public static propTypes = {
-    children: PropTypes.node,
-    isFastForwarded: PropTypes.bool,
-    isShown: PropTypes.bool,
-    onDone: PropTypes.func,
-    waitingMillisec: PropTypes.number.isRequired,
-  }
+const WaitingElementBase = (props: WaitingElementProps): React.ReactElement|null => {
+  const {children, isFastForwarded, isShown = true, onDone, waitingMillisec} = props
+  const [isOver, setIsOver] = useState(false)
 
-  public state = {
-    isShown: true,
-  }
-
-  public componentDidUpdate({isShown: wasShown}: ElementProps): void {
-    if (wasShown || !this.props.isShown) {
-      return
+  useEffect((): (() => void) => {
+    if (!isShown) {
+      return (): void => void 0
     }
-    const {onDone, waitingMillisec} = this.props
-    clearTimeout(this.timeout)
-    this.timeout = window.setTimeout((): void => {
-      onDone && onDone()
-      this.setState({isShown: false})
+    const timeout = window.setTimeout((): void => {
+      onDone?.()
+      setIsOver(true)
     }, waitingMillisec)
-  }
+    return ((): void => clearTimeout(timeout))
+  }, [isShown, onDone, waitingMillisec])
 
-  public componentWillUnmount(): void {
-    clearTimeout(this.timeout)
+  if (isFastForwarded || !isShown || isOver) {
+    return null
   }
-
-  private timeout?: number
-
-  public render(): React.ReactNode {
-    const {children, isFastForwarded, isShown} = this.props
-    if (isFastForwarded || !isShown || !this.state.isShown) {
-      return null
-    }
-    return children || null
-  }
+  return children || null
 }
+WaitingElementBase.propTypes = {
+  children: PropTypes.node,
+  isFastForwarded: PropTypes.bool,
+  isShown: PropTypes.bool,
+  onDone: PropTypes.func,
+  waitingMillisec: PropTypes.number.isRequired,
+}
+const WaitingElement = React.memo(WaitingElementBase)
 
 
 interface EllipsisProps {
@@ -323,7 +291,7 @@ const bulletColors = [0.1, 0.2, 0.4].map((alpha): string => `rgba(0, 0, 0, ${alp
 // A '...' to let time for the user to read the previous bubble in a growing phylactery.
 const EllipsisBase = (props: EllipsisProps): React.ReactElement => {
   const {bulletMargin = 5, bulletSize = 12, style: externalStyle} = props
-  // TODO(marielaure): Make everything more fluid (e.g. making the whole bubble disappear).
+  // TODO(sil): Make everything more fluid (e.g. making the whole bubble disappear).
   const style = useMemo((): React.CSSProperties => ({
     borderRadius: 16,
     display: 'flex',
@@ -361,7 +329,7 @@ EllipsisBase.propTypes = {
 const Ellipsis = React.memo(EllipsisBase)
 
 
-interface WaitingOnDoneProps extends ElementProps {
+interface WaitingOnDoneProps extends Omit<ElementProps, 'children'> {
   children?: never
   isDone?: boolean
 }
@@ -369,70 +337,58 @@ interface WaitingOnDoneProps extends ElementProps {
 
 // A growing phylactery element which does not render anything but waits for some condition to let
 // the phylactery continue growing.
-class WaitingOnDone extends React.PureComponent<WaitingOnDoneProps> {
-  public static propTypes = {
-    isDone: PropTypes.bool,
-    isFastForwarded: PropTypes.bool,
-    onDone: PropTypes.func,
-  }
-
-  public componentDidMount(): void {
-    this.componentDidUpdate({})
-  }
-
-  public componentDidUpdate({isDone: wasDone}: WaitingOnDoneProps): void {
-    const {isDone, isFastForwarded, onDone} = this.props
-    if (isFastForwarded || (isDone && !wasDone)) {
-      onDone && onDone()
+const WaitingOnDone = (props: WaitingOnDoneProps): null => {
+  const {isDone, isFastForwarded, onDone} = props
+  const [wasDone, setWasDone] = useState(isDone)
+  useEffect((): void => {
+    if ((isFastForwarded || isDone) && !wasDone) {
+      onDone?.()
     }
-  }
-
-  public render(): React.ReactNode {
-    return null
-  }
+    setWasDone(isFastForwarded || isDone)
+  }, [isDone, isFastForwarded, onDone, wasDone])
+  return null
+}
+WaitingOnDone.propTypes = {
+  isDone: PropTypes.bool,
+  isFastForwarded: PropTypes.bool,
+  onDone: PropTypes.func,
 }
 
 
-class NoOpElement extends React.PureComponent<ElementProps> {
-  public static propTypes = {
-    children: PropTypes.node,
-    isShown: PropTypes.bool,
-    onDone: PropTypes.func,
-    onShown: PropTypes.func,
-    style: PropTypes.object,
-  }
-
-  public componentDidMount(): void {
-    this.componentDidUpdate({})
-  }
-
-  public componentDidUpdate({isShown: wasShown}: ElementProps): void {
-    const {isShown, onDone, onShown} = this.props
+const NoOpElement = (props: ElementProps): React.ReactElement => {
+  const {children, isShown, onDone, onShown, style} = props
+  const [wasShown, setWasShown] = useState(isShown)
+  useEffect((): void => {
     if (isShown && !wasShown) {
-      onShown && onShown()
-      onDone && onDone()
+      onShown?.()
+      onDone?.()
     }
+    setWasShown(isShown)
+  }, [isShown, onShown, onDone, wasShown])
+  const containerStyle: React.CSSProperties = {
+    ...FastTransitions,
+    ...style,
+    ...isShown ? {} : {
+      height: 0,
+      overflow: 'hidden',
+      padding: 0,
+    },
   }
-
-  public render(): React.ReactNode {
-    const {children, isShown, style} = this.props
-    const containerStyle: React.CSSProperties = {
-      ...FastTransitions,
-      ...style,
-      ...isShown ? {} : {
-        height: 0,
-        overflow: 'hidden',
-        padding: 0,
-      },
-    }
-    return <div style={containerStyle}>
-      {children}
-    </div>
-  }
+  return <div style={containerStyle}>
+    {children}
+  </div>
+}
+NoOpElement.propTypes = {
+  children: PropTypes.node,
+  isShown: PropTypes.bool,
+  onDone: PropTypes.func,
+  onShown: PropTypes.func,
+  style: PropTypes.object,
 }
 
 
 interface BubbleProps {
+  children?: React.ReactNode
   bubbleStyle?: React.CSSProperties
   isClosingConversation?: boolean
   isDone?: boolean
@@ -444,164 +400,120 @@ interface BubbleProps {
 }
 
 
-// A growing phylactery element which is shown as a bubble, or part of a bubble, depending on
-// whether it's grouped in a DiscussionBubble. It is considered done as soon as shown.
-class Bubble extends React.PureComponent<BubbleProps> {
-  public static propTypes = {
-    bubbleStyle: PropTypes.object,
-    children: PropTypes.node,
-    isClosingConversation: PropTypes.bool,
-    isDone: PropTypes.bool,
-    isOpeningConversation: PropTypes.bool,
-    isShown: PropTypes.bool,
-    isUserSpeaking: PropTypes.bool,
-    onDone: PropTypes.func,
-    style: PropTypes.object,
-  }
-
-  public static defaultProps = {
-    isClosingConversation: true,
-    isOpeningConversation: true,
-  }
-
-  public componentDidMount(): void {
-    this.componentDidUpdate({})
-  }
-
-  public componentDidUpdate({isShown: wasShown}: BubbleProps): void {
-    const {isShown, onDone} = this.props
-    if (isShown && !wasShown) {
-      onDone && onDone()
-    }
-  }
-
-  private contentRef: React.RefObject<HTMLDivElement> = React.createRef()
-
-  public getTextContent(): string {
-    return this.contentRef.current && this.contentRef.current.textContent || ''
-  }
-
-  public render(): React.ReactNode {
-    const {
-      bubbleStyle,
-      children,
-      isOpeningConversation,
-      isClosingConversation,
-      isDone,
-      isShown,
-      isUserSpeaking,
-      style,
-    } = this.props
-    // TODO(cyrille): Change padding to 10px 20px and borderRadii to 20.
-    const bottomRadius = isClosingConversation || !isDone ? 25 : 0
-    const topRadius = isOpeningConversation ? 25 : 0
-    const bobBubbleStyle = {
-      background: colors.NEW_GREY,
-      borderRadius: `${topRadius}px ${topRadius}px ${bottomRadius}px ${bottomRadius}px`,
-      marginTop: isOpeningConversation && isShown ? 10 : 0,
-      overflow: 'hidden',
-      transition: 'height,padding 100ms linear',
-    }
-    const smallBubbleStyle = {
-      height: isShown ? 'initial' : 0,
-      marginBottom: isShown ? 2 : 0,
-      padding: isShown ? '19px 25px 21px' : '0 25px',
-      ...isUserSpeaking ? {} : bobBubbleStyle,
-      ...bubbleStyle,
-    }
-
-    return <div style={style}>
-      <div ref={this.contentRef} style={smallBubbleStyle}>{children}</div>
-    </div>
-  }
+interface TextContainer {
+  getTextContent(): string
 }
 
 
-interface BubbleToReadProps extends ElementProps {
+// A growing phylactery element which is shown as a bubble, or part of a bubble, depending on
+// whether it's grouped in a DiscussionBubble. It is considered done as soon as shown.
+const BubbleBase = (props: BubbleProps, ref: React.Ref<TextContainer>): React.ReactElement => {
+  const {
+    bubbleStyle,
+    children,
+    isOpeningConversation = true,
+    isClosingConversation = true,
+    isDone,
+    isShown,
+    isUserSpeaking,
+    onDone,
+    style,
+  } = props
+
+  useEffect((): void => {
+    if (isShown) {
+      onDone?.()
+    }
+  }, [isShown, onDone])
+
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  useImperativeHandle(ref, (): TextContainer => ({
+    getTextContent: (): string => contentRef.current?.textContent || '',
+  }))
+
+  // TODO(cyrille): Change padding to 10px 20px and borderRadii to 20.
+  const bottomRadius = isClosingConversation || !isDone ? 25 : 0
+  const topRadius = isOpeningConversation ? 25 : 0
+  const bobBubbleStyle = {
+    background: colors.NEW_GREY,
+    borderRadius: `${topRadius}px ${topRadius}px ${bottomRadius}px ${bottomRadius}px`,
+    marginTop: isOpeningConversation && isShown ? 10 : 0,
+    overflow: 'hidden',
+    transition: 'height,padding 100ms linear',
+  }
+  const smallBubbleStyle = {
+    height: isShown ? 'initial' : 0,
+    marginBottom: isShown ? 2 : 0,
+    padding: isShown ? '19px 25px 21px' : '0 25px',
+    ...isUserSpeaking ? {} : bobBubbleStyle,
+    ...bubbleStyle,
+  }
+
+  return <div style={style}>
+    <div ref={contentRef} style={smallBubbleStyle}>{children}</div>
+  </div>
+}
+const Bubble = React.memo(React.forwardRef(BubbleBase))
+
+
+export interface BubbleToReadProps extends ElementProps {
   readingTimeMillisec?: number
   setDiscussing?: (isDiscussing?: boolean) => void
 }
 
 
 // A bubble spoken by Bob, so it gives the user some time to read.
-class BubbleToRead extends React.PureComponent<BubbleToReadProps> {
-  public static propTypes = {
-    children: PropTypes.node,
-    isClosingConversation: PropTypes.bool,
-    isFastForwarded: PropTypes.bool,
-    isOpeningConversation: PropTypes.bool,
-    isShown: PropTypes.bool,
-    onDone: PropTypes.func,
-    onUpdate: PropTypes.func,
-    readingTimeMillisec: PropTypes.number,
-    setDiscussing: PropTypes.func.isRequired,
-  }
+const BubbleToReadBase = (props: BubbleToReadProps): React.ReactElement => {
+  const {children, isClosingConversation, isFastForwarded, isOpeningConversation, isShown, onDone,
+    onUpdate, readingTimeMillisec, setDiscussing} = props
+  const [isDone, setIsDone] = useState(false)
 
-  public static defaultProps = {
-    setDiscussing: (): void => {
-      // Do nothing.
-    },
-  }
+  const bubbleRef = useRef<TextContainer>(null)
 
-  public state = {
-    isDone: false,
-  }
-
-  public componentDidMount(): void {
-    this.componentDidUpdate({})
-  }
-
-  public componentDidUpdate({isShown: wasShown}: BubbleToReadProps): void {
-    const {isFastForwarded, isShown, setDiscussing} = this.props
-    if (!isShown || wasShown) {
-      return
-    }
-    if (isFastForwarded || this.computeReadingDuration() < 450) {
-      return
-    }
-    clearTimeout(this.timeout)
-    if (setDiscussing) {
-      this.timeout = window.setTimeout((): void => setDiscussing(true), 450)
-    }
-  }
-
-  public componentWillUnmount(): void {
-    clearTimeout(this.timeout)
-  }
-
-  private bubbleRef: React.RefObject<Bubble> = React.createRef()
-
-  private timeout?: number
-
-  private computeReadingDuration = (): number => {
-    const {readingTimeMillisec} = this.props
+  const readingDuration = ((): number => {
     if (readingTimeMillisec) {
       return readingTimeMillisec
     }
-    const textContent = this.bubbleRef.current && this.bubbleRef.current.getTextContent()
+    const textContent = bubbleRef.current?.getTextContent()
     return textContent && computeSentenceDuration(textContent, 25) || 1000
-  }
+  })()
 
-  public onDone = (): void => {
-    const {onDone, setDiscussing} = this.props
-    setDiscussing && setDiscussing(false)
-    onDone && onDone()
-    this.setState({isDone: true})
-  }
+  useEffect((): (() => void) => {
+    if (!isShown || isFastForwarded || readingDuration < 450) {
+      return (): void => void 0
+    }
+    const timeout = window.setTimeout((): void => setDiscussing?.(true), 450)
+    return (): void => clearTimeout(timeout)
+  }, [isShown, isFastForwarded, readingDuration, setDiscussing])
 
-  public render(): React.ReactNode {
-    const {children, isClosingConversation, isFastForwarded, isOpeningConversation, isShown,
-      onUpdate} = this.props
-    return <GrowingPhylactery onDone={this.onDone} {...{isFastForwarded, isShown, onUpdate}}>
-      <Bubble
-        ref={this.bubbleRef} {...{isClosingConversation, isOpeningConversation}}
-        isDone={isFastForwarded || this.state.isDone}>
-        {children}
-      </Bubble>
-      <WaitingElement waitingMillisec={this.computeReadingDuration()} />
-    </GrowingPhylactery>
-  }
+  const handleDone = useCallback((): void => {
+    setDiscussing?.(false)
+    onDone?.()
+    setIsDone(true)
+  }, [onDone, setDiscussing])
+
+  return <GrowingPhylactery onDone={handleDone} {...{isFastForwarded, isShown, onUpdate}}>
+    <Bubble
+      ref={bubbleRef} {...{isClosingConversation, isOpeningConversation}}
+      isDone={isFastForwarded || isDone}>
+      {children}
+    </Bubble>
+    <WaitingElement waitingMillisec={readingDuration} />
+  </GrowingPhylactery>
 }
+BubbleToReadBase.propTypes = {
+  children: PropTypes.node,
+  isClosingConversation: PropTypes.bool,
+  isFastForwarded: PropTypes.bool,
+  isOpeningConversation: PropTypes.bool,
+  isShown: PropTypes.bool,
+  onDone: PropTypes.func,
+  onUpdate: PropTypes.func,
+  readingTimeMillisec: PropTypes.number,
+  setDiscussing: PropTypes.func,
+}
+const BubbleToRead = React.memo(BubbleToReadBase)
 
 
 interface QuestionBubbleProps extends ElementProps {

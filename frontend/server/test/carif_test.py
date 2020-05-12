@@ -30,7 +30,7 @@ class CarifTestCase(unittest.TestCase):
         mock_get.assert_called_once()
         args, kwargs = mock_get.call_args
         self.assertEqual(1, len(args))
-        self.assertRegex(args[0], r'^http://www.intercariforef.org/')
+        self.assertRegex(args[0], r'^https://intercariforef\.org/')
         self.assertEqual({'params'}, set(kwargs))
         self.assertEqual(
             {'idsMetiers': 'G1201', 'code-departement': '75'},

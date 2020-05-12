@@ -16,7 +16,7 @@ const Path: React.FC<React.SVGProps<SVGPathElement>> = (props: React.SVGProps<SV
   useLayoutEffect(() => {
     if (!pathEl.current && d) {
       // Take the initial point from path.
-      const [x, y] = d.split(' ')[1].split(',').map(parseFloat)
+      const [x, y] = d.split(' ')[1].split(',').map(Number.parseFloat)
       setCenter({x, y})
       return
     }

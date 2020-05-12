@@ -71,9 +71,12 @@ message AuthRequest {
 }
 
 message AuthUserData {
-  bool can_tutoie = 1;
+  // DEPRECATED(2020-03-06): No need for this field anymore, use locale "fr@tu" instead.
+  bool can_tutoie = 1 [deprecated = true];
 
   string locale = 2;
+
+  bool is_alpha = 3;
 }
 
 message AuthResponse {

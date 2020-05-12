@@ -51,6 +51,12 @@ class PrepareYourApplicationTest(mail_blast_test.CampaignTestBase):
         del self.project.opened_strategies[:]
         self._assert_user_receives_focus(should_be_sent=False)
 
+    def test_undefined_project(self) -> None:
+        """User does not know which job to target."""
+
+        self.project.ClearField('target_job')
+        self._assert_user_receives_focus(should_be_sent=False)
+
     def test_no_trainings(self) -> None:
         """No trainings."""
 

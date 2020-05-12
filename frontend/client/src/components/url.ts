@@ -6,6 +6,7 @@ export const STATS_PAGE = 'stats'
 
 Routes.CONTRIBUTION_PAGE = Routes.ROOT + 'contribuer'
 Routes.COOKIES_PAGE = Routes.ROOT + 'cookies'
+Routes.COVID_PAGE = Routes.ROOT + 'covid-19'
 Routes.IMILO_INTEGRATION_PAGE = Routes.ROOT + 'conseiller/integration-imilo'
 Routes.PRIVACY_PAGE = Routes.ROOT + 'vie-privee'
 Routes.PROFESSIONALS_PAGE = Routes.ROOT + 'professionnels'
@@ -19,6 +20,7 @@ Routes.VISION_PAGE = Routes.ROOT + 'notre-mission'
 export const staticPages = [
   Routes.CONTRIBUTION_PAGE,
   Routes.COOKIES_PAGE,
+  Routes.COVID_PAGE,
   Routes.IMILO_INTEGRATION_PAGE,
   Routes.PRIVACY_PAGE,
   Routes.PROFESSIONALS_PAGE,
