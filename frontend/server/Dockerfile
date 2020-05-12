@@ -20,6 +20,8 @@ RUN apt-get update -qqy && apt-get install -qqy --no-install-recommends unzip lo
 
 ENTRYPOINT ["./entrypoint.sh"]
 
+ENV PYTHONPATH=/work
+
 FROM base as server
 
 COPY frontend/server/entrypoint.sh .
@@ -42,8 +44,7 @@ LABEL org.bayesimpact.git=$GIT_SHA1
 # Set a default server version based on Git commit. This is overriden in
 # production with more context, e.g. the name of the demo server.
 ENV SERVER_VERSION=git-$GIT_SHA1 \
-  BIND_HOST=0.0.0.0 \
-  PYTHONPATH=/work
+  BIND_HOST=0.0.0.0
 
 
 FROM base as test
