@@ -30,7 +30,7 @@ COPY frontend/client/src src/
 COPY frontend/client/plugins plugins/
 COPY frontend/client/test test/
 COPY frontend/release/*.js frontend/release/*.ts frontend/release/cloudfront.json release/
-COPY frontend/client/.babelrc frontend/client/i18n.babelrc.js frontend/client/extract_i18n.sh frontend/client/download.js frontend/client/airtable_fields.json5 frontend/client/entrypoint.sh frontend/client/favicon.ico frontend/client/lint_and_test.sh frontend/client/diff_i18n_folder.sh .eslintrc.json .eslintignore frontend/client/karma.conf.js frontend/client/check-color-config.sh frontend/client/check-common-typos.sh frontend/client/jsonlint.sh frontend/client/tsconfig.json frontend/client/custom.d.ts ./
+COPY frontend/client/.babelrc frontend/client/server.js frontend/client/i18n.babelrc.js frontend/client/extract_i18n.sh frontend/client/download.js frontend/client/airtable_fields.json5 frontend/client/entrypoint.sh frontend/client/favicon.ico frontend/client/lint_and_test.sh frontend/client/diff_i18n_folder.sh .eslintrc.json .eslintignore frontend/client/karma.conf.js frontend/client/check-color-config.sh frontend/client/check-common-typos.sh frontend/client/jsonlint.sh frontend/client/tsconfig.json frontend/client/custom.d.ts ./
 # This is actually part of the frontend-db, but it makes it way easier to lint
 # with the same rules.
 COPY frontend/server/db server/db/

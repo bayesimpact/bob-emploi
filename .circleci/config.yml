@@ -13,8 +13,9 @@ jobs:
             ./should_run_ci.sh "$CIRCLE_BRANCH" "$CIRCLE_TAG"
             ./should_run_slow_tests.sh
       - run:
-          name: Use Docker tags specific to this build
+          name: Drop the override used for dev, and use Docker tags specific to this build
           command: |
+            rm docker-compose.override.yml
             sed -i -e 's/image: \([^:]*\)$/image: \1:build-'$CIRCLE_BUILD_NUM'/' docker-compose.yml
       - run:
           name: Build Docker images
