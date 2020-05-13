@@ -1,0 +1,7 @@
+version: "3.4"
+services:
+  frontend-flask:
+    command: python bob_emploi/frontend/server/server.py
+  frontend-dev:
+    volumes:
+      - ./frontend/client/ssl:/etc/ssl/webpack-dev:ro
