@@ -1,7 +1,94 @@
+# Overrides of Compose services used to help develop faster without rebuilding
+# the container on every change.
 version: "3.4"
 services:
   frontend-flask:
     command: python bob_emploi/frontend/server/server.py
+    volumes:
+      - ./frontend/api:/work/bob_emploi/frontend/api
+      - ./frontend/server:/work/bob_emploi/frontend/server
+      - ./frontend/server/entrypoint.sh:/work/entrypoint.sh:ro
+  frontend-flask-test:
+    volumes:
+      - ./frontend/api:/work/bob_emploi/frontend/api
+      - ./frontend/server:/work/bob_emploi/frontend/server
+      - ./frontend/server/.coveragerc:/work/.coveragerc:ro
+      - ./frontend/server/entrypoint.sh:/work/entrypoint.sh:ro
+      - ./frontend/server/lint_and_test.sh:/work/lint_and_test.sh:ro
+      - ./frontend/server/test/vendor/requests_mock:/usr/local/lib/python3.8/site-packages/mypy/typeshed/third_party/2and3/requests_mock:ro
+      - ./.pylintrc:/work/.pylintrc:ro
+      - ./.pycodestyle:/work/.pycodestyle:ro
+  data-analysis-prepare:
+    environment:
+      # Run cleaned_data_test on real data.
+      TEST_ENV: 1
+      TEST_REAL_DATA: 1
+      MONGO_URL:
+    volumes:
+      - ./data_analysis:/work/bob_emploi/data_analysis
+      - ./data_analysis/data:/work/data
+      - ./.pycodestyle:/work/setup.cfg:ro
+      - ./.pylintrc:/work/.pylintrc:ro
+      - ./data_analysis/.coveragerc:/work/.coveragerc:ro
+      - ./data_analysis/entrypoint.sh:/work/entrypoint.sh:ro
+      - ./data_analysis/lint_and_test.sh:/work/lint_and_test.sh:ro
+      - ./data_analysis/Makefile:/work/Makefile:ro
+      - ./data_analysis/Makefile.internal:/work/Makefile.internal:ro
+      - ./data_analysis/Makefile.public:/work/Makefile.public:ro
+      - ./frontend/client/airtable_fields.json5:/work/bob_emploi/frontend/client/airtable_fields.json5:ro
+      - ./frontend/server:/work/bob_emploi/frontend/server
+      - ./frontend/release/scheduled-tasks:/work/bob_emploi/frontend/release/scheduled-tasks:ro
+      - ./frontend/api:/work/bob_emploi/frontend/api
+      - ./data_analysis/vendor/mongomock:/usr/local/lib/python3.7/site-packages/mypy/typeshed/third_party/3/mongomock:ro
+      - ./data_analysis/vendor/parsel:/usr/local/lib/python3.7/site-packages/mypy/typeshed/third_party/2and3/parsel:ro
+      - ./frontend/server/test/vendor/requests_mock:/usr/local/lib/python3.7/site-packages/mypy/typeshed/third_party/2and3/requests_mock:ro
+      - ~/.aws/credentials:/root/.aws/credentials:ro
   frontend-dev:
     volumes:
+      - ./frontend/api:/usr/app/bob_emploi/frontend/api
+      - ./frontend/client/cfg:/usr/app/cfg:ro
+      - ./frontend/client/plugins:/usr/app/plugins
       - ./frontend/client/ssl:/etc/ssl/webpack-dev:ro
+      - ./frontend/client/server.js:/usr/app/server.js:ro
+      - ./frontend/client/.babelrc:/usr/app/.babelrc:ro
+      - ./frontend/client/extract_i18n.sh:/usr/app/extract_i18n.sh:ro
+      - ./frontend/client/i18n.babelrc.js:/usr/app/i18n.babelrc.js:ro
+      - ./frontend/client/src:/usr/app/src
+      - ./frontend/client/check-color-config.sh:/usr/app/check-color-config.sh:ro
+      - ./frontend/client/check-common-typos.sh:/usr/app/check-common-typos.sh:ro
+      - ./frontend/client/custom.d.ts:/usr/app/custom.d.ts:ro
+      - ./frontend/client/download.js:/usr/app/download.js
+      - ./frontend/client/jsonlint.sh:/usr/app/jsonlint.sh
+      - ./frontend/client/airtable_fields.json5:/usr/app/airtable_fields.json5
+      - ./frontend/client/entrypoint.sh:/usr/app/entrypoint.sh:ro
+      - ./frontend/client/favicon.ico:/usr/app/favicon.ico:ro
+      - ./frontend/client/lint_and_test.sh:/usr/app/lint_and_test.sh:ro
+      - ./frontend/client/diff_i18n_folder.sh:/usr/app/diff_i18n_folder.sh:ro
+      - ./frontend/client/package.json:/usr/app/package.json:ro
+      - ./frontend/client/check_types.sh:/usr/app/check_types.sh
+      - ./frontend/client/tsconfig.json:/usr/app/tsconfig.json:ro
+      - ./frontend/release:/usr/app/release
+      # For linting.
+      - ./.eslintrc.json:/usr/app/.eslintrc.json:ro
+      - ./.eslintignore:/usr/app/.eslintignore:ro
+      # For testing.
+      - ./frontend/client/test:/usr/app/test
+      - ./frontend/client/karma.conf.js:/usr/app/karma.conf.js:ro
+      # For releasing.
+      - ./frontend/dist:/usr/app/dist
+      # This is actually part of the frontend-db, but it makes it way easier to
+      # lint with the same rules.
+      - ./frontend/server/db:/usr/app/server/db:ro
+      # TODO(pascal): Create a @types/autocomplete.js npm package.
+      - ./frontend/client/vendor/autocomplete.js.d.ts:/usr/app/node_modules/@types/autocomplete.js/index.d.ts
+      # TODO(pascal): Create a @types/react-twitter-embed npm package.
+      - ./frontend/client/vendor/react-twitter-embed.d.ts:/usr/app/node_modules/@types/react-twitter-embed/index.d.ts
+      # TODO(cyrille): Create a @types/es6-set-proptypes npm package.
+      - ./frontend/client/vendor/es6-set-proptypes.d.ts:/usr/app/node_modules/@types/es6-set-proptypes/index.d.ts
+    environment:
+      AIRTABLE_API_KEY:
+      CLIENT_VERSION: dev
+      PUBLIC_HOST: localhost.bob-dev.bayes.org
+      PUBLIC_PORT: 3000
+    ports:
+      - "${PUBLIC_PORT:-3000}:80"

@@ -166,6 +166,10 @@ const FooterBase: React.FC<FooterProps> = ({page, style}) => {
           <FooterLink href="https://www.bayesimpact.org">
             Bayes Impact
           </FooterLink>
+
+          <FooterLink to={Routes.PARTNERS_PAGE} isSelected={page === 'partners'}>
+            {t('Partenaires')}
+          </FooterLink>
         </FooterSection>
 
         <FooterSection title={t('Aide')}>

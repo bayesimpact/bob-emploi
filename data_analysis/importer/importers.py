@@ -593,16 +593,18 @@ IMPORTERS = {
 }
 
 
-def register_importer(name: str, importer: Importer) -> None:
+# TODO(cyrille): Drop those.
+def register_importer(name: str, importer: Importer, namespace: str) -> None:
     """Register a new importer."""
 
     if name in IMPORTERS:
         raise ValueError(f'An importer already exists with the name {name}')
-    IMPORTERS[name] = importer
+    IMPORTERS[f'{namespace}_{name}'] = importer
 
 
 def update_importer(
-        name: str, script: Optional[str] = None, args: Optional[Dict[str, str]] = None) -> None:
+        name: str, namespace: str,
+        script: Optional[str] = None, args: Optional[Dict[str, str]] = None) -> None:
     """Update parameters for a given importer."""
 
-    IMPORTERS[name] = IMPORTERS[name].updated_with(script=script, args=args)
+    IMPORTERS[f'{namespace}_{name}'] = IMPORTERS[name].updated_with(script=script, args=args)

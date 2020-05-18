@@ -170,7 +170,7 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
     }
     let isInfoComplete = true
     if (isGuest && !newName) {
-      setNewName('Angèle')
+      setNewName(t('Angèle'))
       isInfoComplete = false
     }
     if (typeof canTutoie !== 'boolean' && isTuNeeded) {
@@ -184,7 +184,7 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
     if (isInfoComplete) {
       handleSubmit()
     }
-  }, [areCGUAccepted, canTutoie, handleSubmit, isFastForwarded, isGuest, isTuNeeded, newName])
+  }, [areCGUAccepted, canTutoie, handleSubmit, isFastForwarded, isGuest, isTuNeeded, newName, t])
   useFastForward(onFastForward)
 
   const isCompetitionShown = jobGroupName && departementName && !!yearlyAvgOffersPer10Candidates

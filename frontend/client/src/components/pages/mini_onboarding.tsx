@@ -328,6 +328,7 @@ const App = (): React.ReactElement => {
       MINI_GENERATE_SUMMARY: 'Bilan achevé',
       MINI_ONBOARDING_ANSWER: 'Une question au formulaire répondue',
       MINI_ONBOARDING_LOAD: 'Formulaire ouvert',
+      MINI_ONBOARDING_SAVE: 'Bilan sauvegardé par email',
       MINI_ONBOARDING_SET_TOPIC_PRIORITY: 'Une priorité choisie',
       MINI_OPEN_SUMMARY: 'Bilan final affiché',
       MINI_PRINT_SUMMARY: 'Bilan final imprimé',

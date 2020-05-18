@@ -10,10 +10,12 @@ services:
     volumes:
       - ./data_analysis/data:/home/jovyan/data:rw
       - ./analytics/data:/home/jovyan/data_analytics:ro
-      - ./data_analysis:/opt/conda/lib/python3.6/bob_emploi/data_analysis:ro
+      - ./data_analysis:/opt/conda/lib/python3.7/bob_emploi/data_analysis:ro
       - ./data_analysis/notebooks:/home/jovyan/notebooks
     environment:
+      AIRTABLE_API_KEY:
       DATA_FOLDER: '/home/jovyan/data'
+      CUSTOM_DISPLAY_URL: 'http://localhost:8888'
   data-analysis-prepare:
     image: docker.bayesimpact.org/bob-emploi/data-analysis-prepare
     build:
@@ -21,8 +23,8 @@ services:
       dockerfile: data_analysis/Dockerfile.prepare
     entrypoint: ./entrypoint.sh
     environment:
-      ACCEPT_LAX_TOLERANCE: 1
       AIRTABLE_API_KEY:
+      BOB_PLUGINS:
       EMPLOI_STORE_CLIENT_ID:
       EMPLOI_STORE_CLIENT_SECRET:
     tty: true
@@ -40,8 +42,8 @@ services:
     tty: true
     links:
       - frontend-flask
-    ports:
-      - "3000:80"
+    environment:
+      BOB_PLUGINS:
   frontend-flask:
     build:
       context: .
@@ -51,10 +53,12 @@ services:
         - GIT_SHA1
     image: bayesimpact/bob-emploi-frontend-server
     environment:
+      BOB_PLUGINS:
       MONGO_URL:
       USERS_MONGO_URL: 'mongodb://frontend-db/test'
+      EVAL_MONGO_URL:
       DEBUG: '1'
-      SERVER_VERSION: local-dev
+      SERVER_VERSION: dev.$USER
       EMPLOI_STORE_CLIENT_ID:
       EMPLOI_STORE_CLIENT_SECRET:
       FACEBOOK_APP_SECRET:
@@ -73,11 +77,10 @@ services:
       dockerfile: frontend/server/Dockerfile
       target: test
     image: bayesimpact/bob-emploi-frontend-server-test
-    depends_on:
-      - frontend-flask
     environment:
       MONGO_URL: 'mongodb://frontend-db/test'
       DEBUG: '1'
       SERVER_VERSION: local-test
       TEST_ENV: '1'
     tty: true
+    network_mode: none

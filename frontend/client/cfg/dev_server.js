@@ -32,6 +32,6 @@ module.exports = {
       target: 'https://frontend-flask',
     },
   },
-  public: 'localhost.bob-dev.bayes.org:3000',
+  public: `${process.env.PUBLIC_HOST}:${process.env.PUBLIC_PORT}`,
   publicPath: '/',
 }

@@ -223,43 +223,43 @@ const sampleJobs: readonly bayes.bob.Job[] = [
   // Keep this one first or update the reference below (sampleJobs[0]).
   {
     codeOgr: '19364',
-    feminineName: 'Secrétaire',
+    feminineName: prepareT('Secrétaire'),
     jobGroup: {
-      name: 'Secrétariat',
+      name: prepareT('Secrétariat'),
       romeId: 'M1607',
     },
-    masculineName: 'Secrétaire',
-    name: 'Secrétaire',
+    masculineName: prepareT('Secrétaire'),
+    name: prepareT('Secrétaire'),
   },
   {
     codeOgr: '12688',
-    feminineName: 'Coiffeuse',
+    feminineName: prepareT('Coiffeuse'),
     jobGroup: {
-      name: 'Coiffure',
+      name: prepareT('Coiffure'),
       romeId: 'D1202',
     },
-    masculineName: 'Coiffeur',
+    masculineName: prepareT('Coiffeur'),
     name: 'Coiffeur / Coiffeuse',
   },
   {
     codeOgr: '11573',
-    feminineName: 'Boulangère',
+    feminineName: prepareT('Boulangère'),
     jobGroup: {
-      name: 'Boulangerie - viennoiserie',
+      name: prepareT('Boulangerie - viennoiserie'),
       romeId: 'D1102',
     },
-    masculineName: 'Boulanger',
-    name: 'Boulanger / Boulangère',
+    masculineName: prepareT('Boulanger'),
+    name: prepareT('Boulanger / Boulangère'),
   },
   {
     codeOgr: '16067',
-    feminineName: 'Jardinière',
+    feminineName: prepareT('Jardinière'),
     jobGroup: {
-      name: 'Aménagement et entretien des espaces verts',
+      name: prepareT('Aménagement et entretien des espaces verts'),
       romeId: 'A1203',
     },
-    masculineName: 'Jardinier',
-    name: 'Jardinier / Jardinière',
+    masculineName: prepareT('Jardinier'),
+    name: prepareT('Jardinier / Jardinière'),
   },
 ] as const
 
