@@ -21,6 +21,14 @@ To import files from the current plugin, you should import using relative path:
 import Foo from './components/foo'
 ```
 
+## Typescript
+
+For plugins with typed files, you need to define a tsconfig.json file at the root of your plugin folder.
+
 ## String extraction
 
 For translation, you may use the string extraction process already in place in the core app. Define a `i18n.babelrc.js` file at the root of your plugin folder, with the relevant `i18next-extract` plugin. This file must be JS config, not other formats usually allowed by babel.
+
+## Plugin selection
+
+You can choose to use only specific plugins by putting them as a comma separated list in the `BOB_PLUGINS` environment variable.

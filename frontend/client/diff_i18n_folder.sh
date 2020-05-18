@@ -5,7 +5,7 @@
 readonly TMP_FOLDER="$(mktemp -d)"
 cp -r src/translations/. "$TMP_FOLDER"
 
-npm run --silent i18n
+npm run --silent i18n:extract
 
 # TODO(cyrille): Do the same for all plugins.
 if ! diff -ar src/translations "$TMP_FOLDER"; then

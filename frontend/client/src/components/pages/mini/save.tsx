@@ -30,6 +30,7 @@ const displayToasterMessage = (error: string): DisplayToasterMessageAction => ({
 
 
 // Refacto with wrapAsyncAction if we ever use several async actions.
+// TODO(sil): Avoid logging the save action twice.
 const saveAction = (userEmail: string, counselorEmail: string|undefined, location: string):
 ThunkAction<Promise<void>, MiniRootState, {}, SaveAction> =>
   (dispatch: DispatchActions, getState: () => MiniRootState):

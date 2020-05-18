@@ -2,7 +2,8 @@ import {TFunction} from 'i18next'
 // eslint-disable-next-line you-dont-need-lodash-underscore/omit
 import _omit from 'lodash/omit'
 import PropTypes from 'prop-types'
-import React, {useCallback, useEffect, useRef, useState} from 'react'
+import React, {useCallback, useEffect, useRef, useMemo, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import {useDispatch, useSelector} from 'react-redux'
 
 import {DispatchAllActions, RootState, diagnoseOnboarding} from 'store/actions'
@@ -154,8 +155,9 @@ const resetProjectForJobChange: bayes.bob.Project = {
 const NewProjectGoalStepBase = (props: ProjectStepProps): React.ReactElement => {
   const {newProject, newProject: {
     areaType, city, hasClearProject, kind, passionateLevel, targetJob,
-  }, onSubmit, profile: {gender = undefined, hasHandicap = undefined} = {}, t} = props
+  }, onSubmit, profile: {gender = undefined, hasHandicap = undefined} = {}} = props
   const dispatch = useDispatch<DispatchAllActions>()
+  const {i18n, t} = useTranslation()
   const defaultProjectProps = useSelector(
     ({app: {defaultProjectProps = undefined}}: RootState): bayes.bob.Project|undefined =>
       defaultProjectProps,
@@ -402,9 +404,14 @@ const NewProjectGoalStepBase = (props: ProjectStepProps): React.ReactElement => 
     t('Où voulez-vous créer ou reprendre une entreprise\u00A0?') :
     t('Autour de quelle ville cherchez-vous\u00A0?')
 
+  const airtableLink = useMemo(() => i18n.language === 'en' ?
+    'https://airtable.com/shrWOxkYASM8mtttA' : 'https://airtable.com/shreUw3GYqAwVAA27',
+  [i18n.language])
+
   if (isCompanyCreationShown) {
     return renderUnsupportedProjectKind(_CREATION_ARGS, hideCompanyCreation)
   }
+
   const {departementId = ''} = city || {}
   if (isReorientationShown) {
     return renderUnsupportedProjectKind({
@@ -447,7 +454,7 @@ const NewProjectGoalStepBase = (props: ProjectStepProps): React.ReactElement => 
         note={<Trans parent={null}>
           Vous ne trouvez pas votre métier&nbsp;?
           <ExternalLink style={{color: colors.BOB_BLUE, fontSize: 15, marginLeft: 3}}
-            href="https://airtable.com/shreUw3GYqAwVAA27">
+            href={airtableLink}>
             Cliquez ici pour l'ajouter
           </ExternalLink>
         </Trans>}>
@@ -517,7 +524,6 @@ NewProjectGoalStepBase.propTypes = {
   newProject: PropTypes.object,
   onSubmit: PropTypes.func.isRequired,
   profile: PropTypes.object,
-  t: PropTypes.func.isRequired,
 }
 const NewProjectGoalStep = React.memo(NewProjectGoalStepBase)
 

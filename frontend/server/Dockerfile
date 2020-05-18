@@ -1,4 +1,5 @@
-FROM python:3.8 as base
+# TODO(pascal): Investigate and uncap.
+FROM python:3.8.2 as base
 
 WORKDIR /work
 

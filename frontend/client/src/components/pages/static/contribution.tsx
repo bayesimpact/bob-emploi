@@ -1,6 +1,7 @@
 import GithubIcon from 'mdi-react/GithubIcon'
 import React from 'react'
 import {useDispatch} from 'react-redux'
+import {Link} from 'react-router-dom'
 
 import {DispatchAllActions} from 'store/actions'
 
@@ -9,6 +10,7 @@ import {isMobileVersion} from 'components/mobile'
 import {ShareButtons} from 'components/share'
 import {StaticPage, StrongTitle} from 'components/static'
 import {Button, ExternalLink} from 'components/theme'
+import {Routes} from 'components/url'
 
 
 // TODO(cyrille): Replace with Trans.
@@ -158,6 +160,13 @@ const Howto: React.FC = (): React.ReactElement => {
       Nous avons créé à ce jour plus de 500 recommandations, notamment grâce
       aux contributions de chercheurs d'emploi, de conseillers Pôle emploi, mais
       aussi d'individus provenant de tous horizons.
+    </Trans>
+
+    <Trans parent="p">
+      Vous êtes un service public, une entreprise ou une association et vous aimeriez travailler
+      avec {{productName: config.productName}}&nbsp;? Devenez <Link to={Routes.PARTNERS_PAGE}>
+        partenaire
+      </Link>.
     </Trans>
 
     <Trans parent="p">

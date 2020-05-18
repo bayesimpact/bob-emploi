@@ -7,6 +7,7 @@ import PropTypes from 'prop-types'
 import {parse, stringify} from 'query-string'
 import React, {useCallback, useEffect, useLayoutEffect, useMemo, useState} from 'react'
 import FacebookLogin, {ReactFacebookLoginInfo, ReactFacebookLoginProps} from 'react-facebook-login'
+// TODO(cyrille): Rather use useGoogleLogin hook.
 import GoogleLogin, {GoogleLoginResponse, GoogleLoginResponseOffline} from 'react-google-login'
 import {useTranslation} from 'react-i18next'
 import {connect, useDispatch, useSelector} from 'react-redux'
@@ -476,6 +477,7 @@ const RegistrationFormBase = (props: RegistrationProps): React.ReactElement => {
   const isMissingPassword = !password
   const isMissingName = !name
   const isMissingLastName = !name
+  const exampleFirstName = 'Angèle'
 
   useFastForward((): void => {
     if (isFormValid) {
@@ -497,11 +499,11 @@ const RegistrationFormBase = (props: RegistrationProps): React.ReactElement => {
       setLastName('Dupont')
     }
     if (isMissingName) {
-      setName('Angèle')
+      setName(t(exampleFirstName))
     }
   }, [
     isMissingName, isMissingPassword, isMissingEmail, isMissingLastName, isFormValid,
-    handleRegister, hasAcceptedTerms, shouldRequestNames,
+    handleRegister, hasAcceptedTerms, shouldRequestNames, t,
   ])
 
   // TODO(sil) Clean when launching Late Sign Up.
@@ -1204,6 +1206,9 @@ const SocialLoginButtonsBase = (props: SocialButtonProps): React.ReactElement =>
     <GoogleLogin
       clientId={config.googleSSOClientId} disabled={isAuthenticating}
       onSuccess={handleGoogleLogin}
+      // TODO(cyrille): Drop once https://github.com/anthonyjgrove/react-google-login/issues/333
+      // is resolved.
+      onAutoLoadFinished={noOp}
       onFailure={handleGoogleFailure}
       render={MyGoogleButton} />
     <OAuth2ConnectLogin

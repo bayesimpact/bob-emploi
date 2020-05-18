@@ -155,7 +155,7 @@
     "svgo": "1.3.2"
   },
   "scripts": {
-    "check-types": "tsc",
+    "check-types": "./check_types.sh",
     "clean": "rimraf dist/*",
     "copy": "copyfiles ./favicon.ico ./dist",
     "dist": "npm run clean && npm run copy && REACT_WEBPACK_ENV=dist CLIENT_VERSION=$CLIENT_VERSION webpack --bail",

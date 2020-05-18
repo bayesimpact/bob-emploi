@@ -21,6 +21,7 @@ if False:  # pylint: disable=using-constant-test
     from . import evaluation
 
 _APPS_FOLDER = os.path.dirname(os.path.realpath(__file__))
+_KEPT_PLUGINS = {plugin for plugin in os.getenv('BOB_PLUGINS', '').split(',') if plugin}
 
 
 class AppModule(object):
@@ -42,6 +43,8 @@ def register_blueprints(app: flask.Flask) -> None:
     """
 
     for package in pkgutil.iter_modules([_APPS_FOLDER]):
+        if _KEPT_PLUGINS and package.name not in _KEPT_PLUGINS:
+            continue
         # TODO(cyrille): Test that those are not statically imported elsewhere.
         module = typing.cast(AppModule, importlib.import_module(f'.{package.name}', __package__))
         if module.app.name == 'main':

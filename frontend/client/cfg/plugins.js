@@ -57,6 +57,9 @@ const distConstants = {
 
 const appPluginsDir = path.join(__dirname, '../plugins')
 
+const keptPlugins = new Set((process.env.BOB_PLUGINS || '').split(',').filter(Boolean))
+const keepPlugin = (name) => !keptPlugins.size || keptPlugins.has(name)
+
 const getExtractedLangs = (rootPath) => {
   // TODO(cyrille): Ensure the required file is in JS object format.
   const i18nBabelConfig = maybeRequire(path.join(rootPath, 'i18n.babelrc'))
@@ -75,6 +78,7 @@ const getExtractedLangs = (rootPath) => {
 }
 const plugins = fs.readdirSync(appPluginsDir).
   filter(name => fs.statSync(path.join(appPluginsDir, name)).isDirectory()).
+  filter(keepPlugin).
   map(name => {
     const pluginPath = path.join(appPluginsDir, name)
     const pluginColors = {

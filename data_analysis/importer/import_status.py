@@ -20,11 +20,9 @@ MONGO_URL environment variable, e.g.
 import argparse
 import collections
 import logging
-import importlib
 import os
 import re
 import subprocess
-import typing
 from typing import Any, Dict, List, Optional, Set
 
 import pymongo
@@ -33,11 +31,15 @@ from sentry_sdk.integrations import logging as sentry_logging
 import termcolor
 import typing_extensions
 
+from bob_emploi.data_analysis.importer import plugins
 # pylint: disable=import-only-modules
 # Importers should be accessed from here, not from importers.
 from bob_emploi.data_analysis.importer.importers import Importer
-from bob_emploi.data_analysis.importer.importers import IMPORTERS
 # pylint: enable=import-only-modules
+
+_ALL_IMPORTERS = plugins.register_plugins()
+# TODO(cyrille): Avoid importing this in other modules.
+IMPORTERS = _ALL_IMPORTERS['core']
 
 _ARCHIVE_NAME_MATCH = re.compile(r'\.\d{4}-\d\d-\d\d_[0-9a-f]{4,16}$')
 
@@ -54,15 +56,17 @@ CollectionsDiff = collections.namedtuple(
 
 _MAINTENANCE_COLLECTIONS = {'meta', 'system.indexes', 'objectlabs-system'}
 
+_ImportersType = Dict[str, Importer]
 
-def is_personal_database(collection_names: Set[str]) -> bool:
+
+def is_personal_database(collection_names: Set[str], importers: _ImportersType) -> bool:
     """Determines if this is a database with PII collections or not."""
 
-    imported = collection_names & IMPORTERS.keys()
+    imported = collection_names & importers.keys()
     # We consider a DB to be personal if at least 2 collections are personal,
     # that way we can detect when a personal collection landed wrongly in a
     # non-personal database.
-    return sum(1 for name in imported if IMPORTERS[name].has_pii) > 1
+    return sum(1 for name in imported if importers[name].has_pii) > 1
 
 
 def _is_archive(collection_name: str) -> bool:
@@ -70,14 +74,14 @@ def _is_archive(collection_name: str) -> bool:
 
 
 def compute_collections_diff(
-        importers: Dict[str, Importer], db_client: pymongo.database.Database) -> CollectionsDiff:
+        importers: _ImportersType, db_client: pymongo.database.Database) -> CollectionsDiff:
     """Determine which collections have been imported and which are missing."""
 
     collection_names = {
         name for name in db_client.list_collection_names()
         if name not in _MAINTENANCE_COLLECTIONS and not _is_archive(name)
     }
-    is_personal = is_personal_database(collection_names)
+    is_personal = is_personal_database(collection_names, importers)
     personal_safe_importers = {
         key: importer for key, importer in importers.items()
         if importer.has_pii == is_personal
@@ -217,14 +221,16 @@ def _run_importer(importer: Importer, collection_name: str, extra_args: List[str
             err.stderr.decode('utf-8'))
 
 
-def _warn_unknown_collection(collection_name: str) -> None:
+def _warn_unknown_collection(collection_name: str, importers: _ImportersType) -> None:
     logging.info(
         'Collection details - unknown collection (%s). Should be one of:\n  %s',
-        termcolor.colored(collection_name, 'red'), '\n  '.join(sorted(IMPORTERS.keys())))
+        termcolor.colored(collection_name, 'red'), '\n  '.join(sorted(importers.keys())))
 
 
-def _print_report(db_client: pymongo.database.Database, extra_args: List[str]) -> None:
-    diff = compute_collections_diff(IMPORTERS, db_client)
+def _print_report(
+        db_client: pymongo.database.Database, extra_args: List[str],
+        importers: _ImportersType) -> None:
+    diff = compute_collections_diff(importers, db_client)
 
     n_collections_missing = len(diff.collection_missing)
     logging.info(
@@ -236,7 +242,7 @@ def _print_report(db_client: pymongo.database.Database, extra_args: List[str]) -
             _plural(n_collections_missing),
             termcolor.colored(diff.collection_missing, 'red'))
         for missing_collection in diff.collection_missing:
-            importer = IMPORTERS[missing_collection]
+            importer = importers[missing_collection]
             print_single_importer(importer, missing_collection, _MONGO_URL, extra_args)
 
     n_importers_missing = len(diff.importer_missing)
@@ -255,7 +261,7 @@ def _print_report(db_client: pymongo.database.Database, extra_args: List[str]) -
         len(diff.imported))
     meta_info = get_meta_info(db_client)
     for collection_name in sorted(diff.imported):
-        importer = IMPORTERS[collection_name]
+        importer = importers[collection_name]
         if not importer.is_imported:
             status = termcolor.colored('No import needed', 'green')
         elif collection_name in meta_info:
@@ -286,26 +292,23 @@ def main(string_args: Optional[List[str]] = None) -> None:
         return
 
     plugin_parser = argparse.ArgumentParser(
-        description='Get the plug-ins for this script')
+        add_help=False,
+        description='Specify for which plugin you want to import')
     plugin_parser.add_argument(
-        '--plugin', action='append',
-        help='Register the specified plugin, for adding or overriding importers. '
-        'Plugin should be a module relative to the `importer` module.')
-    plugin_args, other_args = plugin_parser.parse_known_args(string_args)
-    registered_plugins: Set[str] = set()
-
-    for plugin in (plugin_args.plugin or []):
-        module = typing.cast(
-            _Registerable,
-            importlib.import_module(plugin, package='bob_emploi.data_analysis.importer'))
-        if plugin not in registered_plugins:
-            module.register()
+        '--plugin', help='Name of the plugin you want to work with.',
+        default='core', choices=_ALL_IMPORTERS.keys())
+    plugin_args, main_args = plugin_parser.parse_known_args(string_args)
+    importers = _ALL_IMPORTERS[plugin_args.plugin]
 
     parser = argparse.ArgumentParser(
         description='Print a report on which collections have been imported')
+    # Unused, but needed for help.
+    parser.add_argument(
+        '--plugin', help='Name of the plugin you want to work with.',
+        default='core', choices=_ALL_IMPORTERS.keys())
 
     main_action = parser.add_mutually_exclusive_group()
-    collection_names = sorted(IMPORTERS.keys())
+    collection_names = sorted(importers.keys())
     main_action.add_argument(
         'collection_name', help='Name of the collection to specifically display', nargs='?',
         choices=collection_names)
@@ -318,7 +321,7 @@ def main(string_args: Optional[List[str]] = None) -> None:
 
     parser.add_argument(
         '--make_data', action='store_true', help='Run the make rule to retrieve the needed data.')
-    args, unknown_args = parser.parse_known_args(other_args)
+    args, unknown_args = parser.parse_known_args(main_args)
     if unknown_args and not args.run:
         raise SystemExit(2, f'Unknown args: {unknown_args}')
 
@@ -327,28 +330,28 @@ def main(string_args: Optional[List[str]] = None) -> None:
     if args.collection_name:
         try:
             print_single_importer(
-                IMPORTERS[args.collection_name], args.collection_name, _MONGO_URL, unknown_args)
+                importers[args.collection_name], args.collection_name, _MONGO_URL, unknown_args)
         except KeyError:
-            _warn_unknown_collection(args.collection_name)
+            _warn_unknown_collection(args.collection_name, importers)
         return
 
     for collection_name in (args.run or []):
         try:
-            importer = IMPORTERS[collection_name]
+            importer = importers[collection_name]
             print_single_importer(importer, collection_name, _MONGO_URL, unknown_args)
             if not args.make_data or _make_data_targets(importer):
                 _run_importer(importer, collection_name, unknown_args)
         except KeyError:
-            _warn_unknown_collection(collection_name)
+            _warn_unknown_collection(collection_name, importers)
 
     for collection_name in (args.revert or []):
-        if collection_name in IMPORTERS:
+        if collection_name in importers:
             _revert_collection(collection_name, db_client)
         else:
-            _warn_unknown_collection(collection_name)
+            _warn_unknown_collection(collection_name, importers)
 
     if not args.revert and not args.run:
-        _print_report(db_client, unknown_args)
+        _print_report(db_client, unknown_args, importers)
 
 
 if __name__ == '__main__':

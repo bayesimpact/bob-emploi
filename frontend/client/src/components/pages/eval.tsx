@@ -15,7 +15,7 @@ import thunk from 'redux-thunk'
 import {AllEvalActions, AuthEvalState, DispatchAllEvalActions, EvalRootState,
   computeAdvicesForProject, diagnoseProject, getEvalUseCasePools, strategizeProject,
   getEvalUseCases, getLaborStats, getAllCategories, createUseCase, simulateFocusEmails,
-  hideToasterMessageAction} from 'store/actions'
+  hideToasterMessageAction, noOp} from 'store/actions'
 
 import {app, asyncState} from 'store/app_reducer'
 import {getUseCaseTitle} from 'store/eval'
@@ -819,6 +819,9 @@ const AuthenticateEvalPageBase = (props: AuthEvalPageProps): React.ReactElement 
     <GoogleLogin
       clientId={config.googleSSOClientId}
       isSignedIn={true}
+      // TODO(cyrille): Drop once https://github.com/anthonyjgrove/react-google-login/issues/333
+      // is resolved.
+      onAutoLoadFinished={noOp}
       onSuccess={handleGoogleLogin}
       onFailure={handleGoogleFailure} />
     {hasAuthenticationFailed ? <div style={{margin: 20}}>
