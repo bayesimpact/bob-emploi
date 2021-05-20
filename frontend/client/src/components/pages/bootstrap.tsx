@@ -6,77 +6,89 @@ import ThumbDownIcon from 'mdi-react/ThumbDownIcon'
 import ThumbUpIcon from 'mdi-react/ThumbUpIcon'
 import PropTypes from 'prop-types'
 import React, {Suspense, useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import {WithTranslation, useTranslation, withTranslation} from 'react-i18next'
+import {hot} from 'react-hot-loader/root'
+import {useTranslation} from 'react-i18next'
 import {connect, Provider, useDispatch, useSelector} from 'react-redux'
-import {Route, RouteComponentProps, Switch} from 'react-router'
-import ReactRouterPropTypes from 'react-router-prop-types'
+import {Redirect, Route, Switch, useLocation} from 'react-router'
 import {Action, createStore, applyMiddleware, combineReducers} from 'redux'
 import {composeWithDevTools} from 'redux-devtools-extension'
 import thunk from 'redux-thunk'
 
+import useMedia from 'hooks/media'
 import {BootstrapAction, BootstrapState, DispatchBootstrapActions, actionTypesToLog,
-  computeAdvicesForProject, convertUserWithAdviceSelectionFromProto,
-  convertUserWithAdviceSelectionToProto, displayToasterMessage,
+  computeAdvicesForProject, convertFromProto, convertToProto, displayToasterMessage,
   sendAdviceFeedback, hideToasterMessageAction} from 'store/actions'
 import {ValidAdvice, getAdviceShortTitle, isValidAdvice} from 'store/advice'
-import {createAmplitudeMiddleware} from 'store/amplitude'
+import createAmplitudeMiddleware from 'store/amplitude'
 import {app, asyncState} from 'store/app_reducer'
 import {inCityPrefix, lowerFirstLetter, maybeContractPrefix} from 'store/french'
 import {init as i18nInit} from 'store/i18n'
 import {Logger} from 'store/logging'
-import {makeCancelable} from 'store/promise'
-import {createSentryMiddleware} from 'store/sentry'
+import {useAsynceffect} from 'store/promise'
+import createSentryMiddleware from 'store/sentry'
 import {addProjectIds} from 'store/user'
 
-import {AdvicePicto, ExpandedAdviceCardProps, ExpandedAdviceCardContent, ExplorerAdviceCard,
-  ExplorerAdviceCardConfig} from 'components/advisor'
+import {AdvicePicto, ExplorerAdviceCard, ExplorerAdviceCardConfig} from 'components/advisor'
+import Button from 'components/button'
+import Checkbox from 'components/checkbox'
+import ExternalLink from 'components/external_link'
+import {Inputable} from 'components/input'
 import {Modal, ModalConfig} from 'components/modal'
-import {isMobileVersion} from 'components/mobile'
 import {useRadium} from 'components/radium'
-import {Snackbar} from 'components/snackbar'
-import {CitySuggest, JobSuggest} from 'components/suggestions'
-import {Button, Checkbox, Inputable, ExternalLink, MAX_CONTENT_WIDTH,
-  SmoothTransitions, Textarea} from 'components/theme'
+import Snackbar from 'components/snackbar'
+import Textarea from 'components/textarea'
+import {SmoothTransitions} from 'components/theme'
 import {Routes} from 'components/url'
-import logoProductWhiteImage from 'images/bob-logo.svg?fill=#fff'
 
 import 'normalize.css'
 import 'styles/App.css'
 
-import {WaitingPage} from './waiting'
-
-const SET_CITY = 'SET_CITY'
-const SET_JOB = 'SET_JOB'
-const SET_USER = 'SET_USER'
-const SEND_ADVICE_SELECTION = 'SEND_ADVICE_SELECTION'
-
+import ResourcesPage, {modulesFromURL} from './bootstrap/resources'
+import WaitingPage from './waiting'
 
 i18nInit()
 
 
-interface SetUserAction extends Action<typeof SET_USER> {
+interface SetAdviceIdsAction extends Action<'SET_ADVICE_SELECTION'> {
+  adviceIds: readonly string[]
+}
+
+interface SetUserAction extends Action<'SET_USER'> {
   user: BootstrapUser
 }
 
-interface SetCityAction extends Action<typeof SET_CITY> {
+interface SetCityAction extends Action<'SET_CITY'> {
   city: bayes.bob.FrenchCity
 }
 
-interface SetJobAction extends Action<typeof SET_JOB> {
+interface SetJobAction extends Action<'SET_JOB'> {
   job: bayes.bob.Job
 }
 
-type SendAdviceSelectionAction = Action<typeof SEND_ADVICE_SELECTION>
+interface SetFeaturesAction extends Action<'SET_FEATURES'> {
+  features: bayes.bob.Features
+}
+
+interface SetLocaleAction extends Action<'SET_LOCALE'> {
+  locale: string
+}
+
+type SendAdviceSelectionAction = Action<'SEND_ADVICE_SELECTION'>
 
 type AllActions =
   | BootstrapAction
   | SendAdviceSelectionAction
+  | SetAdviceIdsAction
   | SetCityAction
+  | SetFeaturesAction
   | SetJobAction
+  | SetLocaleAction
   | SetUserAction
 
 
-type IconProps = Omit<GetProps<typeof ThumbDownIcon>, 'style'> & {style?: RadiumCSSProperties}
+type IconProps = Omit<React.ComponentProps<typeof ThumbDownIcon>, 'style'> & {
+  style?: RadiumCSSProperties
+}
 
 
 const HoverableThumbDownIconBase = (props: IconProps): React.ReactElement => {
@@ -95,34 +107,6 @@ function parseJsonAsync<T>(jsonText: string): Promise<T> {
   return new Promise((resolve): void => resolve(JSON.parse(jsonText)))
 }
 
-
-interface ProjectAndAdvice {
-  advice?: bayes.bob.Advice
-  project?: bayes.bob.Project
-}
-
-
-interface PageConnectedProps {
-  user: bayes.bob.User
-}
-
-
-interface PageProps extends PageConnectedProps, RouteComponentProps, WithTranslation {
-  dispatch: DispatchBootstrapActions
-}
-
-
-interface PageState {
-  advices: readonly ValidAdvice[]
-  advicesById: {readonly [adviceId: string]: bayes.bob.Advice}
-  badAdvices: ReadonlySet<string>
-  cachedSharedUrl: string | null
-  goodAdvices: ReadonlySet<string>
-  isBadAdviceModalShown: boolean
-  isEditorEnabled: boolean
-  onBadAdviceConfirmed: ((feedback: string) => void) | null
-  selectedAdvices: ReadonlySet<string>
-}
 
 const getShareFragment = (
   selectedAdvices: ReadonlySet<string>, user: bayes.bob.User,
@@ -149,9 +133,10 @@ const SelectionBase = (props: SelectionProps): React.ReactElement => {
   const {advicesById, cachedSharedUrl, selectedAdvices = new Set([]), style,
     user, user: {profile: {email = '', name = undefined} = {}} = {}} = props
   const dispatch = useDispatch<DispatchBootstrapActions>()
+  const {t} = useTranslation()
 
   const handleSendSelection = useCallback((): void => {
-    dispatch({type: SEND_ADVICE_SELECTION})
+    dispatch({type: 'SEND_ADVICE_SELECTION'})
   }, [dispatch])
 
   const containerStyle: React.CSSProperties = {
@@ -193,7 +178,7 @@ const SelectionBase = (props: SelectionProps): React.ReactElement => {
         map((adviceId: string): React.ReactNode => <div
           style={adviceStyle} key={`menu-${adviceId}`}>
           <AdvicePicto adviceId={adviceId} style={{height: 34, marginRight: 10, width: 34}} />
-          {getAdviceShortTitle(advicesById[adviceId])}
+          {getAdviceShortTitle(advicesById[adviceId], t)}
         </div>)}
       <ExternalLink
         href={mailtoLink} style={{margin: '40px 0 25px'}}
@@ -279,230 +264,158 @@ const selectionStyle = {
   width: 300,
 } as const
 
-class BootstrapPageBase extends React.PureComponent<PageProps, PageState> {
-  public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    location: ReactRouterPropTypes.location.isRequired,
-    user: PropTypes.object.isRequired,
-  }
 
-  public state: PageState = {
-    advices: [],
-    advicesById: {},
-    badAdvices: new Set<string>(),
-    cachedSharedUrl: null,
-    goodAdvices: new Set<string>(),
-    isBadAdviceModalShown: false,
-    isEditorEnabled: true,
-    onBadAdviceConfirmed: null,
-    selectedAdvices: new Set<string>(),
-  }
+const BootstrapPageBase = (): React.ReactElement => {
+  const user = useSelector(({user}: BootstrapState): bayes.bob.User => user)
+  const adviceIds = useSelector(({adviceIds}: BootstrapState) => adviceIds)
+  const isEditorEnabled = !adviceIds.length
+  const {t} = useTranslation()
 
-  public componentDidMount(): void {
-    const {dispatch, location} = this.props
-    if (location.hash.length <= 1) {
+  const dispatch = useDispatch<DispatchBootstrapActions>()
+  const [badAdvices, setBadAdvices] = useState(new Set<string>())
+  const [goodAdvices, setGoodAdvices] = useState(new Set<string>())
+  const [cachedSharedUrl, setCachedSharedUrl] = useState<string|undefined>(undefined)
+  const [selectedAdvices, setSelectedAdvices] = useState(new Set(adviceIds || []))
+  useEffect(() => setSelectedAdvices(new Set(adviceIds || [])), [adviceIds])
+
+  const [actualAdvices, setActualAdvices] = useState<readonly bayes.bob.Advice[]>([])
+  useAsynceffect(async (checkIfCanceled): Promise<void> => {
+    const response = await dispatch(computeAdvicesForProject(user))
+    if (!response || !response.advices || checkIfCanceled()) {
       return
     }
-    const hashString = decodeURIComponent(location.hash.slice(1))
-    const protoPromise: Promise<InputUser|void> =
-      hashString.startsWith('{') ?
-        parseJsonAsync<InputUser>(hashString) :
-        dispatch(convertUserWithAdviceSelectionFromProto(hashString))
-    protoPromise.
-      catch((error): void => {
-        dispatch(displayToasterMessage(`${error.message} en parsant ${hashString}`))
-      }).
-      then((userInput: InputUser | void): void => {
-        if (!userInput) {
-          return
-        }
-        if (isUserWithAdviceSelection(userInput)) {
-          if (!userInput.user) {
-            return
-          }
-          const selectedAdvices = new Set(userInput.adviceIds || [])
-          this.setState({
-            cachedSharedUrl: null,
-            isEditorEnabled: false,
-            selectedAdvices,
-          })
-          dispatch({type: SET_USER, user: addProjectIds(userInput.user)})
-          this.updateCachedSharedUrl(selectedAdvices)
-        } else {
-          dispatch({
-            type: SET_USER,
-            user: addProjectIds(userInput),
-          })
-        }
-      })
-  }
+    setActualAdvices(response.advices)
+  }, [dispatch, user])
 
-  public componentDidUpdate({user: prevUser}: PageProps): void {
-    const {dispatch, user} = this.props
-    const {isEditorEnabled, selectedAdvices} = this.state
-    if (user !== prevUser) {
-      dispatch(computeAdvicesForProject(user)).then((response): void => {
-        if (!response) {
-          return
-        }
-        const {advices} = response
-        const maybeSelectedAdvices = isEditorEnabled ?
-          advices :
-          (advices || []).filter(({adviceId}): boolean =>
-            !!adviceId && selectedAdvices.has(adviceId))
-        this.setState({
-          advices: (maybeSelectedAdvices || []).filter(isValidAdvice),
-          advicesById: _keyBy(advices, 'adviceId'),
-          cachedSharedUrl: null,
-        })
-        if (selectedAdvices) {
-          this.updateCachedSharedUrl(selectedAdvices)
-        }
-      })
-    }
-  }
+  const advices = useMemo(
+    (): readonly ValidAdvice[] => isEditorEnabled ?
+      actualAdvices.filter(isValidAdvice) :
+      actualAdvices.filter(isValidAdvice).
+        filter(({adviceId}): boolean => selectedAdvices.has(adviceId)),
+    [actualAdvices, isEditorEnabled, selectedAdvices],
+  )
+  const advicesById = useMemo(() => _keyBy(advices, 'adviceId'), [advices])
 
-  private getProjectAndAdvice = (adviceId: string): ProjectAndAdvice => {
-    const project = (this.props.user.projects || []).find((p): boolean => !!p)
-    const advice = this.state.advices.find(
-      ({adviceId: otherAdviceId}): boolean => adviceId === otherAdviceId)
-    return {advice, project}
-  }
-
-  private handleAdviceChangeSelection = (adviceId: string, isSelected: boolean): void => {
-    const {selectedAdvices: prevSelectedAdvices} = this.state
-    if (prevSelectedAdvices.has(adviceId) === isSelected) {
+  useAsynceffect(async (checkIfCanceled) => {
+    if (!isEditorEnabled || !selectedAdvices.size) {
       return
     }
-    const selectedAdvices = new Set(prevSelectedAdvices)
+    const userWithAdviceSelection = {
+      adviceIds: [...selectedAdvices],
+      user,
+    }
+    setCachedSharedUrl(undefined)
+    const proto = await dispatch(convertToProto(
+      'userWithAdviceSelection', userWithAdviceSelection))
+    if (!proto || checkIfCanceled()) {
+      return
+    }
+    setCachedSharedUrl(proto)
+  }, [dispatch, isEditorEnabled, selectedAdvices, user])
+
+  const project = (user.projects || []).find((p): boolean => !!p)
+
+  const getAdvice = useCallback((adviceId: string): bayes.bob.Advice|undefined => {
+    return advices.find(({adviceId: otherAdviceId}): boolean => adviceId === otherAdviceId)
+  }, [advices])
+
+  const handleAdviceChangeSelection = useCallback((adviceId: string, isSelected: boolean): void => {
+    if (selectedAdvices.has(adviceId) === isSelected) {
+      return
+    }
+    const newSelectedAdvices = new Set(selectedAdvices)
     if (isSelected) {
-      selectedAdvices.add(adviceId)
+      newSelectedAdvices.add(adviceId)
     } else {
-      selectedAdvices.delete(adviceId)
+      newSelectedAdvices.delete(adviceId)
     }
-    this.setState({cachedSharedUrl: null, selectedAdvices})
-    this.updateCachedSharedUrl(selectedAdvices)
-  }
+    setSelectedAdvices(newSelectedAdvices)
+  }, [selectedAdvices])
 
-  private updateCachedSharedUrl(selectedAdvices: ReadonlySet<string>): void {
-    const {dispatch, user} = this.props
-    if (this.state.isEditorEnabled && selectedAdvices.size) {
-      const userWithAdviceSelection = {
-        adviceIds: [...selectedAdvices],
-        user,
-      }
-      dispatch(convertUserWithAdviceSelectionToProto(userWithAdviceSelection)).
-        then((proto: string | void): void => {
-          if (!proto) {
-            return
-          }
-          if (user !== this.props.user || selectedAdvices !== this.state.selectedAdvices) {
-            return
-          }
-          this.setState({cachedSharedUrl: proto})
-        })
-    }
-  }
+  const [badAdviceId, setBadAdviceId] = useState('')
+  const hideBadAdviceModal = useCallback((): void => setBadAdviceId(''), [])
+  const handleBadAdviceConfirm = useCallback((feedback: string): void => {
+    const newBadAdvices = new Set(badAdvices)
+    newBadAdvices.add(badAdviceId)
+    setBadAdvices(newBadAdvices)
+    const newGoodAdvices = new Set(goodAdvices)
+    newGoodAdvices.delete(badAdviceId)
+    setGoodAdvices(newGoodAdvices)
+    setBadAdviceId('')
+    const advice = getAdvice(badAdviceId)
+    dispatch(sendAdviceFeedback(project, advice, {feedback}, t, 1))
+  }, [badAdviceId, badAdvices, getAdvice, goodAdvices, dispatch, project, t])
 
-  private handleThumbDown = (adviceId: string): void => {
-    const {t} = this.props
-    const {advice, project} = this.getProjectAndAdvice(adviceId)
-    this.setState({
-      isBadAdviceModalShown: true,
-      onBadAdviceConfirmed: (feedback: string): void => {
-        const {dispatch} = this.props
-        const badAdvices = new Set(this.state.badAdvices)
-        badAdvices.add(adviceId)
-        const goodAdvices = new Set(this.state.goodAdvices)
-        goodAdvices.delete(adviceId)
-        this.setState({
-          badAdvices,
-          goodAdvices,
-          isBadAdviceModalShown: false,
-          onBadAdviceConfirmed: null,
-        })
-        dispatch(sendAdviceFeedback(project, advice, {feedback}, t, 1))
-      },
-    })
-  }
-
-  private handleThumbUp = (adviceId: string): void => {
-    const {dispatch, t} = this.props
-    const {advice, project} = this.getProjectAndAdvice(adviceId)
-    const goodAdvices = new Set(this.state.goodAdvices)
+  const handleThumbUp = useCallback((adviceId: string): void => {
+    const advice = getAdvice(adviceId)
     if (!advice || !advice.adviceId) {
       return
     }
-    goodAdvices.add(advice.adviceId)
-    const badAdvices = new Set(this.state.badAdvices)
-    badAdvices.delete(advice.adviceId)
-    this.setState({badAdvices, goodAdvices})
+    const newGoodAdvices = new Set(goodAdvices)
+    newGoodAdvices.add(advice.adviceId)
+    setGoodAdvices(newGoodAdvices)
+    const newBadAdvices = new Set(badAdvices)
+    newBadAdvices.delete(advice.adviceId)
+    setBadAdvices(newBadAdvices)
     dispatch(sendAdviceFeedback(project, advice, {}, t, 5))
+  }, [badAdvices, dispatch, getAdvice, goodAdvices, project, t])
+
+  if (!project || !advices) {
+    return <div>{t('Chargement…')}</div>
   }
 
-  private handleCloseBadAdviceModal = (): void => this.setState({isBadAdviceModalShown: false})
-
-  public render(): React.ReactNode {
-    const {user} = this.props
-    const {advices, advicesById, badAdvices, goodAdvices, isBadAdviceModalShown,
-      isEditorEnabled, onBadAdviceConfirmed, selectedAdvices} = this.state
-    const project = (user.projects || []).find((p): boolean => !!p)
-    if (!project || !advices) {
-      return <div>Chargement…</div>
-    }
-    const {lastName = undefined, name = undefined} = user.profile || {}
-    const headerStyle: React.CSSProperties = {
-      fontSize: 30,
-      padding: 20,
-      textAlign: 'center',
-    }
-    return <React.Fragment>
-      {isEditorEnabled ? null : <header style={headerStyle}>
-        Conseils pour le projet
-        {(name && lastName) ? ` ${maybeContractPrefix('de ', "d'", name)} ${lastName}` : null} de
-        trouver un emploi
-        {getInJobGroup(project.targetJob || {})}
-        {getLocation(project.city || {})}
-      </header>}
-      {isEditorEnabled ? <div style={{left: 0, padding: 20, position: 'fixed', top: 0, width: 300}}>
-        <ProfileSection profile={user.profile} />
-        <hr />
-        <div style={{marginTop: 20}}>
-          Avez-vous fait le point avec ce jeune sur sa situation et ses priorités&nbsp;?
-          <div style={{marginTop: 20, textAlign: 'center'}}>
-            <ExternalLink href="/unml/a-li/">
-              <Button>
-                Aller sur A-Li
-              </Button>
-            </ExternalLink>
-          </div>
+  const {lastName = undefined, name = undefined} = user.profile || {}
+  const headerStyle: React.CSSProperties = {
+    fontSize: 30,
+    padding: 20,
+    textAlign: 'center',
+  }
+  return <React.Fragment>
+    {isEditorEnabled ? null : <header style={headerStyle}>
+      Conseils pour le projet
+      {(name && lastName) ? ` ${maybeContractPrefix('de ', "d'", name)} ${lastName}` : null} de
+      trouver un emploi
+      {getInJobGroup(project.targetJob || {})}
+      {getLocation(project.city || {})}
+    </header>}
+    {isEditorEnabled ? <div style={{left: 0, padding: 20, position: 'fixed', top: 0, width: 300}}>
+      <ProfileSection profile={user.profile} />
+      <hr />
+      <div style={{marginTop: 20}}>
+        Avez-vous fait le point avec ce jeune sur sa situation et ses priorités&nbsp;?
+        <div style={{marginTop: 20, textAlign: 'center'}}>
+          <ExternalLink href="/unml/a-li/">
+            <Button>
+              Aller sur A-Li
+            </Button>
+          </ExternalLink>
         </div>
-      </div> : null}
-      <BadAdviceModal
-        isShown={isBadAdviceModalShown}
-        onClose={this.handleCloseBadAdviceModal}
-        onConfirm={onBadAdviceConfirmed || undefined} />
-      <div style={{margin: '0 300px'}}>
-        {advices.map((advice: ValidAdvice): React.ReactNode => <BootstrapAdviceCard
+      </div>
+    </div> : null}
+    <BadAdviceModal
+      isShown={!!badAdviceId}
+      onClose={hideBadAdviceModal}
+      onConfirm={handleBadAdviceConfirm} />
+    <div style={{margin: '0 300px'}}>
+      {advices.
+        filter(({adviceId}: ValidAdvice): boolean =>
+          !modulesFromURL.size || modulesFromURL.has(adviceId) || modulesFromURL.has('all')).
+        map((advice: ValidAdvice): React.ReactNode => <BootstrapAdviceCard
           key={advice.adviceId} advice={advice} isSelectable={isEditorEnabled}
           isSelected={selectedAdvices.has(advice.adviceId)} isBad={badAdvices.has(advice.adviceId)}
           isGood={goodAdvices.has(advice.adviceId)}
-          onChangeSelection={this.handleAdviceChangeSelection}
-          onThumbDown={this.handleThumbDown}
-          onThumbUp={this.handleThumbUp}
+          onChangeSelection={handleAdviceChangeSelection}
+          onThumbDown={setBadAdviceId}
+          onThumbUp={handleThumbUp}
           project={project} />)}
-      </div>
-      {isEditorEnabled ?
-        <Selection
-
-          selectedAdvices={selectedAdvices} advicesById={advicesById} user={user}
-          cachedSharedUrl={this.state.cachedSharedUrl} style={selectionStyle} /> : null}
-    </React.Fragment>
-  }
+    </div>
+    {isEditorEnabled ?
+      <Selection
+        selectedAdvices={selectedAdvices} advicesById={advicesById} user={user}
+        cachedSharedUrl={cachedSharedUrl || null} style={selectionStyle} /> : null}
+  </React.Fragment>
 }
-const BootstrapPage =
-  connect(({user}: BootstrapState): PageConnectedProps => ({user}))(
-    withTranslation()(BootstrapPageBase))
+const BootstrapPage = React.memo(BootstrapPageBase)
 
 
 type BadAdviceModalProps = Omit<ModalConfig, 'children' | 'style'> & {
@@ -565,7 +478,9 @@ interface CardProps extends Omit<ExplorerAdviceCardConfig, 'style' | 'onClick' |
 const BootstrapAdviceCardBase = (props: CardProps): React.ReactElement => {
   const {advice: {adviceId}, isBad, isGood, isSelectable, isSelected, onChangeSelection,
     onThumbDown, onThumbUp} = props
-  const [isExpanded, setIsExpanded] = useState(false)
+  const {t} = useTranslation()
+  const media = useMedia()
+  const [isExpanded, setIsExpanded] = useState(media === 'print')
 
   const handleChangeSelection = useCallback(
     (): void => onChangeSelection(adviceId, !isSelected),
@@ -582,6 +497,7 @@ const BootstrapAdviceCardBase = (props: CardProps): React.ReactElement => {
     }
     const buttonStyle = {
       cursor: 'pointer',
+      display: 'block',
       padding: 15,
     }
     const thumbStyle = {
@@ -596,15 +512,20 @@ const BootstrapAdviceCardBase = (props: CardProps): React.ReactElement => {
       'fill': colors.BOB_BLUE,
     }
     return <div style={{marginLeft: 10}}>
-      <div style={buttonStyle} onClick={handleChangeSelection}>
-        <Checkbox isSelected={isSelected} onClick={handleChangeSelection} />
-      </div>
-      <div style={buttonStyle} onClick={handleThumbUp}>
-        <HoverableThumbUpIcon style={isGood ? selectedThumbStyle : thumbStyle} />
-      </div>
-      <div style={buttonStyle} onClick={handleThumbDown}>
-        <HoverableThumbDownIcon style={isBad ? selectedThumbStyle : thumbStyle} />
-      </div>
+      <button
+        style={buttonStyle} onClick={handleChangeSelection}
+        aria-label={isSelected ? t('Retirer de la sélection') : t('Ajouter à la sélection')}>
+        <Checkbox isSelected={isSelected} />
+      </button>
+      <button style={buttonStyle} onClick={handleThumbUp} aria-checked={isGood} role="checkbox">
+        <HoverableThumbUpIcon
+          style={isGood ? selectedThumbStyle : thumbStyle} aria-label={t("C'est un bon conseil")} />
+      </button>
+      <button style={buttonStyle} onClick={handleThumbDown} aria-checked={isBad} role="checkbox">
+        <HoverableThumbDownIcon
+          style={isBad ? selectedThumbStyle : thumbStyle}
+          aria-label={t("C'est un mauvais conseil")} />
+      </button>
     </div>
   })()
 
@@ -639,149 +560,12 @@ BootstrapAdviceCardBase.propTypes = {
 }
 const BootstrapAdviceCard = React.memo(BootstrapAdviceCardBase)
 
-
-const emptyProject: bayes.bob.Project = {}
-
-
-const ResourcesPageBase = (): React.ReactElement => {
-  const dispatch = useDispatch<DispatchBootstrapActions>()
-  const user = useSelector(({user}: BootstrapState): bayes.bob.User => user)
-  const {city, targetJob} = user.projects && user.projects[0] || {}
-  const {cityId = undefined} = city || {}
-  const {codeOgr: jobId = undefined} = targetJob || {}
-
-  const [adviceModules, setAdviceModules] = useState<readonly ValidAdvice[]>([])
-
-  useEffect((): (() => void) => {
-    if (!cityId || !jobId) {
-      return (): void => void 0
-    }
-    setAdviceModules([])
-    const cancelable = makeCancelable(dispatch(computeAdvicesForProject(user)))
-    cancelable.promise.then((response: void | bayes.bob.Advices): void => {
-      if (response && response.advices) {
-        setAdviceModules(response.advices.filter(isValidAdvice))
-      }
-    })
-    return cancelable.cancel
-  }, [cityId, dispatch, jobId, user])
-
-  const handleCityChange = useCallback((city: bayes.bob.FrenchCity|null): void => {
-    const {cityId: newCityId = undefined} = city || {}
-    if (!newCityId || newCityId === cityId) {
-      return
-    }
-    dispatch({city, type: SET_CITY})
-  }, [dispatch, cityId])
-
-  const handleJobChange = useCallback((job: bayes.bob.Job|null): void => {
-    const {codeOgr: newJobId = undefined} = job || {}
-    if (!newJobId || newJobId === jobId) {
-      return
-    }
-    dispatch({job, type: SET_JOB})
-  }, [dispatch, jobId])
-
-  const {profile, projects: [project = emptyProject] = []} = user
-
-  const navStyle: React.CSSProperties = {
-    backgroundColor: colors.BOB_BLUE,
-    padding: '8px 90px',
-    position: 'relative',
-  }
-  const logoStyle: React.CSSProperties = {
-    height: 24,
-    left: 20,
-    position: 'absolute',
-    top: '50%',
-    transform: 'translateY(-50%)',
-  }
-  const searchBarStyle: React.CSSProperties = {
-    backgroundColor: '#fff',
-    borderRadius: 5,
-    display: 'flex',
-    margin: 'auto',
-    maxWidth: MAX_CONTENT_WIDTH,
-  }
-  const resourcesContainerStyle: React.CSSProperties = {
-    columnCount: isMobileVersion ? 1 : 2,
-    columnGap: 40,
-    margin: 'auto',
-    maxWidth: MAX_CONTENT_WIDTH,
-    padding: '40px 0',
-  }
-  return <React.Fragment>
-    <nav style={navStyle}>
-      <img src={logoProductWhiteImage} alt={config.productName} style={logoStyle} />
-      <div style={searchBarStyle} className="no-hover no-focus">
-        <JobSuggest value={targetJob} onChange={handleJobChange} placeholder="métier" />
-        <CitySuggest value={city} onChange={handleCityChange} placeholder="ville" />
-      </div>
-    </nav>
-    <div style={resourcesContainerStyle}>
-      {city && targetJob ? adviceModules.map((advice: ValidAdvice): React.ReactNode =>
-        <ResourceAdviceCard
-          key={advice.adviceId}
-          style={{display: 'inline-block', marginBottom: 40, width: '100%'}}
-          {...{advice, profile, project}} />) : null}
-    </div>
-  </React.Fragment>
-}
-const ResourcesPage = React.memo(ResourcesPageBase)
-
-
-const headerStyle = {
-  alignItems: 'center',
-  backgroundColor: colors.BOB_BLUE_HOVER,
-  borderRadius: '5px 5px 0 0',
-  color: '#fff',
-  display: 'flex',
-  fontWeight: 900,
-  padding: 10,
-}
-const cardStyle = {
-  borderColor: colors.MODAL_PROJECT_GREY,
-  borderRadius: '0 0 5px 5px',
-  borderStyle: 'solid',
-  borderWidth: '0 1px 1px 1px',
-}
-
-
-const ResourceAdviceCardBase = (props: ExpandedAdviceCardProps): React.ReactElement => {
-  const {advice, style, ...cardContentProps} = props
-  const {t} = useTranslation()
-  const containerStyle = useMemo((): React.CSSProperties => ({
-    fontSize: 16,
-    ...style,
-  }), [style])
-  // TODO(pascal): Display only resources instead of full advice (e.g. drop
-  // the extra text introducing the resources in each card).
-  return <section style={containerStyle}>
-    <header style={headerStyle}>
-      <AdvicePicto adviceId={advice.adviceId} style={{height: 48, marginRight: 8}} />
-      {getAdviceShortTitle(advice, t)}
-    </header>
-    <div style={cardStyle}>
-      <ExpandedAdviceCardContent {...cardContentProps} {...{advice}} />
-    </div>
-  </section>
-}
-ResourceAdviceCardBase.propTypes = {
-  advice: PropTypes.shape({
-    adviceId: PropTypes.string.isRequired,
-  }).isRequired,
-  style: PropTypes.object,
-  t: PropTypes.func.isRequired,
-}
-const ResourceAdviceCard = React.memo(ResourceAdviceCardBase)
-
-
 const history = createBrowserHistory()
 
 const amplitudeMiddleware = createAmplitudeMiddleware(new Logger({
   ...actionTypesToLog,
-  [SEND_ADVICE_SELECTION]: 'Send advice cards selection for external profile',
-  [SET_USER]: 'Show advice cards for external profile',
+  SEND_ADVICE_SELECTION: 'Send advice cards selection for external profile',
+  SET_USER: 'Show advice cards for external profile',
 }))
 // Enable devTools middleware.
 const finalCreateStore = composeWithDevTools(
@@ -798,10 +582,13 @@ type BootstrapUser = bayes.bob.User & {
   }}]
 }
 
-
-function bootstrapUserReducer(
-  state: BootstrapUser = {profile: {}, projects: [{}]}, action: AllActions): BootstrapUser {
-  if (action.type === SET_USER) {
+const initState: BootstrapUser = {
+  featuresEnabled: {allModules: !!modulesFromURL.size},
+  profile: {},
+  projects: [{}],
+}
+function bootstrapUserReducer(state = initState, action: AllActions): BootstrapUser {
+  if (action.type === 'SET_USER') {
     if (action.user.projects && action.user.projects[0]) {
       const project = action.user.projects && action.user.projects[0]
       if (project.mobility && !project.city) {
@@ -816,9 +603,8 @@ function bootstrapUserReducer(
     }
     return action.user
   }
-  if (action.type === SET_JOB) {
+  if (action.type === 'SET_JOB') {
     return {
-      profile: {},
       ...state,
       projects: [{
         ...state.projects[0],
@@ -826,15 +612,37 @@ function bootstrapUserReducer(
       }],
     }
   }
-  if (action.type === SET_CITY) {
+  if (action.type === 'SET_CITY') {
     return {
-      profile: {},
       ...state,
       projects: [{
         ...state.projects[0],
         city: action.city,
       }],
     }
+  }
+  if (action.type === 'SET_FEATURES') {
+    return {
+      ...state,
+      featuresEnabled: action.features,
+    }
+  }
+  if (action.type === 'SET_LOCALE') {
+    return {
+      ...state,
+      profile: {
+        ...state.profile,
+        locale: action.locale,
+      },
+    }
+  }
+  return state
+}
+
+const adviceSelectionReducer = (state: readonly string[] = [], action: AllActions):
+readonly string[] => {
+  if (action.type === 'SET_ADVICE_SELECTION') {
+    return action.adviceIds
   }
   return state
 }
@@ -843,6 +651,7 @@ function bootstrapUserReducer(
 // Create the store that will be provided to connected components via Context.
 const store = finalCreateStore(
   combineReducers({
+    adviceIds: adviceSelectionReducer,
     app,
     asyncState,
     router: connectRouter(history),
@@ -850,9 +659,10 @@ const store = finalCreateStore(
   }),
 )
 if (module.hot) {
-  module.hot.accept(['store/app_reducer'], (): void => {
-    const nextAppReducerModule = require('store/app_reducer')
+  module.hot.accept(['store/app_reducer'], async (): Promise<void> => {
+    const nextAppReducerModule = await import('store/app_reducer')
     store.replaceReducer(combineReducers({
+      adviceIds: adviceSelectionReducer,
       app: nextAppReducerModule.app as typeof app,
       asyncState: nextAppReducerModule.asyncState as typeof asyncState,
       router: connectRouter(history),
@@ -872,20 +682,80 @@ const BootstrapSnackbar = connect(
 )(Snackbar)
 
 
-const App = (): React.ReactElement => <Provider store={store}>
+const fetchUserInput = async (hashString: string, dispatch: DispatchBootstrapActions) => {
+  try {
+    return hashString.startsWith('{') ?
+      await parseJsonAsync<InputUser>(hashString) :
+      await dispatch(convertFromProto('userWithAdviceSelection', hashString))
+  } catch (error) {
+    dispatch(displayToasterMessage(`${error.message} en parsant ${hashString}`))
+  }
+}
+
+const installationPage: Record<string, React.ComponentType<unknown>> = {}
+// Add a page available from /conseiller/..., usually to install a bookmarklet.
+export const addInstallationPage = (
+  path: string, component: React.ComponentType<unknown>): void => {
+  if (installationPage[path]) {
+    throw new Error(`${Routes.BOOTSTRAP_ROOT}${path} is already defined`)
+  }
+  installationPage[path] = component
+}
+
+
+const UserConnectedPageBase = (): React.ReactElement => {
+  const {hash} = useLocation()
+  const dispatch = useDispatch<DispatchBootstrapActions>()
+
+  useAsynceffect(async (checkIfCanceled): Promise<void> => {
+    if (hash.length <= 1) {
+      return
+    }
+    const hashString = decodeURIComponent(hash.slice(1))
+    const userInput = await fetchUserInput(hashString, dispatch)
+    if (!userInput || checkIfCanceled()) {
+      return
+    }
+    if (isUserWithAdviceSelection(userInput)) {
+      if (!userInput.user) {
+        return
+      }
+      dispatch({type: 'SET_USER', user: addProjectIds(userInput.user)})
+      dispatch({adviceIds: userInput.adviceIds || [], type: 'SET_ADVICE_SELECTION'})
+    } else {
+      dispatch({
+        type: 'SET_USER',
+        user: addProjectIds(userInput),
+      })
+    }
+  }, [dispatch, hash])
+
+  const {i18n} = useTranslation()
+  useEffect((): void => {
+    dispatch({locale: i18n.language, type: 'SET_LOCALE'})
+  }, [dispatch, i18n.language])
+
+  return <Switch>
+    <Route path={Routes.BOOTSTRAP_PAGE} component={BootstrapPage} />
+    <Route path={Routes.RESOURCES_PAGE} component={ResourcesPage} />
+    {Object.entries(installationPage).map(([path, component]) =>
+      <Route key={path} path={`${Routes.BOOTSTRAP_ROOT}${path}`} component={component} />)}
+    <Redirect to={Routes.RESOURCES_PAGE} />
+  </Switch>
+}
+const UserConnectedPage = React.memo(UserConnectedPageBase)
+
+const App = () => <Provider store={store}>
   <div style={{backgroundColor: '#fff', color: colors.DARK_TWO}}>
     <ConnectedRouter history={history}>
       <Suspense fallback={<WaitingPage />}>
-        <Switch>
-          <Route path={Routes.BOOTSTRAP_PAGE} component={BootstrapPage} />
-          <Route path={Routes.RESOURCES_PAGE} component={ResourcesPage} />
-        </Switch>
+        <UserConnectedPage />
       </Suspense>
     </ConnectedRouter>
     <BootstrapSnackbar timeoutMillisecs={4000} />
   </div>
 </Provider>
-const AppMemo = React.memo(App)
 
 
-export {AppMemo as App}
+
+export default hot(React.memo(App))

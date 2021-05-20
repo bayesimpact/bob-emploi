@@ -1,30 +1,29 @@
-import ClockOutlineIcon from 'mdi-react/ClockOutlineIcon'
 import PropTypes from 'prop-types'
 import React, {useCallback, useMemo} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useDispatch} from 'react-redux'
 import {Link} from 'react-router-dom'
 
+import useFastForward from 'hooks/fast_forward'
 import {DispatchAllActions, startAsGuest} from 'store/actions'
 
-import desktopScreenshot from 'images/bobdesktop.png'
-import phoneScreenshot from 'images/bobphone.png'
 import facebookImage from 'images/facebook.svg'
-import logoProductWhiteImage from 'images/bob-logo.svg?fill=#fff'
+import logoProductWhiteImage from 'images/bob-logo.svg?fill=%23fff'
 import twitterImage from 'images/twitter.svg'
 
-import {useFastForward} from 'components/fast_forward'
-import {HelpDeskLink} from 'components/help'
-import {Trans} from 'components/i18n'
-import {isMobileVersion} from 'components/mobile'
-import {PageWithNavigationBar, PageWithNavigationBarProps} from 'components/navigation'
+import Button from 'components/button'
+import {useHelpDeskLinkProps} from 'components/help_desk_link'
+import Trans from 'components/i18n_trans'
+import isMobileVersion from 'store/mobile'
+import {PageWithNavigationBar, PageWithNavigationBarProps,
+  WithScrollNavBar} from 'components/navigation'
 import {STATIC_ADVICE_MODULES} from 'components/pages/static/static_advice/base'
 import {RadiumExternalLink, SmartLink} from 'components/radium'
-import {Button, MIN_CONTENT_PADDING, MAX_CONTENT_WIDTH, SmoothTransitions} from 'components/theme'
+import {MIN_CONTENT_PADDING, MAX_CONTENT_WIDTH, SmoothTransitions} from 'components/theme'
 import {Routes} from 'components/url'
 
 
-type FooterLinkProps = GetProps<typeof SmartLink> & {
+type FooterLinkProps = React.ComponentProps<typeof SmartLink> & {
   isSelected?: boolean
 }
 
@@ -52,6 +51,7 @@ const FooterLinkBase: React.FC<FooterLinkProps> = (props: FooterLinkProps): Reac
     ...SmoothTransitions,
     ...style,
   }), [isSelected, style])
+  // eslint-disable-next-line jsx-a11y/anchor-has-content
   return <SmartLink style={linkStyle} {...linkProps} />
 }
 FooterLinkBase.propTypes = {
@@ -137,6 +137,7 @@ const FooterBase: React.FC<FooterProps> = ({page, style}) => {
     'paddingTop': iconPadding,
     ...SmoothTransitions,
   }
+  const helpDeskLinkProps = useHelpDeskLinkProps()
   return <footer style={footerSectionStyle}>
     <div style={{margin: 'auto', maxWidth: MAX_CONTENT_WIDTH}}>
       <div style={{textAlign: isMobileVersion ? 'center' : 'initial'}}>
@@ -173,7 +174,7 @@ const FooterBase: React.FC<FooterProps> = ({page, style}) => {
         </FooterSection>
 
         <FooterSection title={t('Aide')}>
-          <HelpDeskLink><FooterLink>{t('Nous contacter')}</FooterLink></HelpDeskLink>
+          <FooterLink {...helpDeskLinkProps}>{t('Nous contacter')}</FooterLink>
 
           <FooterLink to={Routes.PROFESSIONALS_PAGE} isSelected={page === 'professionals'}>
             {t('Accompagnateurs')}
@@ -203,11 +204,11 @@ const FooterBase: React.FC<FooterProps> = ({page, style}) => {
             <FooterLink
               to={Routes.STATIC_ADVICE_PAGE + `/${adviceId}`}
               isSelected={page === `static-${adviceId}`} key={adviceId}>
-              {translate(name)}
+              {translate(...name)}
             </FooterLink>)}
         </FooterSection>
 
-        <div style={{display: 'flex', justifyContent: 'space-between'}}>
+        <div style={{alignItems: 'flex-start', display: 'flex', justifyContent: 'space-between'}}>
           <RadiumExternalLink style={iconStyle} href="https://www.facebook.com/bobemploi">
             <img src={facebookImage} alt="Facebook" />
           </RadiumExternalLink>
@@ -242,6 +243,7 @@ const StrongTitle = React.memo(StrongTitleBase)
 
 interface StaticPageProps extends PageWithNavigationBarProps {
   children: React.ReactNode
+  isContentScrollable?: boolean
   page: string
   style?: React.CSSProperties
   title?: React.ReactNode
@@ -265,7 +267,7 @@ const noFlexShrink = {flexShrink: 0}
 
 
 const StaticPageBase: React.FC<StaticPageProps> = (props: StaticPageProps): React.ReactElement => {
-  const {children, page, style, title, ...extraProps} = props
+  const {children, isContentScrollable = true, page, style, title, ...extraProps} = props
   const footerSectionHeaderStyle = useMemo((): React.CSSProperties => ({
     alignItems: 'center',
     alignSelf: 'center',
@@ -284,24 +286,31 @@ const StaticPageBase: React.FC<StaticPageProps> = (props: StaticPageProps): Reac
     padding: isMobileVersion ? 20 : 100,
     ...style,
   }), [style])
+  const needsScrollNavBar = useMemo((): boolean => isContentScrollable === false,
+    [isContentScrollable])
+  const contentPage = useMemo((): React.ReactNode => {
+    return <React.Fragment>
+      {title ? (
+        <div style={pageStyle}>
+          <header style={footerSectionHeaderStyle}>
+            {title}
+          </header>
+
+          <hr style={separatorStyle} />
+
+          <div style={contentStyle}>
+            {children}
+          </div>
+        </div>
+      ) : <div style={noFlexShrink}>{children}</div>}
+      <Footer page={page} style={noFlexShrink} />
+    </React.Fragment>
+  }, [children, contentStyle, footerSectionHeaderStyle, page, title])
   return <PageWithNavigationBar
     style={{...(title ? {} : style)}}
-    page={page} isContentScrollable={true} {...extraProps}>
-    {title ? (
-      <div style={pageStyle}>
-        <header style={footerSectionHeaderStyle}>
-          {title}
-        </header>
-
-        <hr style={separatorStyle} />
-
-        <div style={contentStyle}>
-          {children}
-        </div>
-      </div>
-    ) : <div style={noFlexShrink}>{children}</div>}
-
-    <Footer page={page} style={noFlexShrink} />
+    page={page} isContentScrollable={isContentScrollable} {...extraProps}>
+    {needsScrollNavBar ? <WithScrollNavBar>{contentPage}</WithScrollNavBar>
+      : contentPage}
   </PageWithNavigationBar>
 }
 StaticPageBase.propTypes = {
@@ -327,60 +336,28 @@ interface TitleSectionProps {
 }
 
 
-const emStyle: React.CSSProperties = {
-  color: '#fff',
-}
-const buttonGroupStyle: React.CSSProperties = {
+const buttonGroupStyle: React.CSSProperties = isMobileVersion ? {} : {
   alignItems: 'center',
-  display: 'flex',
+  display: 'inline-flex',
   flexDirection: 'column',
   margin: isMobileVersion ? 'auto' : 0,
   width: 'fit-content',
 }
 const startDiagnosticButtonStyle: React.CSSProperties = {
-  backgroundColor: colors.BRIGHT_LIGHT_BLUE,
   fontSize: isMobileVersion ? 15 : 18,
   fontWeight: 'bold',
-  padding: '19px 50px 18px',
-}
-const subButtonStyle: React.CSSProperties = {
-  alignItems: 'center',
-  color: colors.BRIGHT_LIGHT_BLUE,
-  display: 'flex',
-  fontSize: 15,
-  fontWeight: 'bold',
-  marginTop: 12,
+  padding: isMobileVersion ? '19px 40px 18px' : '19px 50px 18px',
+  ...isMobileVersion ? {width: '100%'} : {},
 }
 const subButtonTextStyle: React.CSSProperties = {
+  color: colors.COOL_GREY,
+  fontSize: 16,
   marginLeft: 8,
+  marginTop: 12,
   // To center vertically the Lato font.
   paddingTop: '.25em',
+  textAlign: 'center',
 }
-const baseScreenshotsStyle: React.CSSProperties = {
-  bottom: -125,
-  position: 'absolute',
-}
-const desktopScreenshotStyle: React.CSSProperties = {
-  borderRadius: 32,
-  boxShadow: '5px 7px 14px 0 rgba(0, 0, 0, 0.1)',
-  display: 'block',
-  marginLeft: 37,
-  width: 550,
-}
-const phoneScreenshotBorderStyle = {
-  border: `solid 3px ${colors.DARK_TWO}`,
-  borderRadius: 37,
-  bottom: -35,
-  boxShadow: '5px 7px 14px 0 rgba(0, 0, 0, 0.3)',
-  left: 0,
-  position: 'absolute',
-} as const
-const phoneScreenshotStyle = {
-  border: `solid 3px ${colors.MIRAGE}`,
-  borderRadius: 32,
-  display: 'block',
-  width: 200,
-} as const
 
 
 const TitleLoginButtons: React.FC = () => {
@@ -394,68 +371,57 @@ const TitleLoginButtons: React.FC = () => {
     [dispatch], Routes.INTRO_PAGE)
   return <div style={buttonGroupStyle}>
     <Link to={Routes.INTRO_PAGE} onClick={onClick}>
-      <Button style={startDiagnosticButtonStyle}>
-        {t('Évaluer ma recherche')}
+      <Button type="navigation" style={startDiagnosticButtonStyle}>
+        {t('Je débloque ma recherche')}
       </Button>
     </Link>
-    <div style={subButtonStyle}>
-      <ClockOutlineIcon />
-      <span style={subButtonTextStyle}>
-        {t('En moins de 10 minutes')}
-      </span>
+    <div style={subButtonTextStyle}>
+      {t("En plus c'est gratuit\u00A0!")}
     </div>
   </div>
 }
 
 const TitleSectionBase: React.FC<TitleSectionProps> = (props): React.ReactElement => {
   const {isLoginButtonShown, pageContent, style} = props
-  const {t} = useTranslation()
   const {fontSize, subtitle, title} = pageContent
-  const containerStyle: React.CSSProperties = {
-    backgroundColor: colors.BOB_BLUE,
-    color: '#fff',
+  const sectionStyle: React.CSSProperties = {
+    backgroundColor: '#fff',
+    color: colors.DARK_TWO,
     fontSize: isMobileVersion ? 39 : (fontSize || 55),
-    padding: isMobileVersion ? '30px 10px 60px' : `110px ${MIN_CONTENT_PADDING}px 60px`,
+    padding: isMobileVersion ? '30px 30px 60px' : `110px ${MIN_CONTENT_PADDING}px 60px`,
     position: 'relative',
-    textAlign: isMobileVersion ? 'center' : 'left',
+    textAlign: 'left',
     // Make sure that the suggestions in the search bar go over the next section.
     zIndex: 1,
     ...style,
   }
   const titleStyle: React.CSSProperties = {
-    fontSize: isMobileVersion ? 35 : 55,
+    fontSize: isMobileVersion ? 43 : 55,
     fontWeight: 900,
-    margin: '0 0 45px',
+    margin: '0 0 55px',
   }
   const subTitleStyle: React.CSSProperties = {
     fontSize: isMobileVersion ? 20 : 18,
     maxWidth: 400,
     padding: '20px 0 70px',
   }
-  const isMediumScreen = window.innerWidth <= 1270
-  const screenshotsStyle = useMemo(() => ({
-    ...baseScreenshotsStyle,
-    left: isMediumScreen ? 650 : 550,
-  }), [isMediumScreen])
-  return <section style={containerStyle}>
-    <div style={{margin: '0 auto', maxWidth: MAX_CONTENT_WIDTH, position: 'relative'}}>
-      <h1 style={titleStyle}>{title ? title : <Trans style={emStyle} parent="span">
-        Avec {{productName: config.productName}}, la recherche d'emploi<br />
-        devient plus simple&nbsp;!
+  const containerStyle: React.CSSProperties = isMobileVersion ? {
+    margin: 0,
+    position: 'relative',
+  } : {
+    margin: '0 auto',
+    maxWidth: MAX_CONTENT_WIDTH,
+    position: 'relative',
+  }
+  return <section style={sectionStyle}>
+    <div style={containerStyle}>
+      <h1 style={titleStyle}>{title ? title : <Trans parent="span">
+        En 5 minutes, découvrez comment<br />
+        débloquer votre recherche d'emploi&nbsp;!
       </Trans>}</h1>
       {isLoginButtonShown ? <React.Fragment>
-        {subtitle ? <div style={subTitleStyle}>{subtitle}</div> : <Trans style={subTitleStyle}>
-          <strong>{{productName: config.productName}} est un coach gratuit</strong> qui vous aide à
-          comprendre et agir sur votre recherche d'emploi
-        </Trans>}
+        {subtitle ? <div style={subTitleStyle}>{subtitle}</div> : null}
         <TitleLoginButtons />
-        {isMobileVersion ? null : <div style={screenshotsStyle}>
-          {isMediumScreen ? null : <img
-            style={desktopScreenshotStyle} src={desktopScreenshot} alt={t('version large')} />}
-          <div style={phoneScreenshotBorderStyle}>
-            <img style={phoneScreenshotStyle} src={phoneScreenshot} alt={t('version mobile')} />
-          </div>
-        </div>}
       </React.Fragment> : null}
     </div>
   </section>

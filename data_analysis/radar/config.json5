@@ -1,0 +1,28 @@
+{
+  domainIds: [
+    'job',
+    'training',
+    'mobility',
+    'housing',
+    'financial',
+    'healthcare',
+    'citizenship',
+  ],
+  skillIds: [
+    'people',
+    'tools',
+    'skills',
+  ],
+  translations: {
+    citizenship: 'Citoyenneté',
+    financial: 'Ressources financières',
+    healthcare: 'Santé',
+    housing: 'Logement',
+    job: 'Emploi',
+    mobility: 'Mobilité',
+    people: 'Acteurs',
+    skills: 'Comportements',
+    tools: 'Outils',
+    training: 'Formation',
+  },
+}

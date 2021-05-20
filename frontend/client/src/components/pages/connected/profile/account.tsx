@@ -1,16 +1,22 @@
 import LockOutlineIcon from 'mdi-react/LockOutlineIcon'
 import PropTypes from 'prop-types'
-import React, {useCallback, useState} from 'react'
+import React, {useCallback, useMemo, useState} from 'react'
 
-import {getLanguage, getLocaleWithTu, isTuPossible, localizeOptions, prepareT} from 'store/i18n'
+import {LocalizableString, getLanguage, getLocaleWithTu, isGenderNeeded, isTuPossible,
+  localizeOptions, prepareT} from 'store/i18n'
 import {GENDER_OPTIONS, FAMILY_SITUATION_OPTIONS} from 'store/user'
 
+import AccountDeletionModal from 'components/account_deletion_modal'
+import BirthYearSelector from 'components/birth_year_selector'
+import FieldSet from 'components/field_set'
+import IconInput from 'components/icon_input'
+import InformationIcon from 'components/information_icon'
+import Input from 'components/input'
 import {LoginButton} from 'components/login'
-import {AccountDeletionModal} from 'components/logout'
 import {useModal} from 'components/modal'
+import RadioGroup from 'components/radio_group'
 import {RadiumDiv} from 'components/radium'
-import {IconInput, Input, RadioGroup} from 'components/theme'
-import {BirthYearSelector, FieldSet, Select} from 'components/pages/connected/form_utils'
+import Select from 'components/select'
 
 import {Step, ProfileStepProps, useProfileChangeCallback, useProfileUpdater} from './step'
 
@@ -31,9 +37,10 @@ const yesNoOptions = [
 ] as const
 
 
-const languageOptions = [
+const languageOptions: readonly {name: LocalizableString; value: string}[] = [
   {name: prepareT('français'), value: 'fr'},
-  {name: prepareT('anglais (expérimental)'), value: 'en'},
+  {name: prepareT('anglais (États-Unis)'), value: 'en'},
+  {name: prepareT('anglais (Royaume Uni)'), value: 'en_UK'},
 ] as const
 
 
@@ -52,20 +59,23 @@ const deleteContainerStyle: RadiumCSSProperties = {
 }
 
 
-const AccountStepBase: React.FC<ProfileStepProps> = (props): React.ReactElement => {
+const AccountStep: React.FC<ProfileStepProps> = (props): React.ReactElement => {
   const {hasAccount, isShownAsStepsDuringOnboarding, profile, onChange, onSubmit, t} = props
-  const {email, familySituation, gender, lastName, locale, name: nameProp, yearOfBirth} = profile
+  const {email, familySituation, gender, hasHandicap, lastName, locale, name: nameProp,
+    yearOfBirth} = profile
   const [isAccountDeletionModalShown, showDeletionModal, hideDeletionModal] = useModal(false)
 
   const {handleSubmit, isValidated} = useProfileUpdater(fieldsRequired, profile, onSubmit)
   const updateFamilySituation = useProfileChangeCallback('familySituation', profile, onChange)
   const updateGender = useProfileChangeCallback('gender', profile, onChange)
+  const updateHasHandicap = useProfileChangeCallback('hasHandicap', profile, onChange)
   const updateLastName = useProfileChangeCallback('lastName', profile, onChange)
   const updateLocale = useProfileChangeCallback('locale', profile, onChange)
   const updateName = useProfileChangeCallback('name', profile, onChange)
   const updateYearOfBirth = useProfileChangeCallback('yearOfBirth', profile, onChange)
 
   const [name, setDirtyName] = useState(nameProp || '')
+  const [isLastNameEditable] = useState(!!lastName)
   const cleanName = name.trim()
   const setName = useCallback((name: string): void => {
     setDirtyName(name)
@@ -84,7 +94,13 @@ const AccountStepBase: React.FC<ProfileStepProps> = (props): React.ReactElement 
     (canTutoie: boolean): void => updateLocale(getLocaleWithTu(language, canTutoie)),
     [language, updateLocale],
   )
-  // TODO(sil): Make AccountDeletionModal and deletion "button" functional.
+  const translate = t
+  const localizedLanguageOptions = useMemo(() => languageOptions.map(({name, value}) => ({
+    name: config.defaultLang === value ?
+      translate(...name) :
+      t('{{language}} - expérimental', {language: translate(...name)}),
+    value,
+  })), [t, translate])
   return <Step
     title={t('Vos informations')} fastForward={handleSubmit}
     onNextButtonClick={handleSubmit} {...props}>
@@ -94,12 +110,12 @@ const AccountStepBase: React.FC<ProfileStepProps> = (props): React.ReactElement 
         type="text" placeholder={t('Prénom')} autoComplete="first-name"
         onChange={setName} value={name} onChangeDelayMillisecs={1000} />
     </FieldSet>
-    <FieldSet label={t('Nom')} isValid={!!lastName} isValidated={isValidated}>
+    {isLastNameEditable ? <FieldSet label={t('Nom')} isValid={!!lastName} isValidated={isValidated}>
       <Input
         type="text" placeholder={t('Nom')} autoComplete="family-name"
         onChange={updateLastName} value={lastName || ''}
         onChangeDelayMillisecs={1000} />
-    </FieldSet>
+    </FieldSet> : null}
     {hasAccount ? <FieldSet label={t('Email')} isValid={!!email} isValidated={isValidated}>
       <IconInput
         type="text" style={{color: colors.COOL_GREY}} iconComponent={LockOutlineIcon}
@@ -107,20 +123,29 @@ const AccountStepBase: React.FC<ProfileStepProps> = (props): React.ReactElement 
     </FieldSet> : <LoginButton
       type="navigation" visualElement="account"
       style={{alignSelf: 'center', marginBottom: 25}}>
-      Créer mon compte
+      {t('Créer mon compte')}
     </LoginButton>}
     {isShownAsStepsDuringOnboarding ? null : <React.Fragment>
-      <FieldSet label={t('Vous êtes\u00A0:')} isValid={!!gender} isValidated={isValidated}>
+      {gender || isGenderNeeded(language) ? <FieldSet label={<React.Fragment>
+        {t('Vous êtes\u00A0:')}
+        <InformationIcon tooltipWidth={220}>
+          {t(
+            'Vous aurez accès au même contenu. {{productName}} se sert de cette information ' +
+            "uniquement pour savoir s'il faut parler de vous au masculin ou au féminin.",
+            {productName: config.productName},
+          )}
+        </InformationIcon>
+      </React.Fragment>} isValid={!!gender} isValidated={isValidated}>
         <RadioGroup<bayes.bob.Gender>
           style={radioGroupStyle}
           onChange={updateGender}
           options={localizeOptions(t, GENDER_OPTIONS)} value={gender} />
-      </FieldSet>
+      </FieldSet> : null}
       <FieldSet
         label={t('La langue de {{productName}}\u00A0:', {productName: config.productName})}>
         <Select
           onChange={updateLanguage} value={language}
-          options={localizeOptions(t, languageOptions)} />
+          options={localizedLanguageOptions} />
       </FieldSet>
       {isTuPossible(language) ? <FieldSet
         label="Tutoiement" isValid={true} isValidated={isValidated}>
@@ -145,6 +170,15 @@ const AccountStepBase: React.FC<ProfileStepProps> = (props): React.ReactElement 
           placeholder={t('choisissez une situation')}
           value={familySituation} />
       </FieldSet>
+      <FieldSet
+        label={t(
+          'Reconnu·e comme travailleu·r·se handicapé·e\u00A0?', {context: gender})}
+        isValid={hasHandicap !== undefined}>
+        <RadioGroup<boolean>
+          style={radioGroupStyle}
+          onChange={updateHasHandicap}
+          options={localizeOptions(t, yesNoOptions)} value={!!hasHandicap} />
+      </FieldSet>
     </React.Fragment>}
     <RadiumDiv
       style={deleteContainerStyle}
@@ -153,7 +187,7 @@ const AccountStepBase: React.FC<ProfileStepProps> = (props): React.ReactElement 
     </RadiumDiv>
   </Step>
 }
-AccountStepBase.propTypes = {
+AccountStep.propTypes = {
   hasAccount: PropTypes.bool,
   isShownAsStepsDuringOnboarding: PropTypes.bool,
   onChange: PropTypes.func.isRequired,
@@ -162,14 +196,14 @@ AccountStepBase.propTypes = {
     email: PropTypes.string,
     familySituation: PropTypes.string,
     gender: PropTypes.string,
+    hasHandicap: PropTypes.bool,
     lastName: PropTypes.string,
     locale: PropTypes.string,
     name: PropTypes.string,
-    yearOfBirth: PropTypes.string,
+    yearOfBirth: PropTypes.number,
   }).isRequired,
   t: PropTypes.func.isRequired,
 }
-const AccountStep = React.memo(AccountStepBase)
 
 
-export {AccountStep}
+export default React.memo(AccountStep)

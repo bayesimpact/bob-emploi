@@ -1,13 +1,8 @@
-import CloseIcon from 'mdi-react/CloseIcon'
+import _uniqueId from 'lodash/uniqueId'
 import PropTypes from 'prop-types'
-import React, {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react'
+import React, {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react'
 
-import {isMobileVersion} from 'components/mobile'
-import {useRadium} from 'components/radium'
-import {useKeyListener} from 'components/shortkey'
-
-// TODO(pascal): Harmonize how we import components from other components.
-import {SmoothTransitions} from './theme'
+import ModalCloseButton from 'components/modal_close_button'
 
 
 let numModalsShown = 0
@@ -96,6 +91,7 @@ const ModalBase = (props: ModalConfig): React.ReactElement => {
   const [closeButtonHeight, setCloseButtonHeight] = useState(0)
   const [isTooBigToBeCentered, setIsTooBigToBeCentered] = useState(false)
   const [modalHeight, setModalHeight] = useState(0)
+  const [titleId] = useState(_uniqueId)
 
   // Effect to prevent page scrolling when there's at least one modal.
   useEffect((): (() => void)|void => {
@@ -232,14 +228,18 @@ const ModalBase = (props: ModalConfig): React.ReactElement => {
     textAlign: 'center',
     ...props.titleStyle,
   }
-  return <div ref={page} style={pageStyle}>
+  return <div
+    ref={page} style={pageStyle} aria-hidden={!isShown} role="dialog" aria-modal={true}
+    aria-labelledby={title ? titleId : undefined}>
     <div style={backgroundStyle} />
     {externalChildren}
     <ReactHeight
       onHeightReady={handleUpdatedHeight} style={modalStyle}
       onTransitionEnd={handleTransitionEnd}>
-      {title ? <div style={titleStyle}>{title}</div> : null}
-      {onClose ? <ModalCloseButton shouldCloseOnEscape={isShown} onClick={onClose} /> : null}
+      {title ? <div style={titleStyle} id={titleId}>{title}</div> : null}
+      {onClose ? <ModalCloseButton
+        shouldCloseOnEscape={isShown} onClick={onClose} tabIndex={isShown ? 0 : -1} /> :
+        null}
       {finalChildren}
     </ReactHeight>
   </div>
@@ -266,58 +266,6 @@ ModalBase.propTypes = {
   titleStyle: PropTypes.object,
 }
 const Modal = React.memo(ModalBase)
-
-
-interface ButtonProps {
-  onClick: () => void
-  shouldCloseOnEscape?: boolean
-  style?: RadiumCSSProperties
-}
-
-
-const closeIconStyle = {
-  height: 33,
-  width: 19,
-}
-
-
-const ModalCloseButtonBase = (props: ButtonProps): React.ReactElement => {
-  const {shouldCloseOnEscape, onClick, style, ...otherProps} = props
-  const closeButtonStyle: RadiumCSSProperties = useMemo((): RadiumCSSProperties => ({
-    ':hover': {
-      backgroundColor: colors.SLATE,
-    },
-    'alignItems': 'center',
-    'backgroundColor': colors.CHARCOAL_GREY,
-    'borderRadius': '100%',
-    'bottom': '100%',
-    'boxShadow': '0 0 25px 0 rgba(0, 0, 0, 0.5)',
-    'color': '#fff',
-    'cursor': 'pointer',
-    'display': 'flex',
-    'fontSize': 19,
-    'height': 35,
-    'justifyContent': 'center',
-    'position': 'absolute',
-    'right': isMobileVersion ? 5 : 0,
-    'transform': 'translate(50%, 50%)',
-    'width': 35,
-    'zIndex': 1,
-    ...SmoothTransitions,
-    ...style,
-  }), [style])
-  const [radiumProps] = useRadium<HTMLDivElement>({style: closeButtonStyle})
-  useKeyListener('Escape', shouldCloseOnEscape ? onClick : undefined, undefined, 'keydown')
-  return <div {...otherProps} {...radiumProps} onClick={onClick}>
-    <CloseIcon style={closeIconStyle} />
-  </div>
-}
-ModalCloseButtonBase.propTypes = {
-  onClick: PropTypes.func.isRequired,
-  shouldCloseOnEscape: PropTypes.bool,
-  style: PropTypes.object,
-}
-const ModalCloseButton = React.memo(ModalCloseButtonBase)
 
 
 interface HeaderProps {
@@ -359,4 +307,4 @@ function useModal(isShownInitially?: boolean): [boolean, () => void, () => void]
 }
 
 
-export {Modal, ModalHeader, ModalCloseButton, useModal}
+export {Modal, ModalHeader, useModal}

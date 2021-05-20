@@ -1,6 +1,5 @@
 """Unit tests for the associations_help module."""
 
-import datetime
 import unittest
 
 from bob_emploi.frontend.api import user_pb2
@@ -24,14 +23,9 @@ class AdviceAssociationHelpTestCase(scoring_test.ScoringModelTestBase):
         """User is motivated."""
 
         persona = self._random_persona().clone()
-        scoring_project = persona.scoring_project(self.database)
         self.database.associations.insert_one({'name': 'SNC'})
         del persona.user_profile.frustrations[:]
-        if persona.project.job_search_length_months >= 12:
-            persona.project.job_search_length_months = 11
-        if scoring_project.get_search_length_at_creation() >= 12:
-            persona.project.job_search_started_at.FromDatetime(
-                persona.project.created_at.ToDatetime() - datetime.timedelta(days=336))
+        self._enforce_search_length_duration(persona.project, max_months=11)
         score = self._score_persona(persona)
         self.assertEqual(2, score, msg=f'Failed for "{persona.name}"')
 
@@ -50,9 +44,7 @@ class AdviceAssociationHelpTestCase(scoring_test.ScoringModelTestBase):
         persona = self._random_persona().clone()
         self.database.associations.insert_many(
             [{'name': 'SNC'}, {'name': 'SND'}, {'name': 'SNE'}, {'name': 'SNF'}])
-        persona.project.job_search_length_months = 6
-        persona.project.job_search_started_at.FromDatetime(
-            persona.project.created_at.ToDatetime() - datetime.timedelta(days=183))
+        self._enforce_search_length_duration(persona.project, exact_months=6)
         score = self._score_persona(persona)
         self.assertEqual(3, score, msg=f'Failed for "{persona.name}"')
 
@@ -61,9 +53,7 @@ class AdviceAssociationHelpTestCase(scoring_test.ScoringModelTestBase):
 
         persona = self._random_persona().clone()
         self.database.associations.insert_one({'name': 'SNC'})
-        persona.project.job_search_length_months = 12
-        persona.project.job_search_started_at.FromDatetime(
-            persona.project.created_at.ToDatetime() - datetime.timedelta(days=366))
+        self._enforce_search_length_duration(persona.project, exact_months=12)
         score = self._score_persona(persona)
         self.assertEqual(3, score, msg=f'Failed for "{persona.name}"')
 

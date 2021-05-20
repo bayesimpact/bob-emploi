@@ -1,0 +1,7 @@
+2636790	Stornoway	Stornoway	SYY,Steornabhagh,Steornavaie,Steòrnabhagh,Steórnabhagh,Stornavey,Stornovej,Stornovejus,Stornovėjus,Stornoway,seutoneowei,si tuo nuo wei,sutonou~ei,Сторновей,ストーノーウェイ,斯托诺韦,스토너웨이	58.20925	-6.38649	P	PPLA2	GB		SCT	W8			7500		12	Europe/London	2017-06-15
+12105022	Archidiocese of York	Archidiocese of York		53.96218	-1.08209	P	PPLCH	GB		ENG	Q5			0		14	Europe/London	2019-12-03
+2651621	Dagenham	Dagenham	da gen lin,daegeoneom,dagenamu,dagnham,dajnham,deganahama,داجنهام,داگنهام,डेगनहम,ダゲナム,達根林,대거넘	51.55	0.16667	P	PPLA3	GB		ENG	GLA	A1		108368		13	Europe/London	2012-04-27
+2640101	Poole	Poole	POQ,Poole,Pul,Pulas,Puul,pu er,puru,pwl  anglstan,Пул,Պուլ,پول، انگلستان,プール,普爾	50.71429	-1.98458	P	PPLA2	GB		ENG	AA			150092		6	Europe/London	2020-05-14
+2636843	Stoke Newington	Stoke Newington	Stok-Nyuinqton,Stoke Newington,Stouk Njuingtun,Стоук Нюингтън	51.56246	-0.07401	P	PPLX	GB		ENG	GLA	E8		0		28	Europe/London	2011-03-03
+2637440	South Dell	South Dell	South Dell	58.46667	-6.3	P	PPL	GB		SCT	W8			0		39	Europe/London	2016-03-10
+2636667	Strensall	Strensall		54.03999	-1.03512	P	PPL	GB		ENG	Q5	00FF033		6047		18	Europe/London	2017-06-12

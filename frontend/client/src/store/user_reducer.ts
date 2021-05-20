@@ -6,15 +6,9 @@ import {increaseRevision, keepMostRecentRevision} from './user'
 // Name of the cookie containing the user ID.
 const USER_ID_COOKIE_NAME = 'userId'
 
-
 // All data for a user of the companion app, a job seeker.
 // Keep in sync with User protobuf.
 const initialData = {
-  facebookId: undefined,
-  googleId: undefined,
-  manualExplorations: [],
-  profile: {},
-  projects: [],
   userId: Storage.getItem(USER_ID_COOKIE_NAME) || undefined,
 }
 
@@ -39,7 +33,7 @@ bayes.bob.Project {
 
 
 // Updates the given properties of a project.
-function updateProject(
+export function updateProject(
   state: bayes.bob.User, project?: bayes.bob.Project, isFromServer?: boolean): bayes.bob.User {
   const updatedState = project ? {
     ...state,
@@ -230,6 +224,7 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
         openedStrategies: [],
         projectId: action.project.projectId,
         strategies: [],
+        userHasReviewed: undefined,
       })
     case 'ADVICE_PAGE_IS_SHOWN':
     case 'EXPLORE_ADVICE':
@@ -242,7 +237,11 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
         return updateAdvice(state, action.project, action.response, true)
       }
       return state
-    case 'DIAGNOSTIC_IS_SHOWN':
+    case 'DIAGNOSTIC_IS_SHOWN': // Fallthrough intended.
+    case 'REVIEW_PROJECT_ACHIEVEMENTS': // Fallthrough intended.
+    case 'REVIEW_PROJECT_MAIN_CHALLENGE': // Fallthrough intended.
+    case 'REVIEW_PROJECT_PREVIEW_STRATS': // Fallthrough intended.
+    case 'SCORE_PROJECT_CHALLENGE_AGREEMENT':
       if (!action.status && action.projectDiff) {
         // Before sending the update to the server, let's modify the client
         // state to make the change faster.
@@ -263,14 +262,6 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
       } else if (action.status === 'success' && action.response) {
         // Coming back from server: replace the project by the result.
         return updateProject(state, action.response, true)
-      }
-      return state
-    case 'MARK_CHANGELOG_AS_SEEN':
-      if (!state.latestChangelogSeen || action.changelog > state.latestChangelogSeen) {
-        return increaseRevision({
-          ...state,
-          latestChangelogSeen: action.changelog,
-        })
       }
       return state
     case 'ACTIVATE_DEMO':
@@ -338,4 +329,4 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
 }
 
 
-export {userReducer}
+export default userReducer

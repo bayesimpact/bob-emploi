@@ -105,8 +105,8 @@ def try_stringify_number(value: int) -> str:
 
     try:
         return _NUMBER_WORDS[value]
-    except KeyError:
-        raise NotImplementedError(f'No French words defined for {value:d}')
+    except KeyError as error:
+        raise NotImplementedError(f'No French words defined for {value:d}') from error
 
 
 def cleanup_firstname(firstname: str) -> str:
@@ -115,7 +115,8 @@ def cleanup_firstname(firstname: str) -> str:
     return _FIRST_NAME_WORD_SEPARATORS.sub(' ', firstname.strip().title())
 
 
-def genderize_job(job: '_NamedJob', gender: user_pb2.Gender, is_lowercased: bool = False) -> str:
+def genderize_job(
+        job: '_NamedJob', gender: 'user_pb2.Gender.V', is_lowercased: bool = False) -> str:
     """Genderize a job."""
 
     def _maybe_lower(name: str) -> str:

@@ -1,8 +1,25 @@
 import {config, expect} from 'chai'
-import {userReducer} from 'store/user_reducer'
+import userReducer from 'store/user_reducer'
 import {ReplaceStrategyAction} from 'store/actions'
 
 config.truncateThreshold = 0
+
+const getFirstProject = (user: bayes.bob.User): bayes.bob.Project => {
+  expect(user.projects).to.be.ok
+  expect(user.projects![0]).to.be.ok
+  return user.projects![0]!
+}
+
+const getOpenedStrategy = (project: bayes.bob.Project, index = 0): bayes.bob.WorkingStrategy => {
+  expect(project.openedStrategies).to.be.ok
+  expect(project.openedStrategies![index]).to.be.ok
+  return project.openedStrategies![index]!
+}
+
+const getProfile = (user: bayes.bob.User): bayes.bob.UserProfile => {
+  expect(user.profile).to.be.ok
+  return user.profile!
+}
 
 describe('user reducer', (): void => {
   it('should return unchanged state for an unknown action', (): void => {
@@ -17,30 +34,27 @@ describe('user reducer', (): void => {
     const action = {project: {title: 'new project'}, type: 'CREATE_PROJECT'} as const
     const oldState = {googleId: 'bar', projects: [{title: 'a project'}]} as const
     const newState = userReducer(oldState, action)
-    expect(newState.projects).to.be.ok
-    expect(newState.projects!.length).to.equal(1)
-    expect(newState.projects![0].title).to.equal('a project')
     expect(newState.googleId).to.equal('bar')
+    const project = getFirstProject(newState)
+    expect(project.title).to.equal('a project')
   })
 
   it('should add a first project', (): void => {
     const action = {project: {title: 'new project'}, type: 'CREATE_PROJECT'} as const
     const oldState = {googleId: 'bar'} as const
     const newState = userReducer(oldState, action)
-    expect(newState.projects).to.be.ok
-    expect(newState.projects!.length).to.equal(1)
-    expect(newState.projects![0].title).to.equal('new project')
     expect(newState.googleId).to.equal('bar')
+    const project = getFirstProject(newState)
+    expect(project.title).to.equal('new project')
   })
 
   it('should not edit a complete project', (): void => {
     const action = {project: {title: 'new project'}, type: 'EDIT_FIRST_PROJECT'} as const
     const oldState = {googleId: 'bar', projects: [{title: 'a project'}]}
     const newState = userReducer(oldState, action)
-    expect(newState.projects).to.be.ok
-    expect(newState.projects!.length).to.equal(1)
-    expect(newState.projects![0].title).to.equal('a project')
     expect(newState.googleId).to.equal('bar')
+    const project = getFirstProject(newState)
+    expect(project.title).to.equal('a project')
   })
 
   it('should edit an incomplete project', (): void => {
@@ -52,21 +66,21 @@ describe('user reducer', (): void => {
     const newState = userReducer(oldState, action)
     expect(newState.projects).to.be.ok
     expect(newState.projects!.length).to.equal(1)
-    expect(newState.projects![0].title).to.equal('new project')
-    // @ts-ignore
-    expect(newState.projects![0].target).to.be.undefined
     expect(newState.googleId).to.equal('bar')
+    const project = getFirstProject(newState)
+    expect(project.title).to.equal('new project')
+    // @ts-ignore
+    expect(project.target).to.be.undefined
   })
 
   it('should create an incomplete project on first edit', (): void => {
     const action = {project: {title: 'new project'}, type: 'EDIT_FIRST_PROJECT'} as const
     const oldState = {googleId: 'bar'} as const
     const newState = userReducer(oldState, action)
-    expect(newState.projects).to.be.ok
-    expect(newState.projects!.length).to.equal(1)
-    expect(newState.projects![0].title).to.equal('new project')
-    expect(newState.projects![0].isIncomplete).to.equal(true)
     expect(newState.googleId).to.equal('bar')
+    const project = getFirstProject(newState)
+    expect(project.title).to.equal('new project')
+    expect(project.isIncomplete).to.equal(true)
   })
 
   it('should update a project when modifying a previously complete project', (): void => {
@@ -79,18 +93,17 @@ describe('user reducer', (): void => {
       strategies: [{}],
     }]} as const
     const newState = userReducer(oldState, action)
-    expect(newState.projects).to.be.ok
-    expect(newState.projects![0].projectId).to.equal('0')
-    expect(newState.projects![0].isIncomplete).to.be.true
-    expect(newState.projects![0].advices).to.eql([])
-    expect(newState.projects![0].diagnostic).to.be.undefined
-    expect(newState.projects![0].localStats).to.be.undefined
-    expect(newState.projects![0].strategies).to.eql([])
     expect(newState.revision).to.equal(1)
+    const project = getFirstProject(newState)
+    expect(project.projectId).to.equal('0')
+    expect(project.isIncomplete).to.be.true
+    expect(project.advices).to.eql([])
+    expect(project.diagnostic).to.be.undefined
+    expect(project.localStats).to.be.undefined
+    expect(project.strategies).to.eql([])
   })
 
   describe('diagnoseOnboarding', (): void => {
-
     it('should update user profile', (): void => {
       const action = {
         ASYNC_MARKER: 'ASYNC_MARKER',
@@ -99,9 +112,9 @@ describe('user reducer', (): void => {
       } as const
       const oldState = {profile: {gender: 'FEMININE', name: 'Nathalie'}} as const
       const newState = userReducer(oldState, action)
-      expect(newState.profile).to.be.ok
-      expect(newState.profile!.gender).to.equal('MASCULINE')
-      expect(newState.profile!.name).to.equal('Nathalie')
+      const profile = getProfile(newState)
+      expect(profile.gender).to.equal('MASCULINE')
+      expect(profile.name).to.equal('Nathalie')
       expect(newState.revision).to.equal(1)
     })
 
@@ -113,9 +126,9 @@ describe('user reducer', (): void => {
       } as const
       const oldState = {projects: [{isIncomplete: true}]}
       const newState = userReducer(oldState, action)
-      expect(newState.projects).to.be.ok
-      expect(newState.projects![0].isIncomplete).to.be.true
-      expect(newState.projects![0].title).to.equal('Hello World')
+      const project = getFirstProject(newState)
+      expect(project.isIncomplete).to.be.true
+      expect(project.title).to.equal('Hello World')
       expect(newState.revision).to.equal(1)
     })
 
@@ -132,10 +145,10 @@ describe('user reducer', (): void => {
         projectId: '0',
       }]}
       const newState = userReducer(oldState, action)
-      expect(newState.projects).to.be.ok
-      expect(newState.projects![0].projectId).to.equal('0')
-      expect(newState.projects![0].isIncomplete).to.be.true
-      expect(newState.projects![0].title).to.equal('Hello World')
+      const project = getFirstProject(newState)
+      expect(project.projectId).to.equal('0')
+      expect(project.isIncomplete).to.be.true
+      expect(project.title).to.equal('Hello World')
       expect(newState.revision).to.equal(1)
     })
 
@@ -163,11 +176,10 @@ describe('user reducer', (): void => {
         projectId: '0',
       }]} as const
       const newState = userReducer(oldState, action)
-      expect(newState.projects).to.be.ok
-      expect(newState.projects![0].openedStrategies).to.be.ok
-      expect(newState.projects![0].openedStrategies![0].strategyId).to.equal('other-leads')
-      expect(newState.projects![0].openedStrategies![0].reachedGoals).to.have.property('goal1')
-      expect(newState.projects![0].openedStrategies![0].startedAt).to.equal('2019-04-13T12:00:00Z')
+      const strategy = getOpenedStrategy(getFirstProject(newState))
+      expect(strategy.strategyId).to.equal('other-leads')
+      expect(strategy.reachedGoals).to.have.property('goal1')
+      expect(strategy.startedAt).to.equal('2019-04-13T12:00:00Z')
     })
 
     it('should create a newly opened strategy', (): void => {
@@ -194,12 +206,10 @@ describe('user reducer', (): void => {
         projectId: '0',
       }]} as const
       const newState = userReducer(oldState, action)
-      expect(newState.projects).to.be.ok
-      expect(newState.projects![0].openedStrategies).to.be.ok
-      expect(newState.projects![0].openedStrategies![1].strategyId).to.equal('other-leads')
-      expect(newState.projects![0].openedStrategies![1].reachedGoals).to.have.property('goal1')
-      expect(newState.projects![0].openedStrategies![1].startedAt).to.equal('2019-04-13T12:00:00Z')
+      const strategy = getOpenedStrategy(getFirstProject(newState), 1)
+      expect(strategy.strategyId).to.equal('other-leads')
+      expect(strategy.reachedGoals).to.have.property('goal1')
+      expect(strategy.startedAt).to.equal('2019-04-13T12:00:00Z')
     })
-
   })
 })

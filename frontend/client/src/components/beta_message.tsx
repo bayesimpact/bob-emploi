@@ -4,10 +4,10 @@ import {useSelector} from 'react-redux'
 import Storage from 'local-storage-fallback'
 
 import {RootState} from 'store/actions'
+import isMobileVersion from 'store/mobile'
 
-import {Banner} from './banner'
-import {isMobileVersion} from './mobile'
-import {ExternalLink} from './theme'
+import Banner from 'components/banner'
+import ExternalLink from 'components/external_link'
 
 
 const HAS_SEEN_BETA_BANNER = 'has-seen-2-beta-banner'
@@ -18,7 +18,7 @@ interface MessageProps {
 }
 
 
-const BetaMessageBase: React.FC<MessageProps> = ({style}: MessageProps):
+const BetaMessage: React.FC<MessageProps> = ({style}: MessageProps):
 React.ReactElement|null => {
   const [isHidden, setIsHidden] = useState(!!Storage.getItem(HAS_SEEN_BETA_BANNER))
   const isLoggedIn = useSelector(({user}: RootState): boolean => !!user.userId)
@@ -49,10 +49,9 @@ React.ReactElement|null => {
     >cliquant ici</ExternalLink>.
   </Banner>
 }
-BetaMessageBase.propTypes = {
+BetaMessage.propTypes = {
   style: PropTypes.object,
 }
-const BetaMessage = React.memo(BetaMessageBase)
 
 
-export {BetaMessage}
+export default React.memo(BetaMessage)

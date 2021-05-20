@@ -14,6 +14,7 @@ import pymongo
 import termcolor
 
 from bob_emploi.frontend.api import job_pb2
+from bob_emploi.data_analysis.importer import importers
 from bob_emploi.data_analysis.importer import import_status
 
 _FAKE_MONGO_URL = 'mongodb://test_url/test_db'
@@ -23,7 +24,7 @@ def _strip_colors(text: str) -> str:
     return re.sub(r'\x1b\[\d+m', '', text)
 
 
-class _AnyColorText(object):
+class _AnyColorText:
 
     def __init__(self, text: str) -> None:
         self.text = _strip_colors(str(text))
@@ -47,15 +48,15 @@ class ImportStatusBasicTests(unittest.TestCase):
         self.addCleanup(patcher.stop)
         self.mongo_db = pymongo.MongoClient(_FAKE_MONGO_URL).get_database()
 
-    @mock.patch(import_status.__name__ + '._ALL_IMPORTERS', new={'core': {
-        'collection_id': import_status.Importer(
+    @mock.patch.dict(import_status.get_importers(), {
+        'collection_id': importers.Importer(
             name='Collection name',
             script='my-script-name',
             args=None,
             is_imported=True,
             run_every=None,
             proto_type=None, key=None, has_pii=False),
-    }})
+    }, clear=True)
     @mongomock.patch(('test_url',))
     def test_details_importer_missing(self) -> None:
         """Test missing importer."""
@@ -68,7 +69,7 @@ class ImportStatusBasicTests(unittest.TestCase):
     def test_details_no_import_needed(self, mock_log_info: mock.MagicMock) -> None:
         """Test no import needed."""
 
-        importer = import_status.Importer(
+        importer = importers.Importer(
             name='no import needed', script=None, args=None, is_imported=False,
             run_every=None, proto_type=None, key=None, has_pii=False)
         import_status.print_single_importer(importer, 'no-import-needed', 'url', [])
@@ -80,7 +81,7 @@ class ImportStatusBasicTests(unittest.TestCase):
     def test_details_basic_usage(self, mock_log_info: mock.MagicMock) -> None:
         """Basic usage."""
 
-        importer = import_status.Importer(
+        importer = importers.Importer(
             name='with command',
             script='run', args={'this': 'value'},
             is_imported=True, run_every=None,
@@ -101,18 +102,18 @@ class ImportStatusBasicTests(unittest.TestCase):
         self.mongo_db.create_collection('in-both')
         self.mongo_db.create_collection('in-both.2018-12-12_57ccf5b6d9be6')
         self.mongo_db.create_collection('old-collection.2018-12-12_57ccf5b6d9be6')
-        importers = {
-            'no-import-needed': import_status.Importer(
+        all_importers = {
+            'no-import-needed': importers.Importer(
                 name='no import needed', script=None, args=None, is_imported=False,
                 run_every=None, proto_type=None, key=None, has_pii=False),
-            'missing-in-db-importer': import_status.Importer(
+            'missing-in-db-importer': importers.Importer(
                 name='missing in db', script=None, args=None, is_imported=True,
                 run_every=None, proto_type=None, key=None, has_pii=False),
-            'in-both': import_status.Importer(
+            'in-both': importers.Importer(
                 name='in both', script=None, args=None, is_imported=True,
                 run_every=None, proto_type=None, key=None, has_pii=False)
         }
-        diff = import_status.compute_collections_diff(importers, self.mongo_db)
+        diff = import_status.compute_collections_diff(all_importers, self.mongo_db)
         self.assertEqual({'missing-in-db-importer'}, set(diff.collection_missing))
         self.assertEqual({'missing-in-importers'}, set(diff.importer_missing))
         self.assertEqual({'in-both'}, set(diff.imported))
@@ -134,20 +135,20 @@ class ImportStatusBasicTests(unittest.TestCase):
             meta_info['test_collection']['updated_at'])
 
     @mock.patch(logging.__name__ + '.info')
-    @mock.patch(import_status.__name__ + '._ALL_IMPORTERS', new={'core': {
-        'missing-in-db-importer': import_status.Importer(
+    @mock.patch.dict(import_status.get_importers(), {
+        'missing-in-db-importer': importers.Importer(
             name='missing in db', script=None, args=None, is_imported=True,
             run_every=None, proto_type=None, key=None, has_pii=False),
-        'in-both': import_status.Importer(
+        'in-both': importers.Importer(
             name='in both', script=None, args=None, is_imported=True,
             run_every=None, proto_type=None, key=None, has_pii=False),
-        'in-both-with-meta': import_status.Importer(
+        'in-both-with-meta': importers.Importer(
             name='in both with meta', script=None, args=None, is_imported=True,
             run_every=None, proto_type=job_pb2.JobGroup, key=None, has_pii=False),
-        'in-both-not-needed': import_status.Importer(
+        'in-both-not-needed': importers.Importer(
             name='in both not needed', script=None, args=None, is_imported=False,
             run_every=None, proto_type=None, key=None, has_pii=False)
-    }})
+    }, clear=True)
     def test_main_function(self, mock_log_info: mock.MagicMock) -> None:
         """Basic usage."""
 
@@ -185,17 +186,17 @@ class ImportStatusBasicTests(unittest.TestCase):
             _AnyColorText(f'last import: {two_days_ago}'))
 
     @mock.patch(logging.__name__ + '.info')
-    @mock.patch(import_status.__name__ + '._ALL_IMPORTERS', new={'core': {
-        'non-personal': import_status.Importer(
+    @mock.patch.dict(import_status.get_importers(), {
+        'non-personal': importers.Importer(
             name='non personal', script=None, args=None, is_imported=True,
             run_every=None, proto_type=None, key=None, has_pii=False),
-        'personal': import_status.Importer(
+        'personal': importers.Importer(
             name='personal', script=None, args=None, is_imported=True,
             run_every=None, proto_type=None, key=None, has_pii=True),
-        'personal-no-import': import_status.Importer(
+        'personal-no-import': importers.Importer(
             name='personal not imported', script=None, args=None, is_imported=False,
             run_every=None, proto_type=None, key=None, has_pii=True)
-    }})
+    }, clear=True)
     def test_personal_database(self, mock_log_info: mock.MagicMock) -> None:
         """Check division between personal/non personal databases."""
 
@@ -212,15 +213,15 @@ class ImportStatusBasicTests(unittest.TestCase):
             '', ' is', _AnyColorText("{'non-personal'}"))
 
     @mock.patch(logging.__name__ + '.info')
-    @mock.patch(import_status.__name__ + '._ALL_IMPORTERS', new={'core': {
-        'collection_id': import_status.Importer(
+    @mock.patch.dict(import_status.get_importers(), {
+        'collection_id': importers.Importer(
             name='Collection name',
             script='my-script-name',
             args=None,
             is_imported=True,
             run_every=None,
             proto_type=None, key=None, has_pii=False),
-    }})
+    }, clear=True)
     def test_display_command(self, mock_log_info: mock.MagicMock) -> None:
         """Display the command to import a missing collection."""
 
@@ -236,22 +237,22 @@ class ImportStatusBasicTests(unittest.TestCase):
             '    --mongo_collection "collection_id"\n')
 
     @mock.patch(logging.__name__ + '.info')
-    @mock.patch(import_status.__name__ + '._ALL_IMPORTERS', new={'core': {
-        'collection_id': import_status.Importer(
+    @mock.patch.dict(import_status.get_importers(), {
+        'collection_id': importers.Importer(
             name='Collection name',
             script='my-script-name',
             args=None,
             is_imported=True,
             run_every=None,
             proto_type=None, key=None, has_pii=False),
-        'not_displayed': import_status.Importer(
+        'not_displayed': importers.Importer(
             name='Unimportant name',
             script='other-script-name',
             args=None,
             is_imported=True,
             run_every=None,
             proto_type=None, key=None, has_pii=False),
-    }})
+    }, clear=True)
     def test_display_command_for_specific_collection(self, mock_log_info: mock.MagicMock) -> None:
         """Display the command to import a specific collection."""
 
@@ -270,7 +271,8 @@ class ImportStatusBasicTests(unittest.TestCase):
     def test_command_on_one_line(self) -> None:
         """Checks that all importers command are on one line."""
 
-        for name, importer in import_status.IMPORTERS.items():
+        # TODO(pascal): Check all deployments.
+        for name, importer in import_status.get_importers().items():
             self.assertTrue(
                 bool(importer.script) == importer.is_imported,
                 msg=f'Conflicts in script and is_imported field for {name}')
@@ -285,15 +287,15 @@ class ImportStatusBasicTests(unittest.TestCase):
 
     @mock.patch(logging.__name__ + '.info', new=mock.MagicMock())
     @mock.patch(import_status.subprocess.__name__ + '.run')
-    @mock.patch(import_status.__name__ + '._ALL_IMPORTERS', new={'core': {
-        'collection_id': import_status.Importer(
+    @mock.patch.dict(import_status.get_importers(), {
+        'collection_id': importers.Importer(
             name='Collection name',
             script='my-script-name',
             args={'custom_importer_flag': 'value for custom flag'},
             is_imported=True,
             run_every=None,
             proto_type=None, key=None, has_pii=False),
-    }})
+    }, clear=True)
     def test_run_importer(self, mock_subprocess_run: mock.MagicMock) -> None:
         """Run the command to import a collection."""
 
@@ -305,15 +307,15 @@ class ImportStatusBasicTests(unittest.TestCase):
 
     @mock.patch(logging.__name__ + '.error')
     @mock.patch(import_status.subprocess.__name__ + '.run', )
-    @mock.patch(import_status.__name__ + '._ALL_IMPORTERS', new={'core': {
-        'collection_id': import_status.Importer(
+    @mock.patch.dict(import_status.get_importers(), {
+        'collection_id': importers.Importer(
             name='Collection name',
             script='my-script-name',
             args=None,
             is_imported=True,
             run_every=None,
             proto_type=None, key=None, has_pii=False),
-    }})
+    }, clear=True)
     def test_run_importer_fails(
             self, mock_subprocess_run: mock.MagicMock, mock_log_error: mock.MagicMock) -> None:
         """Run the command to import a collection."""
@@ -332,22 +334,22 @@ class ImportStatusBasicTests(unittest.TestCase):
 
     @mock.patch(logging.__name__ + '.info', new=mock.MagicMock())
     @mock.patch(import_status.subprocess.__name__ + '.run')
-    @mock.patch(import_status.__name__ + '._ALL_IMPORTERS', new={'core': {
-        'collection_id': import_status.Importer(
+    @mock.patch.dict(import_status.get_importers(), {
+        'collection_id': importers.Importer(
             name='Collection name',
             script='my-script-name',
             args={'custom_importer_flag': 'value for custom flag'},
             is_imported=True,
             run_every=None,
             proto_type=None, key=None, has_pii=False),
-        'other_collection_id': import_status.Importer(
+        'other_collection_id': importers.Importer(
             name='Other collection name',
             script='other-script-name',
             args={'custom_importer_flag': 'other value for custom flag'},
             is_imported=True,
             run_every=None,
             proto_type=None, key=None, has_pii=False),
-    }})
+    }, clear=True)
     def test_run_multiple_importers(self, mock_subprocess_run: mock.MagicMock) -> None:
         """Run the commands to import multiple collections."""
 
@@ -367,15 +369,15 @@ class ImportStatusBasicTests(unittest.TestCase):
 
     @mock.patch(logging.__name__ + '.info', new=mock.MagicMock())
     @mock.patch(import_status.subprocess.__name__ + '.run')
-    @mock.patch(import_status.__name__ + '._ALL_IMPORTERS', new={'core': {
-        'collection_id': import_status.Importer(
+    @mock.patch.dict(import_status.get_importers(), {
+        'collection_id': importers.Importer(
             name='Collection name',
             script='my-script-name',
             args={'custom_importer_flag': 'value for custom flag'},
             is_imported=True,
             run_every=None,
             proto_type=None, key=None, has_pii=False),
-    }})
+    }, clear=True)
     def test_run_importer_with_extra_args(self, mock_subprocess_run: mock.MagicMock) -> None:
         """Run the command to import a collection with extra args forwarded."""
 
@@ -387,8 +389,8 @@ class ImportStatusBasicTests(unittest.TestCase):
 
     @mock.patch(logging.__name__ + '.info')
     @mock.patch(import_status.subprocess.__name__ + '.run')
-    @mock.patch(import_status.__name__ + '._ALL_IMPORTERS', new={'core': {
-        'collection_id': import_status.Importer(
+    @mock.patch.dict(import_status.get_importers(), {
+        'collection_id': importers.Importer(
             name='Collection name',
             script='my-script-name',
             args={
@@ -397,7 +399,7 @@ class ImportStatusBasicTests(unittest.TestCase):
             is_imported=True,
             run_every=None,
             proto_type=None, key=None, has_pii=False),
-    }})
+    }, clear=True)
     def test_run_importer_with_make_target(
             self, mock_subprocess_run: mock.MagicMock, mock_log_info: mock.MagicMock) -> None:
         """Run the command to import a collection with a target to be made."""
@@ -418,8 +420,8 @@ class ImportStatusBasicTests(unittest.TestCase):
 
     @mock.patch(logging.__name__ + '.error')
     @mock.patch(import_status.subprocess.__name__ + '.run')
-    @mock.patch(import_status.__name__ + '._ALL_IMPORTERS', new={'core': {
-        'collection_id': import_status.Importer(
+    @mock.patch.dict(import_status.get_importers(), {
+        'collection_id': importers.Importer(
             name='Collection name',
             script='my-script-name',
             args={
@@ -428,7 +430,7 @@ class ImportStatusBasicTests(unittest.TestCase):
             is_imported=True,
             run_every=None,
             proto_type=None, key=None, has_pii=False),
-    }})
+    }, clear=True)
     def test_importer_with_make_target_fails(
             self, mock_subprocess_run: mock.MagicMock, mock_log_error: mock.MagicMock) -> None:
         """Run the command to import a collection with a target to be made."""
@@ -455,15 +457,15 @@ class ImportStatusBasicTests(unittest.TestCase):
         with self.assertRaises(SystemExit):
             import_status.main(['--no_diff'])
 
-    @mock.patch(import_status.__name__ + '._ALL_IMPORTERS', new={'core': {
-        'collection_id': import_status.Importer(
+    @mock.patch.dict(import_status.get_importers(), {
+        'collection_id': importers.Importer(
             name='Collection name',
             script='my-script-name',
             args=None,
             is_imported=True,
             run_every=None,
             proto_type=None, key=None, has_pii=False),
-    }})
+    }, clear=True)
     @mock.patch(logging.__name__ + '.info')
     def test_revert_import(self, mock_log_info: mock.MagicMock) -> None:
         """Reverting a collection for which there is an archive."""
@@ -481,15 +483,15 @@ class ImportStatusBasicTests(unittest.TestCase):
         self.assertNotIn(
             'collection_id.2019-03-20_5784037a837ed', self.mongo_db.list_collection_names())
 
-    @mock.patch(import_status.__name__ + '._ALL_IMPORTERS', new={'core': {
-        'collection_id': import_status.Importer(
+    @mock.patch.dict(import_status.get_importers(), {
+        'collection_id': importers.Importer(
             name='Collection name',
             script='my-script-name',
             args=None,
             is_imported=True,
             run_every=None,
             proto_type=None, key=None, has_pii=False),
-    }})
+    }, clear=True)
     @mock.patch(logging.__name__ + '.error')
     def test_revert_missing_archive(self, mock_log_error: mock.MagicMock) -> None:
         """Do nothing when reverting a collection without archive."""
@@ -527,34 +529,40 @@ class ImportStatusSyncTests(unittest.TestCase):
     def test_schedule_time(self) -> None:
         """Check sync between schedule time in tasks and import_status"""
 
-        importers = import_status.IMPORTERS
-        scheduled_tasks_dir = 'bob_emploi/frontend/release/scheduled-tasks/'
-        with open(f'{scheduled_tasks_dir}index.json') as index_json:
-            rules = json.load(index_json)
-        scheduled_tasks = self._get_task_scheduling(rules.get('Rules', []), scheduled_tasks_dir)
+        # TODO(pascal): Check all deployments.
+        all_importers = import_status.get_importers()
+        scheduled_tasks_dirs = [
+            # TODO(cyrille): Also test US importers.
+            f'bob_emploi/frontend/release/scheduled-tasks/{d}/' for d in ('fr',)]
+        for scheduled_tasks_dir in scheduled_tasks_dirs:
+            with open(f'{scheduled_tasks_dir}index.json') as index_json:
+                rules = json.load(index_json)
+            scheduled_tasks = self._get_task_scheduling(rules.get('Rules', []), scheduled_tasks_dir)
 
-        importers_schedule = {
-            importer_name: f'rate({importer.run_every})'
-            for importer_name, importer in importers.items()
-            if importer.run_every
-        }
-        self.assertEqual(scheduled_tasks, importers_schedule)
+            importers_schedule = {
+                importer_name: f'rate({importer.run_every})'
+                for importer_name, importer in all_importers.items()
+                if importer.run_every
+            }
+            self.assertEqual(scheduled_tasks, importers_schedule)
 
     def test_rule_names(self) -> None:
         """Check sync between ARN and rule names in scheduled tasks."""
 
-        scheduled_tasks_dir = 'bob_emploi/frontend/release/scheduled-tasks/'
-        with open(f'{scheduled_tasks_dir}index.json') as index_json:
-            rules = json.load(index_json)
-        for rule in rules.get('Rules', []):
-            schedule_expression = rule.get('ScheduleExpression')
-            if not schedule_expression:
-                continue
-            rule_name = rule.get('Name')
-            self.assertTrue(rule_name, 'The rule has no name.')
-            self.assertTrue(
-                rule.get('Arn').endswith(f'/{rule_name}'),
-                'The Amazon Ressource Name and the rule name are different.')
+        scheduled_tasks_dirs = [
+            f'bob_emploi/frontend/release/scheduled-tasks/{d}/' for d in ('fr', 'usa')]
+        for scheduled_tasks_dir in scheduled_tasks_dirs:
+            with open(f'{scheduled_tasks_dir}index.json') as index_json:
+                rules = json.load(index_json)
+            for rule in rules.get('Rules', []):
+                schedule_expression = rule.get('ScheduleExpression')
+                if not schedule_expression:
+                    continue
+                rule_name = rule.get('Name')
+                self.assertTrue(rule_name, 'The rule has no name.')
+                self.assertTrue(
+                    rule.get('Arn').endswith(f'/{rule_name}'),
+                    'The Amazon Ressource Name and the rule name are different.')
 
 
 if __name__ == '__main__':

@@ -68,7 +68,10 @@ frontend/release/deploy.sh <ROLLBACK_TAG>
 
 If you can not solve an emergency by yourself:
 
-* notify everybody with an @channel in bob-emploi on slack.
+* notify everybody with an @channel in bob on slack.
 * write a detailed description of the problem.
 * make clear your availabilities / best channel to reach you.
 
+## New Deployment
+
+See [CloudFormation](cloudformation/README.md)

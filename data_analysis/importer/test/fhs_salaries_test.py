@@ -1,61 +1,66 @@
 """Tests for the bob_emploi.importer.fhs_salaries module."""
 
-import collections
+import typing
+from typing import Optional, Union
 import unittest
 from unittest import mock
 
 from bob_emploi.data_analysis.importer import fhs_salaries
 
 
-SalaryTest = collections.namedtuple(
-    'SalaryTest',
-    ['name', 'SALMT', 'SALUNIT', 'expect_annual', 'bucket_low', 'bucket_high'])
+class _SalaryTest(typing.NamedTuple):
+    name: str
+    SALMT: Union[float, str]
+    SALUNIT: str
+    expect_annual: float
+    bucket_low: Optional[float]
+    bucket_high: Optional[float]
 
 
 SALARY_TESTS = [
-    SalaryTest(
+    _SalaryTest(
         name='Typical annual value',
         SALMT=17650.1,
         SALUNIT='A',
         expect_annual=17650.1,
         bucket_low=17600,
         bucket_high=17800),
-    SalaryTest(
+    _SalaryTest(
         name='Typical monthly value',
         SALMT=2031.1,
         SALUNIT='M',
         expect_annual=2031.1 * 12,
         bucket_low=24200,
         bucket_high=24400),
-    SalaryTest(
+    _SalaryTest(
         name='Typical hourly value',
         SALMT=25.102,
         SALUNIT='H',
         expect_annual=25.102 * 35 * 52,
         bucket_low=45000,
         bucket_high=46000),
-    SalaryTest(
+    _SalaryTest(
         name='Zero',
         SALMT=0.0,
         SALUNIT='H',
         expect_annual=0,
         bucket_low=0,
         bucket_high=0),
-    SalaryTest(
+    _SalaryTest(
         name='Very very small',
         SALMT=0.1,
         SALUNIT='A',
         expect_annual=0.1,
         bucket_low=0,
         bucket_high=100),
-    SalaryTest(
+    _SalaryTest(
         name='Bogus salary unit -- interpret as annual',
         SALMT=100.0,
         SALUNIT='X',
         expect_annual=100.0,
         bucket_low=None,
         bucket_high=None),
-    SalaryTest(
+    _SalaryTest(
         name='Unparseable salary amount - interpret as zero salary',
         SALMT='foobar',
         SALUNIT='A',
@@ -65,6 +70,7 @@ SALARY_TESTS = [
 ]
 
 
+# TODO(pascal): Harmonize how we cope with tqdm in tests.
 @mock.patch(fhs_salaries.tqdm.__name__ + '.tqdm', lambda iterable: iterable)
 class FHSSalariesTestCase(unittest.TestCase):
     """Unit tests for the FHS salaries helper functions."""

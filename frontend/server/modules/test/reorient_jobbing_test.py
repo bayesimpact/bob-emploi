@@ -2,6 +2,7 @@
 
 from typing import Any, Dict
 import unittest
+from unittest import mock
 
 from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
@@ -209,6 +210,7 @@ class ReorientJobbingEndpointTestCase(base_test.ServerTestCase):
         }]
         user['profile'] = user.get('profile', {})
         user['profile']['gender'] = 'FEMININE'
+        user['profile']['locale'] = 'en'
 
     def test_bad_project_id(self) -> None:
         """Test with a non existing project ID."""
@@ -272,6 +274,114 @@ class ReorientJobbingEndpointTestCase(base_test.ServerTestCase):
                 }
             ],
             jobs['reorientJobbingJobs'])
+
+    def test_translate_job_names(self) -> None:
+        """Basic test with english job names translation."""
+
+        self._db.local_diagnosis.insert_one({
+            '_id': '14:A1234',
+            'imt':
+                {
+                    'yearlyAvgOffersPer10Candidates': 1,
+                },
+        })
+
+        self._db.translations.insert_many([
+            {
+                'string': 'SuperFemme',
+                'en': 'Wonderwoman',
+            },
+        ])
+
+        self._db.reorient_jobbing.insert_one(
+            {
+                '_id': '45',
+                'departementJobStats':
+                    {
+                        'jobs': [
+                            {
+                                'romeId': 'A1413',
+                                'masculineName': 'Superhomme',
+                                'feminineName': 'SuperFemme',
+                                'name': 'Superhero',
+                                'marketScore': 6,
+                            },
+                        ],
+                    },
+            }
+        )
+        response = self.app.get(
+            f'/api/advice/reorient-jobbing/{self.user_id}/{self.project_id}',
+            headers={'Authorization': 'Bearer ' + self.auth_token})
+
+        jobs = self.json_from_response(response)
+        self.assertEqual(
+            [
+                {
+                    'name': 'Wonderwoman',
+                    'offersPercentGain': 500.0,
+                },
+            ],
+            jobs['reorientJobbingJobs'])
+
+    def _add_fr_tu_project_modifier(self, user: Dict[str, Any]) -> None:
+
+        user['projects'] = user.get('projects', []) + [{
+            'targetJob': {'jobGroup': {'romeId': 'A1234'}},
+            'city': {'departementId': '45'},
+        }]
+        user['profile'] = user.get('profile', {})
+        user['profile']['gender'] = 'FEMININE'
+        user['profile']['locale'] = 'fr@tu'
+
+    @mock.patch('logging.exception')
+    def test_tu_project(self, mock_logging: mock.MagicMock) -> None:
+        """Test that missing tutoiement translation is not logged."""
+
+        user_id, auth_token = self.create_user_with_token(
+            modifiers=[self._add_fr_tu_project_modifier], advisor=True)
+        user_info = self.get_user_info(user_id, auth_token)
+        project_id = user_info['projects'][0]['projectId']
+
+        self._db.local_diagnosis.insert_one({
+            '_id': '14:A1234',
+            'imt':
+                {
+                    'yearlyAvgOffersPer10Candidates': 1,
+                },
+        })
+
+        self._db.reorient_jobbing.insert_one(
+            {
+                '_id': '45',
+                'departementJobStats':
+                    {
+                        'jobs': [
+                            {
+                                'romeId': 'A1413',
+                                'masculineName': 'Superhomme',
+                                'feminineName': 'SuperFemme',
+                                'name': 'Superhero',
+                                'marketScore': 6,
+                            },
+                        ],
+                    },
+            }
+        )
+        response = self.app.get(
+            f'/api/advice/reorient-jobbing/{user_id}/{project_id}',
+            headers={'Authorization': 'Bearer ' + auth_token})
+
+        jobs = self.json_from_response(response)
+        self.assertEqual(
+            [
+                {
+                    'name': 'SuperFemme',
+                    'offersPercentGain': 500.0,
+                },
+            ],
+            jobs['reorientJobbingJobs'])
+        mock_logging.assert_not_called()
 
     def _add_undefined_project_modifier(self, user: Dict[str, Any]) -> None:
         """Modifier to add an undefined project."""

@@ -3,6 +3,7 @@ syntax = "proto3";
 import "bob_emploi/frontend/api/options.proto";
 
 package bayes.bob;
+option go_package="bayes.org/bob_emploi/frontend/api/strategy";
 
 // See go/bob:strategies about what we mean by strategies. This represents a strategy as given to
 // the user.
@@ -38,6 +39,10 @@ message Strategy {
 
     // A short description of what this strategy is for.
     string description = 9;
+
+    // When this strategy is actually not a bunch of methods on Bob, but a direct link to another
+    // tool like Upskilling: this is the URL to link to.
+    string external_url = 10;
 }
 
 // An advice with a possible header to introduce it.
@@ -60,7 +65,7 @@ message Strategies {
 
 // A module for a strategy, that describes how it is selected and populated. This assumes that the
 // user is already in a given diagnostic category.
-// (Next ID: 7)
+// (Next ID: 11)
 message StrategyModule {
     // DEPRECATED since 2019-03: use category_ids instead.
     // The diagnostic category in which this strategy should be shown.
@@ -87,6 +92,13 @@ message StrategyModule {
     repeated StrategyAdviceTemplate pieces_of_advice = 4;
 
     string description_template = 9 [(string_format) = NATURAL_LANGUAGE, (string_format) = SCORING_PROJECT_TEMPLATE];
+
+    // Whether this module is for alpha users only.
+    bool is_for_alpha = 7;
+
+    // When this module is actually not a bunch of methods on Bob, but a direct link to another tool
+    // like Upskilling: this is the URL to link to.
+    string external_url_template = 10 [(string_format) = SCORING_PROJECT_TEMPLATE];
 }
 
 message StrategyAdviceTemplate {

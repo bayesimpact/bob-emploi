@@ -1,16 +1,18 @@
-import {TFunction} from 'i18next'
 import PropTypes from 'prop-types'
-import React, {useMemo} from 'react'
+import React from 'react'
 
-import {Trans} from 'components/i18n'
-import {ExternalLink, GrowingNumber} from 'components/theme'
+import {LocalizableString, prepareT} from 'store/i18n'
+
+import ExternalLink from 'components/external_link'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import Picto from 'images/advices/picto-needs.svg'
 
 import {ExpandableAction, HandyLink, MethodSuggestionList, CardProps} from './base'
 
 interface Tip {
   content: React.ReactElement
-  title: string
+  title: LocalizableString
 }
 
 const contentStyle = {
@@ -22,9 +24,9 @@ const quoteStyle = {
   paddingLeft: 10,
 }
 
-const getTips = (t: TFunction): readonly Tip[] => [
+const tips: readonly Tip[] = [
   {
-    content: <Trans parent="span" t={t}>
+    content: <Trans parent="span">
       <p>
         Un recruteur averti vous posera la question&nbsp;: "êtes-vous
         bénéficiaire de la loi 2005 ou avez vous une RQTH&nbsp;?"
@@ -36,10 +38,10 @@ const getTips = (t: TFunction): readonly Tip[] => [
         Si cette question ne vous est pas posée, vous êtes en droit de ne pas en parler.
       </p>
     </Trans>,
-    title: t('Connaître ses droits'),
+    title: prepareT('Connaître ses droits'),
   },
   {
-    content: <Trans parent="span" t={t}>
+    content: <Trans parent="span">
       Selon Hanploi,
       <blockquote style={quoteStyle}>
         <p>
@@ -51,11 +53,11 @@ const getTips = (t: TFunction): readonly Tip[] => [
         </p>
       </blockquote>
     </Trans>,
-    title: t('Prioriser sa santé et son confort avant tout'),
+    title: prepareT('Prioriser sa santé et son confort avant tout'),
   },
   {
     // TODO(cyrille): Add tabs for each disability.
-    content: <Trans parent="span" t={t}>
+    content: <Trans parent="span">
       Hanploi nous conseille&nbsp;:
       <blockquote style={quoteStyle}>
         <p>
@@ -70,10 +72,10 @@ const getTips = (t: TFunction): readonly Tip[] => [
         </p>
       </blockquote>
     </Trans>,
-    title: t("Se poser les bonnes questions avant de parler à l'employeur"),
+    title: prepareT("Se poser les bonnes questions avant de parler à l'employeur"),
   },
   {
-    content: <Trans parent="span" t={t}>
+    content: <Trans parent="span">
       L'<ExternalLink href="https://www.agefiph.fr/aides-handicap/aide-laccueil-lintegration-et-levolution-professionnelle-des-personnes-handicapees">
         AGEFIPH
       </ExternalLink> et ou le <ExternalLink href="http://www.fiphfp.fr/FAQ/Quelles-aides-financieres-peut-apporter-le-FIPHFP">
@@ -81,10 +83,10 @@ const getTips = (t: TFunction): readonly Tip[] => [
       </ExternalLink> peuvent prendre en charge tout ou une partie du coût
       de votre aménagement. Pensez à le rappeler à votre futur employeur.
     </Trans>,
-    title: t("Rassurer l'employeur"),
+    title: prepareT("Rassurer l'employeur"),
   },
   {
-    content: <Trans parent="span" t={t}>
+    content: <Trans parent="span">
       Selon Hanploi&nbsp;:
       <blockquote style={quoteStyle}>
         <p>Une intégration réussie est l'une des clés d'une période d'essai validée.</p>
@@ -99,14 +101,13 @@ const getTips = (t: TFunction): readonly Tip[] => [
         <p>Ainsi vos collègues comprendront.</p>
       </blockquote>
     </Trans>,
-    title: t("Préparer son intégration au sein d'une nouvelle équipe"),
+    title: prepareT("Préparer son intégration au sein d'une nouvelle équipe"),
   },
-]
+] as const
 
 
 const Needs: React.FC<CardProps> = (props: CardProps) => {
-  const {handleExplore, t} = props
-  const tips = useMemo((): readonly Tip[] => getTips(t), [t])
+  const {handleExplore, t, t: translate} = props
   const title = <Trans parent={null} t={t} count={tips.length}>
     <GrowingNumber number={tips.length} isSteady={true} /> astuce pour une bonne communication
   </Trans>
@@ -118,7 +119,7 @@ const Needs: React.FC<CardProps> = (props: CardProps) => {
   return <MethodSuggestionList title={title} footer={footer}>
     {tips.map(({content, title}, index): ReactStylableElement =>
       <ExpandableAction
-        isMethodSuggestion={true} title={title} key={index}
+        title={translate(...title)} key={index}
         onContentShown={handleExplore('tips')}>
         <div style={contentStyle}>{content}</div>
       </ExpandableAction>)}

@@ -1,0 +1,48 @@
+{
+  "Targets": [
+    {
+      "Arn": "arn:aws:ecs:eu-west-3:951168128976:cluster/bob-fr-ECSCluster-81UmFvZUQNau",
+      "EcsParameters": {
+        "LaunchType": "FARGATE",
+        "NetworkConfiguration": {
+          "awsvpcConfiguration": {
+            "AssignPublicIp": "ENABLED",
+            "SecurityGroups": [
+              "sg-091a0ea3583b63117"
+            ],
+            "Subnets": [
+              "subnet-0431a8d40215720d6",
+              "subnet-0abffb9ceef0e2483",
+              "subnet-089faa68881888eab"
+            ]
+          }
+        },
+        "PlatformVersion": "LATEST",
+        "TaskCount": 1,
+        "TaskDefinitionArn": "arn:aws:ecs:eu-west-3:951168128976:task-definition/bob-frontend-server"
+      },
+      "Id": "count-users",
+      "Input": {
+        "containerOverrides": [
+          {
+            "command": [
+              "python bob_emploi/frontend/server/asynchronous/count_users.py"
+            ],
+            "environment": [
+              {
+                "name": "MONGO_URL",
+                "value": "REDACTED"
+              },
+              {
+                "name": "USERS_MONGO_URL",
+                "value": "REDACTED"
+              }
+            ],
+            "name": "flask"
+          }
+        ]
+      },
+      "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
+    }
+  ]
+}

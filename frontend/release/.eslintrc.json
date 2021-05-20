@@ -1,0 +1,6 @@
+{
+  "rules": {
+    // We usually don't have the choice on how things are exported.
+    "import/prefer-default-export": "off"
+  }
+}

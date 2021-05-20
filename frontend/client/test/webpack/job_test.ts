@@ -1,15 +1,18 @@
 import {expect} from 'chai'
+import i18next from 'i18next'
+
 import {genderizeJob, getIMTURL, getJobSearchURL, getApplicationModes,
-  getJobPlacesFromDepartementStats, getApplicationModeText, getPEJobBoardURL} from 'store/job'
+  getJobPlacesFromDepartementStats, getApplicationModeText, getPEJobBoardURL,
+  getMostlyRequiredDiploma} from 'store/job'
 import {jobFromSuggestion} from 'components/suggestions'
 
 // @ts-ignore
 import {ApplicationMode} from 'api/job_pb'
 
 const fakeT = (text: string): string => text
+type JobPlaces = ReturnType<typeof getJobPlacesFromDepartementStats>[number]
 
 describe('jobFromSuggestion', (): void => {
-
   it('should assemble a job proto from a suggestion', (): void => {
     const job = jobFromSuggestion({
       codeOgr: '38972',
@@ -19,6 +22,7 @@ describe('jobFromSuggestion', (): void => {
       libelleAppellationCourtMasculin: 'Data Manager',
       libelleAppellationLong: 'Data Manager / Manageuse',
       libelleRome: 'Études et prospectives socio-économiques',
+      objectID: '38972',
     })
     expect(job).to.deep.equal({
       codeOgr: '38972',
@@ -64,18 +68,20 @@ describe('getJobPlacesFromDepartementStats', (): void => {
           {
             name: 'Professeur de flûte',
             offers: 120,
-            romeId: 'I1203',
+            romeId: 'I1204',
           },
         ],
       },
     ]
     const jobPlaces = getJobPlacesFromDepartementStats(departementStats)
-    expect(jobPlaces[0].jobGroup).to.equal('Professeur de piano')
-    expect(jobPlaces[0].inDepartement).to.equal('En Guyanne')
-    expect(jobPlaces[1].jobGroup).to.equal('Professeur de flûte')
-    expect(jobPlaces[1].inDepartement).to.equal('A la réunion')
-    expect(jobPlaces[2].jobGroup).to.equal('Professeur de guitarre')
-    expect(jobPlaces[2].inDepartement).to.equal('En Guyanne')
+    expect(jobPlaces.length).to.be.at.least(3)
+    const [piano, recorder, guitar] = jobPlaces as [JobPlaces, JobPlaces, JobPlaces]
+    expect(piano.jobGroup).to.equal('Professeur de piano')
+    expect(piano.inDepartement).to.equal('En Guyanne')
+    expect(recorder.jobGroup).to.equal('Professeur de flûte')
+    expect(recorder.inDepartement).to.equal('A la réunion')
+    expect(guitar.jobGroup).to.equal('Professeur de guitarre')
+    expect(guitar.inDepartement).to.equal('En Guyanne')
   })
 })
 
@@ -137,11 +143,11 @@ describe('genderizeJob', (): void => {
 
 describe('getJobSearchURL', (): void => {
   it('should return an empty string for an empty job', (): void => {
-    const url = getJobSearchURL({}, 'FEMININE')
+    const url = getJobSearchURL(fakeT, {}, 'FEMININE')
     expect(url).to.equal('')
   })
   it('should return a URL with genderized job name if gender', (): void => {
-    const name = getJobSearchURL({
+    const name = getJobSearchURL(fakeT, {
       feminineName: 'feminineFoo',
       masculineName: 'masculineFoo',
       name: 'foo',
@@ -150,7 +156,7 @@ describe('getJobSearchURL', (): void => {
       'https://www.google.fr/search?q=m%C3%A9tier%20feminineFoo')
   })
   it('should return a URL with the default name if no gender', (): void => {
-    const name = getJobSearchURL({
+    const name = getJobSearchURL(fakeT, {
       feminineName: 'feminineFoo',
       masculineName: 'masculineFoo',
       name: 'foo',
@@ -158,7 +164,7 @@ describe('getJobSearchURL', (): void => {
     expect(name).to.equal('https://www.google.fr/search?q=m%C3%A9tier%20foo')
   })
   it('should return a URL with the default name if unknown gender', (): void => {
-    const name = getJobSearchURL({
+    const name = getJobSearchURL(fakeT, {
       feminineName: 'feminineFoo',
       masculineName: 'masculineFoo',
       name: 'foo',
@@ -168,19 +174,21 @@ describe('getJobSearchURL', (): void => {
 })
 
 
+const fakeI = i18next.getFixedT('')
+
 describe('getIMTURL', (): void => {
   it('should return a URL for the IMT', (): void => {
-    const url = getIMTURL({codeOgr: '15546'}, {departementId: '69'})
+    const url = getIMTURL(fakeI, {codeOgr: '15546'}, {departementId: '69'})
     expect(url).to.equal(
       'http://candidat.pole-emploi.fr/marche-du-travail/statistiques?codeMetier=15546' +
       '&codeZoneGeographique=69&typeZoneGeographique=DEPARTEMENT')
   })
 
   it('should return an empty string when called with empty objects', (): void => {
-    expect(getIMTURL(undefined, undefined)).to.equal('')
-    expect(getIMTURL({}, {})).to.equal('')
-    expect(getIMTURL({codeOgr: '15546'}, {})).to.equal('')
-    expect(getIMTURL({}, {departementId: '69'})).to.equal('')
+    expect(getIMTURL(fakeI, undefined, undefined)).to.equal('')
+    expect(getIMTURL(fakeI, {}, {})).to.equal('')
+    expect(getIMTURL(fakeI, {codeOgr: '15546'}, {})).to.equal('')
+    expect(getIMTURL(fakeI, {}, {departementId: '69'})).to.equal('')
   })
 })
 
@@ -224,6 +232,13 @@ describe('getPEJobBoardURL', (): void => {
 })
 
 
+const getBestAndWorstMode = (allModes: readonly bayes.bob.ModePercentage[]):
+[bayes.bob.ModePercentage, bayes.bob.ModePercentage] => {
+  expect(allModes).to.be.ok
+  expect(allModes.length).to.be.at.least(1)
+  return [allModes[0]!, allModes[allModes.length - 1]!]
+}
+
 describe('getApplicationModes', (): void => {
   it('should return the application modes for a job group with one FAP', (): void => {
     const jobGroup: bayes.bob.JobGroup = {applicationModes: {FAP: {modes: [
@@ -233,10 +248,10 @@ describe('getApplicationModes', (): void => {
       {mode: 'UNDEFINED_APPLICATION_MODE', percentage: 1},
     ]}}}
     const allModes = getApplicationModes(jobGroup)
-    const bestMode = allModes[0]
+    expect(allModes.length).to.be.at.least(2)
+    const [bestMode, worstMode] = getBestAndWorstMode(allModes)
     expect(bestMode.mode).to.equal('PERSONAL_OR_PROFESSIONAL_CONTACTS')
     expect(bestMode.percentage).to.equal(4)
-    const worstMode = allModes[allModes.length - 1]
     expect(worstMode.mode).to.equal('UNDEFINED_APPLICATION_MODE')
     expect(worstMode.percentage).to.equal(1)
   })
@@ -257,10 +272,9 @@ describe('getApplicationModes', (): void => {
       ]},
     }} as const
     const allModes = getApplicationModes(jobGroup)
-    const bestMode = allModes[0]
+    const [bestMode, worstMode] = getBestAndWorstMode(allModes)
     expect(bestMode.mode).to.equal('PERSONAL_OR_PROFESSIONAL_CONTACTS')
     expect(bestMode.percentage).to.equal(50)
-    const worstMode = allModes[allModes.length - 1]
     expect(worstMode.mode).to.equal('UNDEFINED_APPLICATION_MODE')
     expect(worstMode.percentage).to.equal(5)
   })
@@ -279,5 +293,88 @@ describe('getApplicationModeText', (): void => {
     const zeroMode = allModes.find((mode): boolean => !ApplicationMode[mode])
     expect(getApplicationModeText(fakeT, undefined)).
       to.equal(getApplicationModeText(fakeT, zeroMode))
+  })
+})
+
+
+describe('getMostlyRequiredDiploma', (): void => {
+  it('should return the best job reaching 50 percent of required diplomas', (): void => {
+    const diplomas = [{
+      diploma: {level: 'CAP_BEP'},
+      percentRequired: 6,
+    }, {
+      diploma: {level: 'BAC_BACPRO'},
+      percentRequired: 48,
+    }, {
+      diploma: {level: 'BTS_DUT_DEUG'},
+      percentRequired: 14,
+    }, {
+      diploma: {level: 'LICENCE_MAITRISE'},
+      percentRequired: 11,
+    }, {
+      diploma: {level: 'DEA_DESS_MASTER_PHD'},
+      name: 'Bac+5',
+      percentSuggested: 1,
+    }] as readonly bayes.bob.JobRequirement[]
+    const bestDiploma = getMostlyRequiredDiploma(diplomas)
+    expect(bestDiploma?.diploma?.level).to.equal('BAC_BACPRO')
+  })
+
+  it('should return the median job where there are less than 60% required', (): void => {
+    const diplomas = [{
+      diploma: {level: 'CAP_BEP'},
+      percentRequired: 1,
+    }, {
+      diploma: {level: 'BAC_BACPRO'},
+      percentRequired: 20,
+    }, {
+      diploma: {level: 'BTS_DUT_DEUG'},
+      percentRequired: 22,
+    }, {
+      diploma: {level: 'LICENCE_MAITRISE'},
+      percentRequired: 15,
+    }, {
+      diploma: {level: 'DEA_DESS_MASTER_PHD'},
+      percentSuggested: 1,
+    }] as readonly bayes.bob.JobRequirement[]
+    const bestDiploma = getMostlyRequiredDiploma(diplomas)
+    expect(bestDiploma?.diploma?.level).to.equal('BAC_BACPRO')
+  })
+
+  it('should return the median job which is not the most required percentage', (): void => {
+    const diplomas = [{
+      diploma: {level: 'CAP_BEP'},
+      percentRequired: 2,
+    }, {
+      diploma: {level: 'BAC_BACPRO'},
+      percentRequired: 20,
+    }, {
+      diploma: {level: 'BTS_DUT_DEUG'},
+      percentRequired: 10,
+    }, {
+      diploma: {level: 'LICENCE_MAITRISE'},
+      percentRequired: 15,
+    }, {
+      diploma: {level: 'DEA_DESS_MASTER_PHD'},
+      percentSuggested: 1,
+    }] as readonly bayes.bob.JobRequirement[]
+    const bestDiploma = getMostlyRequiredDiploma(diplomas)
+    expect(bestDiploma?.diploma?.level).to.equal('CAP_BEP')
+  })
+
+  it('should return undefined when there are no diploma requested', (): void => {
+    const diplomas = [{
+      diploma: {level: 'CAP_BEP'},
+    }, {
+      diploma: {level: 'BAC_BACPRO'},
+    }, {
+      diploma: {level: 'BTS_DUT_DEUG'},
+    }, {
+      diploma: {level: 'LICENCE_MAITRISE'},
+    }, {
+      diploma: {level: 'DEA_DESS_MASTER_PHD'},
+    }] as readonly bayes.bob.JobRequirement[]
+    const bestDiploma = getMostlyRequiredDiploma(diplomas)
+    expect(bestDiploma).to.equal(undefined)
   })
 })

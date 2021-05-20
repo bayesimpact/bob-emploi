@@ -6,17 +6,19 @@ docker-compose run --rm -e AIRTABLE_API_KEY="$AIRTABLE_API_KEY" data-analysis-pr
 
 import argparse
 import collections
-import datetime
+import itertools
 import logging
 import os
 import typing
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Mapping, Set, Tuple
 
 from airtable import airtable
 import json5
 import requests
 
+from bob_emploi.common.python import now
 from bob_emploi.frontend.api import options_pb2
+from bob_emploi.data_analysis.i18n import translation
 from bob_emploi.data_analysis.importer import airtable_to_protos
 from bob_emploi.data_analysis.importer import import_status
 from bob_emploi.data_analysis.lib import checker
@@ -34,21 +36,30 @@ class _Collectible(typing.NamedTuple):
     base_id: str
     table: str
     fields: Iterable[str]
+    namespace: str
     id_field: Optional[str] = None
     view: Optional[str] = None
+    alt_table: Optional[str] = None
 
 
 def _get_client_collectibles(filename: str) -> Iterator[_Collectible]:
     with open(filename) as fields_file:
         fields = json5.load(fields_file)
-    for collection in fields.values():
+    for namespace, collection in fields.items():
         yield _Collectible(
             base_id=collection['base'],
             table=collection['table'],
             fields=tuple(collection['translatableFields']),
+            namespace=namespace,
             id_field=collection.get('idField'),
             view=collection['view'],
+            alt_table=collection.get('altTable'),
         )
+
+
+def _convert_snake_to_camel_case(snake: str) -> str:
+    words = snake.split('_')
+    return words[0] + ''.join(word.title() for word in words[1:])
 
 
 # List of Airtable fields to collect for translation that will be used client-side.
@@ -56,53 +67,103 @@ CLIENT_COLLECTIBLES = tuple(_get_client_collectibles(
     'bob_emploi/frontend/client/airtable_fields.json5'))
 
 
-class StringCollector(object):
+def _airtable_fallback_iterate(
+        base: airtable.Airtable,
+        table: str, view: Optional[str], alt_table: Optional[str]) \
+        -> Iterable[airtable.Record[Mapping[str, Any]]]:
+    try:
+        yield from base.iterate(table, view=view)
+        return
+    except AttributeError as error:
+        if not alt_table:
+            raise
+        if not isinstance(error.__context__, requests.exceptions.HTTPError):
+            raise
+    except requests.exceptions.HTTPError:
+        if not alt_table:
+            raise
+    yield from base.iterate(alt_table, view=view)
+
+
+class StringCollector:
     """A helper to collect string to translate."""
 
     def __init__(self, api_key: str) -> None:
         self._i18n_base = airtable.Airtable(_I18N_BASE_ID, api_key)
-        self._existing_translations = {
-            typing.cast(Dict[str, Any], record['fields']).get('string'): record
-            for record in self._i18n_base.iterate('translations')
-        }
+        self._existing_translations: Dict[str, airtable.Record[Mapping[str, Any]]] = {}
+        self._duplicate_strings: Dict[str, List[str]] = collections.defaultdict(list)
+        for record in self._i18n_base.iterate('translations'):
+            key = typing.cast(Dict[str, Optional[str]], record['fields']).get('string')
+            if not key:
+                continue
+            if key in self._existing_translations:
+                self._duplicate_strings[self._existing_translations[key]['id']].append(record['id'])
+                continue
+            self._existing_translations[key] = record
         self._api_key = api_key
         self.bases: Dict[str, airtable.Airtable] = {}
         self._collected: Dict[str, Dict[str, str]] = \
             collections.defaultdict(lambda: collections.defaultdict(str))
         self._used_translations: Set[str] = set()
-        self._now = datetime.datetime.utcnow().isoformat() + 'Z'
+        self._now = now.get().isoformat() + 'Z'
+        self._today = self._now[:len('2020-12-09')]
+
+    @property
+    def duplicate_strings(self) -> Mapping[str, List[str]]:
+        """Duplicate strings to translate."""
+
+        return self._duplicate_strings
 
     def _get_base(self, base_id: str) -> airtable.Airtable:
         if base_id not in self.bases:
             self.bases[base_id] = airtable.Airtable(base_id, self._api_key)
         return self.bases[base_id]
 
-    def collect_string(self, text: str, origin: str, origin_id: str) -> None:
+    def collect_string(
+            self, text: str, origin: str, origin_id: str,
+            translations: Optional[Dict[str, str]] = None) -> None:
         """Collect a string to translate."""
 
         self._collected[origin or ''][origin_id or ''] = text
         is_already_used = text in self._used_translations
         self._used_translations.add(text)
         if text in self._existing_translations:
-            if not is_already_used:
-                self._i18n_base.update(
-                    'translations', self._existing_translations[text]['id'],
-                    {'last_used': self._now, 'origin': origin, 'origin_id': origin_id})
+            if is_already_used:
+                return
+
+            existing_record = self._existing_translations[text]
+            last_used_str = existing_record['fields'].get('last_used')
+            new_translations = {
+                lang: value
+                for lang, value in translations.items()
+                if not existing_record['fields'].get(lang)
+            } if translations else {}
+            if last_used_str and last_used_str > self._today and not new_translations:
+                # Nothing to update.
+                return
+
+            update_fields = {'last_used': self._now, 'origin': origin, 'origin_id': origin_id}
+            update_fields.update(new_translations)
+            self._i18n_base.update('translations', existing_record['id'], update_fields)
             # TODO(pascal): Keep track of all places where it is used.
             return
+
         fields = {
             'origin': origin,
             'origin_id': origin_id,
             'string': text,
             'last_used': self._now,
         }
+        if translations:
+            fields.update(translations)
         logging.info('Uploading text: %s', text)
         record = self._i18n_base.create('translations', fields)
         self._existing_translations[text] = record
 
     def collect_from_table(
-            self, base_id: str, table: str, fields: Iterable[str],
-            id_field: Optional[str] = None, view: Optional[str] = None) -> None:
+            self, base_id: str, table: str, fields: Iterable[str], namespace: str,
+            id_field: Optional[str] = None, view: Optional[str] = None,
+            alt_table: Optional[str] = None) -> None:
         """Collect strings to translate from an Airtable.
 
         Args:
@@ -115,9 +176,9 @@ class StringCollector(object):
         """
 
         base = self._get_base(base_id)
-        for record in base.iterate(table, view=view):
-            record_fields = typing.cast(Dict[str, Any], record['fields'])
-            record_id = typing.cast(str, record['id'])
+        for record in _airtable_fallback_iterate(base, table, view=view, alt_table=alt_table):
+            record_fields = record['fields']
+            record_id = record['id']
             for field in fields:
                 text = record_fields.get(field)
                 if not text:
@@ -125,17 +186,20 @@ class StringCollector(object):
                 origin_id = record_id
                 if id_field:
                     origin_id = record_fields.get(id_field) or origin_id
-                self.collect_string(text, f'{table}:{field}', origin_id)
+                self.collect_string(
+                    f'{namespace}:{origin_id}:{field}', f'{namespace}:{field}:key', origin_id,
+                    translations={'fr': text})
 
     def collect_for_airtable_importer(
-            self, base_id: str, table: str, proto: str,
-            view: Optional[str] = None) -> int:
+            self, collection: str, base_id: str, table: str, proto: str,
+            view: Optional[str] = None, alt_table: Optional[str] = None) -> int:
         """Collect all strings needed for a given import.
 
         Return:
             The number of errors occured when converting the records.
         """
 
+        namespace = translation.get_collection_namespace(collection)
         converter = airtable_to_protos.PROTO_CLASSES[proto]
 
         # Check whether the proto type has any translatable fields.
@@ -145,20 +209,29 @@ class StringCollector(object):
                 break
             # TODO(cyrille): Detect fields needing translations even if they are nested.
         else:
-            # No translatable field in the proto.
+            logging.info('No translatable field in the proto')
             return 0
 
         num_errors = 0
-        for record in self._get_base(base_id).iterate(table, view=view):
+        base = self._get_base(base_id)
+        for record in _airtable_fallback_iterate(base, table, view=view, alt_table=alt_table):
             try:
                 message, _id = converter.convert_record_to_proto(record)
             except (KeyError, ValueError) as error:
                 logging.error('An error occurred while converting the record:\n\t%s', str(error))
                 num_errors += 1
                 continue
+            if converter.unique_id_field:
+                record_id = getattr(message, converter.unique_id_field) or _id
+            else:
+                record_id = _id
             for value, path, string_format in checker.collect_formatted_strings(message):
                 if string_format == options_pb2.NATURAL_LANGUAGE:
-                    self.collect_string(value, f'{table}:{path}', _id)
+                    self.collect_string(value, f'{table}:{path}', record_id)
+                    if record_id != _id and '.' not in path:
+                        self.collect_string(
+                            translation.create_translation_key(namespace, record_id, path),
+                            f'{namespace}:{path}:key', record_id, {'fr': value})
         return num_errors
 
     def collect_for_client(self, table: str = '') -> None:
@@ -169,7 +242,8 @@ class StringCollector(object):
         for collectible in tables_to_collect:
             self.collect_from_table(*collectible)
 
-    def list_unused_translations(self) -> Iterator[Tuple[Dict[str, Any], Optional[str]]]:
+    def list_unused_translations(self) \
+            -> Iterator[Tuple[airtable.Record[Mapping[str, Any]], Optional[str]]]:
         """List all the translations that are in the DB but have not been collected in this run.
 
         We will only list translations that have the same origin as one of the origins used
@@ -190,7 +264,7 @@ class StringCollector(object):
                 .get(fields.get('origin_id', ''))
             yield record, new_value
 
-    def remove(self, record: Dict[str, Any]) -> None:
+    def remove(self, record: airtable.Record[Mapping[str, Any]]) -> None:
         """Remove a translation record."""
 
         del self._existing_translations[record['fields']['string']]
@@ -232,7 +306,7 @@ _CLIENT_PREFIX = 'client-'
 
 _ALL_COLLECTIONS = ('client',) + tuple(
     collection
-    for collection, importer in import_status.IMPORTERS.items()
+    for collection, importer in import_status.get_importers().items()
     if importer.script == 'airtable_to_protos')
 
 _ALL_COLLECTION_NAMES = _ALL_COLLECTIONS + tuple(
@@ -286,7 +360,7 @@ def main(string_args: Optional[List[str]] = None) -> None:
             collector.collect_for_client(table)
             continue
         try:
-            importer = import_status.IMPORTERS[collection]
+            importer = import_status.get_importers()[collection]
         except KeyError:
             logging.warning('The collection "%s" does not have an importer.', collection)
             collections_not_collected.append(collection)
@@ -297,7 +371,8 @@ def main(string_args: Optional[List[str]] = None) -> None:
             collections_not_collected.append(collection)
             continue
         logging.info('Collecting strings for importer "%s"…', collection)
-        num_failed_records = collector.collect_for_airtable_importer(**(importer.args or {}))
+        num_failed_records = collector.collect_for_airtable_importer(
+            collection=collection, **(importer.args or {}))
         if num_failed_records:
             collection_errors[collection] = num_failed_records
 
@@ -310,6 +385,17 @@ def main(string_args: Optional[List[str]] = None) -> None:
         if not error_text:
             error_text += 'All the collections have been collected.\n'
         error_text += f'Errors in collection:\n{errors}'
+    if collector.duplicate_strings:
+        maybe_s = 's' if len(collector.duplicate_strings) > 1 else ''
+        error_text += \
+            f'Duplicate records found for {len(collector.duplicate_strings)} string{maybe_s}:\n'
+        error_text += '\n'.join(
+            ' * ' + ', '.join(
+                f'<https://airtable.com/tblQL7A5EgRJWhQFo/{rec}|{rec}>'
+                for rec in [key] + dupes
+            )
+            for key, dupes in itertools.islice(collector.duplicate_strings.items(), 5)
+        )
     if error_text:
         _print_report(f'Here is the report:\n{error_text}')
 

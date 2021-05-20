@@ -21,10 +21,7 @@ class AdviceImproveInterviewTestCase(scoring_test.ScoringModelTestBase):
         """Users does not get enough interviews."""
 
         persona = self._random_persona().clone()
-        if persona.project.job_search_length_months < 3:
-            persona.project.job_search_length_months = 3
-        if persona.project.job_search_length_months > 6:
-            persona.project.job_search_length_months = 6
+        self._enforce_search_length_duration(persona.project, min_months=3, max_months=6)
         persona.project.total_interview_count = 1
         score = self._score_persona(persona)
         self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
@@ -50,10 +47,7 @@ class AdviceImproveInterviewTestCase(scoring_test.ScoringModelTestBase):
 
         persona = self._random_persona().clone()
         persona.project.diagnostic.category_id = 'bravo'
-        if persona.project.job_search_length_months < 3:
-            persona.project.job_search_length_months = 3
-        if persona.project.job_search_length_months > 6:
-            persona.project.job_search_length_months = 6
+        self._enforce_search_length_duration(persona.project, min_months=3, max_months=6)
         persona.project.total_interview_count = 1
         score = self._score_persona(persona)
         self.assertEqual(score, 1, msg=f'Failed for "{persona.name}"')
@@ -63,8 +57,7 @@ class AdviceImproveInterviewTestCase(scoring_test.ScoringModelTestBase):
 
         persona = self._random_persona().clone()
         persona.project.total_interview_count = 21
-        if persona.project.job_search_length_months > 6:
-            persona.project.job_search_length_months = 6
+        self._enforce_search_length_duration(persona.project, max_months=6)
         score = self._score_persona(persona)
         self.assertGreaterEqual(score, 3, msg=f'Failed for "{persona.name}"')
 
@@ -80,13 +73,7 @@ class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
         persona = self._random_persona().clone()
         persona.project.target_job.job_group.rome_id = 'I1202'
         persona.project.city.departement_id = '14'
-        if persona.project.job_search_length_months < 3:
-            persona.project.job_search_length_months = 3
-        if persona.project.job_search_length_months > 6:
-            persona.project.job_search_length_months = 6
-        persona.project.job_search_started_at.FromDatetime(
-            persona.project.created_at.ToDatetime() -
-            datetime.timedelta(30.5 * persona.project.job_search_length_months))
+        self._enforce_search_length_duration(persona.project, min_months=3, max_months=6)
         if persona.project.weekly_applications_estimate < project_pb2.DECENT_AMOUNT:
             persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
         persona.project.total_interview_count = 1
@@ -129,13 +116,7 @@ class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
         """Users does not get enough interview although IMT is missing."""
 
         persona = self._random_persona().clone()
-        if persona.project.job_search_length_months < 3:
-            persona.project.job_search_length_months = 3
-        if persona.project.job_search_length_months > 6:
-            persona.project.job_search_length_months = 6
-        persona.project.job_search_started_at.FromDatetime(
-            persona.project.created_at.ToDatetime() -
-            datetime.timedelta(30.5 * persona.project.job_search_length_months))
+        self._enforce_search_length_duration(persona.project, min_months=3, max_months=6)
         if persona.project.weekly_applications_estimate < project_pb2.DECENT_AMOUNT:
             persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
         persona.project.total_interview_count = 1
@@ -253,7 +234,7 @@ class ProjectResumeEndpointTestCase(base_test.ServerTestCase):
 
         user_info = self.get_user_info(self.user_id, self.auth_token)
         user_info['profile']['gender'] = 'MASCULINE'
-        user_info['profile']['canTutoie'] = True
+        user_info['profile']['locale'] = 'fr@tu'
 
         self.app.post(
             'api/user',

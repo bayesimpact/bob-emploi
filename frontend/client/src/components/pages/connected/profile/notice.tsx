@@ -16,7 +16,8 @@ const noOp = (): void => {
 
 // TODO(pascal): Don't show the notice after back-navigation from the succeeding step.
 // TODO(sil): Only show the notice to new user when they register.
-const NoticeStepBase: React.FC<ProfileStepProps> = (props: ProfileStepProps):
+// TODO(émilie): update handleSubmit and send all the data in AuthUserData.
+const NoticeStep: React.FC<ProfileStepProps> = (props: ProfileStepProps):
 React.ReactElement => {
   const {onSubmit} = props
   const dispatch = useDispatch<DispatchAllActions>()
@@ -35,10 +36,9 @@ React.ReactElement => {
     <Intro name={userName} onSubmit={handleSubmit} />
   </Step>
 }
-NoticeStepBase.propTypes = {
+NoticeStep.propTypes = {
   onSubmit: PropTypes.func.isRequired,
 }
-const NoticeStep = React.memo(NoticeStepBase)
 
 
-export {NoticeStep}
+export default React.memo(NoticeStep)

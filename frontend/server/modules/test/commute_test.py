@@ -27,37 +27,37 @@ class CommuteScoringModelTestCase(scoring_test.ScoringModelTestBase):
             '_id': 'M1604',
             'hiringCities': [
                 {
-                    'offers': 10,
+                    'offersPerInhabitant': .001,
                     'city': {
                         'cityId': '69028',
                         'name': 'Brindas',
                         'longitude': 4.6965532,
                         'latitude': 45.7179675,
-                        'population': 10000
+                        'population': 10000,
                     }
                 },
                 {
-                    'offers': 40,
+                    'offersPerInhabitant': .000_1,
                     'city': {
                         'cityId': '69123',
                         'name': 'Lyon',
                         'longitude': 4.8363116,
                         'latitude': 45.7640454,
-                        'population': 400000
+                        'population': 400000,
                     }
                 },
                 {
-                    'offers': 40,
+                    'offersPerInhabitant': .004,
                     'city': {
                         'cityId': '69290',
                         'name': 'Saint-Priest',
                         'longitude': 4.9123846,
                         'latitude': 45.7013617,
-                        'population': 20000
+                        'population': 20000,
                     }
                 },
                 {
-                    'offers': 40,
+                    'offersPerInhabitant': .004,
                     'city': {
                         'cityId': '69256',
                         'name': 'Vaulx-en-Velin',
@@ -148,7 +148,7 @@ class EndpointTestCase(base_test.ServerTestCase):
             '_id': 'A6789',
             'hiringCities': [
                 {
-                    'offers': 10,
+                    'offersPerInhabitant': .001,
                     'city': {
                         'cityId': '69028',
                         'departementId': '69',
@@ -159,7 +159,7 @@ class EndpointTestCase(base_test.ServerTestCase):
                     },
                 },
                 {
-                    'offers': 100,
+                    'offersPerInhabitant': .01,
                     'city': {
                         'cityId': '69266',
                         'departementId': '69',
@@ -170,7 +170,7 @@ class EndpointTestCase(base_test.ServerTestCase):
                     },
                 },
                 {
-                    'offers': 40,
+                    'offersPerInhabitant': .000_4,
                     'city': {
                         'cityId': '69123',
                         'departementId': '69',

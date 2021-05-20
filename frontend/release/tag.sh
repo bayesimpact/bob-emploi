@@ -13,8 +13,14 @@ readonly TAG_PREFIX="$(date +%Y-%m-%d)${RELEASE_TYPE}_"
 readonly TAG="${TAG_PREFIX}$(printf %02d $(git tag -l "${TAG_PREFIX}*" | wc -l))"
 readonly BRANCH=${2:-master}
 
+if [[ -z "$GITHUB_TOKEN" ]]; then
+  readonly GIT_ORIGIN_WITH_WRITE_PERMISSION="origin"
+else
+  readonly GIT_ORIGIN_WITH_WRITE_PERMISSION="https://$GITHUB_TOKEN@github.com/bayesimpact/bob-emploi-internal.git"
+fi
+
 git fetch origin $BRANCH
 git tag "${TAG}" origin/$BRANCH
-git push --tags origin
+git push --tags "$GIT_ORIGIN_WITH_WRITE_PERMISSION"
 
 echo $TAG

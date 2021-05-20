@@ -1,12 +1,15 @@
 syntax = "proto3";
 
 import "bob_emploi/frontend/api/advisor.proto";
+import "bob_emploi/frontend/api/boolean.proto";
 import "bob_emploi/frontend/api/geo.proto";
 import "bob_emploi/frontend/api/jobboard.proto";
+import "bob_emploi/frontend/api/options.proto";
 import "bob_emploi/frontend/api/skill.proto";
 import "google/protobuf/timestamp.proto";
 
 package bayes.bob;
+option go_package="bayes.org/bob_emploi/frontend/api/job";
 
 // Description of a job, like plumber or school teacher.
 message Job {
@@ -28,7 +31,7 @@ message Job {
 }
 
 // Description of a job group.
-// Next free ID: 34.
+// Next free ID: 41.
 message JobGroup {
   // Identifier of the group in the user locale index (ROME in France).
   string rome_id = 1;
@@ -36,6 +39,12 @@ message JobGroup {
   // Complete name of this group in user's language.
   // This data comes from Pôle emploi Référentiel Opérationnel des Métiers (ROME).
   string name = 2;
+
+  // A natural language name for the general domain the job group is in,
+  // e.g. 'Banque, assurance, immobilier'.
+  // This is to have a few comparable categories of jobs,
+  // so there should be less than 20 in a given market.
+  string domain = 35;
 
   // How one would describe their area of work when talking to someone else:
   // "I'm working ..." (in French "Je travaille ..."). E.g. "dans la banque",
@@ -67,6 +76,10 @@ message JobGroup {
   // Requirements for this job group.
   // This data comes from parsing job offers.
   JobRequirements requirements = 12;
+
+  // Whether this job group has any diplomas or experience requirements.
+  // This is taken from the job referential and might not be consistant with requirements above.
+  OptionalBool has_any_requirements = 40;
 
   // A short text (but multiple lines) describing the requirements for this job
   // group (from ROME).
@@ -153,6 +166,9 @@ message JobGroup {
   // This data comes from Pôle emploi Information sur le Marché du Travail (IMT).
   repeated DepartementStats departement_scores = 32;
 
+  // The list of all admin1 areas with the offer/demand ratio. In descending order.
+  repeated DepartementStats admin1_area_scores = 34;
+
   // The national market score (offer/demand ratio).
   // This data comes from Pôle emploi Information sur le Marché du Travail (IMT).
   float national_market_score = 27;
@@ -176,11 +192,33 @@ message JobGroup {
   // A list of diploma levels that Bob users say they have, when looking in this job group, in no
   // specific order.
   repeated DegreeCount user_degrees = 33;
+
+  // Automation risk: 0 - unknown, 1 - no risk of automation in the next 10 to 20 years, 100 - it's
+  // almost certain that this job's task will get automated in the near future.
+  int32 automation_risk = 36;
+
+  // A set of job groups that are related to this one.
+  repeated RelatedJobGroup related_job_groups = 37;
+
+  // Whether opportunities of empoyment in this job group have changed due to Covid-19 pandemic.
+  CovidRisk covid_risk = 38;
+
+  // Count of existing trainings for this job group (in the entire country).
+  TrainingCount training_count = 39;
+}
+
+message JobGroupList {
+  repeated JobGroup job_groups = 1;
 }
 
 message DepartementStats {
   // the ID of the departement.
-  string departement_id = 1;
+  // DEPRECATED since 2020-09-15, use area_id instead.
+  // TODO(pascal): Use area_id instead.
+  string departement_id = 1 [deprecated = true];
+
+  // ID of the area (e.g. "TX" for US states Texas, "31" for the French département Haute-Garonne).
+  string area_id = 3;
 
   // Shallow stats containing merely the important stats that defines the
   // relation with the job group, e.g. the IMT market stress.
@@ -237,7 +275,7 @@ message LocalJobStats {
   int32 num_available_job_offers = 10;
 
   // A sorted list of less stressful job groups, the less stressful first.
-  repeated RelatedLocalJobGroup less_stressful_job_groups = 11;
+  repeated RelatedJobGroup less_stressful_job_groups = 11;
 
   // Count of job offers by Pôle Emploi during each year.
   map<int32, int32> num_job_offers_per_year = 12;
@@ -255,12 +293,15 @@ message LocalJobStats {
 
   // A sorted list of the least stressful job groups, the least stressful first.
   // User jobgroup is absent of the list if part of the least stressful job groups.
-  repeated RelatedLocalJobGroup least_stressful_job_groups = 15;
+  repeated RelatedJobGroup least_stressful_job_groups = 15;
+
+  // Number of trainings available in this area for the job group.
+  int32 training_count = 16;
 }
 
 // Stats for a job group related to another one, e.g. a similar job group that
 // is less stressful locally.
-message RelatedLocalJobGroup {
+message RelatedJobGroup {
   // The job group that is related. Only the name and the ROME code are given.
   JobGroup job_group = 1;
 
@@ -300,6 +341,10 @@ enum SalaryUnit {
 
   // Hourly net salary, i.e. what the job seeker would get per hour.
   HOURLY_NET_SALARY = 4;
+
+  // Hourly gross salary, i.e. what the job seeker has written in their contract,
+  // when the contract mentions an hourly salary.
+  HOURLY_GROSS_SALARY = 5;
 }
 
 message SalaryEstimation {
@@ -642,4 +687,84 @@ message DegreeCount {
 
   // The number of users who said they have this level of diploma.
   uint32 count = 2;
+}
+
+message BestJobsInArea {
+  // ID of the area (e.g. "TX" for US states Texas, "31" for the French département Haute-Garonne).
+  string area_id = 1;
+
+  // Job groups with the best salaries in this area, sorted with the best ones first.
+  // Note that the info the protos is sparse but must contain at least a job_group.rome_id and some
+  // salaries info in local_stats.
+  repeated RelatedJobGroup best_salaries_jobs = 2;
+
+  // Job groups with the best local market scores in this area, sorted with the best ones first.
+  // Note that the info the protos is sparse but must contain at least a job_group.rome_id and some
+  // market score info in local_stats.
+  repeated RelatedJobGroup best_local_market_score_jobs = 3;
+
+  // Job groups with the best local market scores in this area compared to their national level,
+  // sorted with the best ones first.
+  // Note that the info the protos is sparse but must contain at least a job_group.rome_id and some
+  // market score info in local_stats.
+  repeated RelatedJobGroup best_relative_score_jobs = 4;
+
+  // Sectors where there are job groups with good market scores in this area,
+  // order does not matter.
+  repeated SectorBestJobGroups sectors = 5;
+}
+
+message SectorBestJobGroups {
+  // A unique identifier for this sector. For ROME sectors, this uses the code_ogr field
+  // from unix_item_arborescence, e.g. 17034.
+  string sector_id = 1;
+
+  // A human readable phrase that describes the jobs in the best_local_market_score_jobs.
+  // E.g. "Des métiers auprès des enfants qui recrutent dans le Rhône"
+  // TODO(cyrille): Deprecate this, in favor of a keyed translation from sector ID.
+  string description = 2 [(string_format) = NATURAL_LANGUAGE];
+
+  // Job groups in the sector with the best local market scores in this area,
+  // sorted with the best ones first.
+  // Note that the info the protos is sparse but must contain at least a job_group.rome_id and some
+  // market score info in local_stats.
+  repeated RelatedJobGroup best_local_market_score_jobs = 3;
+}
+
+enum CovidRisk {
+  COVID_UNKNOWN_RISK = 0;
+
+  // The job group has not been affected, or is favored, by Covid-19 pandemic.
+  COVID_SAFE = 1;
+
+  // The job group has been affected by Covid-19 pandemic and hiring will be tougher than usual
+  // until 2024.
+  COVID_RISKY = 2;
+}
+
+message TrainingCount {
+  // Number of very short trainings (shorter than 1 month).
+  int32 very_short_trainings = 1;
+
+  // Number of short trainings (between 1 and 6 months).
+  int32 short_trainings = 2;
+
+  // Number of trainings longer than 6 months.
+  int32 long_trainings = 3;
+
+  // Number of trainings anyone can take (no entry level required).
+  int32 open_trainings = 4;
+
+  // Number of trainings one can take online.
+  int32 online_trainings = 5;
+}
+
+message SafeJobGroups {
+  repeated JobGroup job_groups = 1;
+
+  // Whether the job groups have been checked for automation risk.
+  bool is_safe_from_automation = 2;
+
+  // Whether the job groups have been checked for Covid-19 risk.
+  bool is_safe_from_covid = 3;
 }

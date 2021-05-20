@@ -1,0 +1,22 @@
+[
+  {
+    "name": "job-search:name",
+    "themeId": "job-search"
+  },
+  {
+    "name": "job-application:name",
+    "themeId": "job-application"
+  },
+  {
+    "name": "diversity-inclusion:name",
+    "themeId": "diversity-inclusion"
+  },
+  {
+    "name": "training-skills:name",
+    "themeId": "training-skills"
+  },
+  {
+    "name": "choosing-a-job:name",
+    "themeId": "choosing-a-job"
+  }
+]

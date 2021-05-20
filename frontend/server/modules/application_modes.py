@@ -24,25 +24,25 @@ class _SpontaneousApplicationScoringModel(scoring_base.ModelBase):
             fap_modes.modes[0].mode for fap_modes in application_modes
             if len(fap_modes.modes))
         if job_pb2.SPONTANEOUS_APPLICATION in first_modes:
-            return scoring_base.ExplainedScore(3, [project.translate_string(
+            return scoring_base.ExplainedScore(3, [project.translate_static_string(
                 "c'est le canal de recrutement n°1 pour votre métier")])
 
         # In the category missing-diploma, we always have the alternance strategy which requires
         # spontaneous application data.
         if project.details.diagnostic.category_id == 'missing-diploma':
-            return scoring_base.ExplainedScore(2, [project.translate_string(
+            return scoring_base.ExplainedScore(2, [project.translate_static_string(
                 "c'est le meilleur moyen de trouver un contrat en alternance")])
 
         second_modes = set(
             fap_modes.modes[1].mode for fap_modes in application_modes
             if len(fap_modes.modes) > 1)
         if job_pb2.SPONTANEOUS_APPLICATION in second_modes:
-            return scoring_base.ExplainedScore(2, [project.translate_string(
+            return scoring_base.ExplainedScore(2, [project.translate_static_string(
                 "c'est un des meilleurs canaux de recrutement pour votre métier")])
 
         if project.details.diagnostic.category_id == 'bravo' and \
                 user_pb2.NO_OFFERS in project.user_profile.frustrations:
-            return scoring_base.ExplainedScore(2, [project.translate_string(
+            return scoring_base.ExplainedScore(2, [project.translate_static_string(
                 "vous nous avez dit ne pas trouver assez d'offres.")])
         return scoring_base.NULL_EXPLAINED_SCORE
 
@@ -91,7 +91,7 @@ class _GreatApplicationModeFilter(scoring_base.BaseFilter):
     https://github.com/bayesimpact/bob-emploi-internal/blob/master/data_analysis/notebooks/datasets/imt/application_modes.ipynb
     """
 
-    def __init__(self, application_mode: job_pb2.ApplicationMode, delta_percentage: float) \
+    def __init__(self, application_mode: 'job_pb2.ApplicationMode.V', delta_percentage: float) \
             -> None:
         super().__init__(self._filter)
         self.application_mode = application_mode

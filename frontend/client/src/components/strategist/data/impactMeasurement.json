@@ -1,0 +1,58 @@
+[
+  {
+    "actionId": "explore-jobs",
+    "name": "explore-jobs:name"
+  },
+  {
+    "actionId": "search-training",
+    "name": "search-training:name"
+  },
+  {
+    "actionId": "find-coach",
+    "name": "find-coach:name"
+  },
+  {
+    "actionId": "apply-elsewhere",
+    "name": "apply-elsewhere:name"
+  },
+  {
+    "actionId": "self-develop",
+    "name": "self-develop:name"
+  },
+  {
+    "actionId": "network",
+    "name": "network:name"
+  },
+  {
+    "actionId": "fight-discrimination",
+    "name": "fight-discrimination:name"
+  },
+  {
+    "actionId": "upskill",
+    "name": "upskill:name"
+  },
+  {
+    "actionId": "info-company-creation",
+    "name": "info-company-creation:name"
+  },
+  {
+    "actionId": "search-more-offers",
+    "name": "search-more-offers:name"
+  },
+  {
+    "actionId": "improve-communication",
+    "name": "improve-communication:name"
+  },
+  {
+    "actionId": "quality-application",
+    "name": "quality-application:name"
+  },
+  {
+    "actionId": "apply-other-sector",
+    "name": "apply-other-sector:name"
+  },
+  {
+    "actionId": "apply-spontaneous",
+    "name": "apply-spontaneous:name"
+  }
+]

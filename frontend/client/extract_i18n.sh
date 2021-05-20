@@ -6,23 +6,24 @@
 readonly FRONTEND="$(dirname ${BASH_SOURCE[0]})"
 readonly ONLY_PLUGIN="$1"
 
+# Fail on the first extraction that fails.
+set -e
+
 function extract_plugin() {
     local dir="$1"
-    if ! ls ${dir}i18n.babelrc* > /dev/null; then
+    if ! ls ${dir}i18n.babelrc* &> /dev/null; then
         echo "No i18n extraction config in $dir."
         if [ -n "$ONLY_PLUGIN" ]; then
             return 1
         fi
         return 0
     fi
-    npx babel --config-file "./${dir}i18n.babelrc" './src/**/*.{js,jsx,ts,tsx}' "./${dir}src/**/*.{js,jsx,ts,tsx}" > /dev/null
+    npx babel --config-file "./${dir}i18n.babelrc" './src/**/*.{js,jsx,ts,tsx}' './release/lambdas/opengraph_redirect.js' "./${dir}src/**/*.{js,jsx,ts,tsx}" > /dev/null
 }
 cd "$FRONTEND"
-if [ -z "$ONLY_PLUGIN" ] || [[ "$ONLY_PLUGIN" == "core" ]]; then
-    extract_plugin ""
-fi
-for dir in $(ls -d -- plugins/*/); do
-    if [ -z "$ONLY_PLUGIN" ] || [[ "plugins/$ONLY_PLUGIN/" == "$dir" ]]; then
+for plugin in $(plugins/list_plugins); do
+    dir="plugins/$plugin/"
+    if [ -z "$ONLY_PLUGIN" ] || [[ "$ONLY_PLUGIN" == "$plugin" ]]; then
         extract_plugin "$dir"
     fi
 done

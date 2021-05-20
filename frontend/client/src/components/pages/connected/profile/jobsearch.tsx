@@ -1,4 +1,3 @@
-import {TFunction} from 'i18next'
 import _pick from 'lodash/pick'
 import _range from 'lodash/range'
 import PropTypes from 'prop-types'
@@ -7,79 +6,45 @@ import {useDispatch} from 'react-redux'
 
 import {DispatchAllActions, diagnoseOnboarding} from 'store/actions'
 import {localizeOptions, prepareT} from 'store/i18n'
-import {weeklyApplicationOptions} from 'store/job'
-import {getJobSearchLengthMonths, userExample} from 'store/user'
+import {weeklyApplicationOptions, weeklyOfferOptions} from 'store/job'
+import {getJobSearchLengthMonths, useUserExample} from 'store/user'
 
-import {Trans} from 'components/i18n'
-import {FieldSet, LocalizedSelectOption, Select,
-  SelectOption} from 'components/pages/connected/form_utils'
+import FieldSet from 'components/field_set'
+import Trans from 'components/i18n_trans'
+import Select, {SelectOption} from 'components/select'
 import {OnboardingComment, ProjectStepProps, Step} from './step'
 
 
-// 2635200000 = 1000 * 60 * 60 * 24 * 30.5
-const MILLIS_IN_MONTH = 2635200000
+// 2,635,200,000 = 1000 * 60 * 60 * 24 * 30.5
+const MILLIS_IN_MONTH = 2_635_200_000
 
 const jobSearchLengthMonthsOptions = [
-  {name: (t: TFunction): string => t("Je n'ai pas encore commencé"), value: -1},
-]
-_range(1, 19).forEach((monthsAgo): void => {
-  jobSearchLengthMonthsOptions.push({
-    name: (t: TFunction): string => t('{{monthsAgo}} mois', {count: monthsAgo, monthsAgo}),
+  {name: prepareT("Je n'ai pas encore commencé"), value: -1},
+  ..._range(1, 19).map((monthsAgo) => ({
+    name: prepareT('{{monthsAgo}} mois', {count: monthsAgo, monthsAgo}),
     value: monthsAgo,
-  })
-})
-jobSearchLengthMonthsOptions.push({
-  name: (t: TFunction): string => t('Plus de {{monthsAgo}} mois', {monthsAgo: 18}),
-  value: 19,
-})
+  })),
+  {
+    name: prepareT('Plus de {{monthsAgo}} mois', {monthsAgo: 18}),
+    value: 19,
+  },
+] as const
 
-
-interface WihtName {
-  name: (T: TFunction) => string
-}
-
-
-function localizeFuncOptions<T extends WihtName>(
-  t: TFunction, options: readonly T[],
-): readonly (Omit<T, 'name'> & {name: string})[] {
-  return options.map(({name, ...other}) => ({name: name(t), ...other}))
-}
-
-
-// TODO(cyrille): Move to store.
-const weeklyOfferOptions: readonly LocalizedSelectOption<bayes.bob.NumberOfferEstimateOption>[] = [
-  {name: prepareT('0 ou 1 offre intéressante par semaine'), value: 'LESS_THAN_2'},
-  {name: prepareT('2 à 5 offres intéressantes par semaine'), value: 'SOME'},
-  {name: prepareT('6 à 15 offres intéressantes  par semaine'), value: 'DECENT_AMOUNT'},
-  {name: prepareT('Plus de 15 offres intéressantes par semaine'), value: 'A_LOT'},
-]
-
-
-// TODO(cyrille): Drop this function and use the above once we're sure both date and bool fields are
-// correct.
-const getJobSearch = (project: bayes.bob.Project): bayes.bob.Project => {
-  const length = getJobSearchLengthMonths(project)
-  return {
-    jobSearchHasNotStarted: project.jobSearchHasNotStarted || length < 0,
-    jobSearchLengthMonths: length,
-  }
-}
 
 const updateJobSearchLength = (jobSearchLengthMonths: number): bayes.bob.Project => {
-  // TODO(cyrille): Drop length in months once field is removed.
-  const projectState: {-readonly [K in keyof bayes.bob.Project]?: bayes.bob.Project[K]} =
-    {jobSearchLengthMonths}
+  const projectState: {-readonly [K in keyof bayes.bob.Project]?: bayes.bob.Project[K]} = {}
   if (jobSearchLengthMonths < 0) {
+    // TODO(cyrille): Clear up the other fields (interview count, applications estimate).
     projectState.jobSearchHasNotStarted = true
   } else {
     projectState.jobSearchStartedAt =
-      new Date(new Date().getTime() - MILLIS_IN_MONTH * jobSearchLengthMonths).toISOString()
+      new Date(Date.now() - MILLIS_IN_MONTH * jobSearchLengthMonths).toISOString()
   }
   return projectState
 }
 
 
-const NewProjectJobsearchStepBase = (props: ProjectStepProps): React.ReactElement => {
+const NewProjectJobsearchStep = (props: ProjectStepProps): React.ReactElement => {
   const {onSubmit, newProject = {}, t} = props
 
   const dispatch = useDispatch<DispatchAllActions>()
@@ -87,31 +52,26 @@ const NewProjectJobsearchStepBase = (props: ProjectStepProps): React.ReactElemen
   const [applicationCommentRead, setApplicationCommentRead] = useState(false)
 
   const isFormValid = useMemo((): boolean => {
-    // TODO(cyrille): Drop jobSearchLengthMonths once old users have been migrated.
     const {
       jobSearchHasNotStarted = undefined,
-      jobSearchLengthMonths = undefined,
       jobSearchStartedAt = undefined,
       totalInterviewCount = undefined,
       weeklyApplicationsEstimate = undefined,
       weeklyOffersEstimate = undefined,
     } = newProject || {}
-    return !!(totalInterviewCount && weeklyApplicationsEstimate &&
-              weeklyOffersEstimate &&
-              (jobSearchStartedAt || jobSearchLengthMonths && jobSearchLengthMonths >= 0) ||
-              (jobSearchHasNotStarted || jobSearchLengthMonths === -1))
+    return jobSearchHasNotStarted || !!(
+      totalInterviewCount && weeklyApplicationsEstimate && weeklyOffersEstimate &&
+      jobSearchStartedAt)
   }, [newProject])
 
   const handleSubmit = useCallback((): void => {
     setIsValidated(true)
-    const {jobSearchHasNotStarted, jobSearchStartedAt, jobSearchLengthMonths,
+    const {jobSearchHasNotStarted, jobSearchStartedAt,
       totalInterviewCount, weeklyApplicationsEstimate, weeklyOffersEstimate,
     } = newProject
     if (isFormValid) {
       onSubmit({
         jobSearchHasNotStarted,
-        // TODO(cyrille): Drop once every user has the two other fields set.
-        jobSearchLengthMonths,
         jobSearchStartedAt,
         totalInterviewCount,
         weeklyApplicationsEstimate,
@@ -120,10 +80,10 @@ const NewProjectJobsearchStepBase = (props: ProjectStepProps): React.ReactElemen
     }
   }, [isFormValid, onSubmit, newProject])
 
+  const userExample = useUserExample()
   const fastForward = useCallback((): void => {
     const {
       jobSearchHasNotStarted = undefined,
-      jobSearchLengthMonths = undefined,
       jobSearchStartedAt = undefined,
       totalInterviewCount = undefined,
       weeklyApplicationsEstimate = undefined,
@@ -134,7 +94,7 @@ const NewProjectJobsearchStepBase = (props: ProjectStepProps): React.ReactElemen
       return
     }
     const projectDiff: {-readonly [K in keyof bayes.bob.Project]?: bayes.bob.Project[K]} = {}
-    if (!jobSearchLengthMonths && !jobSearchHasNotStarted && !jobSearchStartedAt) {
+    if (!jobSearchHasNotStarted && !jobSearchStartedAt) {
       Object.assign(
         projectDiff,
         _pick(userExample.projects[0], ['jobSearchStartedAt', 'jobSearchHasNotStarted']))
@@ -151,7 +111,7 @@ const NewProjectJobsearchStepBase = (props: ProjectStepProps): React.ReactElemen
     dispatch(diagnoseOnboarding({projects: [projectDiff]}))
 
     setApplicationCommentRead(true)
-  }, [dispatch, isFormValid, handleSubmit, newProject])
+  }, [dispatch, isFormValid, handleSubmit, newProject, userExample])
 
   const handleSearchLengthChange = useCallback((jobSearchLengthMonths: number): void => {
     dispatch(diagnoseOnboarding({projects: [updateJobSearchLength(jobSearchLengthMonths)]}))
@@ -180,8 +140,9 @@ const NewProjectJobsearchStepBase = (props: ProjectStepProps): React.ReactElemen
   // add the field name as a parameter to the function and memoize it.
   const handleCommentRead = useCallback((): void => setApplicationCommentRead(true), [])
 
-  const {totalInterviewCount, weeklyApplicationsEstimate, weeklyOffersEstimate} = newProject
-  const interviewsLabel = newProject.targetJob ?
+  const {targetJob, jobSearchHasNotStarted, totalInterviewCount, weeklyApplicationsEstimate,
+    weeklyOffersEstimate} = newProject
+  const interviewsLabel = targetJob ?
     <Trans parent="span">
       Combien d'entretiens d'embauche avez-vous obtenus <strong style={{fontWeight: 'bold'}}>
         depuis que vous cherchez ce métier
@@ -191,7 +152,7 @@ const NewProjectJobsearchStepBase = (props: ProjectStepProps): React.ReactElemen
         depuis que vous avez commencé votre recherche
       </strong>&nbsp;?
     </Trans>
-  const {jobSearchHasNotStarted, jobSearchLengthMonths} = getJobSearch(newProject)
+  const jobSearchLengthMonths = getJobSearchLengthMonths(newProject)
   // Keep in sync with 'isValid' props from list of fieldset below.
   const checks = [
     jobSearchLengthMonths,
@@ -199,13 +160,21 @@ const NewProjectJobsearchStepBase = (props: ProjectStepProps): React.ReactElemen
     (applicationCommentRead && weeklyApplicationsEstimate) || jobSearchHasNotStarted,
     totalInterviewCount || jobSearchHasNotStarted,
   ]
+  const numInterviewsOptions = useMemo(() => ([
+    {name: t("Aucun pour l'instant"), value: -1},
+    ...Array.from({length: 20}, (unused, index): SelectOption<number> => ({
+      name: (index + 1) + '',
+      value: index + 1,
+    })),
+    {name: t('Plus de 20'), value: 21},
+  ]), [t])
   return <Step
     {...props} fastForward={fastForward}
     onNextButtonClick={isFormValid ? handleSubmit : undefined}
     progressInStep={checks.filter((c): boolean => !!c).length / (checks.length + 1)}
     title={t('Votre recherche')}>
     <FieldSet
-      label={newProject.targetJob ?
+      label={targetJob ?
         t('Depuis combien de temps avez-vous commencé à postuler à des offres pour ce ' +
           'métier\u00A0?') :
         t("Depuis combien de temps avez-vous commencé votre recherche d'emploi\u00A0?")
@@ -213,7 +182,7 @@ const NewProjectJobsearchStepBase = (props: ProjectStepProps): React.ReactElemen
       isValid={!!jobSearchLengthMonths} isValidated={isValidated}
       hasCheck={true}>
       <Select<number>
-        options={localizeFuncOptions(t, jobSearchLengthMonthsOptions)}
+        options={localizeOptions(t, jobSearchLengthMonthsOptions)}
         value={jobSearchLengthMonths}
         placeholder={t('sélectionnez la durée de votre recherche')}
         areUselessChangeEventsMuted={false} onChange={handleSearchLengthChange} />
@@ -251,16 +220,11 @@ const NewProjectJobsearchStepBase = (props: ProjectStepProps): React.ReactElemen
         onChange={handleChangeTotalInterviewCount}
         value={totalInterviewCount}
         placeholder={t("sélectionnez le nombre d'entretiens que vous avez obtenus")}
-        options={[{name: t("Aucun pour l'instant"), value: -1}].
-          concat(new Array(20).fill(0).map((unused, index): SelectOption<number> => ({
-            name: (index + 1) + '',
-            value: index + 1,
-          }))).
-          concat([{name: t('Plus de 20'), value: 21}])} />
+        options={numInterviewsOptions} />
     </FieldSet> : null}
   </Step>
 }
-NewProjectJobsearchStepBase.propTypes = {
+NewProjectJobsearchStep.propTypes = {
   newProject: PropTypes.shape({
     jobSearchHasNotStarted: PropTypes.bool,
     jobSearchLengthMonths: PropTypes.number,
@@ -272,7 +236,6 @@ NewProjectJobsearchStepBase.propTypes = {
   onSubmit: PropTypes.func.isRequired,
   t: PropTypes.func.isRequired,
 }
-const NewProjectJobsearchStep = React.memo(NewProjectJobsearchStepBase)
 
 
-export {NewProjectJobsearchStep, weeklyOfferOptions}
+export default React.memo(NewProjectJobsearchStep)

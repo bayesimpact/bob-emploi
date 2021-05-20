@@ -2,6 +2,9 @@ import React, {useMemo, useState} from 'react'
 import PropTypes from 'prop-types'
 import VisibilitySensor from 'react-visibility-sensor'
 
+import {toLocaleString} from 'store/i18n'
+import isMobileVersion from 'store/mobile'
+
 import budgetImage from 'images/budget.png'
 import demographyImage from 'images/demography.png'
 import downloadImage from 'images/download-picto.svg'
@@ -12,24 +15,25 @@ import userFeedbackPositiveImage from 'images/user-feedback-positive.png'
 import userFeedbackNegativeImage from 'images/user-feedback-negative.png'
 import npsImage from 'images/nps.png'
 
-import {isMobileVersion} from 'components/mobile'
+import {colorToAlpha} from 'components/colors'
+import ExternalLink from 'components/external_link'
 import {StaticPage} from 'components/static'
-import {ExternalLink, MAX_CONTENT_WIDTH, SmoothTransitions, colorToAlpha} from 'components/theme'
+import {MAX_CONTENT_WIDTH, SmoothTransitions} from 'components/theme'
 
 const STARTING_FUNDING_AMOUNTS = [
-  {amount: 200000, distributionYears: 2, name: 'PIA'},
-  {amount: 300000, distributionYears: 2, name: 'Fondation JP Morgan Chase'},
-  {amount: 10000, distributionYears: 1, name: 'Prix Publicis 90'},
-  {amount: 185000, distributionYears: 1, name: 'Subvention Pôle emploi'},
+  {amount: 200_000, distributionYears: 2, name: 'PIA'},
+  {amount: 300_000, distributionYears: 2, name: 'Fondation JP Morgan Chase'},
+  {amount: 10_000, distributionYears: 1, name: 'Prix Publicis 90'},
+  {amount: 185_000, distributionYears: 1, name: 'Subvention Pôle emploi'},
   {amount: 5000, distributionYears: 1, name: 'Five by five'},
-  {amount: 10000, distributionYears: 1, name: 'Iron Capital'},
-  {amount: 30000, distributionYears: 2, name: 'BPI'},
+  {amount: 10_000, distributionYears: 1, name: 'Iron Capital'},
+  {amount: 30_000, distributionYears: 2, name: 'BPI'},
 ]
 
 const GROWTH_FUNDING_AMOUNTS = [
-  {amount: 565000, distributionYears: 1, name: "La France s'engage"},
-  {amount: 1000000, distributionYears: 3, name: 'Google.org'},
-  {amount: 100000, distributionYears: 1, name: 'Galeries Lafayette'},
+  {amount: 565_000, distributionYears: 1, name: "La France s'engage"},
+  {amount: 1_000_000, distributionYears: 3, name: 'Google.org'},
+  {amount: 100_000, distributionYears: 1, name: 'Galeries Lafayette'},
 ]
 
 const textSectionStyle: React.CSSProperties = {
@@ -97,18 +101,18 @@ const userStats = {
   // To get these numbers, update the dates and run the script
   // analytics/manual/stats_for_feedback_scores.js
   feedbackScores: [
-    {name: 'Mauvais', value: .0906},
-    {name: 'Peu intéressant', value: .0623},
-    {color: colors.GREENISH_TEAL, name: 'Intéressant', value: .2337},
-    {color: colors.GREENISH_TEAL, name: 'Utile', value: .2224},
-    {color: colors.GREENISH_TEAL, name: 'Très utile', value: .3909},
+    {name: 'Mauvais', value: .1107},
+    {name: 'Peu intéressant', value: .0435},
+    {color: colors.GREENISH_TEAL, name: 'Intéressant', value: .2102},
+    {color: colors.GREENISH_TEAL, name: 'Utile', value: .2575},
+    {color: colors.GREENISH_TEAL, name: 'Très utile', value: .3781},
   ],
-  // Recomupted just below.
+  // Recomputed just below.
   positiveFeedbackPercentage: 0,
   // To get this number, update the dates and run the script analytics/manual/count_new_users.js
   // Please also update number on landing.tsx.
-  totalUserCount: 206130,
-  updatedAt: <span>au 1<sup>er</sup> décembre 2019</span>,
+  totalUserCount: 277_035,
+  updatedAt: <span>au 1<sup>er</sup> avril 2021</span>,
 }
 userStats.positiveFeedbackPercentage =
   Math.round(userStats.feedbackScores.slice(2).
@@ -253,15 +257,14 @@ const GeneralMetricsBase = (): React.ReactElement => <div style={textSectionStyl
     <div style={{fontWeight: 'bold', marginBottom: 20}}>Impact sur le retour à l'emploi</div>
     <div style={helpfulRateStyle}>42%</div>
     <div style={textStyle}>
-      des personnes nous ayant indiqué avoir <strong>retrouvé un emploi</strong><br />
-      et ayant testé {config.productName}, considèrent que <strong>{config.productName} y
-      a contribué</strong>.
+      des utilisateurs de {config.productName} nous ayant indiqué avoir<br /><strong>retrouvé un
+      emploi</strong> considèrent que <strong>{config.productName} y a contribué</strong>.
     </div>
   </div>
   <div style={{...graphStyle, ...flexRowOnDesktop}}>
     <div style={userCountGraphStyle}>
       <strong style={{color: colors.BOB_BLUE, fontSize: 60}}>
-        {(userStats.totalUserCount).toLocaleString('fr')}
+        {toLocaleString(userStats.totalUserCount)}
       </strong>
       <span>
         comptes créés depuis novembre 2016
@@ -747,7 +750,7 @@ const FundingTableBase = (props: FundingTableProps): React.ReactElement => {
       {items.map(({name, amount, distributionYears}, index): React.ReactNode => <tr
         key={`item-${index}`} style={rowStyle(index + 1)}>
         <td style={{...nameColumnStyle, paddingBottom: 8, paddingTop: 8}}>{name}</td>
-        <td style={numberColumnStyle}>{amount.toLocaleString('fr')} €</td>
+        <td style={numberColumnStyle}>{toLocaleString(amount)} €</td>
         <td style={distributionYearsStyle}>
           {distributionYears ? `${distributionYears} an${distributionYears > 1 ? 's' : ''}` : ''}
         </td>
@@ -755,7 +758,7 @@ const FundingTableBase = (props: FundingTableProps): React.ReactElement => {
       <tr style={totalRowStyle}>
         <td style={{...nameColumnStyle, paddingBottom: 10, paddingTop: 10}}>Total</td>
         <td style={numberColumnStyle}><strong>
-          {items.reduce((total, {amount}): number => amount + total, 0).toLocaleString('fr')} €
+          {toLocaleString(items.reduce((total, {amount}): number => amount + total, 0))} €
         </strong></td>
         <td />
       </tr>
@@ -855,7 +858,8 @@ const PercentBarChartBase = (props: PercentBarChartProps): React.ReactElement =>
       textAlign: 'right',
       width: '3.2em',
     }
-    return new Array(5).fill(0).map(
+    return Array.from(
+      {length: 5},
       (unused, index): React.ReactNode => <div style={scaleStyle(index)} key={`scale-${index}`}>
         <span style={numberStyle}>{(4 - index) * 25}%</span>
         <div style={{

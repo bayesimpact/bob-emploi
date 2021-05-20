@@ -1,0 +1,27 @@
+{
+  "Rules": [
+    {
+      "Arn": "arn:aws:events:us-east-1:951168128976:rule/8f2d411a081b5ef45b1a-slack_retro_bot_to_airtable.send_retro_mood",
+      "Description": "slack_retro_bot_to_airtable.send_retro_mood",
+      "EventBusName": "default",
+      "Name": "8f2d411a081b5ef45b1a-slack_retro_bot_to_airtable.send_retro_mood",
+      "ScheduleExpression": "cron(30 14 ? * FRI *)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:us-east-1:951168128976:rule/bob-monitoring",
+      "EventBusName": "default",
+      "Name": "bob-monitoring",
+      "ScheduleExpression": "rate(24 hours)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:us-east-1:951168128976:rule/count-users",
+      "Description": "Count users by county and SOC unit group and populate the user_count table in mongo",
+      "EventBusName": "default",
+      "Name": "count-users",
+      "ScheduleExpression": "rate(30 days)",
+      "State": "ENABLED"
+    }
+  ]
+}

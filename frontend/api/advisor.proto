@@ -1,11 +1,10 @@
 syntax = "proto3";
 
-import "google/protobuf/timestamp.proto";
-
 import "bob_emploi/frontend/api/diagnostic.proto";
 import "bob_emploi/frontend/api/options.proto";
 
 package bayes.bob;
+option go_package="bayes.org/bob_emploi/frontend/api/advisor";
 
 // The definition of an Advice Module. See http://go/bob:advisor-design.
 // Next ID: 21
@@ -17,13 +16,13 @@ message AdviceModule {
   string airtable_id = 8;
 
   // Title for the advice module.
-  string title = 14;
+  string title = 14 [(string_format) = NATURAL_LANGUAGE];
 
   // A short version of the title.
-  string short_title = 20;
+  string short_title = 20 [(string_format) = NATURAL_LANGUAGE];
 
   // Adapted title corresponding to x stars.
-  map<int32, string> title_x_stars = 15;
+  map<int32, string> title_x_stars = 15 [(string_format) = NATURAL_LANGUAGE];
 
   // Name of the scoring model to decide whether to trigger this advice.
   string trigger_scoring_model = 1 [(string_format) = SCORING_MODEL_ID];
@@ -70,29 +69,23 @@ message AdviceModule {
   repeated string categories = 16;
 
   // A set of reasons why the advice is given.
-  repeated string explanations = 17;
+  repeated string explanations = 17 [(string_format) = NATURAL_LANGUAGE];
 
   // The callout of the gain that this advice will bring to the user, e.g. "3x", "+20%".
   string user_gain_callout = 18;
 
   // The rest of the explanation (after user_gain_callout) of the gain that
   // this advice will bring to the user, e.g. "plus d'entretiens", "d'offres".
-  string user_gain_details = 19;
-}
-
-// History of advice sent by email.
-message EmailHistory {
-  // Last time an advice module was sent by email.
-  map<string, google.protobuf.Timestamp> advice_modules = 1;
-
-  // Last time a tip was sent by email.
-  map<string, google.protobuf.Timestamp> tips = 2;
+  string user_gain_details = 19 [(string_format) = NATURAL_LANGUAGE];
 }
 
 // Definition of an advice which content is fully dynamic and determined by the
 // server, e.g. the "Specific to Job" advice.
-// Next ID: 12.
+// Next ID: 13.
 message DynamicAdvice {
+  // An ID identifying a config uniquely, e.g. "hairdresser", "experienced-waiter".
+  string id = 12;
+
   // Title of this advice.
   string title = 1 [(string_format) = NATURAL_LANGUAGE];
 

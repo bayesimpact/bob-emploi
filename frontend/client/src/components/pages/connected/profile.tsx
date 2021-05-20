@@ -4,31 +4,32 @@ import CheckIcon from 'mdi-react/CheckIcon'
 import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
-import {connect, useDispatch} from 'react-redux'
-import {RouteComponentProps} from 'react-router'
+import {useDispatch, useSelector} from 'react-redux'
+import {useLocation, useParams} from 'react-router'
 import {Redirect} from 'react-router-dom'
-import ReactRouterPropTypes from 'react-router-prop-types'
 
 import {DispatchAllActions, RootState, diagnoseOnboarding, displayToasterMessage,
-  setUserProfile} from 'store/actions'
+  onboardingPage, setUserProfile} from 'store/actions'
 import {onboardingComplete} from 'store/main_selectors'
 import {useSafeDispatch} from 'store/promise'
 import {USER_PROFILE_FIELDS} from 'store/user'
 
-import {Trans} from 'components/i18n'
-import {isMobileVersion} from 'components/mobile'
+import Trans from 'components/i18n_trans'
+import isMobileVersion from 'store/mobile'
+import {colorToAlpha} from 'components/colors'
 import {PageWithNavigationBar, Scrollable} from 'components/navigation'
 import {RadiumLink} from 'components/radium'
-import {SmoothTransitions, Styles, colorToAlpha} from 'components/theme'
+import {SmoothTransitions, Styles} from 'components/theme'
 import {Routes} from 'components/url'
 
 import {ProfileStepProps} from './profile/step'
 import {useProfileOnboarding} from './profile/onboarding'
-import {AccountStep} from './profile/account'
-import {FrustrationsStep} from './profile/frustrations'
-import {GeneralStep} from './profile/general'
-import {PasswordStep} from './profile/password'
-import {SettingsStep} from './profile/settings'
+import AccountStep from './profile/account'
+import FrustrationsStep from './profile/frustrations'
+import EmailsHistoryPage from './profile/emails'
+import GeneralStep from './profile/general'
+import PasswordStep from './profile/password'
+import SettingsStep from './profile/settings'
 
 
 const emptyObject = {} as const
@@ -59,6 +60,10 @@ const PAGE_VIEW_STEPS: readonly PageViewStep[] = [
   {
     component: FrustrationsStep,
     fragment: 'infos',
+  },
+  {
+    component: EmailsHistoryPage,
+    fragment: 'emails',
   },
 ]
 
@@ -97,7 +102,7 @@ const PAGE_VIEW_TABS: readonly PageViewTab[] = [
 interface OnboardingViewProps {
   featuresEnabled?: bayes.bob.Features
   hasAccount?: boolean
-  onProfileSave: (profile: bayes.bob.UserProfile, type: string, isLastProjectStep: boolean) => void
+  onProfileSave: (profile: bayes.bob.UserProfile, type: string, shouldNotSaveUser: boolean) => void
   stepName: string
   userProfile?: bayes.bob.UserProfile
 }
@@ -111,17 +116,17 @@ const OnboardingViewBase = (props: OnboardingViewProps): React.ReactElement => {
 
   useEffect((): void => pageRef.current?.scrollTo(0), [stepName])
 
-  const {goBack, goNext, step, stepCount} = useProfileOnboarding(stepName)
+  const {goBack, goNext, hasNextStep, step, stepCount} = useProfileOnboarding(stepName)
 
   const maybeUpdateProfile = useCallback((stepUpdates?: bayes.bob.UserProfile): void => {
-    const {isLastProjectStep, type} = step || {}
+    const {type} = step || {}
     if (!type) {
       return
     }
     // Filter fields of stepUpdates to keep only the ones that are part of the profile.
     const profileUpdates: bayes.bob.UserProfile = _pick(stepUpdates, USER_PROFILE_FIELDS)
-    onProfileSave(profileUpdates, type, !!isLastProjectStep)
-  }, [onProfileSave, step])
+    onProfileSave(profileUpdates, type, !hasNextStep)
+  }, [onProfileSave, hasNextStep, step])
 
   const handleSubmit = useCallback((stepUpdates: bayes.bob.UserProfile): void => {
     maybeUpdateProfile(stepUpdates)
@@ -160,7 +165,8 @@ const OnboardingViewBase = (props: OnboardingViewProps): React.ReactElement => {
       featuresEnabled={featuresEnabled || emptyObject}
       isShownAsStepsDuringOnboarding={true}
       stepNumber={stepNumber} totalStepCount={stepCount}
-      profile={userProfile || emptyObject} hasAccount={hasAccount} t={t} />
+      profile={userProfile || emptyObject} hasAccount={hasAccount} t={t}
+      isLastOnboardingStep={!hasNextStep} />
   </PageWithNavigationBar>
 }
 OnboardingViewBase.propTypes = {
@@ -280,7 +286,7 @@ interface Notifiable {
 }
 
 
-const SaveNotifierBase = (props: {}, ref: React.Ref<Notifiable>): React.ReactElement => {
+const SaveNotifierBase = (props: unknown, ref: React.Ref<Notifiable>): React.ReactElement => {
   const [saves, setSaves] = useState<readonly SaveState[]>([])
   const [totalSavesCount, setTotalSavesCount] = useState(0)
 
@@ -317,7 +323,9 @@ const SaveNotifierBase = (props: {}, ref: React.Ref<Notifiable>): React.ReactEle
   }, [saves, setActiveSave, totalSavesCount])
 
   useEffect((): (() => void) => (): void => {
-    savesTimeout.current?.forEach((timeout: number): void => clearTimeout(timeout))
+    for (const timeout of savesTimeout.current) {
+      window.clearTimeout(timeout)
+    }
   }, [])
 
   return <React.Fragment>
@@ -339,8 +347,9 @@ const PageViewBase = (props: PageViewProps): React.ReactElement => {
     map(({fragment, title}) => ({fragment, title: title(hasAccount, userProfile, t)})),
   [hasAccount, t, userProfile])
 
-  const handleChange = useCallback((userDiff: bayes.bob.User): void => {
-    dispatch(diagnoseOnboarding(userDiff)).then(saveNotifier.current?.notify)
+  const handleChange = useCallback(async (userDiff: bayes.bob.User): Promise<void> => {
+    await dispatch(diagnoseOnboarding(userDiff))
+    saveNotifier.current?.notify()
   }, [dispatch])
 
   if (isMobileVersion && stepName) {
@@ -354,6 +363,9 @@ const PageViewBase = (props: PageViewProps): React.ReactElement => {
     return <Redirect to={Routes.PROFILE_PAGE} />
   }
   const {title} = tabs.find(({fragment}) => fragment === stepName) || {}
+  if (stepName === 'emails') {
+    return <EmailsHistoryPage />
+  }
   if (!isMobileVersion && !(stepName && title)) {
     // We have no tab title to show, go to first tab.
     const firstTab = tabs[0].fragment
@@ -397,7 +409,8 @@ const PageViewBase = (props: PageViewProps): React.ReactElement => {
             isShownAsStepsDuringOnboarding={false}
             buttonsOverride={<div />}
             profile={userProfile}
-            featuresEnabled={featuresEnabled} hasAccount={hasAccount} t={t} />
+            featuresEnabled={featuresEnabled} hasAccount={hasAccount} t={t}
+            isLastOnboardingStep={false} />
         })}
       </div>
     </div>
@@ -406,19 +419,15 @@ const PageViewBase = (props: PageViewProps): React.ReactElement => {
 const PageView = React.memo(PageViewBase)
 
 
-interface ProfilePageConnectedProps {
-  user: bayes.bob.User
-}
-
-
-interface ProfilePageProps
-  extends ProfilePageConnectedProps, RouteComponentProps<{stepName: string}> {
-  dispatch: DispatchAllActions
-}
-
-const ProfilePageBase: React.FC<ProfilePageProps> = (props): React.ReactElement => {
-  const {dispatch, match: {params: {stepName}, url},
-    user, user: {featuresEnabled, hasAccount, profile}} = props
+const ProfilePageBase = (): React.ReactElement => {
+  const dispatch = useDispatch<DispatchAllActions>()
+  const user = useSelector(({user}: RootState) => user)
+  const project = useSelector(
+    ({user: {projects}}: RootState): bayes.bob.Project => projects?.[0] || emptyObject,
+  )
+  const {featuresEnabled, hasAccount, profile} = user
+  const {stepName} = useParams<{stepName: string}>()
+  const {pathname: url} = useLocation()
   const [isShownAsStepsDuringOnboarding, setShownAsStepsDuringOnboarding] =
     useState(!onboardingComplete(user))
   useEffect((): void => {
@@ -428,14 +437,17 @@ const ProfilePageBase: React.FC<ProfilePageProps> = (props): React.ReactElement 
     setShownAsStepsDuringOnboarding(true)
   }, [isShownAsStepsDuringOnboarding, user])
   const handleProfileSave = useCallback(
-    (userProfileUpdates, actionType?, shouldNotSaveUser?): void => {
-      dispatch(setUserProfile(userProfileUpdates, !shouldNotSaveUser, actionType)).
-        then((success): void => {
-          if (success && !isShownAsStepsDuringOnboarding) {
-            dispatch(displayToasterMessage('Modifications sauvegardées.'))
-          }
-        })
-    }, [dispatch, isShownAsStepsDuringOnboarding])
+    async (userProfileUpdates, actionType?, shouldNotSaveUser?) => {
+      const success = await dispatch(
+        setUserProfile(userProfileUpdates, !shouldNotSaveUser, actionType))
+      if (success) {
+        if (isShownAsStepsDuringOnboarding) {
+          dispatch(onboardingPage(url, user, project))
+        } else {
+          dispatch(displayToasterMessage('Modifications sauvegardées.'))
+        }
+      }
+    }, [dispatch, isShownAsStepsDuringOnboarding, project, url, user])
   if (!isShownAsStepsDuringOnboarding) {
     return <PageWithNavigationBar
       style={{backgroundColor: colors.BACKGROUND_GREY}}
@@ -458,11 +470,4 @@ const ProfilePageBase: React.FC<ProfilePageProps> = (props): React.ReactElement 
     hasAccount={hasAccount}
   />
 }
-ProfilePageBase.propTypes = {
-  dispatch: PropTypes.func.isRequired,
-  match: ReactRouterPropTypes.match.isRequired,
-  user: PropTypes.object.isRequired,
-}
-export default connect(({user}: RootState): ProfilePageConnectedProps => ({
-  user,
-}))(ProfilePageBase)
+export default React.memo(ProfilePageBase)

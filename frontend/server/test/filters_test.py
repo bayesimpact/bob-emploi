@@ -7,6 +7,7 @@ from unittest import mock
 
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
+from bob_emploi.frontend.api import boolean_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import companies
@@ -203,18 +204,14 @@ class InterviewSmallRateFilterTestCase(FilterTestBase):
     def test_had_interviews(self) -> None:
         """User have had three interviews in two months."""
 
-        self.persona.project.job_search_length_months = 2
-        self.persona.project.job_search_started_at.FromDatetime(
-            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=61))
+        self._enforce_search_length_duration(self.persona.project, exact_months=2)
         self.persona.project.total_interview_count = 3
         self._assert_pass_filter()
 
     def test_had_few_interviews(self) -> None:
         """User have had one interview in two months."""
 
-        self.persona.project.job_search_length_months = 5
-        self.persona.project.job_search_started_at.FromDatetime(
-            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=152.5))
+        self._enforce_search_length_duration(self.persona.project, exact_months=5)
         self.persona.project.total_interview_count = 2
         self._assert_fail_filter()
 
@@ -223,7 +220,6 @@ class InterviewSmallRateFilterTestCase(FilterTestBase):
 
         if not self.persona.project.HasField('created_at'):
             self.persona.project.created_at.GetCurrentTime()
-        self.persona.project.job_search_length_months = -1
         self.persona.project.job_search_has_not_started = True
         self._assert_fail_filter()
 
@@ -236,18 +232,14 @@ class InterviewRateFilterTestCase(FilterTestBase):
     def test_had_interviews(self) -> None:
         """User have had three interviews in two months."""
 
-        self.persona.project.job_search_length_months = 2
-        self.persona.project.job_search_started_at.FromDatetime(
-            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=61))
+        self._enforce_search_length_duration(self.persona.project, exact_months=2)
         self.persona.project.total_interview_count = 3
         self._assert_pass_filter()
 
     def test_had_few_interviews(self) -> None:
         """User have had one interview in two months."""
 
-        self.persona.project.job_search_length_months = 2
-        self.persona.project.job_search_started_at.FromDatetime(
-            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=61))
+        self._enforce_search_length_duration(self.persona.project, exact_months=2)
         self.persona.project.total_interview_count = 1
         self._assert_fail_filter()
 
@@ -256,7 +248,6 @@ class InterviewRateFilterTestCase(FilterTestBase):
 
         if not self.persona.project.HasField('created_at'):
             self.persona.project.created_at.GetCurrentTime()
-        self.persona.project.job_search_length_months = -1
         self.persona.project.job_search_has_not_started = True
         self._assert_fail_filter()
 
@@ -617,17 +608,13 @@ class NegateFilterTestCase(FilterTestBase):
     def test_just_started(self) -> None:
         """User has just started this project."""
 
-        self.persona.project.job_search_length_months = 1
-        self.persona.project.job_search_started_at.FromDatetime(
-            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=30.5))
+        self._enforce_search_length_duration(self.persona.project, exact_months=1)
         self._assert_pass_filter()
 
     def test_started_2_years_ago(self) -> None:
         """User has been working on this project for 2 years."""
 
-        self.persona.project.job_search_length_months = 24
-        self.persona.project.job_search_started_at.FromDatetime(
-            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=732))
+        self._enforce_search_length_duration(self.persona.project, exact_months=24)
         self._assert_fail_filter()
 
 
@@ -661,17 +648,13 @@ class SearchingForeverFilterTestCase(FilterTestBase):
     def test_just_started(self) -> None:
         """User has just started this project."""
 
-        self.persona.project.job_search_length_months = 1
-        self.persona.project.job_search_started_at.FromDatetime(
-            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=30.5))
+        self._enforce_search_length_duration(self.persona.project, exact_months=1)
         self._assert_fail_filter()
 
     def test_started_2_years_ago(self) -> None:
         """User has been working on this project for 2 years."""
 
-        self.persona.project.job_search_length_months = 24
-        self.persona.project.job_search_started_at.FromDatetime(
-            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=732))
+        self._enforce_search_length_duration(self.persona.project, exact_months=24)
         self._assert_pass_filter()
 
 
@@ -1288,17 +1271,13 @@ class FilterShortSearchTestCase(FilterTestBase):
     def test_just_started(self) -> None:
         """User has just started this project."""
 
-        self.persona.project.job_search_length_months = 1
-        self.persona.project.job_search_started_at.FromDatetime(
-            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=30.5))
+        self._enforce_search_length_duration(self.persona.project, exact_months=1)
         self._assert_pass_filter()
 
     def test_started_2_years_ago(self) -> None:
         """User has been working on this project for 2 years."""
 
-        self.persona.project.job_search_length_months = 24
-        self.persona.project.job_search_started_at.FromDatetime(
-            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=732))
+        self._enforce_search_length_duration(self.persona.project, exact_months=24)
         self._assert_fail_filter()
 
 
@@ -1312,7 +1291,6 @@ class LongAccumulatedSearcherFilterTestCase(FilterTestBase):
         """User hasn't started on their project yet."""
 
         self.persona.project.job_search_has_not_started = True
-        self.persona.project.job_search_length_months = -1
         if not self.persona.project.HasField('created_at'):
             self.persona.project.created_at.GetCurrentTime()
         self._assert_fail_filter()
@@ -1320,26 +1298,20 @@ class LongAccumulatedSearcherFilterTestCase(FilterTestBase):
     def test_just_started(self) -> None:
         """User has just started this project."""
 
-        self.persona.project.job_search_length_months = 1
-        self.persona.project.job_search_started_at.FromDatetime(
-            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=30.5))
+        self._enforce_search_length_duration(self.persona.project, exact_months=1)
         self._assert_fail_filter()
 
     def test_started_2_years_ago(self) -> None:
         """User has been working on this project for 2 years."""
 
-        self.persona.project.job_search_length_months = 24
-        self.persona.project.job_search_started_at.FromDatetime(
-            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=732))
+        self._enforce_search_length_duration(self.persona.project, exact_months=24)
         self._assert_pass_filter()
 
     def test_started_5_months_ago_employed(self) -> None:
         """User is currently employed, but has been working on this project for 5 months."""
 
         self.persona.project.kind = project_pb2.FIND_ANOTHER_JOB
-        self.persona.project.job_search_length_months = 5
-        self.persona.project.job_search_started_at.FromDatetime(
-            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=153))
+        self._enforce_search_length_duration(self.persona.project, exact_months=5)
         self._assert_fail_filter()
 
 
@@ -1352,7 +1324,6 @@ class LongSearchFilterTestCase(FilterTestBase):
         """User hasn't started on their project yet."""
 
         self.persona.project.job_search_has_not_started = True
-        self.persona.project.job_search_length_months = -1
         if not self.persona.project.HasField('created_at'):
             self.persona.project.created_at.GetCurrentTime()
         self._assert_fail_filter()
@@ -1360,17 +1331,13 @@ class LongSearchFilterTestCase(FilterTestBase):
     def test_just_started(self) -> None:
         """User has just started this project."""
 
-        self.persona.project.job_search_length_months = 1
-        self.persona.project.job_search_started_at.FromDatetime(
-            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=30.5))
+        self._enforce_search_length_duration(self.persona.project, exact_months=1)
         self._assert_fail_filter()
 
     def test_started_2_years_ago(self) -> None:
         """User has been working on this project for 2 years."""
 
-        self.persona.project.job_search_length_months = 24
-        self.persona.project.job_search_started_at.FromDatetime(
-            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=732))
+        self._enforce_search_length_duration(self.persona.project, exact_months=24)
         self._assert_pass_filter()
 
 
@@ -1798,7 +1765,7 @@ class DriverFilterTestCase(FilterTestBase):
     def test_has_no_license(self) -> None:
         """User does not have a driving license."""
 
-        self.persona.user_profile.has_car_driving_license = project_pb2.FALSE
+        self.persona.user_profile.has_car_driving_license = boolean_pb2.FALSE
         del self.persona.user_profile.driving_licenses[:]
         self._assert_fail_filter()
 
@@ -1811,7 +1778,7 @@ class DriverFilterTestCase(FilterTestBase):
     def test_has_car_driving_license(self) -> None:
         """User has car driving license."""
 
-        self.persona.user_profile.has_car_driving_license = project_pb2.TRUE
+        self.persona.user_profile.has_car_driving_license = boolean_pb2.TRUE
         self._assert_pass_filter()
 
 
@@ -2066,13 +2033,13 @@ class ForWithResumeFilterTests(FilterTestBase):
     def test_has_resume(self) -> None:
         """User has a resume for their project."""
 
-        self.persona.project.has_resume = project_pb2.TRUE
+        self.persona.project.has_resume = boolean_pb2.TRUE
         self._assert_pass_filter()
 
     def test_no_resume(self) -> None:
         """User doesn't have a resume."""
 
-        self.persona.project.has_resume = project_pb2.FALSE
+        self.persona.project.has_resume = boolean_pb2.FALSE
         self._assert_fail_filter()
 
     def test_unknown_resume(self) -> None:
@@ -2096,14 +2063,82 @@ class ForAutonomousTestCase(FilterTestBase):
     def test_autonomous(self) -> None:
         """User is autonomous."""
 
-        self.persona.user_profile.is_autonomous = project_pb2.TRUE
+        self.persona.user_profile.is_autonomous = boolean_pb2.TRUE
         self._assert_pass_filter()
 
     def test_not_autonomous(self) -> None:
         """User is not autonomous."""
 
-        self.persona.user_profile.is_autonomous = project_pb2.FALSE
+        self.persona.user_profile.is_autonomous = boolean_pb2.FALSE
         self._assert_fail_filter()
+
+
+class ForMigrantTestCase(FilterTestBase):
+    """Tests for the migrant filter."""
+
+    model_id = 'for-migrant'
+
+    def test_foreign_language(self) -> None:
+        """User is frustrated because of the language barrier."""
+
+        self.persona.user_profile.frustrations.append(user_pb2.LANGUAGE)
+        self._assert_pass_filter()
+
+    def test_foreign_diploma(self) -> None:
+        """User is frustrated because their diploma is not recognized."""
+
+        self.persona.user_profile.frustrations.append(user_pb2.FOREIGN_QUALIFICATIONS)
+        self._assert_pass_filter()
+
+    def test_not_frustrated(self) -> None:
+        """User doesn't have a foreign language or diploma issue."""
+
+        if user_pb2.LANGUAGE in self.persona.user_profile.frustrations:
+            self.persona.user_profile.frustrations.remove(user_pb2.LANGUAGE)
+        if user_pb2.FOREIGN_QUALIFICATIONS in self.persona.user_profile.frustrations:
+            self.persona.user_profile.frustrations.remove(user_pb2.FOREIGN_QUALIFICATIONS)
+        self._assert_fail_filter()
+
+
+class ForRiskyCovidTests(FilterTestBase):
+    """Tests for the migrant filter."""
+
+    model_id = 'for-risky-covid'
+
+    def test_risky_job(self) -> None:
+        """User is targetting a risky job for Covid."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1601'
+        self.database.job_group_info.insert_one({
+            '_id': 'M1601',
+            'covidRisk': 'COVID_RISKY',
+        })
+        self._assert_pass_filter()
+
+    def test_safe_job(self) -> None:
+        """User is targetting a safe job for Covid."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1601'
+        self.database.job_group_info.insert_one({
+            '_id': 'M1601',
+            'covidRisk': 'COVID_SAFE',
+        })
+        self._assert_fail_filter()
+
+    def test_undefined_project(self) -> None:
+        """User is not targetting any job."""
+
+        self.persona.project.target_job.job_group.rome_id = ''
+        self._assert_missing_fields({'projects.0.targetJob.jobGroup.romeId'})
+
+    def test_unkonwn_job(self) -> None:
+        """User is targetting a job with unknown risk."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1601'
+        self.database.local_diagnosis.insert_one({
+            '_id': 'M1601',
+        })
+        self._assert_missing_fields({'data.job_group_info.M1601.covid_risk'})
 
 
 if __name__ == '__main__':

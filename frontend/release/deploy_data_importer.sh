@@ -45,6 +45,7 @@ if [ -z "$SLACK_INTEGRATION_URL" ]; then
   exit 5
 fi
 
+readonly AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION-"$(aws configure get region)"}
 readonly DOCKER_REPO="bob-emploi/data-analysis-prepare"
 readonly DOCKER_TAG="tag-$TAG"
 readonly ECR="951168128976.dkr"
@@ -58,17 +59,35 @@ else
 fi
 
 
-echo_info 'Creating a task definition revision…'
-# Do not print sensitive info from AWS.
-readonly CURRENT_SETTINGS=${-}
-set +x
-readonly PREVIOUS_DOCKER_IMAGE=$(
-  aws ecs describe-task-definition --task-definition $ECS_FAMILY | \
-    python3 -c "import sys, json; containers = json.load(sys.stdin)['taskDefinition']['containerDefinitions']; print(containers[0]['image'])")
+function deploy_in_stack {
+  local parameters
+  parameters="$(
+    aws cloudformation describe-stacks "$@" |
+    jq '.Stacks[0].Parameters' |
+    jq 'map(del(.ParameterValue)|.UsePreviousValue=true)' |
+    jq --arg docker_tag "$DOCKER_TAG" 'map(select(.ParameterKey == "ImporterDockerTag") = (.ParameterValue = $docker_tag|del(.UsePreviousValue)))'
+  )"
 
-if [ "$PREVIOUS_DOCKER_IMAGE" == "$DOCKER_IMAGE" ]; then
-  echo_info 'The task definition is already up-to-date.'
-else
+  aws cloudformation update-stack "$@" --use-previous-template --parameters "$parameters"
+  aws cloudformation wait stack-update-complete "$@"
+  echo_success "Server deployed for $*!"
+}
+
+# TODO(cyrille): Replace with deploy_in_stack once an FR stack is set up.
+function deploy_task_definition {
+  echo_info 'Creating a task definition revision…'
+  # Do not print sensitive info from AWS.
+  readonly CURRENT_SETTINGS=${-}
+  set +x
+  readonly PREVIOUS_DOCKER_IMAGE=$(
+    aws ecs describe-task-definition --task-definition $ECS_FAMILY | \
+      python3 -c "import sys, json; containers = json.load(sys.stdin)['taskDefinition']['containerDefinitions']; print(containers[0]['image'])")
+
+  if [ "$PREVIOUS_DOCKER_IMAGE" == "$DOCKER_IMAGE" ]; then
+    echo_info 'The task definition is already up-to-date.'
+    return 0
+  fi
+
   readonly CONTAINERS_DEFINITION=$(
     aws ecs describe-task-definition --task-definition $ECS_FAMILY | \
       python3 -c "import sys, json; containers = json.load(sys.stdin)['taskDefinition']['containerDefinitions']; containers[0]['image'] = '$DOCKER_IMAGE'; print(json.dumps(containers))")
@@ -78,15 +97,22 @@ else
   set -$CURRENT_SETTINGS
 
   echo_success 'Task definition is updated!'
+}
 
-  git push -f "$GIT_ORIGIN_WITH_WRITE_PERMISSION" $TAG:prod-data-importer
+deploy_task_definition
+jq -r '.[]|select(.deprecatedFor | not)|.stackId,.region' "$DIRNAME/stack_deployments.json" |
+  while read -r stack_name; do
+    read -r region
+    deploy_in_stack --stack-name "$stack_name" --region "$region"
+  done
 
-  # Ping Slack to say the deployment is done.
-  readonly SLACK_MESSAGE=$(mktemp)
-  echo '{"text": "A new version of data importers has been deployed ('${TAG}')."}' > $SLACK_MESSAGE
-  wget -o /dev/null -O /dev/null --post-file=$SLACK_MESSAGE "$SLACK_INTEGRATION_URL"
-  echo_info 'Just sent the following message to Slack:'
-  cat $SLACK_MESSAGE
-  echo_info ''
-  rm -f $SLACK_MESSAGE
-fi
+git push -f "$GIT_ORIGIN_WITH_WRITE_PERMISSION" "$TAG:prod-data-importer"
+
+# Ping Slack to say the deployment is done.
+readonly SLACK_MESSAGE=$(mktemp)
+echo '{"text": "A new version of data importers has been deployed ('"$TAG"')."}' > "$SLACK_MESSAGE"
+wget -o /dev/null -O /dev/null --post-file="$SLACK_MESSAGE" "$SLACK_INTEGRATION_URL"
+echo_info 'Just sent the following message to Slack:'
+cat "$SLACK_MESSAGE"
+echo_info ''
+rm -f "$SLACK_MESSAGE"

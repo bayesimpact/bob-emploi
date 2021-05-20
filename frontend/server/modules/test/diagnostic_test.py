@@ -43,14 +43,13 @@ class SearchLengthScoringModelTestCase(scoring_test.HundredScoringModelTestBase)
         """User has not started their research thus the metric should be disabled."""
 
         self.persona.project.job_search_has_not_started = True
-        self.persona.project.job_search_length_months = -1
         self.assert_not_enough_data()
 
     def test_missing_search_start_info(self) -> None:
         """User has no info for search start."""
 
         self.persona.project.ClearField('job_search_started_at')
-        self.persona.project.ClearField('job_search_length_months')
+        self.persona.project.ClearField('job_search_has_not_started')
         self.assert_not_enough_data()
 
 
@@ -102,14 +101,13 @@ class InterviewRateScoringModelTestCase(scoring_test.HundredScoringModelTestBase
         """User has not started their research thus the metric should be disabled."""
 
         self.persona.project.job_search_has_not_started = True
-        self.persona.project.job_search_length_months = -1
         self.assert_not_enough_data()
 
     def test_missing_search_start_info(self) -> None:
         """User has no info for search start."""
 
         self.persona.project.ClearField('job_search_started_at')
-        self.persona.project.ClearField('job_search_length_months')
+        self.persona.project.ClearField('job_search_has_not_started')
         self.assert_not_enough_data()
 
 

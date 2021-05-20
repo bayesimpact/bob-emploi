@@ -1,5 +1,6 @@
 """Module to score the clarity of a project."""
 
+from bob_emploi.frontend.api import boolean_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.server import jobs
 from bob_emploi.frontend.server import scoring_base
@@ -47,7 +48,7 @@ class _UnclearProject(scoring_base.BaseFilter):
                 'User only has one project', fields={'projects.0.hasClearProject'})
 
         # User told us whether their project was clear.
-        return project.details.has_clear_project == project_pb2.FALSE
+        return project.details.has_clear_project == boolean_pb2.FALSE
 
 
 # TODO(cyrille): Split into three different filters once those are used in lever rules.
@@ -69,11 +70,11 @@ class _CantSellSelf(scoring_base.BaseFilter):
             # User is not experienced enough.
             return False
 
-        if project.user_profile.is_autonomous == project_pb2.UNKNOWN_BOOL:
+        if project.user_profile.is_autonomous == boolean_pb2.UNKNOWN_BOOL:
             raise scoring_base.NotEnoughDataException(
                 "Don't know if user is autonomous.", fields={'profile.isAutonomous'})
 
-        return project.user_profile.is_autonomous == project_pb2.FALSE
+        return project.user_profile.is_autonomous == boolean_pb2.FALSE
 
 
 scoring_base.register_model('cant-sell-self', _CantSellSelf())

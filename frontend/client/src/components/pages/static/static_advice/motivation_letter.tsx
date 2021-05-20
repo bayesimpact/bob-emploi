@@ -50,7 +50,7 @@ const TESTIMONIALS = [
 
 const StaticAdviceCard: React.FC<CardProps> = (props: CardProps): React.ReactElement =>
   <StaticAdviceCardBase
-    name="Lettre de motivation" picto={motivationEmailPicto} {...props}>
+    name={name} picto={motivationEmailPicto} {...props}>
     Des <strong>exemples de mails de motivation</strong> et de relance pour obtenir
     des <strong>réponses</strong>.
   </StaticAdviceCardBase>

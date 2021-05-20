@@ -3,9 +3,12 @@ import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
 import React, {useCallback, useMemo} from 'react'
 
-import {Trans} from 'components/i18n'
+import ExternalLink from 'components/external_link'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import {RadiumDiv} from 'components/radium'
-import {ExternalLink, GrowingNumber, Tag} from 'components/theme'
+import Tag from 'components/tag'
+import useMedia from 'hooks/media'
 import Picto from 'images/advices/picto-association-help.svg'
 
 import {MethodSuggestionList, CardProps, useAdviceData} from './base'
@@ -19,7 +22,7 @@ const emptyArray = [] as const
 
 const AssociationHelp: React.FC<CardProps> = (props: CardProps) => {
   const {handleExplore, t} = props
-  const {associations = []} = useAdviceData<bayes.bob.Associations>(props)
+  const {data: {associations = []}, loading} = useAdviceData<bayes.bob.Associations>(props)
   const validAssociations = associations.filter(isValidAssociation)
   // TODO(cyrille): Investigate why 1 filter is not considered specialized.
   const numSpecializedAssociations =
@@ -44,12 +47,15 @@ const AssociationHelp: React.FC<CardProps> = (props: CardProps) => {
     color: colors.BOB_BLUE,
     textDecoration: 'none',
   }
-  const footer = <Trans parent={null} t={t}>
+  const footer = config.methodAssociationHelpFooterUrl ? <Trans parent={null} t={t}>
     Trouvez un accompagnement qui répond à vos attentes précises
-    sur <ExternalLink href="http://www.aidesalemploi.fr" style={linkStyle}>
-      aidesalemploi.fr
+    sur <ExternalLink href={config.methodAssociationHelpFooterUrl} style={linkStyle}>
+      {{footerLink: config.methodAssociationHelpFooterLink || ''}}
     </ExternalLink>
-  </Trans>
+  </Trans> : undefined
+  if (loading) {
+    return loading
+  }
   return <MethodSuggestionList title={title} footer={footer}>
     {validAssociations.map(({filters, link, name}, index): React.ReactElement<AssociationProps> =>
       <AssociationLink
@@ -77,6 +83,12 @@ interface AssociationProps {
 
 const AssociationLinkBase = (props: AssociationProps): React.ReactElement => {
   const {children, filters = emptyArray, href, onClick, style, t} = props
+  const isForPrint = useMedia() === 'print'
+  const linkStyle = {
+    ...style,
+    minHeight: 'inherit',
+    padding: '10px 0 0',
+  }
   const handleClick = useCallback((): void => {
     window.open(href, '_blank')
     onClick?.()
@@ -86,7 +98,7 @@ const AssociationLinkBase = (props: AssociationProps): React.ReactElement => {
   const tags = useMemo((): readonly {color: string; value: string}[] => {
     // TODO(cyrille): Replace with flatMap or equivalent.
     const tags: {color: string; value: string}[] = []
-    if (/\.pole-emploi\.fr/.test(href)) {
+    if (/\.pole-emploi\.fr/.test(href) || /\.gouv\.fr($|\/)/.test(href)) {
       tags.push({
         color: colors.SQUASH,
         value: t('officielle'),
@@ -104,7 +116,7 @@ const AssociationLinkBase = (props: AssociationProps): React.ReactElement => {
         value: t('pour votre région'),
       })
     }
-    if (filters.some((f): boolean => f === 'for-women')) {
+    if (filters.includes('for-women')) {
       tags.push({
         color: colors.GREENISH_TEAL,
         value: t('pour les femmes'),
@@ -118,7 +130,7 @@ const AssociationLinkBase = (props: AssociationProps): React.ReactElement => {
         value: t('pour les plus de {{age}} ans', {age}),
       })
     }
-    if (filters.some((f): boolean => f === 'for-handicaped')) {
+    if (filters.includes('for-handicaped')) {
       tags.push({
         color: colors.BOB_BLUE,
         value: t('recommandée par Hanploi'),
@@ -127,15 +139,21 @@ const AssociationLinkBase = (props: AssociationProps): React.ReactElement => {
     return tags
   }, [filters, href, t])
 
-  return <RadiumDiv style={style} onClick={handleClick}>
-    {children}
-    {tags.map(({color, value}): React.ReactNode => <Tag
-      key={`tag-${value}`} style={{backgroundColor: color, marginLeft: 15}}>
-      {value}
-    </Tag>)}
-    <div style={{flex: 1}} />
-    <ChevronRightIcon style={{fill: colors.CHARCOAL_GREY, height: 24, width: 20}} />
-  </RadiumDiv>
+  return <div>
+    <RadiumDiv style={style} onClick={handleClick}>
+      <div>
+        {children}
+        {isForPrint ? <div style={linkStyle}>{href}</div> : null}
+      </div>
+      {tags.map(({color, value}): React.ReactNode => <Tag
+        key={`tag-${value}`} style={{backgroundColor: color, marginLeft: 15}}>
+        {value}
+      </Tag>)}
+      <div style={{flex: 1}} />
+      {isForPrint ? null :
+        <ChevronRightIcon style={{fill: colors.CHARCOAL_GREY, height: 24, width: 20}} />}
+    </RadiumDiv>
+  </div>
 }
 AssociationLinkBase.propTypes = {
   children: PropTypes.node,

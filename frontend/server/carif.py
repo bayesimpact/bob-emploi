@@ -9,7 +9,8 @@ import xmltodict
 
 from bob_emploi.frontend.api import training_pb2
 
-_CARIF_URL = 'https://intercariforef.org/serviceweb2/offre-info/?versionLHEO=2.2&typeListe=max'
+# TODO(cyrille): See with moa@intercariforef.org how to use serviceweb instead of serviceweb2.
+_CARIF_URL = 'https://ws.intercariforef.org/serviceweb2/offre-info/?versionLHEO=2.2&typeListe=max'
 
 
 def _make_key(title: str, city: str) -> str:

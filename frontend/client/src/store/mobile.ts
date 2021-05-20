@@ -1,1 +1,1 @@
-export const isOnSmallScreen = (): boolean => window.innerWidth < 800
+export default window.innerWidth < 800

@@ -1,0 +1,5 @@
+{
+  'import-from-imilo': {
+    entry: './src/import-from-imilo/entry',
+  },
+}

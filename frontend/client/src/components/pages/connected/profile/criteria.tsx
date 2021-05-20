@@ -1,18 +1,24 @@
 import CurrencyEurIcon from 'mdi-react/CurrencyEurIcon'
+import CurrencyGbpIcon from 'mdi-react/CurrencyGbpIcon'
+import CurrencyUsdIcon from 'mdi-react/CurrencyUsdIcon'
+import {MdiReactIconProps} from 'mdi-react/dist/typings'
 import PropTypes from 'prop-types'
 import React, {useCallback, useLayoutEffect, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useDispatch, useSelector} from 'react-redux'
 
 import {DispatchAllActions, RootState, diagnoseOnboarding, setUserProfile} from 'store/actions'
-import {getLanguage, localizeOptions, prepareT} from 'store/i18n'
-import {PROJECT_EMPLOYMENT_TYPE_OPTIONS, PROJECT_WORKLOAD_OPTIONS} from 'store/project'
-import {userExample} from 'store/user'
+import {getLanguage, localizeOptions, prepareT, toLocaleString} from 'store/i18n'
+import {PROJECT_EMPLOYMENT_TYPE_OPTIONS, PROJECT_WORKLOAD_OPTIONS,
+  SALARY_TO_GROSS_ANNUAL_FACTORS} from 'store/project'
+import {useUserExample} from 'store/user'
 
-import {Trans} from 'components/i18n'
-import {isMobileVersion} from 'components/mobile'
-import {IconInput} from 'components/theme'
-import {Select, CheckboxList, FieldSet} from 'components/pages/connected/form_utils'
+import Trans from 'components/i18n_trans'
+import isMobileVersion from 'store/mobile'
+import CheckboxList from 'components/checkbox_list'
+import FieldSet from 'components/field_set'
+import IconInput from 'components/icon_input'
+import Select from 'components/select'
 
 import {OnboardingComment, Step, ProjectStepProps} from './step'
 
@@ -24,7 +30,7 @@ const checkboxListContainerStyle: React.CSSProperties = {
 }
 
 
-const NewProjectCriteriaStepBase = (props: ProjectStepProps): React.ReactElement => {
+const NewProjectCriteriaStep = (props: ProjectStepProps): React.ReactElement => {
   const {newProject: {employmentTypes, minSalary, workloads}, onSubmit, t} = props
   const [isValidated, setIsValidated] = useState(false)
   const [minSalaryCommentRead, setMinSalaryCommentRead] = useState(false)
@@ -61,6 +67,7 @@ const NewProjectCriteriaStepBase = (props: ProjectStepProps): React.ReactElement
     [dispatch],
   )
 
+  const userExample = useUserExample()
   const fastForward = useCallback((): void => {
     if (isFormValid) {
       handleSubmit()
@@ -78,7 +85,7 @@ const NewProjectCriteriaStepBase = (props: ProjectStepProps): React.ReactElement
     }
     dispatch(diagnoseOnboarding({projects: [projectDiff]}))
     setMinSalaryCommentRead(true)
-  }, [dispatch, employmentTypes, isFormValid, handleSubmit, minSalary, workloads])
+  }, [dispatch, employmentTypes, isFormValid, handleSubmit, minSalary, userExample, workloads])
 
   // Handle the event marking the comment as read.
   //
@@ -123,23 +130,26 @@ const NewProjectCriteriaStepBase = (props: ProjectStepProps): React.ReactElement
     </React.Fragment> : null}
   </Step>
 }
-NewProjectCriteriaStepBase.propTypes = {
+NewProjectCriteriaStep.propTypes = {
   newProject: PropTypes.object,
   onSubmit: PropTypes.func,
   t: PropTypes.func.isRequired,
 }
-const NewProjectCriteriaStep = React.memo(NewProjectCriteriaStepBase)
 
 
-const SALARY_UNIT_OPTIONS = [
+const SALARY_UNIT_OPTIONS = ([
   {name: prepareT('brut par an'), value: 'ANNUAL_GROSS_SALARY'},
   {name: prepareT('net par mois'), value: 'MONTHLY_NET_SALARY'},
+  {name: prepareT('brut par mois'), value: 'MONTHLY_GROSS_SALARY'},
   {name: prepareT('net par heure'), value: 'HOURLY_NET_SALARY'},
-] as const
+  {name: prepareT('brut par heure'), value: 'HOURLY_GROSS_SALARY'},
+] as const).filter(({value}) => !config.salaryUnitOptionsExcluded.includes(value))
 
 
+// TODO(pascal): Fix the best option mechanism to work in different configs.
 const BEST_OPTION = {
   ANNUAL_GROSS_SALARY: 'ANNUAL_GROSS_SALARY',
+  HOURLY_GROSS_SALARY: 'HOURLY_NET_SALARY',
   HOURLY_NET_SALARY: 'HOURLY_NET_SALARY',
   MONTHLY_GROSS_SALARY: 'MONTHLY_NET_SALARY',
   MONTHLY_NET_SALARY: 'MONTHLY_NET_SALARY',
@@ -147,14 +157,20 @@ const BEST_OPTION = {
 } as const
 
 
-const TO_GROSS_ANNUAL_FACTORS = {
-  // net = gross x 80%
-  ANNUAL_GROSS_SALARY: 1,
-  HOURLY_NET_SALARY: 52 * 35 / 0.8,
-  MONTHLY_NET_SALARY: 12 / 0.8,
-} as const
-type SalaryUnit = keyof typeof TO_GROSS_ANNUAL_FACTORS
+type SalaryUnit = keyof typeof SALARY_TO_GROSS_ANNUAL_FACTORS
 
+type CurrencySvg = {
+  [key: string]: React.ComponentType<MdiReactIconProps>
+}
+const TO_CURRENCY_SVG: CurrencySvg = {
+  '$': CurrencyUsdIcon,
+  '£': CurrencyGbpIcon,
+  '€': CurrencyEurIcon,
+} as const
+
+const salaryInputStyle: React.CSSProperties = config.isCurrencySignPrefixed ?
+  {paddingLeft: '2.1em', textAlign: 'left'} :
+  {paddingRight: '2.1em', textAlign: 'right'}
 
 interface SalaryInputProps {
   onChange: (value: number) => void
@@ -177,15 +193,15 @@ const SalaryInputBase = (props: SalaryInputProps): React.ReactElement => {
     if (!gross) {
       return ''
     }
-    const factor = TO_GROSS_ANNUAL_FACTORS[unitValue]
-    return (gross / factor).toLocaleString(simpleLocale)
+    const factor = SALARY_TO_GROSS_ANNUAL_FACTORS[unitValue]
+    return toLocaleString(gross / factor, simpleLocale)
   }, [simpleLocale])
 
   const getSalaryValue = useCallback((salaryText: string, unitValue: SalaryUnit): number => {
     const cleanText = simpleLocale === 'fr' ?
       salaryText.replace(/[ \u00A0]/g, '').replace(',', '.') :
       salaryText.replace(/,/g, '')
-    const factor = TO_GROSS_ANNUAL_FACTORS[unitValue]
+    const factor = SALARY_TO_GROSS_ANNUAL_FACTORS[unitValue]
     return Math.round(Number.parseFloat(cleanText) * factor)
   }, [simpleLocale])
 
@@ -225,12 +241,17 @@ const SalaryInputBase = (props: SalaryInputProps): React.ReactElement => {
     marginLeft: 10,
     width: 150,
   }
+
+  const icon: React.ComponentType<MdiReactIconProps> = TO_CURRENCY_SVG[config.currencySign]
+
   return <div style={{display: 'flex', flexDirection: isMobileVersion ? 'column' : 'row'}}>
     <IconInput
-      iconComponent={CurrencyEurIcon}
+      iconComponent={icon}
       iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
-      placeholder={t('Montant')} inputStyle={{paddingRight: '2.1em', textAlign: 'right'}}
-      value={salaryText} onChange={handleSalaryTextChange} />
+      placeholder={t('Montant')}
+      inputStyle={salaryInputStyle}
+      value={salaryText} onChange={handleSalaryTextChange}
+      position={config.isCurrencySignPrefixed ? 'left' : 'right'} />
     <Select
       options={localizeOptions(t, SALARY_UNIT_OPTIONS)} value={unitValue}
       onChange={handleSalaryUnitChange}
@@ -244,4 +265,4 @@ SalaryInputBase.propTypes = {
 const SalaryInput = React.memo(SalaryInputBase)
 
 
-export {NewProjectCriteriaStep}
+export default NewProjectCriteriaStep

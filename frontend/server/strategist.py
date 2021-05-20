@@ -6,11 +6,11 @@ import logging
 import typing
 from typing import Dict, List, Optional, Tuple
 
-import pymongo
-
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import strategy_pb2
 from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.server import cache
+from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring
 
@@ -22,7 +22,7 @@ _STRATEGY_MODULES: proto.MongoCachedCollection[strategy_pb2.StrategyModule] = \
     proto.MongoCachedCollection(strategy_pb2.StrategyModule, 'strategy_modules')
 
 _STRATEGY_MODULES_WITH_TEMPLATES: List[Tuple[
-    pymongo.database.Database,
+    mongo.NoPiiMongoDatabase,
     Dict[str, List[strategy_pb2.StrategyModule]]]] = []
 
 _SPECIFIC_TO_JOB_ADVICE_ID = 'specific-to-job'
@@ -37,7 +37,10 @@ def clear_cache() -> None:
     _STRATEGY_MODULES_WITH_TEMPLATES.clear()
 
 
-def _get_strategy_modules_by_category(database: pymongo.database.Database) \
+cache.register_clear_func(clear_cache)
+
+
+def _get_strategy_modules_by_category(database: mongo.NoPiiMongoDatabase) \
         -> Dict[str, List[strategy_pb2.StrategyModule]]:
     """Populate the strategy modules with advice templates, and return them grouped by
     diagnostic category.
@@ -77,7 +80,7 @@ class _RequirableModule(typing.NamedTuple):
 
 
 def maybe_strategize(
-        user: user_pb2.User, project: project_pb2.Project, database: pymongo.database.Database) \
+        user: user_pb2.User, project: project_pb2.Project, database: mongo.NoPiiMongoDatabase) \
         -> bool:
     """Check if a project needs strategies and populate the strategies if so."""
 
@@ -88,7 +91,7 @@ def maybe_strategize(
 
 
 def strategize(
-        user: user_pb2.User, project: project_pb2.Project, database: pymongo.database.Database) \
+        user: user_pb2.User, project: project_pb2.Project, database: mongo.NoPiiMongoDatabase) \
         -> None:
     """Make strategies for the user."""
 
@@ -101,7 +104,14 @@ def strategize(
     scoring_project.details.strategies.sort(key=lambda s: -s.score)
     if not scoring_project.details.strategies:
         if category_modules:
-            logging.error('We could not find *any* strategy for a project:\n%s', scoring_project)
+            logging.error(
+                'We could not find *any* strategy for a project:\n'
+                'Existing strategies: %s\n'
+                "User's advice modules: %s\n"
+                '%s',
+                ', '.join(strategy.strategy_id for strategy in category_modules),
+                ', '.join(advice.advice_id for advice in project.advices),
+                str(scoring_project))
         return
     scoring_project.details.strategies[0].is_principal = True
 
@@ -109,6 +119,8 @@ def strategize(
 def _make_strategy(
         project: scoring.ScoringProject, module: strategy_pb2.StrategyModule,
         advice_scores: Dict[str, float]) -> Optional[strategy_pb2.Strategy]:
+    if module.is_for_alpha and not project.features_enabled.alpha:
+        return None
     score = project.score(module.trigger_scoring_model)
     if not score:
         return None
@@ -130,17 +142,27 @@ def _make_strategy(
         if specific_to_job_config and module.strategy_id in specific_to_job_config.strategy_ids:
             pieces_of_advice.append(strategy_pb2.StrategyAdvice(
                 advice_id=_SPECIFIC_TO_JOB_ADVICE_ID))
-    if not pieces_of_advice:
+    if not pieces_of_advice and not module.external_url_template:
         # Don't want to show a strategy without any advice modules.
         return None
     strategy = project.details.strategies.add(
-        description=project.populate_template(
-            project.translate_string(module.description_template)),
+        description=project.populate_template(project.translate_airtable_string(
+            'strategyModules', module.strategy_id, 'description_template',
+            hint=module.description_template)),
         score=int(score),
         is_secondary=score <= 10,
-        title=project.translate_string(module.title),
-        header=project.populate_template(project.translate_string(module.header_template)),
-        strategy_id=module.strategy_id)
+        title=project.translate_airtable_string(
+            'strategyModules', module.strategy_id, 'title', hint=module.title),
+        header=project.populate_template(project.translate_airtable_string(
+            'strategyModules', module.strategy_id, 'header_template',
+            hint=module.header_template)),
+        strategy_id=module.strategy_id,
+        external_url=project.populate_template(module.external_url_template))
+
+    if strategy.external_url and pieces_of_advice:
+        logging.error(
+            'Strategy %s has both an external URL and some pieces of advice:\n%s',
+            strategy.strategy_id, ', '.join(a.advice_id for a in pieces_of_advice))
 
     # Sort found pieces of advice by descending score.
     pieces_of_advice.sort(key=lambda a: advice_scores[a.advice_id], reverse=True)

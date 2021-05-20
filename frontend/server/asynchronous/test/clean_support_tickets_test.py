@@ -6,7 +6,7 @@ from unittest import mock
 
 import mongomock
 
-from bob_emploi.frontend.server import now
+from bob_emploi.common.python import now
 from bob_emploi.frontend.server.asynchronous import clean_support_tickets
 
 
@@ -32,7 +32,9 @@ class CleanSupportTicketsTestCase(unittest.TestCase):
             }]
         })
         clean_support_tickets.main(['--disable-sentry'])
-        self.assertNotIn('supportTickets', self._db.user.find_one({}))
+        user = self._db.user.find_one({})
+        assert user
+        self.assertNotIn('supportTickets', user)
         mock_info.assert_has_calls([
             mock.call('Removed deprecated support tickets for %d users.', 1),
             mock.call('Removed empty support ticket list for %d users.', 1)])
@@ -51,6 +53,7 @@ class CleanSupportTicketsTestCase(unittest.TestCase):
         mock_info.assert_called_once_with('Removed deprecated support tickets for %d users.', 0)
         user.pop('_id', None)
         db_user = self._db.user.find_one({})
+        assert db_user
         db_user.pop('_id')
         self.assertEqual(user, db_user)
 
@@ -66,6 +69,7 @@ class CleanSupportTicketsTestCase(unittest.TestCase):
         clean_support_tickets.main(['--disable-sentry'])
         mock_info.assert_called_once_with('Removed deprecated support tickets for %d users.', 1)
         db_user = self._db.user.find_one({})
+        assert db_user
         self.assertEqual(
             ['support-id-5', 'support-id-7', 'support-id-9'],
             [ticket.get('ticketId') for ticket in db_user.get('supportTickets', [])])

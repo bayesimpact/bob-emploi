@@ -1,0 +1,5 @@
+{
+  'imilo-to-radar': {
+    entry: './src/entry',
+  },
+}

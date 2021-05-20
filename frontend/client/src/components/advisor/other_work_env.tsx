@@ -4,9 +4,9 @@ import PropTypes from 'prop-types'
 
 import {LocalizableString, prepareT} from 'store/i18n'
 
-import {Trans} from 'components/i18n'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import {RadiumDiv} from 'components/radium'
-import {GrowingNumber} from 'components/theme'
 import Picto from 'images/advices/picto-other-work-env.svg'
 
 import {CardProps, MethodSuggestionList, useAdviceData} from './base'
@@ -19,9 +19,9 @@ const isNonEmptyString = (a: string|undefined): a is string => !!a
 
 
 const OtherWorkEnvMethod = (props: CardProps): React.ReactElement => {
-  const {workEnvironmentKeywords: {
+  const {data: {workEnvironmentKeywords: {
     domains = emptyArray, sectors = emptyArray, structures = emptyArray} = {},
-  } = useAdviceData<bayes.bob.OtherWorkEnvAdviceData>(props)
+  }, loading} = useAdviceData<bayes.bob.OtherWorkEnvAdviceData>(props)
   const {
     handleExplore,
     project,
@@ -31,6 +31,9 @@ const OtherWorkEnvMethod = (props: CardProps): React.ReactElement => {
   const areStructuresShown = structures.length > 1
   const style: React.CSSProperties = {
     position: 'relative',
+  }
+  if (loading) {
+    return loading
   }
   return <div>
     <div style={style}>
@@ -69,7 +72,7 @@ const SearchableElementBase = (props: SearchableElementProps): React.ReactElemen
   const {onClick, project, title, style} = props
 
   const handleClick = useCallback((): void => {
-    const url = `https://www.google.fr/search?q=${encodeURIComponent(title + ' ' + project.title)}`
+    const url = `https://${config.googleTopLevelDomain}/search?q=${encodeURIComponent(title + ' ' + project.title)}`
     window.open(url, '_blank')
     onClick && onClick()
   }, [onClick, project, title])
@@ -97,13 +100,12 @@ interface SectionProps {
 
 
 const SectionBase = (props: SectionProps): React.ReactElement|null => {
-
   const {items, kind, onExplore, project, t, t: translate, ...extraProps} = props
   if (!items || items.length < 2) {
     return null
   }
   const title = <Trans parent={null} t={t}>
-    <GrowingNumber number={items.length} /> {{kind: translate(kind)}} qui recrutent
+    <GrowingNumber number={items.length} /> {{kind: translate(...kind)}} qui recrutent
     dans votre métier
   </Trans>
   return <MethodSuggestionList {...extraProps} title={title}>

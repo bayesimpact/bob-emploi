@@ -4,17 +4,23 @@
     "esModuleInterop": true,
     "isolatedModules": true,
     "jsx": "react",
-    "lib": ["dom", "dom.iterable", "es5", "es6"],
+    "lib": ["dom", "dom.iterable", "es6", "es2019"],
     "module": "esNext",
     "moduleResolution": "node",
     "noEmit": true,
     "noUnusedLocals": true,
     "paths": {
       "api/*": [
-        "bob_emploi/frontend/api/*"
+        "/tmp/bob_emploi/frontend/api/*"
       ],
       "components/*": [
         "src/components/*"
+      ],
+      "deployment/*": [
+        "src/deployments/fr/*"
+      ],
+      "hooks/*": [
+        "src/hooks/*"
       ],
       "images/*": [
         "src/images/*"
@@ -23,7 +29,7 @@
         "src/store/*"
       ],
       "translations/*": [
-        "src/translations/*"
+        "i18n/translations/*"
       ]
     },
     "resolveJsonModule": true,
@@ -31,9 +37,12 @@
     "target": "esNext"
   },
   "include": [
-    "bob_emploi/frontend/api/*.d.ts",
+    "/tmp/bob_emploi/frontend/api/*.d.ts",
     "custom.d.ts",
+    "cfg",
+    "node",
     "src",
+    "*.ts",
     "test"
   ],
   "exclude": [

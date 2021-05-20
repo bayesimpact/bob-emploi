@@ -3,7 +3,8 @@ import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
 import React, {useCallback, useMemo} from 'react'
 
-import {prepareT} from 'store/i18n'
+import useMedia from 'hooks/media'
+import {LocalizableString, prepareT} from 'store/i18n'
 
 import cinemaIcon from 'images/hobbies/cinema.svg'
 import cookIcon from 'images/hobbies/cook.svg'
@@ -21,34 +22,34 @@ import {CardProps, MethodSuggestionList} from './base'
 const hobbies = [
   {
     icon: fitnessIcon,
-    keywords: 'salle sport',
+    keywords: prepareT('salle sport'),
     title: prepareT('Aller dans une salle de sport'),
   },
   {
     icon: cookIcon,
-    keywords: 'cours cuisine',
+    keywords: prepareT('cours cuisine'),
     title: prepareT('Faire des cours de cuisine entre amis'),
   },
   {
     icon: swimIcon,
-    keywords: 'piscine',
+    keywords: prepareT('piscine'),
     title: prepareT('Aller à la piscine'),
   },
   {
     icon: cinemaIcon,
-    keywords: 'cinéma',
+    keywords: prepareT('cinéma'),
     title: prepareT('Se détendre devant un film au cinéma'),
   },
   {
     icon: runIcon,
-    keywords: 'randonnée',
+    keywords: prepareT('randonnée'),
     title: prepareT('Marcher / courir'),
   },
-  {
+  ...config.findOtherActivitiesUrl ? [{
     icon: searchIcon,
     title: prepareT("Trouver d'autres activités…"),
-    url: '/api/redirect/eterritoire/%cityId',
-  },
+    url: config.findOtherActivitiesUrl,
+  }] : [],
 ] as const
 
 
@@ -73,10 +74,10 @@ const ExpandedAdviceCardContent = React.memo(LifeBalanceMethod)
 interface HobbyProps {
   city?: bayes.bob.FrenchCity
   icon: string
-  keywords?: string
+  keywords?: LocalizableString
   onClick: () => void
   style?: React.CSSProperties
-  title: string
+  title: LocalizableString
   t: TFunction
   url?: string
 }
@@ -85,7 +86,7 @@ const handleClick = (
   cityId: string, cityName: string, keywords: string|undefined,
   onClick: () => void, url: string|undefined): void => {
   const finalUrl = url && url.replace('%cityId', cityId) ||
-    `https://www.google.fr/search?q=${encodeURIComponent(keywords + ' ' + name)}`
+    `https://${config.googleTopLevelDomain}/search?q=${encodeURIComponent(keywords + ' ' + name)}`
   window.open(finalUrl, '_blank')
   onClick && onClick()
 }
@@ -102,10 +103,11 @@ const chevronStyle: React.CSSProperties = {
 }
 const HobbyBase: React.FC<HobbyProps> = (props: HobbyProps): React.ReactElement => {
   const {city: {cityId = '', name = ''} = {}, icon, keywords, onClick, url,
-    style, title = '', t: translate} = props
+    style, title, t: translate} = props
+  const media = useMedia()
   const handleHobbyClick = useCallback((): void => {
-    handleClick(cityId, name, keywords, onClick, url)
-  }, [cityId, name, keywords, onClick, url])
+    handleClick(cityId, name, keywords ? translate(...keywords) : '', onClick, url)
+  }, [cityId, name, keywords, onClick, translate, url])
   const containerStyle: React.CSSProperties = useMemo(() => ({
     ...style,
     fontWeight: 'bold',
@@ -114,10 +116,10 @@ const HobbyBase: React.FC<HobbyProps> = (props: HobbyProps): React.ReactElement 
   return <RadiumDiv style={containerStyle} onClick={handleHobbyClick}>
     {icon ? <img src={icon} style={imageStyle} alt="" /> : null}
     <span>
-      {translate(title)}
+      {translate(...title)}
     </span>
     <span style={separatorStyle} />
-    <ChevronRightIcon style={chevronStyle} />
+    {media === 'print' ? null : <ChevronRightIcon style={chevronStyle} />}
   </RadiumDiv>
 }
 HobbyBase.propTypes = {
@@ -126,11 +128,11 @@ HobbyBase.propTypes = {
     name: PropTypes.string.isRequired,
   }),
   icon: PropTypes.string,
-  keywords: PropTypes.string,
+  keywords: PropTypes.arrayOf(PropTypes.string.isRequired),
   onClick: PropTypes.func.isRequired,
   style: PropTypes.object,
   t: PropTypes.func.isRequired,
-  title: PropTypes.node.isRequired,
+  title: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
   url: PropTypes.string,
 }
 const Hobby = React.memo(HobbyBase)

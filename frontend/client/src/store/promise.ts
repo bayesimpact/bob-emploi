@@ -2,42 +2,101 @@
 import {useCallback, useEffect, useRef} from 'react'
 import {useDispatch} from 'react-redux'
 
-export interface CancelablePromise<T> {
+export interface CancelablePromise<T> extends Promise<T> {
   cancel: () => void
+  // TODO(cyrille): Deprecate, in favor of using the CancelablePromise directly.
   promise: Promise<T>
 }
 
 type CancelPromiseWrapper = <T>(promise: Promise<T>) => CancelablePromise<T>
 
+const isCancelable = <T>(promise: Promise<T>): promise is CancelablePromise<T> =>
+  !!(promise as CancelablePromise<T>).cancel
+
+// Allow the promise to cancel any callback attached to it (whether on fulfilment or error).
 const makeCancelable = <T>(promise: Promise<T>): CancelablePromise<T> => {
   let isCanceled = false
 
-  const wrappedPromise = new Promise<T>((resolve, reject) => {
-    promise.then(value => {
+  const wrapPromise = async (): Promise<T> => {
+    try {
+      const value = await promise
       if (!isCanceled) {
-        resolve(value)
+        return value
       }
-    }).catch(error => {
+    } catch (error) {
       if (!isCanceled) {
-        reject(error)
+        throw error
       }
-    })
-  })
+    }
+    // Never-returning promise.
+    return await new Promise<T>(() => void 0)
+  }
+  const wrappedPromise = wrapPromise()
 
   return {
+    ...wrappedPromise,
     cancel: (): void => {
+      if (isCancelable(promise)) {
+        promise.cancel()
+      }
       isCanceled = true
     },
     promise: wrappedPromise,
   }
 }
 
+// Make this promise and all those that derived from it invoke the cancellation function
+// when they're cancelled.
+const forwardCancellation = <T>(promise: Promise<T>, cancel: () => void):
+CancelablePromise<T> => {
+  /* eslint-disable prefer-rest-params */
+  function then<U>() {
+    // eslint-disable-next-line promise/prefer-await-to-then
+    return forwardCancellation(promise.then<U>(...arguments), cancel)
+  }
+  function cancelableCatch() {
+    // eslint-disable-next-line promise/prefer-await-to-then
+    return forwardCancellation(promise.catch(...arguments), cancel)
+  }
+  function cancelableFinally() {
+    // eslint-disable-next-line promise/prefer-await-to-then
+    return forwardCancellation(promise.finally(...arguments), cancel)
+  }
+  /* eslint-enable prefer-rest-params */
+  return {
+    ...promise,
+    cancel,
+    catch: cancelableCatch,
+    finally: cancelableFinally,
+    promise,
+    then,
+  }
+}
+
+// TODO(cyrille): Rename to useAsyncEffect once https://github.com/facebook/react/issues/19749
+// is solved.
+const useAsynceffect = (
+  effect: (checkIfCanceled: () => boolean) => Promise<unknown>,
+  dependencies?: React.DependencyList,
+): void => useEffect(() => {
+  let isCanceled = false
+  effect(() => isCanceled)
+  return () => {
+    isCanceled = true
+  }
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, dependencies)
+
 
 const useCancelablePromises = (cancelable: CancelPromiseWrapper = makeCancelable):
 (<T>(promise: Promise<T>) => Promise<T>) => {
   const promises = useRef<CancelablePromise<unknown>[]>([])
 
-  useEffect((): (() => void) => (): void => promises.current.forEach(p => p.cancel()), [])
+  useEffect((): (() => void) => (): void => {
+    for (const p of promises.current) {
+      p.cancel()
+    }
+  }, [])
 
   return useCallback(<T>(p: Promise<T>): Promise<T> => {
     const cPromise = cancelable(p)
@@ -48,6 +107,7 @@ const useCancelablePromises = (cancelable: CancelPromiseWrapper = makeCancelable
 
 
 function isPromise<T>(a: unknown): a is Promise<T> {
+  // eslint-disable-next-line promise/prefer-await-to-then
   return !!(a as Promise<T>)?.then
 }
 
@@ -72,24 +132,5 @@ const useSafeDispatch = <TDispatch extends (arg: any) => any>(
 }
 
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const makeCancelableDispatch = <TDispatch extends (arg: any) => any>(
-  dispatch: TDispatch,
-  cancelable: CancelPromiseWrapper = makeCancelable,
-): [TDispatch, () => void] => {
-  const promises: CancelablePromise<unknown>[] = []
-  const dispatchWrapper = (p: Parameters<TDispatch>[0]): ReturnType<TDispatch> => {
-    const dispatched = dispatch(p)
-    if (isPromise<Promised<ReturnType<TDispatch>>>(dispatched)) {
-      const promise = cancelable(dispatched)
-      promises.push(promise)
-      return promise.promise as ReturnType<TDispatch>
-    }
-    return dispatched
-  }
-  const cancel = (): void => promises.forEach(p => p.cancel())
-  return [dispatchWrapper as TDispatch, cancel]
-}
-
-
-export {makeCancelable, makeCancelableDispatch, useCancelablePromises, useSafeDispatch}
+export {makeCancelable, forwardCancellation, useAsynceffect, useCancelablePromises, isPromise,
+  useSafeDispatch}

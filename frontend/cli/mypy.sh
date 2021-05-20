@@ -14,4 +14,4 @@ else
     folder="bob_emploi"
 fi
 
-docker-compose run --rm --no-deps $service mypy $folder --strict --ignore-missing-imports --implicit-reexport
+docker-compose --ansi never run --rm --no-deps $service mypy $folder --strict --ignore-missing-imports --implicit-reexport

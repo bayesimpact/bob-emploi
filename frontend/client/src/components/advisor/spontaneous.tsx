@@ -4,20 +4,25 @@ import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import StarIcon from 'mdi-react/StarIcon'
 import PropTypes from 'prop-types'
 import React, {useMemo, useCallback} from 'react'
+import {useTranslation} from 'react-i18next'
 
-import {genderizeJob} from 'store/job'
+
 import {closeToCity, lowerFirstLetter, ofJobName, toTitleCase} from 'store/french'
+import {LocalizableString, prepareT} from 'store/i18n'
+import {genderizeJob} from 'store/job'
+import isMobileVersion from 'store/mobile'
 
-import {Trans} from 'components/i18n'
-import {isMobileVersion} from 'components/mobile'
+import ExternalLink from 'components/external_link'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
+import Markdown from 'components/markdown'
 import {RadiumDiv} from 'components/radium'
-import {ExternalLink, GrowingNumber} from 'components/theme'
 import laBonneBoiteImage from 'images/labonneboite-picto.png'
 import laBonneAlternanceImage from 'images/labonnealternance-picto.svg'
 import poleEmploiImage from 'images/ple-emploi-ico.png'
 import Picto from 'images/advices/picto-spontaneous-application.svg'
 
-import {MethodSuggestionList, CardProps, ToolCard, useAdviceData} from './base'
+import {MethodSuggestionList, CardProps, EmailTemplate, ToolCard, useAdviceData} from './base'
 
 
 const emptyArray = [] as const
@@ -34,7 +39,7 @@ const createLink = (
   maxDistanceToCompaniesKm: number, isForAlternance?: boolean,
   cityId?: string, romeId?: string): string => {
   const baseUrl = isForAlternance ? 'https://labonnealternance.pole-emploi.fr/' :
-    'https://labonneboite.pole-emploi.fr/'
+    config.spontaneousApplicationSource
   const distanceParam = maxDistanceToCompaniesKm ? `d=${maxDistanceToCompaniesKm}&` : ''
   return `${baseUrl}entreprises/commune` +
     `/${cityId}/rome/${romeId}?${utmTrackingQuery}${distanceParam}`
@@ -118,8 +123,7 @@ const CompaniesBase: React.FC<CompaniesProps> =
       map((company: ValidCompany, index: number): ReactStylableElement =>
         <CompanyLink
           key={`company-${index}`} {...company} {...{isForAlternance, romeId, t}}
-          onClick={handleExplore(isForAlternance ? 'alternance' : 'company')}
-          isNotClickable={!company.siret} />)}
+          onClick={handleExplore(isForAlternance ? 'alternance' : 'company')} />)}
   </MethodSuggestionList>
 }
 const Companies = React.memo(CompaniesBase)
@@ -132,12 +136,12 @@ const SpontaneousMethod: React.FC<CardProps> = (props: CardProps): React.ReactEl
     strategyId,
     t,
   } = props
-  const {
+  const {data: {
     alternanceCompanies,
     companies,
     maxDistanceToCompaniesKm = 10,
     maxDistanceToAlternanceCompaniesKm = 10,
-  } = useAdviceData<bayes.bob.SpontaneousApplicationData>(props)
+  }, loading} = useAdviceData<bayes.bob.SpontaneousApplicationData>(props)
   const isMissingDiploma = diagnostic && diagnostic.categoryId === 'missing-diploma'
   const isLookingForAlternance = isMissingDiploma ?
     strategyId === 'get-alternance' :
@@ -147,6 +151,9 @@ const SpontaneousMethod: React.FC<CardProps> = (props: CardProps): React.ReactEl
     isLookingForAlternance && employmentTypes.length === 1
   const usefulCompanies = !isOnlyLookingForAlternance && companies || emptyArray
   const usefulAlternanceCompanies = isLookingForAlternance && alternanceCompanies || emptyArray
+  if (loading) {
+    return loading
+  }
   if (usefulCompanies.length || usefulAlternanceCompanies.length) {
     return <React.Fragment>
       <Companies companies={usefulCompanies} {...{maxDistanceToCompaniesKm}} {...props} />
@@ -200,7 +207,129 @@ SpontaneousMethod.propTypes = {
   strategyId: PropTypes.string,
   t: PropTypes.func.isRequired,
 }
-const ExpandedAdviceCardContent = React.memo(SpontaneousMethod)
+
+
+interface leadProps {
+  emailExample?: LocalizableString
+  name: LocalizableString
+}
+interface leadsProps {
+  leadsList: readonly leadProps[]
+  title: LocalizableString
+}
+const leads: readonly leadsProps[] = [
+  {
+    leadsList: [
+      {
+        emailExample: prepareT('Tu te rappelles je te disais que je cherchais un travail en ' +
+          'tant que (intitulé de poste)\u00A0? Je fais une liste de structures où envoyer ' +
+          "mon CV. Jusque là, j'ai pensé à (listez les structures que vous connaissez déjà). " +
+          "Est-ce que tu en connais d'autres, qui recrutent éventuellement en ce moment\u00A0?"),
+        name: prepareT('Demander à ses connaissances'),
+      },
+      {name: prepareT('Rechercher dans les actualités')},
+      {name: prepareT('Rechercher sur les réseaux sociaux')},
+      {name: prepareT('Rechercher sur LinkedIn')},
+    ],
+    title: prepareT('Étape 1\u00A0: Faire une liste de structures dans votre métier'),
+  },
+  {
+    leadsList: [
+      {name: prepareT('Regarder sur le site de la structure')},
+      {name:
+        prepareT('Regarder dans la rubrique "Personnes" sur la page de la structure sur LinkedIn'),
+      },
+      {
+        emailExample: prepareT('Tu te rappelles ton ami.e dont tu me parlais qui travaille dans ' +
+          "(votre domaine)\u00A0? Je me demande si elle/il connait quelqu'un qui travaille pour " +
+          '(nom de la structure)\u00A0? Est-ce que tu pourrais nous mettre en relation\u00A0? ' +
+          "J'aimerais bien lui parler parce que je pense à postuler chez eux."),
+        name: prepareT("Demander à ses connaissances s'ils connaissent quelqu'un qui y travaille"),
+      },
+      {name: prepareT('Se rendre sur place et demander à parler à un gérant')},
+    ],
+    title: prepareT('Étape 2\u00A0: Trouver les bonnes personnes à contacter'),
+  },
+  {
+    leadsList: [
+      {
+        emailExample: prepareT(`**Objet\u00A0:** Candidature spontanée\u00A0: (intitulé du poste)
+
+**Corps du message\u00A0:**
+
+J'ai récemment appris, via mon réseau professionnel, que vous recherchiez un (intitulé du poste).
+
+Ayant plus de (...) années d'expertise dans le domaine de (...) et étant passionné depuis toujours
+par (secteur de l'entreprise), je vous contacte afin de vous rencontrer pour envisager une
+collaboration.
+
+Quand seriez-vous disponible pour échanger\u00A0?`),
+        name: prepareT('Candidature spontanée - exemple 1'),
+      },
+      {
+        emailExample: prepareT(`**Objet\u00A0:** Candidature à l'offre [intitulé de l'offre]
+
+**Corps du message\u00A0:**
+
+J'ai pris connaissance de votre offre d'emploi pour le poste de (nom du poste).
+Je suis vraiment intéressé par cette opportunité, car elle correspond parfaitement à mes
+compétences, mais surtout parce que l'esprit de votre entreprise me plaît tout particulièrement.
+Les valeurs de (2 ou 3 valeurs de l'entreprise) que vous avez adoptées et qui ont fait votre
+succès, me correspondent exactement et j'aimerais mettre mes compétences au service d'une entreprise
+comme la vôtre.
+
+Au cours de mes précédentes expériences j'ai pu développer mes capacités de (2 ou 3 compétences).
+Aujourd'hui j'ai envie de me consacrer à (...) et je suis convaincu que je pourrais également
+participer à la croissance de votre équipe et contribuer à la réalisation de vos objectifs.
+
+
+En espérant que ma candidature saura retenir votre attention, je vous adresse, ci-joint, mon CV.`),
+        name: prepareT('Candidature spontanée - exemple 2'),
+      },
+    ],
+    title: prepareT('Étape 3\u00A0: Contacter les recruteurs'),
+  },
+]
+
+const methodStyle: React.CSSProperties = {
+  marginBottom: 20,
+}
+const tipStyle: React.CSSProperties = {
+  fontWeight: 'bold',
+}
+
+const SpontaneousTipsMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
+  const {handleExplore} = props
+  const {t, t: translate} = useTranslation()
+  return <div>
+    <div style={{marginBottom: 20}}>{t('3 étapes pour envoyer des candidatures spontanées')}</div>
+    {
+      leads.map(({leadsList, title}, indexLead): ReactStylableElement|null =>
+        <MethodSuggestionList
+          key={`list-${indexLead}`} title={title}
+          style={methodStyle} isNotClickable={true}>
+          {
+            leadsList.map((lead, indexTip): ReactStylableElement|null => lead.emailExample ?
+              <EmailTemplate
+                content={translate(...lead.emailExample)}
+                title={lead.name}
+                key={`lead-${indexLead}-${indexTip}`}
+                onContentShown={handleExplore('email template')} />
+              : <div key={`tip-${indexLead}-${indexTip}`} style={tipStyle}>
+                <strong><Markdown content={translate(...lead.name)} /></strong>
+              </div>)}
+        </MethodSuggestionList>,
+      )}
+  </div>
+}
+
+SpontaneousTipsMethod.propTypes = {
+  handleExplore: PropTypes.func.isRequired,
+}
+
+
+const ExpandedAdviceCardContent = config.spontaneousApplicationSource ?
+  React.memo(SpontaneousMethod) : React.memo(SpontaneousTipsMethod)
 
 
 const titleStyle = {
@@ -235,7 +364,7 @@ const StarsBase = ({hiringPotential, t}: StarsProps): React.ReactElement|null =>
     {isMobileVersion ? null : <Trans parent="span" style={titleStyle} t={t}>
       Potentiel d'embauche&nbsp;:
     </Trans>}
-    {new Array(3).fill(null).map((unused, index): React.ReactNode =>
+    {Array.from({length: 3}, (unused, index): React.ReactNode =>
       <StarIcon style={getStarStyle(index, hiringPotential)} key={`star-${index}`} />)}
   </span>
 }
@@ -247,7 +376,6 @@ const Stars = React.memo(StarsBase)
 
 interface CompanyLinkProps extends ValidCompany {
   isForAlternance?: boolean
-  isNotClickable: boolean
   onClick: () => void
   romeId: string
   style?: React.CSSProperties
@@ -259,7 +387,7 @@ const createLBBUrl = (siret: string|undefined, tracking: string): string => {
   if (!siret) {
     return ''
   }
-  return `https://labonneboite.pole-emploi.fr/${siret}/details?${tracking}`
+  return `${config.spontaneousApplicationSource}${siret}/details?${tracking}`
 }
 
 
@@ -267,7 +395,7 @@ const createLBAUrl = (siret: string|undefined, tracking: string, romeId: string)
   if (!siret) {
     return ''
   }
-  const baseUrl = 'https://labonnealternance.pole-emploi.fr/details-entreprises/'
+  const baseUrl = '${config.spontaneousApplicationSource}details-entreprises/'
   return `${baseUrl}${siret}?${tracking}&rome=${romeId}`
 }
 
@@ -280,7 +408,7 @@ const CompanyLinkBase: React.FC<CompanyLinkProps> =
     const tracking = 'utm_medium=web&utm_source=bob&utm_campaign=bob-conseil-ent'
     const LBBUrl = useMemo(() => createLBBUrl(siret, tracking), [siret, tracking])
     const LBAUrl = useMemo(() => createLBAUrl(siret, tracking, romeId), [siret, tracking, romeId])
-    const url = isForAlternance ? LBBUrl : LBAUrl
+    const url = isForAlternance ? LBAUrl : LBBUrl
 
     const handleClick = useMemo(() => (): void => {
       window.open(url, '_blank')
@@ -289,6 +417,7 @@ const CompanyLinkBase: React.FC<CompanyLinkProps> =
 
     const containerStyle: React.CSSProperties = {
       ...style,
+      cursor: siret ? 'pointer' : 'initial',
       fontWeight: 'normal',
     }
     if (isMobileVersion) {

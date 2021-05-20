@@ -3,39 +3,44 @@ import _mapValues from 'lodash/mapValues'
 import _memoize from 'lodash/memoize'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
-import React, {useCallback, useEffect, useMemo, useState} from 'react'
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useDispatch, useSelector} from 'react-redux'
 import {Link} from 'react-router-dom'
 import VisibilitySensor from 'react-visibility-sensor'
 
+import useFastForward from 'hooks/fast_forward'
 import {DispatchAllActions, RomeJobGroup, RootState, fetchApplicationModes,
   followJobOffersLinkAction} from 'store/actions'
 import {inDepartement, lowerFirstLetter} from 'store/french'
 import {prepareT} from 'store/i18n'
-import {genderizeJob, getApplicationModeText, getApplicationModes,
-  getPEJobBoardURL} from 'store/job'
+import {getApplicationModeText, getApplicationModes,
+  getGoogleJobSearchUrl, getPEJobBoardURL} from 'store/job'
 import {Score, colorFromPercent, computeBobScore} from 'store/score'
-import {useGender} from 'store/user'
+import {useAlwaysConvincePage, useGender} from 'store/user'
 
-import {FastForward} from 'components/fast_forward'
-import {Trans} from 'components/i18n'
+import BobScoreCircle from 'components/bob_score_circle'
+import Button from 'components/button'
+import NewMainChallengesTrain from 'components/challenges_train'
+import Trans from 'components/i18n_trans'
+import GrowingNumber from 'components/growing_number'
+import {CoverImageWithText} from 'components/job_group_cover_image'
+import Markdown, {MarkdownRendererProps} from 'components/markdown'
 import {useModal} from 'components/modal'
-import {isMobileVersion} from 'components/mobile'
+import isMobileVersion from 'store/mobile'
 import {ModifyProjectModal} from 'components/navigation'
 import {BubbleToRead, BubbleToReadProps, Discussion, DiscussionBubble, NoOpElement,
   WaitingElement} from 'components/phylactery'
 import {RadiumExternalLink, SmartLink} from 'components/radium'
 import {SignUpBanner} from 'components/pages/signup'
-import {CategoriesTrain} from 'components/stats_charts'
-import {BobScoreCircle, Button, GrowingNumber, JobGroupCoverImage, Markdown} from 'components/theme'
+import MainChallengesTrain from 'components/statistics/vertical_main_challenges_train'
 import {STATS_PAGE} from 'components/url'
 import missingDiplomaImage from 'images/missing-diploma.png'
 import strongCompetitionImage from 'images/strong-competition.svg'
 import workTimeImage from 'images/50000_hours.png'
 
 import {Strategies} from './strategy'
-import {BobModal} from './speech'
+import BobModal from './speech'
 
 
 const emptyArray = [] as const
@@ -47,8 +52,8 @@ const APPLICATION_MODES_VC_CATEGORIES = new Set([
   'start-your-search',
 ])
 
-// TODO(cyrille): Use HelpDeskLink component here.
-const defaultDiagnosticSentences = prepareT(`Nous ne sommes pas encore capable de vous proposer une
+const defaultDiagnosticSentences = prepareT(
+  `Nous ne sommes pas encore capable de vous proposer une
 analyse globale de votre situation. Certaines informations sur votre marché ne sont pas encore
 disponibles dans notre base de données.
 
@@ -57,7 +62,11 @@ Cependant, vous pouvez déjà consulter les indicateurs ci-contre.
 Pour obtenir une analyse de votre profil, vous pouvez nous
 envoyer [un message]({{helpRequestUrl}}).
 
-Un membre de l'équipe de {{productName}} vous enverra un diagnostic personnalisé.`)
+Un membre de l'équipe de {{productName}} vous enverra un diagnostic personnalisé.`,
+  {
+    helpRequestUrl: config.helpRequestUrl,
+    productName: config.productName,
+  })
 
 
 const sideLinkStyle: RadiumCSSProperties = {
@@ -106,15 +115,11 @@ const AltImageBase =
   const {children, ...otherProps} = props
   return <img {...otherProps} alt={children} />
 }
-AltImageBase.propTypes = {
-  alt: PropTypes.string.isRequired,
-}
 const AltImage = React.memo(AltImageBase)
 
 
 interface VisualCardProps {
   category?: string
-  children?: never
   project: bayes.bob.Project
   style?: React.CSSProperties
 }
@@ -240,21 +245,21 @@ const BobThinksVisualCardBase = (props: VisualCardProps): React.ReactElement|nul
       paddingTop: 10,
     }
     // i18next-extract-disable-next-line
-    const maybeInDepartement = city && inDepartement(city, t) || null
+    const maybeInDepartement = city && inDepartement(city, t) || t('dans votre département')
     const jobGroupName = lowerFirstLetter(name)
     return <div style={containerStyle}>
       <Trans style={titleStyle} parent="h2">
         Recrutement en {{jobGroupName}} {{maybeInDepartement}}
       </Trans>
       <div style={{alignItems: 'center', display: 'flex', marginBottom: 10}}>
-        {new Array(4).fill(undefined).map((unused, index): React.ReactNode =>
+        {Array.from({length: 4}, (unused, index): React.ReactNode =>
           <div key={index} style={itemStyle(colors.BOB_BLUE)} />)}
         <span style={{fontWeight: 'bold', marginLeft: 15}}>
           {getApplicationModeText(t, bestMode)}
         </span>
       </div>
       <div style={{alignItems: 'center', display: 'flex', marginBottom: 10}}>
-        {new Array(4).fill(undefined).map((unused, index): React.ReactNode =>
+        {Array.from({length: 4}, (unused, index): React.ReactNode =>
           <div
             key={index} style={itemStyle(index ? colors.MODAL_PROJECT_GREY : colors.BOB_BLUE)} />)}
         <span style={{marginLeft: 15}}>{getApplicationModeText(t, worstMode)}{footnote}</span>
@@ -270,9 +275,22 @@ const BobThinksVisualCardBase = (props: VisualCardProps): React.ReactElement|nul
 BobThinksVisualCardBase.propTypes = {
   category: PropTypes.string,
   project: PropTypes.shape({
+    city: PropTypes.shape({
+      name: PropTypes.string.isRequired,
+    }),
+    diagnostic: PropTypes.shape({
+      categories: PropTypes.arrayOf(PropTypes.shape({
+        categoryId: PropTypes.string.isRequired,
+      }).isRequired),
+    }),
     localStats: PropTypes.shape({
       imt: PropTypes.shape({
         yearlyAvgOffersPer10Candidates: PropTypes.number,
+      }),
+    }),
+    targetJob: PropTypes.shape({
+      jobGroup: PropTypes.shape({
+        name: PropTypes.string,
       }),
     }),
   }),
@@ -307,8 +325,8 @@ const stratIntroButtonStyle: React.CSSProperties = {margin: 20}
 const StrategiesIntroductionBase: React.FC<IntroductionProps> =
 ({onClick, text}: IntroductionProps): React.ReactElement => {
   const {t} = useTranslation()
+  useFastForward(onClick)
   return <div style={stratIntroContainerStyle}>
-    <FastForward onForward={onClick} />
     {text ? <div style={introductionStyle}>{text}</div> : null}
     <Button type="validation" onClick={onClick} style={stratIntroButtonStyle}>
       {t('Découvrir mes stratégies')}
@@ -406,22 +424,39 @@ const FlatScoreSection = React.memo(FlatScoreSectionBase)
 const BalancedTitleBase: React.FC<{children: React.ReactNode}> =
 ({children}: {children: React.ReactNode}): React.ReactElement => {
   const [lineWidth, setLineWidth] = useState(0)
-  const handleHiddenTitle = useCallback((dom: HTMLDivElement|null): void => {
-    if (!dom) {
+  const hiddenTitleRef = useRef<HTMLDivElement>(null)
+  const placeholderRef = useRef<HTMLDivElement>(null)
+  const updateLineWidth = useCallback((): void => {
+    if (!hiddenTitleRef.current || !placeholderRef.current) {
       return
     }
     // Target width is that of in-flow div, which is dom's grand-parent.
-    const {clientWidth} = dom && dom.parentElement && dom.parentElement.parentElement || {}
-    clientWidth && setLineWidth(dom.clientWidth / Math.ceil(dom.clientWidth / clientWidth))
+    const {clientWidth} = placeholderRef.current
+    const totalWidth = hiddenTitleRef.current.clientWidth
+    if (!clientWidth || !totalWidth) {
+      return
+    }
+    setLineWidth(totalWidth / Math.ceil(totalWidth / clientWidth))
   }, [])
+  // Update the line width until we get a non 0 value.
+  const hasLineWidth = !!lineWidth
+  useEffect((): (() => void) => {
+    if (hasLineWidth) {
+      return () => void 0
+    }
+    const interval = window.setInterval(updateLineWidth, 200)
+    return () => {
+      window.clearInterval(interval)
+    }
+  }, [hasLineWidth, updateLineWidth])
   const titleStyle = useMemo((): React.CSSProperties => ({
     margin: '0 auto',
     ...!!lineWidth && {maxWidth: `calc(2em + ${lineWidth}px`},
   }), [lineWidth])
   return <React.Fragment>
-    {lineWidth ? null : <div style={{opacity: 0, overflow: 'hidden'}}>
+    {lineWidth ? null : <div ref={placeholderRef} style={{opacity: 0, overflow: 'hidden'}}>
       <div style={{position: 'absolute', width: '300vw'}}>
-        <div ref={handleHiddenTitle} style={{position: 'absolute'}}>{children}</div>
+        <div ref={hiddenTitleRef} style={{position: 'absolute'}}>{children}</div>
       </div>
     </div>}
     <div style={titleStyle}>{children}</div>
@@ -444,12 +479,17 @@ const scoreTitleStyle: React.CSSProperties = {
   textAlign: 'center',
 }
 
-const ScoreTitleParagraph = (props: React.HTMLProps<HTMLDivElement>): React.ReactElement =>
-  <div {...props} style={scoreTitleStyle} />
+const ScoreTitleParagraph = (props: React.HTMLProps<HTMLDivElement> & MarkdownRendererProps):
+React.ReactElement => {
+  const {node: omittedNode, nodeKey: omittedNodeKey, ...divProps} = props
+  return <div {...divProps} style={scoreTitleStyle} />
+}
 
 const getScoreTitleStrong = _memoize((color: string) =>
-  function ScoreTitleStrong(props: React.HTMLProps<HTMLSpanElement>): React.ReactElement {
-    return <span style={{color}} {...props} />
+  function ScoreTitleStrong(props: React.HTMLProps<HTMLSpanElement> & MarkdownRendererProps):
+  React.ReactElement {
+    const {node: omittedNode, nodeKey: omittedNodeKey, ...spanProps} = props
+    return <span style={{color}} {...spanProps} />
   })
 
 const BobScoreBase: React.FC<BobScoreProps> =
@@ -468,6 +508,10 @@ const BobScoreBase: React.FC<BobScoreProps> =
     margin: '0 auto',
     maxWidth: isMobileVersion ? 320 : 470,
   }
+  const components = useMemo(() => ({
+    p: ScoreTitleParagraph,
+    strong: getScoreTitleStrong(color),
+  }), [color])
   // TODO(cyrille): Handle isMobileVersion.
   return <div style={bobScoreStyle}>
     <BobScoreCircle
@@ -476,12 +520,7 @@ const BobScoreBase: React.FC<BobScoreProps> =
       style={{flexShrink: 0}}
       percent={percent}
       isAnimated={isAnimated} />
-    {isTitleShown ? <Markdown
-      content={shortTitle}
-      renderers={{
-        paragraph: ScoreTitleParagraph,
-        strong: getScoreTitleStrong(color),
-      }} /> : null}
+    {isTitleShown ? <Markdown content={shortTitle} components={components} /> : null}
   </div>
 }
 BobScoreBase.propTypes = {
@@ -518,36 +557,24 @@ interface ScoreWithHeaderProps {
 
 const scoreHeaderStyle: React.CSSProperties = {
   ...cardStyle,
-  alignItems: 'center',
   backgroundColor: colors.SLATE,
-  color: '#fff',
-  display: 'flex',
-  flexDirection: 'column',
-  fontWeight: 'bold',
   marginBottom: -100,
   padding: '35px 20px 125px',
   position: 'relative',
-  textShadow: '0 3px 4px rgba(0, 0, 0, 0.5)',
   zIndex: -1,
 }
 
 const headerJobCoverStyle = {
-  borderRadius: scoreHeaderStyle.borderRadius,
-  overflow: 'hidden',
   zIndex: -1,
 }
 
 const jobStyle: React.CSSProperties = {
   fontSize: 18,
-  margin: '0 0 4px',
-  textAlign: 'center',
-  textTransform: 'uppercase',
 }
 
 const cityStyle: React.CSSProperties = {
   fontSize: 15,
   margin: 0,
-  textAlign: 'center',
 }
 
 const modifyProjectStyle: RadiumCSSProperties = {
@@ -601,28 +628,28 @@ const ScoreWithHeaderBase: React.FC<ScoreWithHeaderProps> =
     const {baseUrl, isAnimated, openModifyModal, project, score} = props
     const {
       city: {name: cityName = undefined} = {}, diagnostic: {categories = emptyArray} = {},
-      targetJob, targetJob: {jobGroup: {romeId = undefined} = {}} = {},
-    } = project
+      targetJob = {}} = project
+    const isConvincePageEnabled = useAlwaysConvincePage()
     const gender = useGender()
-    const jobName = genderizeJob(targetJob, gender) || '-'
     const {t} = useTranslation()
     return <React.Fragment>
-      <div style={scoreHeaderStyle}>
-        {romeId ? <JobGroupCoverImage romeId={romeId} style={headerJobCoverStyle} /> : null}
-        <p style={jobStyle}>{jobName}</p>
-        <p style={cityStyle}>{cityName}</p>
+      <CoverImageWithText
+        imageStyle={headerJobCoverStyle}
+        style={{...scoreHeaderStyle, ...isConvincePageEnabled ? {marginTop: 0} : {}}}
+        {...{cityName, cityStyle, jobStyle, targetJob}}>
         <SmartLink onClick={openModifyModal} style={modifyProjectStyle}>{t('Modifier')}</SmartLink>
-      </div>
+      </CoverImageWithText>
       <div style={scoreCardStyle}>
         <BobScore score={score} isTitleShown={false} isAnimated={isAnimated} />
         {/* TODO(sil): Make sure the title is well balanced. */}
         <div style={mainSentenceStyle}>{score.shortTitle}</div>
-        <div style={{margin: '0 20px'}}>
-          <CategoriesTrain areDetailsShownAsHover={true} categories={categories} gender={gender} />
+        {isConvincePageEnabled ? <div style={separatorStyle} /> : <div style={{margin: '0 20px'}}>
+          <MainChallengesTrain
+            areDetailsShownAsHover={true} mainChallenges={categories} gender={gender} />
           <div style={separatorStyle} />
-        </div>
+        </div>}
         <Link to={`${baseUrl}/${STATS_PAGE}`} style={statsLinkStyle}>
-          {t('En savoir plus')}
+          {isConvincePageEnabled ? t('Voir les statistiques') : t('En savoir plus')}
           <ChevronRightIcon size={18} style={{marginLeft: '.2em'}} />
         </Link>
       </div>
@@ -635,6 +662,11 @@ ScoreWithHeaderBase.propTypes = {
     city: PropTypes.shape({
       name: PropTypes.string.isRequired,
     }).isRequired,
+    diagnostic: PropTypes.shape({
+      categories: PropTypes.arrayOf(PropTypes.shape({
+        categoryId: PropTypes.string.isRequired,
+      }).isRequired),
+    }),
     targetJob: PropTypes.shape({
       jobGroup: PropTypes.shape({
         romeId: PropTypes.string.isRequired,
@@ -652,7 +684,82 @@ const ScoreWithHeader = React.memo(ScoreWithHeaderBase)
 const noMarginStyle = {margin: 0}
 const NoMarginParagraph = (props: React.HTMLProps<HTMLParagraphElement>): React.ReactElement =>
   <p style={noMarginStyle} {...props} />
-const markdownRenderers = {paragraph: NoMarginParagraph}
+const markdownComponents = {p: NoMarginParagraph}
+
+
+interface DiagnosticTextProps {
+  isFirstTime: boolean
+  isModal?: boolean
+  onClose: () => void
+  percent: number
+  style?: React.CSSProperties
+  text?: string
+  title?: string
+}
+
+
+const DiagnosticTextBase = (props: DiagnosticTextProps): React.ReactElement => {
+  const {t, t: translate} = useTranslation()
+  const {
+    isFirstTime, isModal, onClose, percent, style, text, title,
+  } = props
+  const [isFullTextShown, setIsFullTextShown] = useState(false)
+
+  const onTextForward = useCallback((): void => {
+    if (isFullTextShown || isModal) {
+      onClose()
+      return
+    }
+    setIsFullTextShown(true)
+  }, [isFullTextShown, isModal, onClose])
+
+  const handleFullTextShown = useCallback((): void => setIsFullTextShown(true), [])
+
+  useFastForward(onTextForward)
+
+  const sentences = (text || translate(...defaultDiagnosticSentences) || '').split('\n\n')
+  const sentencesToDisplay = title ? [title, ...sentences] : sentences
+  if (isModal) {
+    return <BobModal
+      isShown={true} onConfirm={onClose}
+      buttonText={t('OK, voir mon diagnostic')}>
+      {sentencesToDisplay.join('\n\n')}
+    </BobModal>
+  }
+  const circleAnimationDuration = 1000
+  const pageStyle: React.CSSProperties = {
+    alignItems: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    paddingTop: 20,
+    ...style,
+  }
+  return <div style={pageStyle}>
+    <Discussion
+      style={{flex: 1, margin: '0 10px', maxWidth: 400}}
+      isOneBubble={true} isFastForwarded={isFullTextShown}
+      onDone={handleFullTextShown}>
+      <NoOpElement style={{margin: '0 auto 20px'}}>
+        <BobScoreCircle
+          percent={percent} isAnimated={!isFullTextShown} color={colorFromPercent(percent)}
+          durationMillisec={circleAnimationDuration} />
+      </NoOpElement>
+      <WaitingElement waitingMillisec={circleAnimationDuration * 1.5} />
+      <DiscussionBubble>
+        {sentencesToDisplay.map((sentence, index): React.ReactElement<BubbleToReadProps> =>
+          <BubbleToRead key={index}>
+            <Markdown content={sentence} components={markdownComponents} />
+          </BubbleToRead>)}
+      </DiscussionBubble>
+      <NoOpElement style={{margin: '20px auto 0'}}>
+        <Button type="validation" onClick={onClose}>
+          {isFirstTime ? t('Étape suivante') : t('Revenir au détail')}
+        </Button>
+      </NoOpElement>
+    </Discussion>
+  </div>
+}
+const DiagnosticText = React.memo(DiagnosticTextBase)
 
 
 interface DiagnosticProps {
@@ -688,16 +795,17 @@ const titleCardStyle: React.CSSProperties = {
   textAlign: 'center',
 }
 
+const desktopWidth = 600
 const DiagnosticBase = (props: DiagnosticProps): React.ReactElement => {
-  const {diagnosticData, isFirstTime, onDiagnosticTextShown, onFullDiagnosticShown, style,
+  const {diagnosticData, isFirstTime = false, onDiagnosticTextShown, onFullDiagnosticShown, style,
     userName} = props
 
+  const isConvincePageEnabled = useAlwaysConvincePage()
   const hasAccount = useSelector(({user: {hasAccount}}: RootState): boolean => !!hasAccount)
   const {t} = useTranslation()
   const dispatch = useDispatch<DispatchAllActions>()
   const [areStrategiesShown, setAreStrategiesShown] = useState(!isFirstTime)
   const [isDiagnosticTextShown, setIsDiagnosticTextShown] = useState(isFirstTime)
-  const [isFullTextShown, setIsFullTextShown] = useState(false)
   const [isModifyModalShown, showModifyModal, hideModifyModal] = useModal(false)
 
   const onShown = isFirstTime ? onDiagnosticTextShown : onFullDiagnosticShown
@@ -714,21 +822,11 @@ const DiagnosticBase = (props: DiagnosticProps): React.ReactElement => {
     onFullDiagnosticShown?.()
   }, [onFullDiagnosticShown])
 
-  const onTextForward = useCallback((): void => {
-    if (isFullTextShown) {
-      handleCloseDiagnosticText()
-      return
-    }
-    setIsFullTextShown(true)
-  }, [isFullTextShown, handleCloseDiagnosticText])
-
   useEffect((): void => {
     window.scrollTo(0, 0)
   }, [isDiagnosticTextShown])
 
   const handleOpenStrategies = useCallback((): void => setAreStrategiesShown(true), [])
-
-  const handleFullTextShown = useCallback((): void => setIsFullTextShown(true), [])
 
   const followJobOffersLink = useCallback(
     (): void => void dispatch(followJobOffersLinkAction),
@@ -736,61 +834,7 @@ const DiagnosticBase = (props: DiagnosticProps): React.ReactElement => {
   )
 
   const {text} = diagnosticData
-  const {percent, title} = score
-
-  const renderDiagnosticText = useCallback((isModal?: boolean): React.ReactElement => {
-    // i18next-extract-disable-next-line
-    const sentences = (text || t(
-      defaultDiagnosticSentences, {
-        helpRequestUrl: config.helpRequestUrl,
-        productName: config.productName,
-      }) || '').split('\n\n')
-    const sentencesToDisplay = title ? [title, ...sentences] : sentences
-    if (isModal) {
-      return <BobModal
-        isShown={true} onConfirm={handleCloseDiagnosticText}
-        buttonText={t('OK, voir mon diagnostic')}>
-        {sentencesToDisplay.join('\n\n')}
-      </BobModal>
-    }
-    const circleAnimationDuration = 1000
-    const pageStyle: React.CSSProperties = {
-      alignItems: 'center',
-      display: 'flex',
-      flexDirection: 'column',
-      paddingTop: 20,
-      ...style,
-    }
-    // TODO(cyrille): Replace FastForward by hook.
-    return <div style={pageStyle}>
-      <FastForward onForward={onTextForward} />
-      <Discussion
-        style={{flex: 1, margin: '0 10px', maxWidth: 400}}
-        isOneBubble={true} isFastForwarded={isFullTextShown}
-        onDone={handleFullTextShown}>
-        <NoOpElement style={{margin: '0 auto 20px'}}>
-          <BobScoreCircle
-            percent={percent} isAnimated={!isFullTextShown} color={colorFromPercent(percent)}
-            durationMillisec={circleAnimationDuration} />
-        </NoOpElement>
-        <WaitingElement waitingMillisec={circleAnimationDuration * 1.5} />
-        <DiscussionBubble>
-          {sentencesToDisplay.map((sentence, index): React.ReactElement<BubbleToReadProps> =>
-            <BubbleToRead key={index}>
-              <Markdown content={sentence} renderers={markdownRenderers} />
-            </BubbleToRead>)}
-        </DiscussionBubble>
-        <NoOpElement style={{margin: '20px auto 0'}}>
-          <Button type="validation" onClick={handleCloseDiagnosticText}>
-            {isFirstTime ? 'Étape suivante' : 'Revenir au détail'}
-          </Button>
-        </NoOpElement>
-      </Discussion>
-    </div>
-  }, [
-    isFirstTime, isFullTextShown, handleCloseDiagnosticText, handleFullTextShown, onTextForward,
-    percent, style, t, text, title,
-  ])
+  const {percent, shortTitle, title} = score
 
   const scoreSectionStyle: React.CSSProperties = {
     fontSize: 26,
@@ -805,20 +849,21 @@ const DiagnosticBase = (props: DiagnosticProps): React.ReactElement => {
   const {strategiesIntroduction} = diagnosticData
   const mobileTopSections = isMobileVersion ? <React.Fragment>
     <div style={scoreSectionStyle}>
-      <BalancedTitle><Markdown content={score.shortTitle} /></BalancedTitle>
+      <BalancedTitle><Markdown content={shortTitle} /></BalancedTitle>
       <FlatScoreSection score={score} style={cardStyle} />
     </div>
     {areStrategiesShown ? null : <div style={introductionContainerStyle}>
       <StrategiesIntroduction onClick={handleOpenStrategies} text={strategiesIntroduction} />
     </div>}
   </React.Fragment> : undefined
-
   const {advices = [], baseUrl, makeAdviceLink, makeStrategyLink, project,
-    project: {city, targetJob}, strategies = emptyArray} = props
+    project: {city, targetJob, originalSelfDiagnostic: {categoryId: selfDiagnostic} = {},
+      diagnostic: {categories = emptyArray} = {}}, strategies = emptyArray} = props
   const {categoryId} = diagnosticData
   const isBobTalksModalShown = isDiagnosticTextShown && !isMobileVersion
   if (isDiagnosticTextShown && isMobileVersion) {
-    return renderDiagnosticText()
+    return <DiagnosticText
+      onClose={handleCloseDiagnosticText} {...{isFirstTime, percent, style, text, title}} />
   }
   const isSignUpBannerShown = !hasAccount && !isFirstTime
   const adviceProps = _mapValues(
@@ -828,7 +873,7 @@ const DiagnosticBase = (props: DiagnosticProps): React.ReactElement => {
     alignItems: 'center',
     display: 'flex',
     flexDirection: 'column',
-    paddingTop: 50,
+    paddingTop: isMobileVersion ? 0 : 50,
   }
   // TODO(pascal): Add mobile version as well.
   const contentStyle: React.CSSProperties = {
@@ -839,35 +884,41 @@ const DiagnosticBase = (props: DiagnosticProps): React.ReactElement => {
     paddingBottom: 50,
     paddingTop: 0,
   }
+
+  const jobBoardURL = config.countryId === 'fr' ? getPEJobBoardURL(targetJob, city) :
+    getGoogleJobSearchUrl(t, targetJob?.name)
   // TODO(sil): Put a smooth transition when closing the sign up banner.
   return <div style={pageStyle}>
     {isMobileVersion ? null : <ModifyProjectModal
       project={project} isShown={isModifyModalShown}
       onClose={hideModifyModal} />}
     {isSignUpBannerShown ?
-      <SignUpBanner style={{margin: '0 0 50px', width: 1000}} /> : null}
+      <SignUpBanner style={{margin: '30px 0', width: 1000}} /> : null}
     <div style={contentStyle}>
-      {isBobTalksModalShown ? renderDiagnosticText(true) : null}
+      {isBobTalksModalShown ? <DiagnosticText
+        {...{isFirstTime, percent, style, text, title}} isModal={true}
+        onClose={handleCloseDiagnosticText} /> : null}
       {isMobileVersion ? null : <div style={{position: 'relative', width: 360, zIndex: 1}}>
-        <Trans parent="h2" style={panelTitleStyle}>Votre projet</Trans>
+        {isConvincePageEnabled ? null :
+          <Trans parent="h2" style={panelTitleStyle}>Votre projet</Trans>}
         <ScoreWithHeader
           openModifyModal={showModifyModal}
           {...{baseUrl, project, score}} isAnimated={isFirstTime} />
-        <div style={{...cardStyle, overflow: 'hidden'}}>
+        {isConvincePageEnabled ? null : <div style={{...cardStyle, overflow: 'hidden'}}>
           <BobThinksVisualCard category={categoryId} {...{project}} />
           {/* TODO(cyrille): Only hide the link when the footnote is
             actually present in the visual card. */}
           {categoryId && APPLICATION_MODES_VC_CATEGORIES.has(categoryId) ?
             null : <SideLink
               onClick={followJobOffersLink}
-              href={getPEJobBoardURL(targetJob, city)}>
+              href={jobBoardURL}>
               {t("Voir les offres d'emploi")}
             </SideLink>}
-        </div>
+        </div>}
         {/* TODO(pascal): Re-enable PDF */}
       </div>}
-      <div
-        style={{marginLeft: isMobileVersion ? 0 : 40, width: isMobileVersion ? '100%' : 600}}>
+      <div style={
+        {marginLeft: isMobileVersion ? 0 : 40, width: isMobileVersion ? '100%' : desktopWidth}}>
         {isMobileVersion ? mobileTopSections :
           areStrategiesShown ? null : <React.Fragment>
             <h2 style={{...panelTitleStyle, visibility: 'hidden'}}>Stratégies possibles</h2>
@@ -876,10 +927,18 @@ const DiagnosticBase = (props: DiagnosticProps): React.ReactElement => {
                 onClick={handleOpenStrategies} text={strategiesIntroduction} />
             </div>
           </React.Fragment>}
-        {areStrategiesShown ? <Strategies
-          {...{adviceProps, makeAdviceLink, makeStrategyLink, project}}
-          strategies={strategies} isAnimationEnabled={isFirstTime}
-          strategyStyle={cardStyle} titleStyle={panelTitleStyle} /> : null}
+        {areStrategiesShown ?
+          <React.Fragment>
+            {isConvincePageEnabled && !isMobileVersion ?
+              <div style={{marginBottom: 20}}>
+                <NewMainChallengesTrain
+                  selfDiagnostic={selfDiagnostic} showSelfDiagnostic={false}
+                  mainChallenges={categories} challengeWidth={desktopWidth / categories.length} />
+              </div> : null}
+            <Strategies {...{adviceProps, makeAdviceLink, makeStrategyLink, project}}
+              strategies={strategies} isAnimationEnabled={isFirstTime}
+              strategyStyle={cardStyle} titleStyle={panelTitleStyle} />
+          </React.Fragment> : null}
       </div>
     </div>
   </div>
@@ -894,10 +953,27 @@ DiagnosticBase.propTypes = {
   onDiagnosticTextShown: PropTypes.func,
   onFullDiagnosticShown: PropTypes.func,
   project: PropTypes.shape({
+    city: PropTypes.shape({
+      name: PropTypes.string.isRequired,
+    }).isRequired,
+    diagnostic: PropTypes.shape({
+      categories: PropTypes.arrayOf(PropTypes.shape({
+        categoryId: PropTypes.string.isRequired,
+      }).isRequired),
+    }).isRequired,
     localStats: PropTypes.shape({
       imt: PropTypes.shape({
         yearlyAvgOffersPer10Candidates: PropTypes.number,
       }),
+    }),
+    originalSelfDiagnostic: PropTypes.shape({
+      categoryId: PropTypes.string,
+    }),
+    targetJob: PropTypes.shape({
+      jobGroup: PropTypes.shape({
+        romeId: PropTypes.string.isRequired,
+      }).isRequired,
+      name: PropTypes.string,
     }),
   }),
   strategies: PropTypes.array,

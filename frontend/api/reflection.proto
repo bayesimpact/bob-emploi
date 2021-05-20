@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "bob_emploi/frontend/api/user.proto";
+
+package bayes.bob;
+option go_package="bayes.org/bob_emploi/frontend/api/reflection";
+
+// A message used as input/output of the refection endpoint.
+message Reflection {
+  oneof content {
+    User user = 1;
+    UserWithAdviceSelection user_with_advice_selection = 2;
+  }
+}

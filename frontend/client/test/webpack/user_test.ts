@@ -1,30 +1,37 @@
 import {expect} from 'chai'
+import React from 'react'
+import ShallowRenderer from 'react-test-renderer/shallow'
+
 // @ts-ignore
 import {FamilySituation, Frustration, UserOrigin} from 'api/user'
 import {getUserFrustrationTags, FAMILY_SITUATION_OPTIONS, increaseRevision, addProjectIds,
   getHighestDegreeDescription, ORIGIN_OPTIONS, keepMostRecentRevision,
   isEmailTemplatePersonalized, projectMatchAllFilters, filterPredicatesMatch,
-  personalizationsPredicates, getJobSearchLengthMonths, getUserLocale} from 'store/user'
+  personalizationsPredicates, getJobSearchLengthMonths, getUserLocale,
+  useUserExample} from 'store/user'
 import emailTemplates from 'components/advisor/data/email_templates.json'
+
+
+const fakeT = (string: string) => string
 
 
 describe('frustrations', (): void => {
   it('should not return any frustrations if unknown', (): void => {
     const profile = {frustrations: ['UNKNOWN_JOB_SEARCH_FRUSTRATION']} as const
-    const result = getUserFrustrationTags(profile)
+    const result = getUserFrustrationTags(profile, fakeT)
     expect(result.length).to.equal(0)
   })
 
   it('should return the good number of frustrations for the most important ones', (): void => {
     const profile = {frustrations: [
       'NO_OFFERS', 'NO_OFFER_ANSWERS', 'MOTIVATION', 'TRAINING']} as const
-    const result = getUserFrustrationTags(profile)
+    const result = getUserFrustrationTags(profile, fakeT)
     expect(result.length).to.equal(4)
   })
 
   it('should not return any frustrations if frustrations undefined', (): void => {
     const profile = {}
-    const result = getUserFrustrationTags(profile)
+    const result = getUserFrustrationTags(profile, fakeT)
     expect(result.length).to.equal(0)
   })
 })
@@ -124,26 +131,26 @@ describe('getHighestDegreeDescription', (): void => {
 
   it('should return the right degree', (): void => {
     const profile = {highestDegree: 'DEA_DESS_MASTER_PHD'} as const
-    expect(getHighestDegreeDescription(profile)).to.equal('DEA - DESS - Master - PhD')
+    expect(getHighestDegreeDescription(profile)?.[0]).to.equal('DEA - DESS - Master - PhD')
   })
 })
 
 
 describe('FAMILY_SITUATION_OPTIONS', (): void => {
   const familySituations = FAMILY_SITUATION_OPTIONS
-  familySituations.forEach((situation): void => {
+  for (const situation of familySituations) {
     it(`"${situation.name}" should have correct values`, (): void => {
       const {name, value} = situation
       expect(name).to.be.ok
       expect(value).to.be.ok
       expect(FamilySituation).to.contain.keys(value)
     })
-  })
+  }
 })
 
 
 describe('ORIGIN_OPTIONS', (): void => {
-  ORIGIN_OPTIONS.forEach((option): void => {
+  for (const option of ORIGIN_OPTIONS) {
     it(`"${option.name}" should have correct values`, (): void => {
       expect(option).to.contain.all.keys('name', 'value')
       const {name, value} = option
@@ -151,7 +158,7 @@ describe('ORIGIN_OPTIONS', (): void => {
       expect(value).to.be.ok
       expect(UserOrigin).to.contain.keys(value)
     })
-  })
+  }
 })
 
 
@@ -206,25 +213,25 @@ describe('keepMostRecentRevision', (): void => {
 describe('Network email templates filters', (): void => {
   it('should be defined in filterPredicatesMatch', (): void => {
     let hasFilters = false
-    emailTemplates.network.forEach(({filters}): void => {
+    for (const {filters} of emailTemplates.network) {
       if (filters) {
         expect(filterPredicatesMatch).to.contain.all.keys(filters)
         hasFilters = true
       }
-    })
+    }
     // If this is false, then this test is useless and can be removed.
     expect(hasFilters).to.be.true
   })
 
   it('should use all the filters defined by filterPredicatesMatch', (): void => {
     const usedFilters: {[filter: string]: true} = {}
-    emailTemplates.network.forEach(({filters}): void => {
+    for (const {filters} of emailTemplates.network) {
       if (filters) {
-        filters.forEach((filter): void => {
+        for (const filter of filters) {
           usedFilters[filter] = true
-        })
+        }
       }
-    })
+    }
     expect(usedFilters).to.contain.all.keys(filterPredicatesMatch)
   })
 })
@@ -233,54 +240,72 @@ describe('Network email templates filters', (): void => {
 describe('Network email templates personalizations', (): void => {
   it('should be defined in personalizationsPredicates', (): void => {
     let hasPersonalizations = false
-    emailTemplates.network.forEach(({personalizations}): void => {
+    for (const {personalizations} of emailTemplates.network) {
       if (personalizations) {
-        personalizations.forEach((personalization): void => {
+        for (const personalization of personalizations) {
           if (personalization in Frustration) {
             return
           }
           expect(personalizationsPredicates).to.contain.all.keys(personalization)
           hasPersonalizations = true
-        })
+        }
       }
-    })
+    }
     // If this is false, then this test is useless and can be removed.
     expect(hasPersonalizations).to.be.true
   })
 
   it('should use all the personalizations defined by personalizationsPredicates', (): void => {
     const usedPersonalizations: {[personalization: string]: true} = {}
-    emailTemplates.network.forEach(({personalizations}): void => {
+    for (const {personalizations} of emailTemplates.network) {
       if (personalizations) {
-        personalizations.forEach((personalization): void => {
+        for (const personalization of personalizations) {
           usedPersonalizations[personalization] = true
-        })
+        }
       }
-    })
+    }
     expect(usedPersonalizations).to.contain.all.keys(personalizationsPredicates)
   })
 })
 
 
-const dateNowStub = ((): number => 1568709243361)
+// 2019-09-17T08:34:03.361Z
+const dateNowStub = ((): number => 1_568_709_243_361)
 
 
 describe('getJobSearchLengthMonths', (): void => {
-  it('should default to old design for old users', (): void => {
-    const project = {
-      jobSearchHasNotStarted: false, jobSearchLengthMonths: 3, jobSearchStartedAt: ''}
-    expect(getJobSearchLengthMonths(project)).to.equal(3)
-  })
-  it('should compute the correct search lenght', (): void => {
-    const project = {jobSearchHasNotStarted: false, jobSearchStartedAt: '2019-05-17'}
+  const realDateNow = Date.now.bind(global.Date)
+  before((): void => {
     // Mocking the date.
-    const realDateNow = Date.now.bind(global.Date)
-
     global.Date.now = dateNowStub
-
-    expect(getJobSearchLengthMonths(project)).to.equal(4)
+  })
+  after((): void => {
     // Put back the date.
     global.Date.now = realDateNow
+  })
+  it('should compute the correct search length', (): void => {
+    const project = {jobSearchHasNotStarted: false, jobSearchStartedAt: '2019-05-17'}
+    expect(getJobSearchLengthMonths(project)).to.equal(4)
+  })
+  it('should ignore an empty createdAt field', (): void => {
+    const project = {createdAt: '', jobSearchHasNotStarted: false, jobSearchStartedAt: '2019-05-17'}
+    expect(getJobSearchLengthMonths(project)).to.equal(4)
+  })
+  it('should use the createdAt field', (): void => {
+    const project = {
+      createdAt: '2019-12-17',
+      jobSearchHasNotStarted: false,
+      jobSearchStartedAt: '2019-05-17',
+    }
+    expect(getJobSearchLengthMonths(project)).to.equal(7)
+  })
+  it('should return 0 for undefined', (): void => {
+    const project = {jobSearchHasNotStarted: false}
+    expect(getJobSearchLengthMonths(project)).to.equal(0)
+  })
+  it('should return -1 for not started', (): void => {
+    const project = {jobSearchHasNotStarted: true}
+    expect(getJobSearchLengthMonths(project)).to.equal(-1)
   })
 })
 
@@ -315,5 +340,27 @@ describe('addProjectIds', (): void => {
     const modifiedProject = modifiedUser!.projects![0]!
     expect(modifiedProject).to.have.all.keys('targetJob', 'projectId')
     expect(modifiedProject.projectId).to.be.ok
+  })
+})
+
+
+const Component = (): React.ReactElement => {
+  const user = useUserExample()
+  return React.createElement('Spy', {user})
+}
+
+
+describe('useUserExample', (): void => {
+  it('should return a user example', (): void => {
+    const renderer = ShallowRenderer.createRenderer()
+    renderer.render(React.createElement(Component, {}))
+    const result = renderer.getRenderOutput()
+
+    expect(result.props.user).to.have.all.keys('profile', 'projects')
+    expect(result.props.user.profile).to.include.all.keys(
+      'coachingEmailFrequency', 'familySituation', 'gender', 'highestDegree', 'yearOfBirth')
+    expect(result.props.user.projects).to.have.lengthOf(1)
+    expect(result.props.user.projects[0]).to.include.all.keys(
+      'areaType', 'city', 'employmentTypes', 'kind', 'seniority', 'targetJob')
   })
 })

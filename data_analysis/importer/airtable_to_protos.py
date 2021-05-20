@@ -21,13 +21,15 @@ import collections
 import json
 import logging
 import os
+import re
 import typing
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Sequence, Set, Tuple, \
-    Type, Union
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, \
+    Set, Tuple, Type, Union
 
 from airtable import airtable
 from google.protobuf import json_format
 from google.protobuf import message
+import requests
 
 from bob_emploi.data_analysis.i18n import translation
 from bob_emploi.data_analysis.lib import checker
@@ -38,6 +40,7 @@ from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import advisor_pb2
 from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import driving_license_pb2
+from bob_emploi.frontend.api import email_pb2
 from bob_emploi.frontend.api import jobboard_pb2
 from bob_emploi.frontend.api import network_pb2
 from bob_emploi.frontend.api import online_salon_pb2
@@ -45,16 +48,18 @@ from bob_emploi.frontend.api import options_pb2
 from bob_emploi.frontend.api import skill_pb2
 from bob_emploi.frontend.api import strategy_pb2
 from bob_emploi.frontend.api import testimonial_pb2
+from bob_emploi.frontend.api import training_pb2
 
-
-# The airtable api key.
-_AIRTABLE_API_KEY = os.getenv('AIRTABLE_API_KEY')
 
 _ProtoType = typing.TypeVar('_ProtoType', bound=message.Message)
 
 
+def _get_bob_deployment() -> str:
+    return os.getenv('BOB_DEPLOYMENT', 'fr')
+
+
 def _group_filter_fields(
-        record: Dict[str, Any], field: str = 'filters',
+        record: Mapping[str, Any], field: str = 'filters',
         others: Iterable[str] = ('for-departement', 'for-job-group')) -> List[str]:
     """Group multiple fields to specify filters.
 
@@ -66,29 +71,45 @@ def _group_filter_fields(
             by combining the field name and their content, e.g.
             "for-departement" with value "75,69" would add a filter
             "for-departement(75,69)".
+            If a field exist with the same name prefixed by the BOB_DEPLOYMENT environment variable,
+            it will override the default field, e.g.
+            "usa:for-job-group" with value "43,60" would add a filter
+            "for-job-group(43,60)" even if the "for-job-group" field is set to another value.
     Returns:
         A list of valid filters.
     Raises:
         ValueError: if one the filter is not implemented.
     """
 
+    # TODO(cyrille): Consider adding deployment specific filters.
     filters = typing.cast(List[str], record.get(field, []))
     if others:
         for filter_type in others:
-            filter_value = record.get(filter_type)
+            filter_value = record.get(
+                f'{_get_bob_deployment()}:{filter_type}',
+                record.get(filter_type))
             if filter_value:
                 filters.append(f'{filter_type}({filter_value})')
+    unique_filters: Set[str] = set()
+    duplicated_filters: Set[str] = set()
+    for filter_value in filters:
+        if filter_value in unique_filters:
+            duplicated_filters.add(filter_value)
+        else:
+            unique_filters.add(filter_value)
+    if duplicated_filters:
+        raise ValueError(f'Duplicated filters: {duplicated_filters}')
     return filters
 
 
-class _FilterSetSorter(object):
+class _FilterSetSorter:
     """A class to compare filter lists to make sure a more restrictive filter list is not
     pre-empted by a looser one.
 
     It gets completly useless if sorting in airtable2dicts is implemented otherwise.
     """
 
-    def __init__(self, record: Dict[str, Any]) -> None:
+    def __init__(self, record: Mapping[str, Any]) -> None:
         self._filters: Set[str] = set(_group_filter_fields(record))
 
     def __repr__(self) -> str:
@@ -109,26 +130,53 @@ class _FilterSetSorter(object):
         return not other._filters - self._filters
 
 
-_BEFORE_TRANSLATION_CHECKERS: Dict['options_pb2.StringFormat', checker.ValueChecker] = {
-    options_pb2.SCORING_MODEL_ID: checker.ScorerChecker(),
-    options_pb2.URL_FORMAT: checker.UrlChecker(),
-    options_pb2.SCORING_PROJECT_TEMPLATE: checker.MissingTemplateVarsChecker(),
-    options_pb2.PARTIAL_SENTENCE: checker.PartialSentenceChecker(),
+_BEFORE_TRANSLATION_CHECKERS: Dict['options_pb2.StringFormat.V', checker.ValueChecker] = {
     options_pb2.LIST_OPTION: checker.ListOptionChecker(),
+    options_pb2.MARKUP_LANGUAGE: checker.MarkupChecker(),
+    options_pb2.PARTIAL_SENTENCE: checker.PartialSentenceChecker(),
+    options_pb2.SCORING_MODEL_ID: checker.ScorerChecker(),
+    options_pb2.SCORING_PROJECT_TEMPLATE: checker.MissingTemplateVarsChecker(),
+    options_pb2.URL_FORMAT: checker.UrlChecker(),
+    options_pb2.MAILING_CAMPAIGN: checker.MailingCampaignChecker(),
+    options_pb2.SINGLE_LINER: checker.SingleLinerChecker(),
 }
+
+
+class _RecordId(typing.NamedTuple):
+    id: str
+    is_airtable_id: bool
 
 
 ConverterType = typing.TypeVar('ConverterType', bound='ProtoAirtableConverter')
 
 
-class ProtoAirtableConverter(object):
-    """A converter for Airtable records to proto-JSON formatted dict."""
+# Pattern to locate just before words in a camel case string.
+_CAMEL_CASE_WORDS_RE = re.compile('(?=[A-Z])')
+
+
+def _convert_to_snake_case(camel_case: str) -> str:
+    words = _CAMEL_CASE_WORDS_RE.split(camel_case)
+    return '_'.join(word.lower() for word in words)
+
+
+class ProtoAirtableConverter:
+    """A converter for Airtable records to proto-JSON formatted dict.
+
+    Args:
+    - proto_type: The type of the Proto we want to save.
+    - id_field: A field in the proto where we want to save Airtable record ID
+    - required_fields: Fields that cannot be left empty
+    - unique_field_tuples: Lists of lists of fields to check for unicity.
+        For instance, if it's [('name', 'lastName')], it will check that no two records
+        have the same name and lastName. If there's a unique ID in a single field, it should be
+        the first item e.g. [('personId',), ('name', 'lastName')].
+    """
 
     def __init__(
             self, proto_type: Type[message.Message],
             id_field: Optional[str] = None,
-            required_fields: Iterable[str] = (),
-            unique_field_tuples: Iterable[Iterable[str]] = ()) -> None:
+            required_fields: Union[List[str], Tuple[str, ...]] = (),
+            unique_field_tuples: Iterable[Sequence[str]] = ()) -> None:
         self._proto_type = proto_type
         self._id_field = id_field
         self._required_fields_set = set(required_fields)
@@ -153,7 +201,15 @@ class ProtoAirtableConverter(object):
     required_fields_set = property(lambda self: self._required_fields_set)
     snake_to_camelcase = property(lambda self: self._snake_to_camelcase)
 
-    def convert_record(self, airtable_record: Dict[str, Any]) -> Dict[str, Any]:
+    @property
+    def unique_id_field(self) -> Optional[str]:
+        """Returns a proto field containing a unique ID if any."""
+
+        if self._unique_field_tuples and len(self._unique_field_tuples[0]) == 1:
+            return _convert_to_snake_case(self._unique_field_tuples[0][0])
+        return None
+
+    def convert_record(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> Dict[str, Any]:
         """Convert an AirTable record to a dict proto-Json ready.
 
         Returns:
@@ -166,7 +222,7 @@ class ProtoAirtableConverter(object):
         split = self._split_fields(fields)
         return self._get_array_heads(split)
 
-    def convert_record_to_proto(self, airtable_record: Dict[str, Any]) \
+    def convert_record_to_proto(self, airtable_record: airtable.Record[Mapping[str, Any]]) \
             -> Tuple[message.Message, str]:
         """Convert an airtable record to an actual proto message.
 
@@ -179,8 +235,9 @@ class ProtoAirtableConverter(object):
         try:
             json_format.ParseDict(fields, proto)
         except json_format.ParseError as error:
-            raise ValueError(f'Error while parsing:\n{json.dumps(fields, indent=2)}\n{error}')
-        if _has_any_check_error(proto, _id, self.checkers, _BEFORE_TRANSLATION_CHECKERS):
+            raise ValueError(f'Error while parsing:\n{json.dumps(fields, indent=2)}') from error
+        if _has_any_check_error(
+                proto, _id, self.checkers, _BEFORE_TRANSLATION_CHECKERS, locale='fr'):
             # Errors messages are already logged in the function.
             raise ValueError()
         return proto, _id
@@ -195,7 +252,7 @@ class ProtoAirtableConverter(object):
             self.checkers.append(new_checker)
         return self
 
-    def add_split_fields(self: ConverterType, fields: Dict[str, str]) -> ConverterType:
+    def add_split_fields(self: ConverterType, fields: Mapping[str, str]) -> ConverterType:
         """Add fields to split after import.
 
         Split fields are string fields in Airtable, which return an array in the respective proto.
@@ -209,21 +266,21 @@ class ProtoAirtableConverter(object):
         self._split_fields_separators = dict(self._split_fields_separators, **fields)
         return self
 
-    def _split_fields(self, fields: Dict[str, Any]) -> Dict[str, Any]:
+    def _split_fields(self, fields: Mapping[str, Any]) -> Dict[str, Any]:
         return dict(fields, **{
             field: [s.strip() for s in fields[field].split(separator)]
             for field, separator in self._split_fields_separators.items()
             if field in fields
         })
 
-    def _get_array_heads(self, fields: Dict[str, Any]) -> Dict[str, Any]:
+    def _get_array_heads(self, fields: Mapping[str, Any]) -> Dict[str, Any]:
         return dict(fields, **{
             field: fields[field][0]
             for field in self._unarray_fields
             if field in fields and fields[field]
         })
 
-    def _sort_key(self, unused_record: Dict[str, Any]) -> Any:
+    def _sort_key(self, unused_record: airtable.Record[Mapping[str, Any]]) -> Any:
         """Function to compute the sort key of a record before it's been converted.
 
         It is only used to check that the sorting is properly done on Airtable.
@@ -231,23 +288,28 @@ class ProtoAirtableConverter(object):
 
         return 0
 
-    def unique_keys(self, record: Dict[str, Any]) -> Sequence[Any]:
+    def unique_keys(self, proto_record: Mapping[str, Any]) -> Sequence[Any]:
         """Function to return keys that should be unique among other records."""
 
-        return tuple(
-            tuple(record[field] for field in unique_field)
-            for unique_field in self._unique_field_tuples
-        )
+        try:
+            return tuple(
+                tuple(proto_record[field] for field in unique_field)
+                for unique_field in self._unique_field_tuples
+            )
+        except KeyError as error:
+            if '_' in error.args[0]:
+                raise ValueError('Use camelCased field names in unique_field_tuples') from error
+            raise
 
     def set_fields_sorter(
-            self: ConverterType, sort_lambda: Callable[[Dict[str, Any]], Any]) \
+            self: ConverterType, sort_lambda: Callable[[Mapping[str, Any]], Any]) \
             -> ConverterType:
         """Set the sorter for this converter."""
 
         self.sort_key = lambda airtable_record: sort_lambda(airtable_record['fields'])
         return self
 
-    def _record2dict(self, airtable_record: Dict[str, Any]) -> Dict[str, Any]:
+    def _record2dict(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> Dict[str, Any]:
         """Convert an AirTable record to a dict proto-Json ready.
 
         When overriding this method, if some exceptions are triggered because of bad input,
@@ -283,18 +345,93 @@ class ProtoAirtableConverter(object):
         self._unarray_fields = fields
         return self
 
+    def has_validation_errors(
+            self,
+            collection_name: str,
+            values: Iterable[Mapping[str, Any]]) -> bool:
+        """validates that the values have the right format.
 
-# TODO(cyrille): Add check that the list of filters does not contain the same value twice.
+        Args:
+            values: an iterable of dict with the JSON values of proto. They may
+                have an additional "_id" field that will be ignored.
+            proto_class: the Python class of the proto that should be contained in
+                the values.
+        Returns:
+            True if at least an error was found
+        """
+
+        namespace = translation.get_collection_namespace(collection_name)
+        translation_checker = checker.TranslationChecker(namespace, self.unique_id_field)
+        has_error = False
+        for value in values:
+            _id = typing.cast(str, value['_id'])
+            # Enforce Proto schema.
+            proto = self.proto_type()
+            prepared_value = {k: v for k, v in value.items() if k != '_id' and k != '_order'}
+            try:
+                json_format.ParseDict(prepared_value, proto)
+            except json_format.ParseError as error:
+                has_error = True
+                logging.error('Error while parsing:\n%s\n%s', json.dumps(value, indent=2), error)
+                continue
+            has_error |= _has_any_check_error(
+                proto, _id, self.checkers + [translation_checker], _BEFORE_TRANSLATION_CHECKERS,
+                locale='fr')
+            for locale, translated_proto in self._translate_proto(namespace, proto):
+                has_error |= _has_any_check_error(
+                    translated_proto,
+                    f'{_id}:{locale}',
+                    self.checkers,
+                    _BEFORE_TRANSLATION_CHECKERS,
+                    locale=locale)
+        return has_error
+
+    def _translate_proto(self, namespace: str, proto: _ProtoType) \
+            -> Iterator[Tuple[str, _ProtoType]]:
+        unique_id_field = self.unique_id_field
+        proto_id = getattr(proto, unique_id_field) if unique_id_field else None
+
+        for locale in translation.LOCALES_TO_CHECK:
+
+            def _field_translator(
+                    sentence: str, path: str, string_format: 'options_pb2.StringFormat.V') \
+                    -> str:
+                if string_format == options_pb2.NATURAL_LANGUAGE:
+                    if proto_id:
+                        sentence = translation.create_translation_key(namespace, proto_id, path)
+                    translated = translation.get_translation(sentence, locale)  # pylint: disable=cell-var-from-loop
+                    if translated is None:
+                        raise ValueError()
+                    return translated
+                return sentence
+
+            translated = type(proto)()
+            translated.CopyFrom(proto)
+            try:
+                # Consume the whole iterator,
+                # see https://docs.python.org/3/library/itertools.html#itertools-recipes.
+                collections.deque(checker.collect_formatted_strings(
+                    translated, field_modifier=_field_translator
+                ), maxlen=0)
+            except ValueError:
+                # No point in trying to translate in this locale if some translations are missing.
+                # We assume TranslationChecker has been run first, so no need for logging an error.
+                continue
+            yield locale, translated
+
+
+# TODO(cyrille): Make sure the filters field may be required.
 class _ProtoAirtableFiltersConverter(ProtoAirtableConverter):
 
     def __init__(
             self, proto_type: Type[message.Message],
             id_field: Optional[str] = None,
-            required_fields: Iterable[str] = ()) -> None:
-        super().__init__(proto_type, id_field, required_fields)
+            required_fields: Union[List[str], Tuple[str, ...]] = (),
+            unique_field_tuples: Iterable[Sequence[str]] = ()) -> None:
+        super().__init__(proto_type, id_field, required_fields, unique_field_tuples)
         self.add_checkers(checker.TemplateVarsChecker())
 
-    def _record2dict(self, airtable_record: Dict[str, Any]) -> Dict[str, Any]:
+    def _record2dict(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> Dict[str, Any]:
         """Convert an AirTable record to a dict proto-Json ready."""
 
         fields = super()._record2dict(airtable_record)
@@ -309,17 +446,42 @@ class _ProtoAirtableFiltersConverter(ProtoAirtableConverter):
 
 class _ActionTemplateConverter(_ProtoAirtableFiltersConverter):
 
-    def _record2dict(self, airtable_record: Dict[str, Any]) -> Dict[str, Any]:
+    def _record2dict(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> Dict[str, Any]:
         """Convert an AirTable record to a dict proto-Json ready."""
 
+        updated_airtable_record = airtable_record
         if 'image' in airtable_record['fields'] and airtable_record['fields']['image']:
-            airtable_record['fields']['image_url'] = airtable_record['fields']['image'][0]['url']
-        fields = super()._record2dict(airtable_record)
+            updated_airtable_record = typing.cast(
+                airtable.Record[Mapping[str, Any]], dict(
+                    typing.cast(Mapping[str, Any], airtable_record),
+                    fields=dict(
+                        airtable_record['fields'],
+                        image_url=airtable_record['fields']['image'][0]['url'])))
+        fields = super()._record2dict(updated_airtable_record)
 
         return fields
 
 
-def generate_dynamic_advices_changes(markdown_list: str, prefix: str = '', suffix: str = '') \
+class _CampaignConverter(ProtoAirtableConverter):
+
+    def _record2dict(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> Dict[str, Any]:
+        """Convert an AirTable record to a dict proto-Json ready."""
+
+        fields = super()._record2dict(airtable_record)
+
+        # Favor strategy.
+        strategies = airtable_record['fields'].get('favor-strategy', [])
+        if strategies:
+            existing_scoring_model = fields.get('scoringModel')
+            if existing_scoring_model and existing_scoring_model != 'favor-strategy':
+                raise ValueError('Conflict between "favor-strategy" and "scoring_model" fields')
+            fields['scoringModel'] = f'favor-strategy({",".join(strategies)})'
+
+        return fields
+
+
+def generate_dynamic_advices_changes(
+        markdown_list: Optional[str], prefix: str = '', suffix: str = '') \
         -> Dict[str, Union[str, List[str]]]:
     """Generate a list of changes to apply to a dynamic advice record before saving it."""
 
@@ -349,7 +511,7 @@ def generate_dynamic_advices_changes(markdown_list: str, prefix: str = '', suffi
 
 class _DynamicAdviceConverter(_ProtoAirtableFiltersConverter):
 
-    def _record2dict(self, airtable_record: Dict[str, Any]) -> Dict[str, Any]:
+    def _record2dict(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> Dict[str, Any]:
         """Convert an AirTable record to a dict proto-Json ready."""
 
         fields = super()._record2dict(airtable_record)
@@ -371,7 +533,8 @@ PROTO_CLASSES: Dict[str, ProtoAirtableConverter] = {
         action_pb2.ActionTemplate, 'action_template_id', required_fields=[]),
     'AdviceModule': ProtoAirtableConverter(
         advisor_pb2.AdviceModule, 'airtable_id',
-        required_fields=['advice_id', 'trigger_scoring_model']
+        required_fields=['advice_id', 'trigger_scoring_model'],
+        unique_field_tuples=(('adviceId',),),
     ).add_split_fields({'emailFacts': ','}),
     'ApplicationTip': _ProtoAirtableFiltersConverter(
         application_pb2.ApplicationTip, None, required_fields=['content', 'type']),
@@ -382,44 +545,30 @@ PROTO_CLASSES: Dict[str, ProtoAirtableConverter] = {
     'DynamicAdvice': _DynamicAdviceConverter(
         advisor_pb2.DynamicAdvice, None,
         required_fields=[
-            'title', 'short_title', 'card_text',
-            'diagnostic_topics', 'expanded_card_items', 'for-job-group']),
+            'title', 'short_title', 'card_text', 'id',
+            'diagnostic_topics', 'expanded_card_items', f'{_get_bob_deployment()}:for-job-group'],
+        unique_field_tuples=(('id',),)),
     'ContactLead': _ProtoAirtableFiltersConverter(
         network_pb2.ContactLeadTemplate, None, required_fields=('name', 'email_template')
     ),
-    'DiagnosticCategory': _ProtoAirtableFiltersConverter(
-        diagnostic_pb2.DiagnosticCategory, None,
-        required_fields=['category_id', 'order', 'description']
+    'DiagnosticMainChallenge': _ProtoAirtableFiltersConverter(
+        diagnostic_pb2.DiagnosticMainChallenge, None,
+        required_fields=['category_id', 'order', 'description'],
+        unique_field_tuples=(('categoryId',),),
     ).set_fields_sorter(
         lambda record: (_FilterSetSorter(record), record.get('order'))),
-    'DiagnosticSentenceTemplate': _ProtoAirtableFiltersConverter(
-        diagnostic_pb2.DiagnosticTemplate, None,
-        required_fields=['sentence_template', 'order']
-    ).set_fields_sorter(
-        lambda record: (record.get('order'), _FilterSetSorter(record), -record.get('priority', 0))),
-    # TODO(cyrille): Add a check to avoid paragraphs (\n\n) in sentence_template.
+    'DiagnosticResponse': _ProtoAirtableFiltersConverter(
+        diagnostic_pb2.DiagnosticResponse, None,
+        required_fields=[
+            'response_id', 'self_main_challenge_id', 'bob_main_challenge_id', 'text'],
+        unique_field_tuples=(('responseId',), ('selfMainChallengeId', 'bobMainChallengeId')),),
     'DiagnosticTemplate': _ProtoAirtableFiltersConverter(
         diagnostic_pb2.DiagnosticTemplate, None,
-        required_fields=['sentence_template', 'score', 'order', 'text_template']
+        required_fields=['sentence_template', 'score', 'order', 'text_template', 'category_id']
     ).set_fields_sorter(
         lambda record: (record.get('category_id', []), _FilterSetSorter(record), record['order'])
     ).set_first_only_fields('categoryId'),
-    'DiagnosticSubmetricSentenceTemplate': _ProtoAirtableFiltersConverter(
-        diagnostic_pb2.DiagnosticTemplate, None,
-        required_fields=['sentence_template', 'topic']
-    ).set_fields_sorter(lambda record: (
-        record.get('topic'),
-        _FilterSetSorter(record),
-        -record.get('priority', 0),
-    )),
-    'DiagnosticObservation': _ProtoAirtableFiltersConverter(
-        diagnostic_pb2.DiagnosticTemplate, None,
-        required_fields=('order', 'sentence_template', 'topic')
-    ).set_fields_sorter(lambda record: (record.get('topic'), record['order'])),
-    'DiagnosticSubmetricScorer': ProtoAirtableConverter(
-        diagnostic_pb2.DiagnosticSubmetricScorer, None,
-        required_fields=['submetric', 'weight', 'trigger_scoring_model']
-    ).set_fields_sorter(lambda record: (record.get('submetric'))),
+    'Campaign': _CampaignConverter(email_pb2.Campaign, required_fields=('campaign_id',)),
     'OneEuroProgramPartnerBank': ProtoAirtableConverter(
         driving_license_pb2.OneEuroProgramPartnerBank,
         None, required_fields=['link', 'logo', 'name']),
@@ -437,36 +586,56 @@ PROTO_CLASSES: Dict[str, ProtoAirtableConverter] = {
     ),
     'StrategyModule': ProtoAirtableConverter(
         strategy_pb2.StrategyModule, None,
-        required_fields=('trigger_scoring_model', 'title', 'category_ids')),
+        required_fields=('trigger_scoring_model', 'title', 'category_ids'),
+        unique_field_tuples=(('strategyId',),)),
     'StrategyAdviceTemplate': ProtoAirtableConverter(
         strategy_pb2.StrategyAdviceTemplate, None, required_fields=('advice_id', 'strategy_id'),
         unique_field_tuples=(('strategyId', 'adviceId'),),
     ).set_fields_sorter(lambda record: record.get('strategy_id')).set_first_only_fields(
         'adviceId', 'strategyId'),
+    'Training': _ProtoAirtableFiltersConverter(
+        training_pb2.Training, None, required_fields=['name', 'url']),
 }
 
 
-def airtable2dicts(base_id: str, table: str, proto: str, view: Optional[str] = None) \
-        -> List[Dict[str, Any]]:
+def airtable2dicts(
+        *, collection_name: str,
+        base_id: str, table: str, proto: str, view: Optional[str] = None,
+        alt_table: Optional[str] = None) -> List[Dict[str, Any]]:
     """Import the suggestions in MongoDB.
 
     Args:
         base_id: the ID of your AirTable app.
         table: the name of the table to import.
+        alt_table: an alternative name of the table if the main one is not available (useful for
+            renaming).
         proto: the name of the proto type.
         view: optional - the name of the view to import.
     Returns:
         an iterable of dict with the JSON values of the proto.
     """
 
+    api_key = os.getenv('AIRTABLE_API_KEY')
     converter = PROTO_CLASSES[proto]
-    if not _AIRTABLE_API_KEY:
+    if not api_key:
         raise ValueError(
             'No API key found. Create an airtable API key at '
             'https://airtable.com/account and set it in the AIRTABLE_API_KEY '
             'env var.')
-    client = airtable.Airtable(base_id, _AIRTABLE_API_KEY)
-    records = list(client.iterate(table, view=view))
+    client = airtable.Airtable(base_id, api_key)
+    try:
+        records = list(client.iterate(table, view=view))
+    # TODO(pascal): Clean that weird block once Airtable raises the proper error.
+    except AttributeError as error:
+        if not isinstance(error.__context__, requests.exceptions.HTTPError):
+            raise error
+        if not alt_table:
+            raise error.__context__ from None
+        records = list(client.iterate(alt_table, view=view))
+    except requests.exceptions.HTTPError:
+        if not alt_table:
+            raise
+        records = list(client.iterate(alt_table, view=view))
 
     has_error = False
     # If sorting implementation changes, please also change implementation for _FilterSetSorter.
@@ -483,6 +652,8 @@ def airtable2dicts(base_id: str, table: str, proto: str, view: Optional[str] = N
                 has_error = True
         previous_keys[record_id] = sort_key
 
+    all_unique_keys: Optional[Sequence[Set[Any]]] = None
+
     proto_records = []
     for order, record in enumerate(records):
         try:
@@ -494,10 +665,7 @@ def airtable2dicts(base_id: str, table: str, proto: str, view: Optional[str] = N
             continue
         proto_records.append(converted)
 
-        # Check for records unicity.
-    all_unique_keys: Optional[Sequence[Set[Any]]] = None
-    for record in proto_records:
-        unique_keys = converter.unique_keys(record)
+        unique_keys = converter.unique_keys(converted)
         if all_unique_keys is None:
             all_unique_keys = [set((key,)) for key in unique_keys]
             continue
@@ -505,18 +673,18 @@ def airtable2dicts(base_id: str, table: str, proto: str, view: Optional[str] = N
             logging.error(
                 'The record "%s" with unique keys "%r" does not have the same number of '
                 'unique keys than the others (%d).',
-                record_id, unique_keys, len(all_unique_keys))
+                record['id'], unique_keys, len(all_unique_keys))
             has_error = True
             continue
         for index, key in enumerate(unique_keys):
             if key in all_unique_keys[index]:
                 logging.error(
                     'There are duplicate records for the %d key: "%r" (see record "%s")',
-                    index, key, record_id)
+                    index, key, record['id'])
                 has_error = True
             all_unique_keys[index].add(key)
 
-    has_error |= _has_validation_errors(proto_records, converter.proto_type, converter.checkers)
+    has_error |= converter.has_validation_errors(collection_name, proto_records)
     if has_error:
         raise mongo.InvalidValueError(
             proto_records, 'Please fix the previous errors before re-importing')
@@ -529,22 +697,18 @@ def _log_error(
         record_ref = ''
     else:
         record_ref = f' in record "{record_id}{f".{path}" if path else ""}"'
-    if isinstance(error, checker.FixableValueError):
-        logging.error(
-            'Check error "%s"%s: %s\nErrors in string: %r\nFixed string:\n%s',
-            checker_name, record_ref, error, error.marked_value, error.fixed_value)
     logging.error('Check error "%s"%s:\n%s', checker_name, record_ref, error)
 
 
 def _has_any_check_error(
-        proto: message.Message, _id: str, proto_checkers: List[checker.Checker],
-        string_format_checkers: Dict['options_pb2.StringFormat', checker.ValueChecker]) \
-        -> bool:
+        proto: message.Message, _id: str, proto_checkers: Iterable[checker.Checker],
+        string_format_checkers: Mapping['options_pb2.StringFormat.V', checker.ValueChecker],
+        *, locale: str) -> bool:
     has_error = False
     # Enforce specific checkers for this proto.
     for proto_checker in proto_checkers:
         try:
-            proto_checker.check(proto)
+            proto_checker.check(proto, locale)
         except ValueError as error:
             has_error = True
             _log_error(error, proto_checker.name, record_id=_id)
@@ -554,83 +718,10 @@ def _has_any_check_error(
         if value_checker is None:
             continue
         try:
-            value_checker.check_value(field_value)
+            value_checker.check_value(field_value, locale)
         except ValueError as error:
             has_error = True
             _log_error(error, value_checker.name, record_id=_id, path=path)
-    return has_error
-
-
-def _get_field_translator(locale: str) -> Callable[[str, str, 'options_pb2.StringFormat'], str]:
-    def field_translator(
-            sentence: str, unused_path: str, string_format: 'options_pb2.StringFormat') -> str:
-        if string_format == options_pb2.NATURAL_LANGUAGE:
-            translated = translation.get_translation(sentence, locale)
-            if translated is None:
-                raise ValueError()
-            return translated
-        return sentence
-    return field_translator
-
-
-def _translate_proto(proto: _ProtoType) -> Iterator[Tuple[str, _ProtoType]]:
-    serialized_proto = proto.SerializeToString()
-    for locale in translation.LOCALES_TO_CHECK:
-        translated = type(proto)()
-        translated.CopyFrom(proto)
-        try:
-            # Consume the whole iterator,
-            # see https://docs.python.org/3/library/itertools.html#itertools-recipes.
-            collections.deque(checker.collect_formatted_strings(
-                translated, field_modifier=_get_field_translator(locale)
-            ), maxlen=0)
-        except ValueError:
-            # No point in trying to translate in this locale if some translations are missing.
-            # We assume TranslationChecker has been run first, so no need for logging an error.
-            continue
-        # No need to keep a translation if it's identical to the original proto.
-        if serialized_proto != translated.SerializeToString():
-            yield locale, translated
-
-
-def _has_validation_errors(
-        values: List[Dict[str, Any]],
-        proto_class: Type[message.Message],
-        proto_checkers: List[checker.Checker]) -> bool:
-    """validates that the values have the right format.
-
-    Args:
-        values: an iterable of dict with the JSON values of proto. They may
-            have an additional "_id" field that will be ignored.
-        proto_class: the Python class of the proto that should be contained in
-            the values.
-    Returns:
-        True if at least an error was found
-    """
-
-    format_field_checkers = dict(_BEFORE_TRANSLATION_CHECKERS)
-    format_field_checkers[options_pb2.NATURAL_LANGUAGE] = checker.TranslationChecker()
-    has_error = False
-    for value in values:
-        proto = proto_class()
-        _id = typing.cast(str, value.pop('_id'))
-        order = value.pop('_order')
-        # Enforce Proto schema.
-        try:
-            json_format.ParseDict(value, proto)
-        except json_format.ParseError as error:
-            has_error = True
-            logging.error('Error while parsing:\n%s\n%s', json.dumps(value, indent=2), error)
-            continue
-        has_error |= _has_any_check_error(proto, _id, proto_checkers, format_field_checkers)
-        for locale, translated_proto in _translate_proto(proto):
-            has_error |= _has_any_check_error(
-                translated_proto,
-                f'{_id}:{locale}',
-                proto_checkers,
-                _BEFORE_TRANSLATION_CHECKERS)
-        value['_id'] = _id
-        value['_order'] = order
     return has_error
 
 

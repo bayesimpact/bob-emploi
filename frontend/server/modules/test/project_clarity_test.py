@@ -3,6 +3,7 @@
 import unittest
 
 from bob_emploi.frontend.api import job_pb2
+from bob_emploi.frontend.api import boolean_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.server.test import filters_test
 from bob_emploi.frontend.server.test import scoring_test
@@ -30,7 +31,7 @@ class UnclearProjectTest(scoring_test.ScoringModelTestBase):
         if not persona.project.target_job.job_group.rome_id:
             persona.project.target_job.job_group.rome_id = 'A1234'
         del persona.user.projects[1:]
-        persona.project.has_clear_project = project_pb2.TRUE
+        persona.project.has_clear_project = boolean_pb2.TRUE
         self.assertEqual(0, self._score_persona(persona))
 
     def test_no_target_job(self) -> None:
@@ -126,7 +127,7 @@ class UnsureProjectTestCase(filters_test.FilterTestBase):
         del self.persona.user.projects[1:]
         if not self.persona.project.target_job.job_group.rome_id:
             self.persona.project.target_job.job_group.rome_id = 'A1234'
-        self.persona.project.has_clear_project = project_pb2.FALSE
+        self.persona.project.has_clear_project = boolean_pb2.FALSE
         self._assert_pass_filter()
 
     def test_single_clear_project(self) -> None:
@@ -135,7 +136,7 @@ class UnsureProjectTestCase(filters_test.FilterTestBase):
         del self.persona.user.projects[1:]
         if not self.persona.project.target_job.job_group.rome_id:
             self.persona.project.target_job.job_group.rome_id = 'A1234'
-        self.persona.project.has_clear_project = project_pb2.TRUE
+        self.persona.project.has_clear_project = boolean_pb2.TRUE
         self._assert_fail_filter()
 
     def test_single_unsure_project(self) -> None:
@@ -208,7 +209,7 @@ class CantSellSelfTestCase(filters_test.FilterTestBase):
     def test_autonomous(self) -> None:
         """User is autonomous."""
 
-        self.persona.user_profile.is_autonomous = project_pb2.TRUE
+        self.persona.user_profile.is_autonomous = boolean_pb2.TRUE
         self._assert_fail_filter()
 
     def test_not_autonomous(self) -> None:
@@ -217,7 +218,7 @@ class CantSellSelfTestCase(filters_test.FilterTestBase):
         del self.persona.user.projects[1:]
         self.persona.project.target_job.job_group.rome_id = 'A1234'
         self.persona.project.seniority = project_pb2.SENIOR
-        self.persona.user_profile.is_autonomous = project_pb2.FALSE
+        self.persona.user_profile.is_autonomous = boolean_pb2.FALSE
         self._assert_pass_filter()
 
 

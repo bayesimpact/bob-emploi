@@ -17,17 +17,15 @@ from bob_emploi.frontend.api import commute_pb2
 from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import driving_license_pb2
 from bob_emploi.frontend.api import discovery_pb2
+from bob_emploi.frontend.api import email_pb2
 from bob_emploi.frontend.api import event_pb2
-from bob_emploi.frontend.api import export_pb2
 from bob_emploi.frontend.api import feedback_pb2
 from bob_emploi.frontend.api import geo_pb2
-from bob_emploi.frontend.api import helper_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import jobboard_pb2
 from bob_emploi.frontend.api import network_pb2
 from bob_emploi.frontend.api import online_salon_pb2
 from bob_emploi.frontend.api import reorient_jobbing_pb2
-from bob_emploi.frontend.api import review_pb2
 from bob_emploi.frontend.api import seasonal_jobbing_pb2
 from bob_emploi.frontend.api import skill_pb2
 from bob_emploi.frontend.api import strategy_pb2
@@ -35,7 +33,7 @@ from bob_emploi.frontend.api import testimonial_pb2
 from bob_emploi.frontend.api import use_case_pb2
 from bob_emploi.frontend.api import user_pb2
 
-_ROME_VERSION = 'v342'
+_ROME_VERSION = 'v346'
 
 NOW = datetime.datetime.now().strftime('%Y-%m-%d')
 
@@ -67,6 +65,11 @@ class Importer(typing.NamedTuple):
             script=self.script if script is None else script,
             args=self.args if args is None else args)
 
+    def updated_with_args(self, **kwargs: str) -> 'Importer':
+        """Create a copy with the args fields updated."""
+
+        return self._replace(args=dict(self.args, **kwargs) if self.args else kwargs)
+
 
 IMPORTERS = {
     'similar_jobs': Importer(
@@ -89,9 +92,6 @@ IMPORTERS = {
         proto_type=job_pb2.LocalJobStats,
         key='<département ID>:<job group ID>',
         has_pii=False),
-    'helper': Importer(
-        name='Mayday App User', script=None, args=None, is_imported=False,
-        run_every=None, proto_type=helper_pb2.Helper, key='user_id', has_pii=True),
     'job_group_info': Importer(
         name='Job Group Info',
         script='job_group_info',
@@ -107,6 +107,11 @@ IMPORTERS = {
             'info_by_prefix_airtable': 'appMRMtWV61Kibt37:info_by_prefix',
             'fap_growth_2012_2022_csv': 'data/france-strategie/evolution-emploi.csv',
             'imt_market_score_csv': 'data/imt/market_score.csv',
+            'brookings_json': 'data/usa/automation-risk.json',
+            'soc_2010_xls': 'data/usa/soc/soc_2010_definitions.xls',
+            'soc_isco_crosswalk_xls': 'data/crosswalks/isco_us_soc2010_crosswalk.xls',
+            'rome_isco_crosswalk_xlsx': 'data/crosswalks/Correspondance_ROME_ISCO08.xlsx',
+            'trainings_csv': 'data/cpf/cpf_flatten_by_rome_trainings.csv',
         },
         is_imported=True,
         run_every='30 days',
@@ -125,11 +130,27 @@ IMPORTERS = {
             'job_offers_changes_json': 'data/fhs/s3/job_offers_changes.json',
             'imt_folder': 'data/imt',
             'mobility_csv': f'data/rome/csv/unix_rubrique_mobilite_{_ROME_VERSION}_utf8.csv',
+            'trainings_csv': 'data/cpf/cpf_flatten_by_rome_trainings.csv',
         },
         is_imported=True,
         run_every='30 days',
         proto_type=job_pb2.LocalJobStats,
         key='<département ID>:<job group ID>',
+        has_pii=False),
+    'best_jobs_in_area': Importer(
+        name='Best Jobs in Area',
+        script='best_jobs_in_area',
+        args={
+            'imt_folder': 'data/imt',
+            'pcs_rome_crosswalk': 'data/crosswalks/passage_pcs_romev3.csv',
+            'rome_item_arborescence':
+                f'data/rome/csv/unix_item_arborescence_{_ROME_VERSION}_utf8.csv',
+        },
+        is_imported=True,
+        # TODO(cyrille): Add an import scheduled-task and replace with '30 days'.
+        run_every=None,
+        proto_type=job_pb2.BestJobsInArea,
+        key='area ID',
         has_pii=False),
     'use_case': Importer(
         name='Use Case', script=None, args=None, is_imported=False, proto_type=use_case_pb2.UseCase,
@@ -140,10 +161,6 @@ IMPORTERS = {
     'user_auth': Importer(
         name='App User Auth Data', script=None, args=None, is_imported=False, run_every=None,
         proto_type=auth_pb2.UserAuth, key='user_id', has_pii=True),
-    # TODO(cyrille): Drop this importer, we don't use dashboard exports anymore.
-    'dashboard_exports': Importer(
-        name='Dashboard Export', script=None, args=None, is_imported=False, run_every=None,
-        proto_type=export_pb2.DashboardExport, key='dashboard_export_id', has_pii=False),
     'feedbacks': Importer(
         name='Feedbacks', script=None, args=None, is_imported=False, run_every=None,
         proto_type=feedback_pb2.Feedback, key='Mongo key', has_pii=False),
@@ -187,18 +204,6 @@ IMPORTERS = {
         proto_type=action_pb2.ActionTemplate,
         key='AirTable key',
         has_pii=False),
-    'show_unverified_data_users': Importer(
-        name='Show unverified data Users',
-        script='show_unverified_data_users',
-        args={
-            'base_id': 'appvjPDlByLmGbjaE',
-            'table': 'whitelist',
-        },
-        is_imported=True,
-        run_every=None,
-        proto_type=None,
-        key='User Email',
-        has_pii=True),
     'jobboards': Importer(
         name='Job Boards',
         script='airtable_to_protos',
@@ -335,38 +340,25 @@ IMPORTERS = {
         args={
             'french_departements_tsv': 'data/geo/insee_france_departements.tsv',
             'french_oversea_departements_tsv': 'data/geo/insee_france_oversee_collectivities.tsv',
+            'prefix_tsv': 'data/geo/departement_prefix.tsv',
         },
         is_imported=True,
         run_every=None,
         proto_type=geo_pb2.Departement,
         key='Departement ID',
         has_pii=False),
-    'diagnostic_sentences': Importer(
-        name='Templates of sentences to build a Diagnostic',
+    'diagnostic_main_challenges': Importer(
+        name='Main challenges that Bob can think about a project.',
         script='airtable_to_protos',
         args={
             'base_id': 'appXmyc7yYj0pOcae',
-            'table': 'diagnostic_sentences',
-            'view': 'viwE0wLvOp3oHyyyd',
-            'proto': 'DiagnosticSentenceTemplate',
-        },
-        is_imported=True,
-        run_every=None,
-        proto_type=diagnostic_pb2.DiagnosticTemplate,
-        key='Airtable key',
-        has_pii=False),
-    'diagnostic_category': Importer(
-        name='Possibilities of things that Bob thinks about a project.',
-        script='airtable_to_protos',
-        args={
-            'base_id': 'appXmyc7yYj0pOcae',
-            'table': 'diagnostic_categories',
+            'table': 'diagnostic_main_challenges',
             'view': 'Ready to Import',
-            'proto': 'DiagnosticCategory',
+            'proto': 'DiagnosticMainChallenge',
         },
         is_imported=True,
         run_every=None,
-        proto_type=diagnostic_pb2.DiagnosticCategory,
+        proto_type=diagnostic_pb2.DiagnosticMainChallenge,
         key='Airtable key',
         has_pii=False),
     'diagnostic_overall': Importer(
@@ -383,50 +375,18 @@ IMPORTERS = {
         proto_type=diagnostic_pb2.DiagnosticTemplate,
         key='Airtable key',
         has_pii=False),
-    # TODO(pascal): Clean up now it's unused.
-    'diagnostic_observations': Importer(
-        name='Templates of observations for a given diagnostic submtric.',
+    'diagnostic_responses': Importer(
+        name='Sentences for responses to the self diagnostic.',
         script='airtable_to_protos',
         args={
             'base_id': 'appXmyc7yYj0pOcae',
-            'table': 'diagnostic_observations',
-            'view': 'viwOuKXBD3NP1FHqe',
-            'proto': 'DiagnosticObservation',
+            'table': 'diagnostic_responses',
+            'view': 'Ready to Import',
+            'proto': 'DiagnosticResponse',
         },
         is_imported=True,
         run_every=None,
         proto_type=diagnostic_pb2.DiagnosticTemplate,
-        key='Airtable key',
-        has_pii=False),
-    # TODO(cyrille): Rename once the one below is hard-coded.
-    # TODO(pascal): Clean up now it's unused.
-    'diagnostic_submetrics_sentences_new': Importer(
-        name='Templates of sentences for a Diagnostic submetric',
-        script='airtable_to_protos',
-        args={
-            'base_id': 'appXmyc7yYj0pOcae',
-            'table': 'diagnostic_submetric_sentences_new',
-            'view': 'viwNgJMaZpm8TibUy',
-            'proto': 'DiagnosticSubmetricSentenceTemplate',
-        },
-        is_imported=True,
-        run_every=None,
-        proto_type=diagnostic_pb2.DiagnosticTemplate,
-        key='Airtable key',
-        has_pii=False),
-    # TODO(pascal): Clean up now it's unused.
-    'diagnostic_submetrics_scorers': Importer(
-        name='Scorers to compute a Diagnostic submetric score',
-        script='airtable_to_protos',
-        args={
-            'base_id': 'appXmyc7yYj0pOcae',
-            'table': 'diagnostic_submetrics_scorers',
-            'view': 'viwoe6r6IqlMeRQLU',
-            'proto': 'DiagnosticSubmetricScorer',
-        },
-        is_imported=True,
-        run_every=None,
-        proto_type=diagnostic_pb2.DiagnosticSubmetricScorer,
         key='Airtable key',
         has_pii=False),
     'regions': Importer(
@@ -449,8 +409,6 @@ IMPORTERS = {
             'offers_csv': 'data/fhs/s3/reorient_jobbing_offers_2015_2017.csv',
             'rome_item_arborescence':
                 f'data/rome/csv/unix_item_arborescence_{_ROME_VERSION}_utf8.csv',
-            'referentiel_code_rome_csv':
-                f'data/rome/csv/unix_referentiel_code_rome_{_ROME_VERSION}_utf8.csv',
             'referentiel_apellation_rome_csv':
                 f'data/rome/csv/unix_referentiel_appellation_{_ROME_VERSION}_utf8.csv',
         },
@@ -521,19 +479,6 @@ IMPORTERS = {
         proto_type=testimonial_pb2.Testimonial,
         key='Airtable key',
         has_pii=False),
-    'cvs_and_cover_letters': Importer(
-        name='CVs & Cover Letters to review',
-        script='document_to_review',
-        args={
-            'table': 'Job seekers',
-            'view': 'Ready to Import',
-            'base_id': 'app6I08170BlnyxnI',
-        },
-        is_imported=True,
-        run_every=None,
-        proto_type=review_pb2.DocumentToReview,
-        key='Unique mongo ID',
-        has_pii=True),
     'online_salons': Importer(
         name='Online salons',
         script='online_salons',
@@ -547,11 +492,6 @@ IMPORTERS = {
         proto_type=online_salon_pb2.OnlineSalon,
         key='Unique mongo ID',
         has_pii=False),
-    'volunteer': Importer(
-        name='Volunteer for future Bayes Campaigns', script=None, args=None, is_imported=False,
-        # TODO(cyrille): Use other proto type if we use it sometime. For now, we just populate
-        # the 'email' field.
-        run_every=None, proto_type=helper_pb2.Helper, key='user_id', has_pii=True),
     'skills_for_future': Importer(
         name='Skills for Future',
         script='skills_for_future',
@@ -590,21 +530,18 @@ IMPORTERS = {
         proto_type=strategy_pb2.StrategyAdviceTemplate,
         key='airtable ID',
         has_pii=False),
+    'focus_emails': Importer(
+        name='Focus email campaigns',
+        script='airtable_to_protos',
+        args={
+            'base_id': 'appXmyc7yYj0pOcae',
+            'table': 'focus_emails',
+            'view': 'Ready to Import',
+            'proto': 'Campaign',
+        },
+        is_imported=True,
+        run_every=None,
+        proto_type=email_pb2.Campaign,
+        key='Campaign ID',
+        has_pii=False),
 }
-
-
-# TODO(cyrille): Drop those.
-def register_importer(name: str, importer: Importer, namespace: str) -> None:
-    """Register a new importer."""
-
-    if name in IMPORTERS:
-        raise ValueError(f'An importer already exists with the name {name}')
-    IMPORTERS[f'{namespace}_{name}'] = importer
-
-
-def update_importer(
-        name: str, namespace: str,
-        script: Optional[str] = None, args: Optional[Dict[str, str]] = None) -> None:
-    """Update parameters for a given importer."""
-
-    IMPORTERS[f'{namespace}_{name}'] = IMPORTERS[name].updated_with(script=script, args=args)

@@ -144,7 +144,7 @@ class AdviceRelocateScoringModelTestCase(scoring_test.ScoringModelTestBase):
 
         self.database.job_group_info.insert_one({
             '_id': 'A1234',
-            'bestDepartements': [{
+            'departementScores': [{
                 'departementId': f'{d:02d}',
                 'localStats': {'imt': {'yearlyAvgOffersPer10Candidates': 11 - d}},
             } for d in range(2, 10)],
@@ -161,6 +161,46 @@ class AdviceRelocateScoringModelTestCase(scoring_test.ScoringModelTestBase):
         first_offer = expanded_card_data.departement_scores[0]
         self.assertEqual(9, first_offer.offer_ratio)
         self.assertEqual('Département 02', first_offer.name)
+
+    def test_departement_translation(self) -> None:
+        """Test the departement names translation."""
+
+        self.database.job_group_info.insert_many([
+            {
+                '_id': 'A1234',
+                'departementScores': [{
+                    'departementId': f'{d:02d}',
+                    'localStats': {'imt': {'yearlyAvgOffersPer10Candidates': 11 - d}},
+                } for d in range(2, 10)],
+            },
+            {
+                '_id': 'en:A1234',
+                'departementScores': [{
+                    'departementId': f'{d:02d}',
+                    'localStats': {'imt': {'yearlyAvgOffersPer10Candidates': 11 - d}},
+                } for d in range(2, 10)],
+            }
+        ])
+        self.database.translations.insert_many([
+            {
+                'string': f'Département {d:02d}',
+                'en': f'Illinois {d:02d}',
+            } for d in range(2, 10)])
+        self.database.local_diagnosis.insert_one({
+            '_id': '01:A1234',
+            'imt': {'yearlyAvgOffersPer10Candidates': 1},
+        })
+        self.persona.project.city.departement_id = '01'
+        self.persona.user_profile.locale = 'en'
+
+        expanded_card_data = typing.cast(
+            project_pb2.RelocateData, self.model.get_expanded_card_data(
+                self.persona.scoring_project(self.database)))
+
+        self.assertEqual(8, len(expanded_card_data.departement_scores))
+        first_offer = expanded_card_data.departement_scores[0]
+        self.assertEqual(9, first_offer.offer_ratio)
+        self.assertEqual('Illinois 02', first_offer.name)
 
 
 if __name__ == '__main__':

@@ -29,21 +29,21 @@ class _AdviceAssociationHelp(scoring_base.ModelBase):
         """Compute a score for the given ScoringProject."""
 
         associations = self.list_associations(project)
-        search_length_reason = project.translate_string(
+        search_length_reason = project.translate_static_string(
             "vous nous avez dit que vous êtes en recherche d'emploi "
             'depuis %jobSearchLengthMonthsAtCreation mois')
         if not associations:
             return scoring_base.NULL_EXPLAINED_SCORE
         if user_pb2.MOTIVATION in project.user_profile.frustrations:
-            return scoring_base.ExplainedScore(3, [project.translate_string(
+            return scoring_base.ExplainedScore(3, [project.translate_static_string(
                 'vous nous avez dit avoir du mal à garder votre ' +
                 'motivation au top')])
         if len(associations) >= 3 and project.get_search_length_at_creation() >= 6:
             return scoring_base.ExplainedScore(3, [search_length_reason])
         if project.get_search_length_at_creation() >= 12:
             return scoring_base.ExplainedScore(3, [search_length_reason])
-        return scoring_base.ExplainedScore(2, [project.translate_string(
-            "l'accompagnement humain peut beaucoup apporter")])
+        return scoring_base.ExplainedScore(2, [project.translate_static_string(
+            "l'accompagnement humain peut beaucoup vous apporter")])
 
     def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
             -> association_pb2.Associations:

@@ -5,8 +5,10 @@ import React, {useCallback, useMemo, useState} from 'react'
 import {inDepartement} from 'store/french'
 import {missionLocaleUrl} from 'store/job'
 
-import {Trans} from 'components/i18n'
-import {ExternalLink, UpDownIcon, colorToAlpha} from 'components/theme'
+import {colorToAlpha} from 'components/colors'
+import ExternalLink from 'components/external_link'
+import Trans from 'components/i18n_trans'
+import UpDownIcon from 'components/up_down_icon'
 import Picto from 'images/advices/picto-immersion.svg'
 
 import {CardProps, useAdviceData} from './base'
@@ -20,10 +22,11 @@ const contactContainerStyle = {
 }
 const contactHeaderStyle = {
   alignItems: 'center',
-  cursor: 'pointer',
   display: 'flex',
   fontWeight: 500,
   minHeight: 50,
+  padding: 0,
+  width: '100%',
 }
 
 
@@ -33,7 +36,7 @@ const ImmersionMiloMethod = (props: CardProps): React.ReactElement => {
     (): void => setIsContactMiloExpanded(!isContactMiloExpanded),
     [isContactMiloExpanded],
   )
-  const adviceData = useAdviceData(props)
+  const {data: adviceData, loading} = useAdviceData<bayes.bob.MissionLocaleData>(props)
   const {handleExplore, profile: {gender}, project: {city}, t} = props
   const tOptions = useMemo((): TOptions => ({context: gender}), [gender])
 
@@ -42,7 +45,7 @@ const ImmersionMiloMethod = (props: CardProps): React.ReactElement => {
     if (!city || !inYourDepartement) {
       return null
     }
-    const url = missionLocaleUrl(adviceData, city.departementName)
+    const url = missionLocaleUrl(t, adviceData, city.departementName)
     return <Trans t={t} parent={null}>
       Pour accéder à la <ExternalLink href={url} onClick={handleExplore('milo list')}>
         liste des missions Locales {{inYourDepartement}} cliquez ici
@@ -56,12 +59,12 @@ const ImmersionMiloMethod = (props: CardProps): React.ReactElement => {
       margin: '10px 0',
     }
     return <div style={contactContainerStyle}>
-      <header style={contactHeaderStyle} onClick={toggleExpansion}>
+      <button style={contactHeaderStyle} onClick={toggleExpansion}>
         {t('Allez rencontrer un conseiller')}
         <span style={{flex: 1}} />
         <UpDownIcon icon="chevron" isUp={isContactMiloExpanded} />
-      </header>
-      <div style={contentStyle}>
+      </button>
+      <div style={contentStyle} aria-hidden={!isContactMiloExpanded} aria-live="polite">
         {miloLink}
         <br />
         <Trans parent={null} t={t}>
@@ -85,6 +88,9 @@ const ImmersionMiloMethod = (props: CardProps): React.ReactElement => {
   const highlightStyle: React.CSSProperties = {
     backgroundColor: colorToAlpha(colors.SUN_YELLOW_80, .8),
     fontWeight: 'inherit',
+  }
+  if (loading) {
+    return loading
   }
   return <div>
     <Trans parent={null} t={t} tOptions={tOptions}>

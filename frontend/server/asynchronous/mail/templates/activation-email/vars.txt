@@ -1,7 +1,0 @@
-changeEmailSettingsUrl
-date
-firstName
-gender
-isCoachingEnabled
-loginUrl
-ofJob

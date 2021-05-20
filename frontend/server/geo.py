@@ -7,8 +7,8 @@ from typing import KeysView, List, Optional
 from algoliasearch import exceptions
 from algoliasearch import search_client
 from google.protobuf import json_format
-from pymongo import database as pymongo_database
 
+from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.api import geo_pb2
 
@@ -18,41 +18,53 @@ _DEPARTEMENTS: proto.MongoCachedCollection[geo_pb2.Departement] = \
 _ALGOLIA_INDEX: List[search_client.SearchClient] = []
 
 
-def list_all_departements(database: pymongo_database.Database) -> KeysView[str]:
+def list_all_departements(database: mongo.NoPiiMongoDatabase) -> KeysView[str]:
     """List all French département IDs."""
 
     return _DEPARTEMENTS.get_collection(database).keys()
 
 
 def get_departement_name(
-        database: pymongo_database.Database, departement_id: str) -> str:
+        database: mongo.NoPiiMongoDatabase, departement_id: str) -> str:
     """Get a departement name."""
 
     return _DEPARTEMENTS.get_collection(database)[departement_id].name
 
 
-def get_departement_id(database: pymongo_database.Database, name: str) -> str:
+def get_departement_id(database: mongo.NoPiiMongoDatabase, name: str) -> str:
     """Get a departement ID from its name."""
 
     departements = _DEPARTEMENTS.get_collection(database)
     try:
         return next(
-            (departement_id for departement_id, departement in departements.items()
-             if departement.name == name))
+            departement_id for departement_id, departement in departements.items()
+            if departement.name == name)
     except StopIteration:
+        # pylint: disable=raise-missing-from
         raise KeyError(name)
 
 
-def get_in_a_departement_text(database: pymongo_database.Database, departement_id: str) -> str:
+def get_in_a_departement_text(
+        database: mongo.NoPiiMongoDatabase,
+        departement_id: str,
+        city_hint: Optional[geo_pb2.FrenchCity] = None) -> str:
     """Compute the French text for "in the Departement" for the given ID."""
 
-    departement_name = get_departement_name(database, departement_id)
+    if city_hint and city_hint.departement_name:
+        departement_name = city_hint.departement_name
+    else:
+        departement_name = get_departement_name(database, departement_id)
     if departement_name.startswith('La '):
         departement_name = departement_name[len('La '):]
-    return _DEPARTEMENTS.get_collection(database)[departement_id].prefix + departement_name
+
+    if city_hint and city_hint.departement_prefix:
+        prefix = city_hint.departement_prefix
+    else:
+        prefix = _DEPARTEMENTS.get_collection(database)[departement_id].prefix
+    return prefix + departement_name
 
 
-def get_city_location(database: pymongo_database.Database, city_id: str) \
+def get_city_location(database: mongo.NoPiiMongoDatabase, city_id: str) \
         -> Optional[geo_pb2.FrenchCity]:
     """Get lat/long coordinates for a city from its ID."""
 

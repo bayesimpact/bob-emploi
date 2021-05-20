@@ -1,5 +1,6 @@
 #!/bin/bash
 # Script to run from an engineer computer to start the release process of the app.
+# If run from a non-interactive shell (e.g. in CI), it will use the default release notes.
 #
 # Usages:
 # frontend/release/release.sh
@@ -15,17 +16,15 @@ fi
 
 # Helpers.
 function add_previous_draft_and_commits_to_release_notes() {
-  tag=$1
-  release_notes=$2
+  local tag=$1
+  local release_notes=$2
+  local last_release_draft_tag=$3
   echo -e "${tag}\\n" > $release_notes
   echo -e "# Edit these release notes to make them more readable (lines starting with # are ignored, and an empty file cancels the deployment).\\n" >> $release_notes
   # Check if we can reuse notes from a previous release that was left as a draft.
   echo_info "Checking if can reuse notes from previous draft…"
-  readonly last_release_tag=$(hub release | head -1)
-  readonly last_release_tag_including_drafts=$(hub release --include-drafts | head -1)
-  if [ "$last_release_tag_including_drafts" != "$last_release_tag" ]; then
+  if [ -n "$last_release_draft_tag" ]; then
     # Last release was left as draft.
-    readonly last_release_draft_tag="$last_release_tag_including_drafts"
     echo_info "Creating new release notes for tag $tag, reusing notes from draft $last_release_draft_tag."
     # Copy notes from draft.
     echo -e '# Reusing notes from last draft release:' >> $release_notes
@@ -40,8 +39,8 @@ function add_previous_draft_and_commits_to_release_notes() {
   fi
 
   readonly git_cd_up="$(git rev-parse --show-cdup)"
-  git log "$last_tag_for_git_log..$tag" --format=%B \
-    -- "${git_cd_up}frontend" >> $release_notes
+  git log "$last_tag_for_git_log..$tag" --format=%s \
+    -- "${git_cd_up}frontend" | python3 "$DIRNAME/compress_notes.py" >> $release_notes
 }
 
 
@@ -89,11 +88,22 @@ if hub release show $TAG 2> /dev/null > $RELEASE_NOTES; then
 else
   # No notes found for this tag, we will need to create a new release.
   readonly RELEASE_COMMAND='create'
-  add_previous_draft_and_commits_to_release_notes $TAG $RELEASE_NOTES
+  readonly LAST_RELEASE_TAG="$(hub release --include-drafts -f '%S:%T%n' | head -1)"
+  if [[ $(cut -d: -f1 <<< "$LAST_RELEASE_TAG") == draft ]]; then
+    PREVIOUS_DRAFT="$(cut -d: -f2 <<< "$LAST_RELEASE_TAG")"
+  fi
+  if ! add_previous_draft_and_commits_to_release_notes "$TAG" "$RELEASE_NOTES" "$PREVIOUS_DRAFT"; then
+    echo_error "Something wrong happened while adding commits to the release notes."
+    exit 5
+  fi
 fi
 
-read -p 'Press any key to continue or ctrl+c to cancel…'
-"${EDITOR:-${GIT_EDITOR:-$(git config core.editor || echo 'vim')}}" $RELEASE_NOTES
+if [ -n "$CI" ]; then
+  sed -i '1 s/$/ (auto-generated notes)/' $RELEASE_NOTES
+else
+  read -n1 -p 'Press any key to continue or ctrl+c to cancel…'
+  "${EDITOR:-${GIT_EDITOR:-$(git config core.editor || echo 'vim')}}" $RELEASE_NOTES
+fi
 
 # Remove comments from release notes.
 sed -i -e "/^#/d" $RELEASE_NOTES
@@ -109,9 +119,15 @@ cat $RELEASE_NOTES
 echo '-------------------------------------------------------------------------------'
 
 echo_info "Creating a draft release on GitHub"
-read -p 'Press any key to continue or ctrl+c to cancel…'
+if [ -z "$CI" ]; then
+  read -n1 -p 'Press any key to continue or ctrl+c to cancel…'
+fi
 if [ -z "$DRY_RUN" ]; then
-  hub release $RELEASE_COMMAND --draft --file=$RELEASE_NOTES $TAG
+  hub release $RELEASE_COMMAND --draft --file=$RELEASE_NOTES $TAG &&
+    if [ -n "$PREVIOUS_DRAFT" ]; then
+      echo_info 'Deleting the previous draft.'
+      hub release delete "$PREVIOUS_DRAFT"
+    fi
 fi
 
 rm -f $RELEASE_NOTES

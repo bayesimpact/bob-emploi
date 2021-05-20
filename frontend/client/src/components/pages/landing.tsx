@@ -2,19 +2,20 @@ import _memoize from 'lodash/memoize'
 import CloseIcon from 'mdi-react/CloseIcon'
 import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import LazyLoad from 'react-lazyload'
 import {useDispatch, useSelector} from 'react-redux'
 import {useLocation, useParams} from 'react-router'
-import {Swipeable} from 'react-swipeable'
+import {useSwipeable} from 'react-swipeable'
 import VisibilitySensor from 'react-visibility-sensor'
 
 import {DispatchAllActions, RootState, landingPageSectionIsShown,
   loadLandingPage} from 'store/actions'
-import {getLanguage, prepareT} from 'store/i18n'
+import {LocalizableString, prepareT, toLocaleString} from 'store/i18n'
+import isMobileVersion from 'store/mobile'
 import {parseQueryString} from 'store/parse'
-import {makeCancelable} from 'store/promise'
+import {useAsynceffect} from 'store/promise'
 
-import bobBlueImage from 'images/bob-logo.svg?fill=#1888ff' // colors.BOB_BLUE
 import step1Image from 'images/landing_step_1.svg'
 import step2Image from 'images/landing_step_2.svg'
 import step3Image from 'images/landing_step_3.svg'
@@ -22,40 +23,33 @@ import franceEngageImage from 'images/lfse-logo.png'
 import frenchImpactImage from 'images/french-impact-logo.png'
 import googleOrgImage from 'images/google-logo.png'
 import poleEmploiImage from 'images/pe-logo.png'
-import pressConsolabImage from 'images/press/consolab.png'
-import pressEchoStartImage from 'images/press/echos.png'
-import pressEurope1Image from 'images/press/europe1.png'
-import pressFemmeActuelleImage from 'images/press/femme-actuelle.png'
-import pressFranceInfoImage from 'images/press/franceinfo.png'
-import pressLetudiantImage from 'images/press/letudiant.png'
-import pressNouvelleVieImage from 'images/press/nouvellevie.png'
-import pressPositivrImage from 'images/press/positivr.png'
 import sncImage from 'images/snc-logo.png'
 import arthurImage from 'images/testimonials/arthur.png'
 import catherineImage from 'images/testimonials/catherine.png'
 import pierreAlainImage from 'images/testimonials/pierre-alain.png'
 
 import {CookieMessageOverlay} from 'components/cookie_message'
-import {Trans} from 'components/i18n'
+import ExternalLink from 'components/external_link'
+import Trans from 'components/i18n_trans'
 import {LoginButton} from 'components/login'
-import {isMobileVersion} from 'components/mobile'
 import {StaticPage, TitleSection} from 'components/static'
 import {fetchFirstSuggestedJob} from 'components/suggestions'
-import {ExternalLink, Img, MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING,
-  SmoothTransitions} from 'components/theme'
+import {MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING, SmoothTransitions} from 'components/theme'
 import {Routes} from 'components/url'
+
+import pressArticles from 'deployment/press'
 
 
 const emStyle: React.CSSProperties = {
-  color: '#fff',
+  color: colors.DARK_BLUE,
 }
 
 
 interface LandingPageContent {
   fontSize?: number
-  match?: RegExp
+  match: RegExp
   subtitle?: string
-  title?: React.ReactNode
+  title: React.ReactNode
 }
 
 
@@ -65,6 +59,10 @@ const landingPageContentsRaw = {
     fontSize: 42,
     match: /evaluation/,
     title: '',
+  },
+  'action-plan': {
+    match: /action-plan/,
+    title: "En 5 minutes, recevez un plan d'action pour trouver un job",
   },
   'coach': {
     match: /coach/,
@@ -84,6 +82,30 @@ const landingPageContentsRaw = {
       Avancez <em style={emStyle}>plus facilement</em> dans votre recherche
       d'emploi
     </span>,
+  },
+  'easy-find-job': {
+    match: /easy-find-job/,
+    title: `Trouver un job plus facilement, avec ${config.productName}`,
+  },
+  'explain-in-five': {
+    match: /explain-in-five/,
+    title: "Ta recherche d'emploi expliquée en 5 minutes",
+  },
+  'forward-jobsearch': {
+    match: /forward-jobsearch/,
+    title: "En 5 minutes, découvrez comment avancer sur votre recherche d'emploi",
+  },
+  'job-without-offers': {
+    match: /job-without-offers/,
+    title: 'En 5 minutes, découvrez comment trouver un job sans annonces',
+  },
+  'market-secret': {
+    match: /market-secret/,
+    title: "En 5 minutes, découvrez les secrets du marché de l'emploi au-delà du job étudiant",
+  },
+  'next-job': {
+    match: /next-job/,
+    title: 'Votre prochain job expliqué en 5 minutes',
   },
   'personalization': {
     fontSize: 35,
@@ -105,16 +127,16 @@ const landingPageContentsRaw = {
         style={emStyle}>trouver un emploi</span>&nbsp;?
     </span>,
   },
+  'quick-find-work': {
+    match: /quick-find-work/,
+    title: 'En 5 minutes, découvrez comment mieux trouver un emploi',
+  },
   'rethink-search': {
     fontSize: 42,
     match: /rethink/,
     title: <span style={emStyle}>
       Repensons votre recherche d'emploi
     </span>,
-  },
-  'specific-job': {
-    fontSize: 42,
-    // 'title' is created and populated dynamically using the job name.
   },
   'speed': {
     match: /speed/,
@@ -128,15 +150,17 @@ const landingPageContentsRaw = {
 } as const
 type LandingPageKind = keyof typeof landingPageContentsRaw
 const kinds = Object.keys(landingPageContentsRaw) as LandingPageKind[]
-const landingPageContents =
+export const landingPageContents =
   landingPageContentsRaw as {readonly [P in LandingPageKind]: LandingPageContent}
 
 
 interface StepProps {
   children: React.ReactNode
   image: string
+  // Callback to give back the margin between the top of the step and the top of the number bubble.
+  onTopMarginToNumberUpdate?: (step: number, onTopMarginToNumber: number) => void
   step: number
-  title: string
+  title: LocalizableString
 }
 
 const stepHeight = isMobileVersion ? 250 : 325
@@ -144,13 +168,13 @@ const stepStyle: React.CSSProperties = {
   alignItems: isMobileVersion ? 'flex-start' : 'center',
   display: 'flex',
   height: isMobileVersion ? stepHeight : 'initial',
+  marginTop: isMobileVersion ? 0 : 110,
   padding: isMobileVersion ? 20 : 0,
 }
 const stepBigSquareStyle: React.CSSProperties = {
   backdropFilter: 'blur(10px)',
   backgroundColor: '#fff',
   borderRadius: 15,
-  boxShadow: '0 40px 55px 0 rgba(0, 0, 0, 0.1)',
   display: 'flex',
   height: stepHeight,
   margin: '0 80px',
@@ -194,18 +218,22 @@ const stepNumberStyle: React.CSSProperties = {
   fontWeight: 'bold',
   height: 30 + 2 * numberMargin,
   justifyContent: 'center',
+  left: 0,
   // TODO(cyrille): Fix Lato padding on MacOS.
   lineHeight: '30px',
   margin: -numberMargin,
+  position: 'absolute',
+  top: 0,
   width: 30 + 2 * numberMargin,
   zIndex: 1,
 }
 const stepContentStyle: React.CSSProperties = {
   color: colors.WARM_GREY,
   fontSize: 16,
-  height: 30,
   lineHeight: 1.25,
-  maxWidth: 310,
+  maxWidth: isMobileVersion ? 360 : 485,
+  padding: isMobileVersion ? '0 0 0 50px' : '0 95px 0 80px',
+  position: 'relative',
   textAlign: 'initial',
 }
 const stepTitleStyle: React.CSSProperties = {
@@ -219,37 +247,47 @@ const stepVerbStyle: React.CSSProperties = {
   color: colors.BOB_BLUE,
   fontWeight: 'bolder',
 }
-const titleMainWord = [<span style={stepVerbStyle} key="0" />]
+const titleMainWord = [<span style={stepVerbStyle} key="0" />] as const
 
-const StepBase = ({children, image, step, title}: StepProps): React.ReactElement => {
-  const containerStyle = useMemo((): React.CSSProperties => ({
-    ...stepStyle,
-    flexDirection: step % 2 || isMobileVersion ? 'row' : 'row-reverse',
-    marginTop: isMobileVersion ? 0 : 110,
-  }), [step])
-  const squareStyle = useMemo((): React.CSSProperties => (isMobileVersion ? {display: 'none'} : {
-    ...stepBigSquareStyle,
-    transform: step % 2 ? 'rotate(45deg)' : 'rotate(-45deg)',
-  }), [step])
-  const contentStyle = useMemo((): React.CSSProperties => ({
-    ...stepContentStyle,
-    margin: isMobileVersion ? '0 20px' : step % 2 ? '0 95px 0 80px' : '0 50px 0 125px',
-  }), [step])
-  return <div style={containerStyle}>
+const StepBase = (props: StepProps): React.ReactElement => {
+  const {children, image, onTopMarginToNumberUpdate, step, title} = props
+  const [titleKey, tOptions] = title
+  const containerRef = useRef<HTMLLIElement>(null)
+  const stepNumberRef = useRef<HTMLDivElement>(null)
+  const updateTopMarginToNumber = useCallback((): void => {
+    if (!stepNumberRef.current || !containerRef.current) {
+      return
+    }
+    const containerTop = containerRef.current.getClientRects()?.[0]?.top || 0
+    const stepNumberTop = stepNumberRef.current.getClientRects()?.[0]?.top || 0
+    onTopMarginToNumberUpdate?.(step, stepNumberTop - containerTop)
+  }, [onTopMarginToNumberUpdate, step])
+  useEffect((): (() => void) => {
+    if (!onTopMarginToNumberUpdate) {
+      return () => void 0
+    }
+    const interval = window.setInterval(updateTopMarginToNumber, 500)
+    return () => {
+      window.clearInterval(interval)
+    }
+  }, [onTopMarginToNumberUpdate, updateTopMarginToNumber])
+  return <li style={stepStyle} ref={containerRef}>
+    <div style={stepContentStyle}>
+      <div style={stepNumberStyle} ref={stepNumberRef}>{step}</div>
+      {/* i18next-extract-disable-next-line */}
+      <Trans
+        parent="h3" style={stepTitleStyle} i18nKey={titleKey} components={titleMainWord}
+        tOptions={tOptions} />
+      {children}
+    </div>
     {isMobileVersion ? null : <div style={{position: 'relative', zIndex: 0}}>
-      <div style={squareStyle}>
+      <div style={stepBigSquareStyle}>
         <div style={stepSmallSquareStyle} />
       </div>
       <img src={image} style={stepImgStyle} alt="" />
-      {step === 2 ? <span style={bobScoreStepStyle}>+53%</span> : null}
+      {step === 2 ? <span style={bobScoreStepStyle} aria-hidden={true}>+53%</span> : null}
     </div>}
-    <div style={stepNumberStyle}>{step}</div>
-    <div style={contentStyle}>
-      {/* i18next-extract-disable-next-line */}
-      <Trans parent="h3" style={stepTitleStyle} i18nKey={title} components={titleMainWord} />
-      {children}
-    </div>
-  </div>
+  </li>
 }
 const Step = React.memo(StepBase)
 
@@ -303,27 +341,50 @@ const steps = [
     image: step3Image,
     title: prepareT('<0>Coaching</0> sur mesure et adaptatif'),
   },
-]
+] as const
 
-const dashLineStyle: React.CSSProperties = {
-  borderLeft: `1px dashed ${colors.PINKISH_GREY}`,
-  height: `calc(100% - ${stepHeight}px)`,
-  left: isMobileVersion ? 35 : '50%',
-  position: 'absolute',
-  top: isMobileVersion ? 15 : stepHeight / 2,
-}
-const StepsSectionBase = (): React.ReactElement => <section style={stepsSectionStyle}>
-  <div style={{margin: 'auto', maxWidth: MAX_CONTENT_WIDTH}}>
-    <div style={stepsLayoutStyle}>
-      {steps.map((step, index) => <Step key={index + 1} step={index + 1} {...step} />)}
-      <div style={dashLineStyle} />
+const StepsSectionBase = (): React.ReactElement => {
+  // Handle the position of the dashed line, which depends on the inner margins of the steps.
+  const [marginToFirstNumber, setMarginToFirstNumber] = useState(78.5)
+  const [marginToLastNumber, setMarginToLastNumber] = useState(88.5)
+  const handleTopMarginToNumberUpdate = useCallback((step: number, topMargin: number): void => {
+    if (step === 1) {
+      setMarginToFirstNumber(topMargin)
+      return
+    }
+    if (step === steps.length) {
+      setMarginToLastNumber(topMargin)
+    }
+  }, [])
+  const extraLineHeight = isMobileVersion ? 0 : (marginToLastNumber - marginToFirstNumber)
+
+  const dashLineStyle = useMemo((): React.CSSProperties => ({
+    borderLeft: `1px dashed ${colors.PINKISH_GREY}`,
+    height: `calc(100% - ${stepHeight + extraLineHeight}px)`,
+    left: isMobileVersion ? 35 : 15,
+    position: 'absolute',
+    top: isMobileVersion ? 15 : (15 + marginToFirstNumber),
+  }), [extraLineHeight, marginToFirstNumber])
+  return <section style={stepsSectionStyle}>
+    <div style={{margin: 'auto', maxWidth: MAX_CONTENT_WIDTH}}>
+      <div style={stepsLayoutStyle}>
+        <ol style={{margin: 0, padding: 0}}>
+          {steps.map((step, index) => <Step
+            key={index + 1} step={index + 1} {...step}
+            onTopMarginToNumberUpdate={
+              isMobileVersion || !index || index < steps.length - 1 ?
+                undefined : handleTopMarginToNumberUpdate
+            } />)}
+        </ol>
+        <div style={dashLineStyle} />
+      </div>
+      <LoginButton
+        visualElement="diagnostic" isSignUp={true} type="validation" style={stepLoginButtonStyle}>
+        <Trans parent={null}>Commencer tout de suite</Trans>
+      </LoginButton>
     </div>
-    <LoginButton
-      visualElement="diagnostic" isSignUp={true} type="validation" style={stepLoginButtonStyle}>
-      <Trans parent={null}>Commencer tout de suite</Trans>
-    </LoginButton>
-  </div>
-</section>
+  </section>
+}
 const StepsSection = React.memo(StepsSectionBase)
 
 
@@ -374,8 +435,11 @@ const StarsBase: React.FC<{score: number}> =
       return null
     }
     return <span style={iconTextStyle}>
-      {new Array(5).fill(null).map((unused, index): React.ReactNode =>
-        <Star percentage={getFillPercentage(index, score)} key={index} />)}
+      {Array.from(
+        {length: 5},
+        (unused, index): React.ReactNode =>
+          <Star percentage={getFillPercentage(index, score)} key={index} />,
+      )}
     </span>
   }
 StarsBase.propTypes = {
@@ -397,15 +461,22 @@ const ratingSubTextStyle: React.CSSProperties = {
 }
 
 interface RatingProps {
+  numReviews: number
+  platform: string
   score: number
-  subText: React.ReactElement
 }
 
-const RatingBase: React.FC<RatingProps> = ({score, subText}: RatingProps): React.ReactElement => {
+const RatingBase = ({numReviews, platform, score}: RatingProps): React.ReactElement|null => {
+  const {t} = useTranslation()
+  if (!numReviews) {
+    return null
+  }
   return <div style={ratingContainerStyle}>
-    <span style={ratingScoreStyle}>{(score).toLocaleString(getLanguage())}</span>
+    <span style={ratingScoreStyle}>{toLocaleString(score)}</span>
     <Stars score={score} />
-    <span style={ratingSubTextStyle}>{subText}</span>
+    <span style={ratingSubTextStyle}>{t(
+      'Sur {{numReviews}} avis donnés sur {{platform}}.', {numReviews, platform},
+    )}</span>
   </div>
 }
 const Rating = React.memo(RatingBase)
@@ -439,7 +510,9 @@ const testimonialContainerStyle: React.CSSProperties = {
 }
 const testimonialsStyle: React.CSSProperties = {
   flex: 1,
+  margin: 0,
   maxWidth: 470,
+  padding: 0,
 }
 const testimonialStyle: React.CSSProperties = {
   alignItems: 'flex-start',
@@ -474,19 +547,17 @@ const ratingsContainerStyle: React.CSSProperties = {
 const TestimonialsSectionBase = (): React.ReactElement => {
   const numEmploiStoreReviews = 90
   const numInAppReviews = 3568
+  const {t} = useTranslation()
   const ratings = [
     {
+      numReviews: config.isEmploiStoreEnabled ? numEmploiStoreReviews : 0,
+      platform: t("l'Emploi Store"),
       score: 3.5,
-      subText: <Trans>
-        Sur {{numEmploiStoreReviews: numEmploiStoreReviews}} avis donnés sur l'Emploi Store.
-      </Trans>,
     },
     {
+      numReviews: numInAppReviews,
+      platform: config.productName,
       score: 4.6,
-      subText: <Trans>
-        Sur {{numInAppReviews: numInAppReviews}} avis postés
-        sur {{productName: config.productName}}.
-      </Trans>,
     },
   ]
   return <section style={testimonialsSectionStyle}>
@@ -494,16 +565,16 @@ const TestimonialsSectionBase = (): React.ReactElement => {
       <div>
         <Trans style={testimonialSubHeaderStyle}>
           {{productName: config.productName}} a déjà aidé plus de <span style={strongTextStyle}>
-            {{userCount: (200000).toLocaleString(getLanguage())}} personnes
+            {{userCount: toLocaleString(270_000)}} personnes
           </span> à mieux comprendre et appréhender la recherche d'emploi
         </Trans>
         <div style={ratingsContainerStyle}>
           {ratings.map((rating, index): React.ReactElement => <Rating {...rating} key={index} />)}
         </div>
       </div>
-      <div style={testimonialsStyle}>
-        <div style={testimonialStyle}>
-          <Img style={pictoStyle} src={arthurImage} alt="Arthur" />
+      <ul style={testimonialsStyle}>
+        <li style={testimonialStyle}>
+          <img style={pictoStyle} src={arthurImage} alt="" />
           <div>
             <Trans parent="">
               Je n'aurais jamais eu l'occasion d'avoir ces entretiens si je n'avais pas eu de
@@ -514,11 +585,11 @@ const TestimonialsSectionBase = (): React.ReactElement => {
               Arthur
             </Trans>
           </div>
-        </div>
-        <div style={testimonialStyle}>
-          <Img style={pictoStyle} src={catherineImage} alt="Catherine" />
+        </li>
+        <li style={testimonialStyle}>
+          <img style={pictoStyle} src={catherineImage} alt="" />
           <div>
-            <Trans parent="">
+            <Trans parent="" values={{productName: config.productName}}>
               Comme recommandé dans un des mails, j'ai compris qu'il fallait que je me tourne
               prioritairement vers des entreprises qui me plaisent et non juste celles
               qui recrutent.
@@ -527,9 +598,9 @@ const TestimonialsSectionBase = (): React.ReactElement => {
               Catherine
             </Trans>
           </div>
-        </div>
-        <div style={testimonialStyle}>
-          <Img style={pictoStyle} src={pierreAlainImage} alt="Pierre-Alain" />
+        </li>
+        <li style={testimonialStyle}>
+          <img style={pictoStyle} src={pierreAlainImage} alt="" />
           <div>
             <Trans parent="">
               {{productName: config.productName}} m'a incité à mobiliser mon réseau en me
@@ -540,8 +611,8 @@ const TestimonialsSectionBase = (): React.ReactElement => {
               Pierre-Alain
             </Trans>
           </div>
-        </div>
-      </div>
+        </li>
+      </ul>
     </div>
     <div style={{padding: '35px 0 10px', textAlign: 'center'}}>
       <Trans style={commitmentTextStyle}>
@@ -592,14 +663,15 @@ const partnersStyle = {
   justifyContent: 'space-around',
   margin: '0 auto',
   maxWidth: 1000,
+  padding: 0,
 } as const
 
 
 const PartnersSectionBase = (): React.ReactElement => <section style={partnerSectionStyle}>
-  <div style={partnersStyle}>
+  <ul style={partnersStyle}>
     {partnersContent.map((partner): React.ReactNode =>
       <PartnerCard {...partner} key={partner.name} />)}
-  </div>
+  </ul>
 </section>
 const PartnersSection = React.memo(PartnersSectionBase)
 
@@ -612,6 +684,7 @@ interface PartnerProps {
 
 
 const partnerCardContainerStyle: React.CSSProperties = {
+  display: 'block',
   width: 200,
 } as const
 const parnerCardImgStyle: React.CSSProperties = {
@@ -621,12 +694,14 @@ const parnerCardImgStyle: React.CSSProperties = {
   maxWidth: 130,
 } as const
 
-const PartnerCardBase = ({imageSrc, name}: PartnerProps): React.ReactElement =>
-  <div style={partnerCardContainerStyle}>
-    <LazyLoad height={55} once={true} offset={200}>
+const PartnerCardBase = ({imageSrc, name}: PartnerProps): React.ReactElement => {
+  const placeholder = useMemo(() => <span>{name}</span>, [name])
+  return <li style={partnerCardContainerStyle}>
+    <LazyLoad height={55} once={true} offset={200} placeholder={placeholder}>
       <img src={imageSrc} alt={name} title={name} style={parnerCardImgStyle} />
     </LazyLoad>
-  </div>
+  </li>
+}
 PartnerCardBase.propTypes = {
   imageSrc: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
@@ -642,7 +717,6 @@ interface BulletProps {
 
 
 const bulletContainerStyle = {
-  cursor: 'pointer',
   display: 'inline-block',
 }
 
@@ -655,12 +729,11 @@ const CarouselBullet = (props: BulletProps): React.ReactElement => {
     borderRadius: 6,
     height: 6,
     margin: 5,
+    padding: 0,
     width: 6,
   }), [isSelected])
-  return <li
-    style={bulletContainerStyle}
-    onClick={handleClick}>
-    <div style={bulletStyle} />
+  return <li style={bulletContainerStyle}>
+    <button style={bulletStyle} onClick={handleClick} />
   </li>
 }
 const Bullet = React.memo(CarouselBullet)
@@ -678,61 +751,9 @@ const mediaLinkWidth = isMobileVersion ? 280 : 320
 
 const mediaLinkMargin = 20
 
-const pressArticles = [
-  {
-    imageAltText: 'PositivR',
-    imageSrc: pressPositivrImage,
-    title: "Développer le conseil à l'emploi grâce aux nouvelles technologies, avec Bob Emploi.",
-    url: 'https://positivr.fr/humain-et-ia-bob-emploi-positiveimpact/',
-  },
-  {
-    imageAltText: 'Les Échos Start',
-    imageSrc: pressEchoStartImage,
-    title: "Bob Emploi, l'algorithme qui s'attaque au chômage",
-    url: 'https://start.lesechos.fr/entreprendre/actu-startup/bob-emploi-l-algorithme-qui-s-attaque-au-chomage-12226.php',
-  },
-  {
-    imageAltText: 'Europe 1',
-    imageSrc: pressEurope1Image,
-    title: 'Cinq choses à savoir sur Bob Emploi, le site qui veut enrayer le chômage',
-    url: 'http://www.europe1.fr/economie/cinq-choses-a-savoir-sur-bob-emploi-le-site-qui-veut-enrayer-le-chomage-2901977 ',
-  },
-  {
-    imageAltText: 'Nouvelle Vie Pro',
-    imageSrc: pressNouvelleVieImage,
-    title: "Bob Emploi\u00A0: besoin d'aide dans vos recherches\u00A0? Demandez Bob\u00A0!",
-    url: 'https://www.nouvelleviepro.fr/actualite/587/bob-emploi-besoin-daide-dans-vos-recherches-demandez-bob',
-  },
-  {
-    imageAltText: 'Femme Actuelle',
-    imageSrc: pressFemmeActuelleImage,
-    title: 'Quel site choisir pour trouver un emploi\u00A0?',
-    url: 'https://www.femmeactuelle.fr/actu/vie-pratique/quel-site-choisir-pour-trouver-un-emploi-48341',
-  },
-  {
-    imageAltText: 'France Info',
-    imageSrc: pressFranceInfoImage,
-    title: "VIDÉO. Pour endiguer le chômage, il crée un site de recherche d'emplois personnalisé",
-    url: 'https://www.francetvinfo.fr/economie/emploi/chomage/video-pour-endiguer-le-chomage-il-cree-un-site-de-recherche-demplois-personnalise_2801901.html',
-  },
-  {
-    imageAltText: 'Conso Collaborative',
-    imageSrc: pressConsolabImage,
-    title: 'Big Data et bonnes volontés, la recette de Bob Emploi pour lutter ' +
-      'contre le chômage',
-    url: 'http://consocollaborative.com/article/big-data-et-bonnes-volontes-la-recette-de-bob-emploi-pour-lutter-contre-le-chomage/ ',
-  },
-  {
-    imageAltText: "L'Étudiant",
-    imageSrc: pressLetudiantImage,
-    title: "Bob Emploi, la meilleure façon de démarrer ta recherche d'emploi",
-    url: 'https://www.letudiant.fr/metiers/bob-emploi-la-meilleure-facon-de-demarrer-ta-recherche-d-emploi.html',
-  },
-] as const
-
 const numMediaElementsShown = isMobileVersion ? 1 : 3
 
-function getNumMediaBullets(allMedia: readonly {}[]): number {
+function getNumMediaBullets(allMedia: readonly unknown[]): number {
   return Math.round((allMedia.length + numMediaElementsShown - 1) / numMediaElementsShown)
 }
 
@@ -741,7 +762,7 @@ const getSkipPixels = (skip: number): number => skip *
 
 const numPressArticlesBullets = getNumMediaBullets(pressArticles)
 
-const SpeakingAboutBobSectionBase = (): React.ReactElement => {
+const SpeakingAboutBobSectionBase = (): React.ReactElement|null => {
   const [skipPress, setSkipPress] = useState(0)
 
   const nextPress = useCallback((): void => {
@@ -781,12 +802,13 @@ const SpeakingAboutBobSectionBase = (): React.ReactElement => {
       display: 'block',
       padding: 20,
     }
-    return <ExternalLink style={style} href={url} key={`press-${index}`}>
+    return <li key={`press-${index}`} style={style}><ExternalLink
+      style={style} href={url} tabIndex={isVisible ? 0 : -1}>
       <img src={imageSrc} alt={imageAltText} style={imageStyle} />
       <span style={titleStyle}>
         {title}
       </span>
-    </ExternalLink>
+    </ExternalLink></li>
   }
 
   const carouselSectionStyle: React.CSSProperties = {
@@ -797,22 +819,25 @@ const SpeakingAboutBobSectionBase = (): React.ReactElement => {
   const skipPressPixels = getSkipPixels(skipPress)
   const allMediaLinksStyle = useMemo((): React.CSSProperties => ({
     display: 'flex',
+    margin: 0,
+    padding: 0,
     transform: `translateX(-${skipPressPixels}px)`,
     width: (mediaLinkWidth + mediaLinkMargin) * pressArticles.length,
     ...SmoothTransitions,
   }), [skipPressPixels])
+  const swipeHandlers = useSwipeable({onSwipedLeft: nextPress, onSwipedRight: previousPress})
+  if (!pressArticles.length) {
+    return null
+  }
   return <section
     style={{backgroundColor: colors.PALE_GREY, padding: `70px ${MIN_CONTENT_PADDING}px 60px`}}>
 
     <div style={carouselSectionStyle}>
-      <Swipeable
-        onSwipedLeft={nextPress}
-        onSwipedRight={previousPress}
-        style={allMediaLinksStyle}>
+      <ul {...swipeHandlers} style={allMediaLinksStyle}>
         {pressArticles.map(renderPress)}
-      </Swipeable>
+      </ul>
     </div>
-    <div style={{display: 'flex', justifyContent: 'center', marginTop: 30}}>
+    <div style={{display: 'flex', justifyContent: 'center', marginTop: 30}} aria-hidden={true}>
       {numPressArticlesBullets > 1 ? <ol style={{display: 'flex', margin: 0, padding: 0}}>
         {pressArticles.
           slice(0, numPressArticlesBullets).
@@ -840,6 +865,12 @@ const covidNameStyle: React.CSSProperties = {
   display: 'flex',
   padding: 20,
 }
+const resetButtonStyle: React.CSSProperties = {
+  backgroundColor: 'transparent',
+  border: 'none',
+  display: 'flex',
+  padding: 0,
+}
 const closeIconStyle: React.CSSProperties = {
   backgroundColor: colors.SLATE,
   borderRadius: 15,
@@ -851,11 +882,12 @@ const closeIconStyle: React.CSSProperties = {
 
 
 const CovidBannerBase = (): React.ReactElement => {
+  const {t} = useTranslation()
   const [isShown, setIsShown] = useState(false)
   const hide = useCallback((): void => setIsShown(false), [])
   useEffect((): (() => void) => {
     const timeout = window.setTimeout((): void => setIsShown(true), 200)
-    return (): void => clearTimeout(timeout)
+    return (): void => window.clearTimeout(timeout)
   }, [])
   const covidBannerContainerStyle: React.CSSProperties = {
     alignItems: 'center',
@@ -871,17 +903,21 @@ const CovidBannerBase = (): React.ReactElement => {
     position: 'fixed',
     transform: `translate(-50%, ${isShown ? '0' : '200%'}`,
     width: 'fit-content',
+    zIndex: 1,
     ...SmoothTransitions,
   }
-  return <Trans style={covidBannerContainerStyle}>
+  return <Trans style={covidBannerContainerStyle} parent="aside" aria-hidden={!isShown}>
     <strong style={covidNameStyle}>COVID19</strong>
     <span style={{flex: 1, paddingLeft: 22}}>
       Découvrez nos astuces pour continuer votre recherche d'emploi malgré le
-      confinement. <ExternalLink href={Routes.COVID_PAGE} style={externaLinkStyle}>
+      confinement. <ExternalLink
+        href={Routes.COVID_PAGE} style={externaLinkStyle} tabIndex={isShown ? 0 : -1}>
         Lire l'article
       </ExternalLink>
     </span>
-    <CloseIcon onClick={hide} style={closeIconStyle} />
+    <button disabled={!isShown} onClick={hide} style={resetButtonStyle}>
+      <CloseIcon aria-label={t('Fermer')} style={closeIconStyle} />
+    </button>
   </Trans>
 }
 const CovidBanner = React.memo(CovidBannerBase)
@@ -893,14 +929,14 @@ interface LandingRouteParams {
 }
 
 
-interface FullLandingPageState extends LandingPageContent {
-  kind: LandingPageKind
+interface FullLandingPageState extends Omit<LandingPageContent, 'match'> {
+  kind: LandingPageKind | 'specific-job'
   title: React.ReactNode
 }
 
 
 const horizBarStyle: React.CSSProperties = {
-  backgroundColor: colors.MINI_FOOTER_GREY,
+  backgroundColor: colors.FOOTER_GREY,
   height: 1,
   margin: 'auto',
   maxWidth: MAX_CONTENT_WIDTH,
@@ -911,17 +947,15 @@ const horizBarStyle: React.CSSProperties = {
 function getLandingPageContentForSpecificJob(
   romeId: string|undefined, specificJobName: string,
 ): FullLandingPageState {
-  // Special langing pages for a specific job.
-  const landingPageKind: LandingPageKind = 'specific-job'
-  const landingPageContent = {
-    ...landingPageContents[landingPageKind],
-    kind: landingPageKind,
+  // Special landing pages for a specific job.
+  return {
+    fontSize: 42,
+    kind: 'specific-job',
     // Customize title with job name.
     title: <span style={emStyle}>
       Obtenez des conseils personnalisés pour trouver un poste de {specificJobName}
     </span>,
   }
-  return landingPageContent
 }
 
 
@@ -974,6 +1008,17 @@ const VisibilitySectionBase = (props: SectionProps): React.ReactElement => {
 const VisibilitySection = React.memo(VisibilitySectionBase)
 
 
+const fetchSpecificJob = async (jobName?: string): Promise<null|bayes.bob.Job> => {
+  if (!jobName) {
+    return null
+  }
+  try {
+    return await fetchFirstSuggestedJob(jobName)
+  } catch {
+    return null
+  }
+}
+
 const LandingPageBase = (): React.ReactElement => {
   const dispatch = useDispatch<DispatchAllActions>()
   const {search} = useLocation()
@@ -981,24 +1026,17 @@ const LandingPageBase = (): React.ReactElement => {
   const landingPageContent = getLandingPageContentState(search, params)
   const landingPageKind = landingPageContent.kind
 
-  const [isScrollNavBarShown, setIsScrollNavBarShown] = useState(false)
   const hasLoadedApp = useSelector(
     ({app: {hasLoadedApp = false}}: RootState): boolean => hasLoadedApp,
   )
 
-  useEffect((): (() => void) => {
+  useAsynceffect(async (checkIfCanceled) => {
     // Fetch job info if this is a landing page about a specific job.
-    const maybeFetchSpecificJob: Promise<bayes.bob.Job|null> = params.specificJobName ?
-      fetchFirstSuggestedJob(params.specificJobName).
-        // Return null for the fetched job if any error happens.
-        catch((): bayes.bob.Job|null => null) :
-      Promise.resolve(null)
-
-    const cancelablePromise = makeCancelable(maybeFetchSpecificJob)
-    cancelablePromise.promise.then((specificJob): void => {
-      hasLoadedApp || dispatch(loadLandingPage(landingPageKind, specificJob))
-    })
-    return cancelablePromise.cancel
+    const specificJob = await fetchSpecificJob(params.specificJobName)
+    if (checkIfCanceled() || hasLoadedApp) {
+      return
+    }
+    dispatch(loadLandingPage(landingPageKind, specificJob))
   }, [dispatch, hasLoadedApp, landingPageKind, params.specificJobName])
 
   const handleVisibility = useCallback((sectionName: string, isVisible: boolean): void => {
@@ -1008,45 +1046,6 @@ const LandingPageBase = (): React.ReactElement => {
     dispatch(landingPageSectionIsShown(sectionName))
   }, [dispatch])
 
-  const topSpaceRef = useRef<HTMLDivElement>(null)
-  const handleTopVisibilityChange = useCallback((isTopShown?: boolean): void => {
-    // When first loading the page, isTopShown is false because the div has no height yet.
-    setIsScrollNavBarShown(!isTopShown && !!topSpaceRef.current?.clientHeight)
-  }, [])
-
-  const scrollNavBarStyle: React.CSSProperties = {
-    backgroundColor: '#fff',
-    boxShadow: '0 0 5px 0 rgba(0, 0, 0, 0.2)',
-    color: colors.DARK,
-    fontSize: 14,
-    height: 70,
-    left: 0,
-    opacity: isScrollNavBarShown ? 1 : 0,
-    padding: '0 20px',
-    position: 'fixed',
-    right: 0,
-    top: isScrollNavBarShown ? 0 : -80,
-    zIndex: 2,
-    ...SmoothTransitions,
-  }
-  const scrollNavBarContentStyle: React.CSSProperties = {
-    alignItems: 'center',
-    display: 'flex',
-    height: scrollNavBarStyle.height,
-    margin: '0 auto',
-    maxWidth: MAX_CONTENT_WIDTH,
-  }
-  const scrollNavBar = <div style={scrollNavBarStyle}>
-    <div style={scrollNavBarContentStyle}>
-      <img src={bobBlueImage} height={30} alt={config.productName} />
-      <span style={{flex: 1}} />
-
-      <LoginButton isSignUp={true} visualElement="scrolling-nav-bar" type="validation">
-        <Trans parent="">Commencer</Trans>
-      </LoginButton>
-    </div>
-  </div>
-
   // TODO(pascal): Add a language toggler.
   return <StaticPage
     page="landing" isContentScrollable={false} isNavBarTransparent={true}
@@ -1055,13 +1054,6 @@ const LandingPageBase = (): React.ReactElement => {
 
     {/* NOTE: The beginning of the DOM is what Google use in its snippet,
       make sure it's important. */}
-
-    <VisibilitySensor
-      onChange={handleTopVisibilityChange}
-      intervalDelay={250} partialVisibility={true}>
-      <div style={{height: 70, position: 'absolute', width: '100%'}} ref={topSpaceRef} />
-    </VisibilitySensor>
-
     <TitleSection isLoginButtonShown={true} pageContent={landingPageContent} />
 
     <VisibilitySection onChange={handleVisibility} name="steps">
@@ -1087,8 +1079,6 @@ const LandingPageBase = (): React.ReactElement => {
     {isMobileVersion ? null : <CookieMessageOverlay />}
 
     <CovidBanner />
-
-    {scrollNavBar}
   </StaticPage>
 }
 const LandingPage = React.memo(LandingPageBase)

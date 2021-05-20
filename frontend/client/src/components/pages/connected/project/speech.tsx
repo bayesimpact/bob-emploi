@@ -1,11 +1,13 @@
 import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
-import {useFastForward} from 'components/fast_forward'
-import {isMobileVersion} from 'components/mobile'
+import useFastForward from 'hooks/fast_forward'
+import useKeyListener from 'hooks/key_listener'
+import isMobileVersion from 'store/mobile'
+
+import Button from 'components/button'
+import Markdown, {MarkdownRendererProps} from 'components/markdown'
 import {Modal, ModalConfig} from 'components/modal'
-import {useKeyListener} from 'components/shortkey'
-import {Button, Markdown} from 'components/theme'
 import bobHeadImage from 'images/bob-head.svg'
 
 
@@ -23,7 +25,7 @@ type ParagraphProps = {
   bobSize?: number
   children: React.ReactNode
   index?: number
-  parentChildCount?: number
+  siblingCount?: number
 }
 
 
@@ -34,7 +36,7 @@ const paragraphContainerStyle: React.CSSProperties = {
 
 
 const BobTalkParagraphBase = (props: ParagraphProps): React.ReactElement => {
-  const {bobPosition = 'top', bobSize = 0, children, index = 0, parentChildCount = 1} = props
+  const {bobPosition = 'top', bobSize = 0, children, index = 0, siblingCount = 1} = props
 
   // Create a border-radius CSS property with small corners on the sides where another bubble is
   // right next to it, and on the corner where Bob is.
@@ -42,10 +44,10 @@ const BobTalkParagraphBase = (props: ParagraphProps): React.ReactElement => {
     (): string => [
       !!index || bobPosition === 'top',
       !!index,
-      index < parentChildCount - 1,
-      index < (parentChildCount - 1) || bobPosition === 'bottom',
+      index < siblingCount - 1,
+      index < (siblingCount - 1) || bobPosition === 'bottom',
     ].map((isSmall: boolean): string => isSmall ? '5px' : '15px').join(' '),
-    [bobPosition, index, parentChildCount],
+    [bobPosition, index, siblingCount],
   )
 
   const textStyle = useMemo((): React.CSSProperties => ({
@@ -64,7 +66,7 @@ const BobTalkParagraphBase = (props: ParagraphProps): React.ReactElement => {
     ...((bobPosition === 'bottom') ? {alignSelf: 'flex-end'} : undefined),
   }), [bobPosition, bobSize])
   const isBobShown = (bobPosition === 'top' && !index) ||
-    (bobPosition === 'bottom' && index === parentChildCount - 1)
+    (bobPosition === 'bottom' && index === siblingCount - 1)
   return <div style={paragraphContainerStyle}>
     {isBobShown ? <img src={bobHeadImage} alt="" style={bobStyle} /> : null}
     <div style={textStyle}>{children}</div>
@@ -85,16 +87,22 @@ type BobTalkProps = BobPositionProps & {
 
 
 const BobTalkBase = (props: BobTalkProps): React.ReactElement => {
-  const {children, style, ...otherProps} = props
-  const Paragraph = (paragraphProps: ParagraphProps): React.ReactElement =>
-    <BobTalkParagraph {...otherProps} {...paragraphProps} />
+  const {children, style, bobPosition, bobSize} = props
+  const components = useMemo(() => {
+    // False positive: we are memoizing the component already.
+    // eslint-disable-next-line react/no-unstable-nested-components
+    const Paragraph = (paragraphProps: ParagraphProps & MarkdownRendererProps):
+    React.ReactElement => {
+      const {node: omittedNode, nodeKey: omittedNodeKey, ...props} = paragraphProps
+      return <BobTalkParagraph {...{bobPosition, bobSize}} {...props} />
+    }
+    return {p: Paragraph}
+  }, [bobPosition, bobSize])
   return <div style={style}>
     {isString(children) ? <Markdown
-      content={children} includeNodeIndex={true}
-      renderers={{
-        paragraph: Paragraph,
-      }} /> :
-      <BobTalkParagraph {...otherProps}>{children}</BobTalkParagraph>}
+      content={children} includeElementIndex={true}
+      components={components} /> :
+      <BobTalkParagraph {...{bobPosition, bobSize}}>{children}</BobTalkParagraph>}
   </div>
 }
 BobTalkBase.propTypes = {
@@ -144,7 +152,7 @@ const imageStyle: React.CSSProperties = {
 }
 
 
-const BobModalBase = (props: ModalProps): React.ReactElement => {
+const BobModal = (props: ModalProps): React.ReactElement => {
   const {buttonText, children, onClose, onConfirm, isShown} = props
   useKeyListener('Escape', onClose, undefined, 'keydown')
   useFastForward(onConfirm)
@@ -168,14 +176,13 @@ const BobModalBase = (props: ModalProps): React.ReactElement => {
     </div>
   </Modal>
 }
-BobModalBase.propTypes = {
+BobModal.propTypes = {
   buttonText: PropTypes.string,
   children: PropTypes.node,
   isShown: PropTypes.bool,
   onClose: PropTypes.func,
   onConfirm: PropTypes.func,
 }
-const BobModal = React.memo(BobModalBase)
 
 
-export {BobModal}
+export default React.memo(BobModal)

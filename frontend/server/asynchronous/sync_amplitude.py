@@ -11,10 +11,10 @@ from google.protobuf import json_format
 import pymongo
 import requests
 
-from bob_emploi.frontend.api import project_pb2
+from bob_emploi.common.python import now
+from bob_emploi.frontend.api import boolean_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import mongo
-from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.asynchronous import report
 
@@ -52,6 +52,7 @@ def _get_amplitude_id(user_id: str) -> str:
     try:
         return str(next(match['amplitude_id'] for match in response.json()['matches']))
     except StopIteration:
+        # pylint: disable=raise-missing-from
         raise KeyError(f'No user "{user_id}" found in Amplitude.')
 
 
@@ -97,17 +98,17 @@ def compute_first_session_duration(events: List[Dict[str, Any]]) -> datetime.tim
     return sorted_times[-1] - sorted_times[0]
 
 
-def _compute_is_mobile(events: List[Dict[str, Any]]) -> 'project_pb2.OptionalBool':
+def _compute_is_mobile(events: List[Dict[str, Any]]) -> 'boolean_pb2.OptionalBool.V':
     """Compute whether a set of events contains at least one from a mobile version."""
 
     if not events:
-        return project_pb2.UNKNOWN_BOOL
+        return boolean_pb2.UNKNOWN_BOOL
 
     for event in events:
         if event.get('event_properties', {}).get('Mobile Version'):
-            return project_pb2.TRUE
+            return boolean_pb2.TRUE
 
-    return project_pb2.FALSE
+    return boolean_pb2.FALSE
 
 
 def update_users_client_metrics(
@@ -185,26 +186,17 @@ def main(string_args: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(
         description='Synchronize MongoDB client metrics fields from Amplitude')
     parser.add_argument(
-        '--disable-sentry', action='store_true', help='Disable logging to Sentry.')
-    parser.add_argument(
         '--registered-from', help='Consider only users who registered after this date.')
     yesterday = str((now.get() - datetime.timedelta(days=1)).date())
     parser.add_argument(
         '--registered-to', default=yesterday,
         help='Consider only users who registered before this date.')
-    parser.add_argument(
-        '--no-dry-run', dest='dry_run', action='store_false', help='No dry run really store in DB.')
+    report.add_report_arguments(parser)
 
     args = parser.parse_args(string_args)
 
-    logging.basicConfig(level='INFO')
-    if not args.dry_run and not args.disable_sentry:
-        try:
-            report.setup_sentry_logging(os.getenv('SENTRY_DSN'))
-        except ValueError:
-            logging.error(
-                'Please set SENTRY_DSN to enable logging to Sentry, or use --disable-sentry option')
-            return
+    if not report.setup_sentry_logging(args):
+        return
 
     update_users_client_metrics(
         _DB.user, from_date=args.registered_from, to_date=args.registered_to,

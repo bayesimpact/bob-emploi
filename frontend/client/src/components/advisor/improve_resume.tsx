@@ -5,8 +5,8 @@ import React, {useMemo} from 'react'
 
 import {prepareT} from 'store/i18n'
 
-import {Trans} from 'components/i18n'
-import {GrowingNumber} from 'components/theme'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import Picto from 'images/advices/picto-improve-resume.svg'
 
 import {CardProps, ExpandableAction, HandyLink, ImproveApplicationTips,
@@ -109,7 +109,6 @@ const HandicapResumeBase: React.FC<CardProps> =
     {tips(t).map(({description, title}, index): ReactStylableElement => <ExpandableAction
       key={index}
       contentName={t("l'astuce")}
-      isMethodSuggestion={true}
       onContentShown={handleExplore('tip')}
       title={title}><div style={descriptionStyle}>{description}</div></ExpandableAction>)}
   </MethodSuggestionList>

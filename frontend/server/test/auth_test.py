@@ -1,6 +1,7 @@
 """Tests for the authentication endpoint of the server module using PE Connect."""
 
 import datetime
+import os
 import time
 import typing
 from typing import Dict, List, Optional
@@ -15,6 +16,8 @@ from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import server
 from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import mailjetmock
+
+_FAKE_TRANSLATIONS_FILE = os.path.join(os.path.dirname(__file__), 'testdata/translations.json')
 
 
 class AuthenticateEndpointTestCase(base_test.ServerTestCase):
@@ -36,9 +39,12 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         self.assertTrue(auth_response['isNewUser'])
         self.assertTrue(auth_response['authToken'])
         self.assertEqual('Bob', auth_response['authenticatedUser']['profile']['name'])
-        self.assertFalse(auth_response['authenticatedUser']['profile'].get('canTutoie'))
+        self.assertNotEqual('fr@tu', auth_response['authenticatedUser']['profile'].get('locale'))
         self.assertFalse(auth_response['authenticatedUser'].get('hasAccount'))
         self.assertFalse(auth_response['authenticatedUser'].get('featuresEnabled', {}).get('alpha'))
+        self.assertFalse(
+            auth_response['authenticatedUser'].get('featuresEnabled', {})
+            .get('excludeFromAnalytics'))
         user_id = auth_response['authenticatedUser']['userId']
         self.assertTrue(user_id)
 
@@ -59,6 +65,9 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
             content_type='application/json')
         auth_response = self.json_from_response(response)
         self.assertTrue(auth_response['authenticatedUser'].get('featuresEnabled', {}).get('alpha'))
+        self.assertTrue(
+            auth_response['authenticatedUser'].get('featuresEnabled', {})
+            .get('excludeFromAnalytics'))
 
     def test_register_guest_user_broken(self) -> None:
         """Sign-in a user after they created a guest account, but with a broken password."""
@@ -351,7 +360,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         self.create_user_with_token(email='foo@bar.fr', password='uuu')
         salt = self._get_salt('foo@bar.fr')
 
-        mock_time.return_value = 1544180477.9767606 + datetime.timedelta(hours=4).total_seconds()
+        mock_time.return_value = 1544180477.9767606 + datetime.timedelta(days=3).total_seconds()
 
         request = f'{{"email": "foo@bar.fr", "hashSalt": "{salt}", ' \
             f'"hashedPassword": "{_sha1(salt, _sha1("foo@bar.fr", "uuu"))}"}}'
@@ -435,7 +444,8 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
 
         self.authenticate_new_user(email='foo@bar.fr', password='psswd')
 
-        mock_time.time.return_value = time.time() - 86400
+        # 259200 = 3 days.
+        mock_time.time.return_value = time.time() - 259200
         auth_token = self._get_reset_token('foo@bar.fr', mock_mailjet_client)
 
         mock_time.time.return_value = time.time()
@@ -487,13 +497,13 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(1, len(url_args['resetToken']), msg=url_args)
         return url_args['resetToken'][0]
 
-    @mock.patch(server.__name__ + '.auth.client.verify_id_token')
-    def test_user_after_google_signup(self, mock_verify_id_token: mock.MagicMock) -> None:
+    @mock.patch(server.__name__ + '.auth.id_token.verify_oauth2_token')
+    def test_user_after_google_signup(self, mock_verify_oauth2_token: mock.MagicMock) -> None:
         """Trying to connect with a password a user registered with Google."""
 
-        # Register user with Google (note that verify_id_token accepts any
+        # Register user with Google (note that verify_oauth2_token accepts any
         # token including "my-token" and returns a Google account).
-        mock_verify_id_token.return_value = {
+        mock_verify_oauth2_token.return_value = {
             'iss': 'accounts.google.com',
             'email': 'pascal@bayes.org',
             'sub': '12345',
@@ -590,6 +600,21 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(404, response.status_code)
         self.assertIn('Utilisateur inconnu', response.get_data(as_text=True))
 
+    @mock.patch.dict(os.environ, {'I18N_TRANSLATIONS_FILE': _FAKE_TRANSLATIONS_FILE})
+    def test_auth_user_id_token_unknown_user_i18n(self) -> None:
+        """Authenticate using a token but the user ID does not correspond to anything."""
+
+        user_id = str(objectid.ObjectId())
+        timed_token = auth.create_token(user_id, is_using_timestamp=True)
+
+        response = self.app.post(
+            '/api/user/authenticate',
+            data=f'{{"userId": "{user_id}", "authToken": "{timed_token}"}}',
+            content_type='application/json',
+            headers={'Accept-Language': 'en-US, en, *'})
+        self.assertEqual(404, response.status_code)
+        self.assertIn('Unknown user', response.get_data(as_text=True))
+
     def test_auth_user_id_token_malformed(self) -> None:
         """Authenticate using the user ID and a malformed token."""
 
@@ -662,19 +687,20 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         mock_mailjet_client.assert_not_called()
 
     @mock.patch(mailjet_rest.__name__ + '.Client')
-    @mock.patch(server.__name__ + '.auth.client.verify_id_token')
+    @mock.patch(server.__name__ + '.auth.id_token.verify_oauth2_token')
     def test_reset_password_after_google_signup(
-            self, mock_verify_id_token: mock.MagicMock,
+            self, mock_verify_oauth2_token: mock.MagicMock,
             mock_mailjet_client: mock.MagicMock) -> None:
         """Try reseting a password for a user that signed up with Google."""
 
-        # Register user with Google (note that verify_id_token accepts any
+        # Register user with Google (note that verify_oauth2_token accepts any
         # token including "my-token" and returns a Google account).
-        mock_verify_id_token.return_value = {
+        mock_verify_oauth2_token.return_value = {
             'iss': 'accounts.google.com',
             'email': 'pascal@bayes.org',
             'sub': '12345',
         }
+        mock_mailjet_client().send.create().status_code = 200
         self.app.post(
             '/api/user/authenticate', data='{"googleTokenId": "my-token"}',
             content_type='application/json')
@@ -682,9 +708,28 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         response = self.app.post(
             '/api/user/reset-password', data='{"email":"pascal@bayes.org"}',
             content_type='application/json')
-        self.assertEqual(403, response.status_code)
-        self.assertIn('Google', response.get_data(as_text=True))
-        mock_mailjet_client.assert_not_called()
+        self.assertEqual(200, response.status_code, msg=response.get_data(as_text=True))
+        self.assertTrue(mock_mailjet_client().send.create.called)
+
+        # Extract link from email.
+        send_mail_kwargs = mock_mailjet_client().send.create.call_args[1]
+        self.assertIn('data', send_mail_kwargs)
+        self.assertIn('Messages', send_mail_kwargs['data'])
+        self.assertTrue(send_mail_kwargs['data']['Messages'])
+        message = send_mail_kwargs['data']['Messages'][0]
+        self.assertEqual('Bob', message.get('From', {}).get('Name'))
+        self.assertEqual('bob@bob-emploi.fr', message.get('From', {}).get('Email'))
+        self.assertIn('To', message)
+        self.assertIn('pascal@bayes.org', message['To'][0]['Email'])
+        self.assertIn('Variables', message)
+        mail_vars = message['Variables']
+        auth_link = mail_vars['authLink']
+        mock_mailjet_client.reset()
+
+        # Extract token from link.
+        url_args = parse.parse_qs(parse.urlparse(auth_link).query)
+        self.assertIn('authToken', url_args)
+        self.assertEqual(1, len(url_args['authToken']), msg=url_args)
 
     @mock.patch(mailjet_rest.__name__ + '.Client')
     @mock.patch('logging.error')

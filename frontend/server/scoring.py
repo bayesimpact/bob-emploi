@@ -8,6 +8,7 @@ import re
 import typing
 from typing import Callable, List, Iterable, Optional, Set
 
+from bob_emploi.frontend.api import boolean_pb2
 from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
@@ -18,8 +19,8 @@ from bob_emploi.frontend.server import companies
 from bob_emploi.frontend.server import modules
 from bob_emploi.frontend.server import scoring_base
 # pylint: disable=unused-import,import-only-modules
+from bob_emploi.frontend.server import template
 # Re-export some base elements from here.
-from bob_emploi.frontend.server.scoring_base import APPLICATION_MODES
 from bob_emploi.frontend.server.scoring_base import ConstantScoreModel
 from bob_emploi.frontend.server.scoring_base import ExplainedScore
 from bob_emploi.frontend.server.scoring_base import filter_using_score
@@ -33,6 +34,7 @@ from bob_emploi.frontend.server.scoring_base import ScoringProject
 from bob_emploi.frontend.server.scoring_base import SCORING_MODEL_REGEXPS
 from bob_emploi.frontend.server.scoring_base import SCORING_MODELS
 from bob_emploi.frontend.server.scoring_base import TEMPLATE_VAR_PATTERN
+from bob_emploi.frontend.server.template import APPLICATION_MODES
 # pylint: enable=unused-import,import-only-modules
 
 # TODO(cyrille): Move strategy scorers to its own module and re-enable rule below.
@@ -66,14 +68,14 @@ class _AdviceTrainingScoringModel(scoring_base.ModelBase):
         if len(all_trainings) >= 2:
             if search_length >= 3:
                 return ExplainedScore(3, [
-                    project.translate_string('vous cherchez depuis {} mois')
+                    project.translate_static_string('vous cherchez depuis {} mois')
                     .format(search_length)])
             if project.details.kind == project_pb2.REORIENTATION >= 3:
-                return ExplainedScore(3, [project.translate_string(
+                return ExplainedScore(3, [project.translate_static_string(
                     'vous souhaitez vous réorienter')])
         if search_length >= 2:
             return ExplainedScore(2, [
-                project.translate_string('vous cherchez depuis {} mois')
+                project.translate_static_string('vous cherchez depuis {} mois')
                 .format(search_length)])
 
         return ExplainedScore(1, [])
@@ -86,12 +88,12 @@ class _AdviceBodyLanguage(scoring_base.ModelBase):
         """Compute a score for the given ScoringProject."""
 
         _related_frustrations = {
-            user_pb2.INTERVIEW: project.translate_string(
+            user_pb2.INTERVIEW: project.translate_static_string(
                 'vous nous avez dit que les entretiens sont un challenge pour vous'),
-            user_pb2.SELF_CONFIDENCE: project.translate_string(
+            user_pb2.SELF_CONFIDENCE: project.translate_static_string(
                 'vous nous avez dit parfois manquer de confiance en vous'
             ),
-            user_pb2.ATYPIC_PROFILE: project.translate_string(
+            user_pb2.ATYPIC_PROFILE: project.translate_static_string(
                 'vous nous avez dit ne pas rentrer dans les cases des recruteurs'
             ),
         }
@@ -102,7 +104,7 @@ class _AdviceBodyLanguage(scoring_base.ModelBase):
             if frustration in _related_frustrations]
         return ExplainedScore(
             2 if reasons else 1,
-            reasons if reasons else [project.translate_string(
+            reasons if reasons else [project.translate_static_string(
                 'vous pouvez toujours vous mettre plus en valeur'
             )])
 
@@ -128,6 +130,7 @@ class _AdviceSpecificToJob(scoring_base.ModelBase):
                 project.details.target_job.code_ogr)
             return None
 
+        # TODO(pascal): Use keyed translation with context and drop those.
         is_feminine = project.user_profile.gender == user_pb2.FEMININE
         if is_feminine and config.expanded_card_items_feminine:
             expanded_card_items = config.expanded_card_items_feminine
@@ -140,11 +143,15 @@ class _AdviceSpecificToJob(scoring_base.ModelBase):
             expanded_card_header = config.expanded_card_header
 
         return project_pb2.Advice(
-            title=project.translate_string(config.title),
-            short_title=project.translate_string(config.short_title),
-            goal=project.translate_string(config.goal),
+            title=project.translate_airtable_string(
+                'specificToJobAdvice', config.id, 'title', config.title),
+            short_title=project.translate_airtable_string(
+                'specificToJobAdvice', config.id, 'short_title', config.short_title),
+            goal=project.translate_airtable_string(
+                'specificToJobAdvice', config.id, 'goal', config.goal),
             diagnostic_topics=config.diagnostic_topics,
-            card_text=project.translate_string(config.card_text),
+            card_text=project.translate_airtable_string(
+                'specificToJobAdvice', config.id, 'card_text', config.card_text),
             expanded_card_header=project.translate_string(expanded_card_header),
             expanded_card_items=[project.translate_string(item) for item in expanded_card_items],
         )
@@ -304,7 +311,8 @@ class _ActiveExperimentFilter(scoring_base.BaseFilter):
     def _filter(self, project: ScoringProject) -> bool:
 
         return user_pb2.ACTIVE == \
-            typing.cast(user_pb2.BinaryExperiment, getattr(project.features_enabled, self._feature))
+            typing.cast(
+                'user_pb2.BinaryExperiment.V', getattr(project.features_enabled, self._feature))
 
 
 class _JobGroupWithoutJobFilter(_ProjectFilter):
@@ -332,7 +340,7 @@ class _ApplicationComplexityFilter(scoring_base.BaseFilter):
 
     def __init__(
             self,
-            application_complexity: 'job_pb2.ApplicationProcessComplexity',
+            application_complexity: 'job_pb2.ApplicationProcessComplexity.V',
             reasons: Optional[List[str]] = None) -> None:
         super().__init__(self._filter, reasons=reasons)
         self._application_complexity = application_complexity
@@ -389,7 +397,7 @@ class _MarketTensionFilter(scoring_base.BaseFilter):
 
 class _MarketStressRelevance(scoring_base.RelevanceModelBase):
 
-    def score_relevance(self, project: ScoringProject) -> diagnostic_pb2.CategoryRelevance:
+    def score_relevance(self, project: ScoringProject) -> 'diagnostic_pb2.MainChallengeRelevance.V':
         """Compute a relevance for the given project."""
 
         if project.market_stress() is None:
@@ -450,17 +458,17 @@ class _AdviceVae(scoring_base.ModelBase):
 
         reasons: List[str] = []
         if has_experience:
-            reasons.append(project.translate_string(
+            reasons.append(project.translate_static_string(
                 "vous nous avez dit avoir de l'expérience"))
         if is_frustrated_by_trainings:
-            reasons.append(project.translate_string(
+            reasons.append(project.translate_static_string(
                 'vous nous avez dit avoir du mal à accéder à une formation'))
         if thinks_xp_covers_diplomas:
-            reasons.append(project.translate_string(
+            reasons.append(project.translate_static_string(
                 'vous nous avez dit ne pas avoir les diplômes mais avoir '
                 "l'expérience demandée"))
         if not thinks_xp_covers_diplomas and does_not_have_required_diplomas:
-            reasons.append(project.translate_string(
+            reasons.append(project.translate_static_string(
                 'vous nous avez dit ne pas avoir les diplômes demandés'))
 
         if thinks_xp_covers_diplomas:
@@ -483,7 +491,7 @@ class _AdviceSenior(scoring_base.ModelBase):
         age = project.get_user_age()
         reasons = []
         if (user_pb2.AGE_DISCRIMINATION in project.user_profile.frustrations and age > 40):
-            reasons.append(project.translate_string(
+            reasons.append(project.translate_static_string(
                 'vous nous avez dit que votre age pouvait parfois être un obstacle'))
         # TODO(cyrille): Add a reason for age >= 45.
         if reasons or age >= 45:
@@ -499,7 +507,7 @@ class _AdviceLessApplications(scoring_base.ModelBase):
 
         if project.details.weekly_applications_estimate == project_pb2.DECENT_AMOUNT or \
                 project.details.weekly_applications_estimate == project_pb2.A_LOT:
-            return ExplainedScore(3, [project.translate_string(
+            return ExplainedScore(3, [project.translate_static_string(
                 'vous nous avez dit envoyer beaucoup de candidatures'
             )])
         return NULL_EXPLAINED_SCORE
@@ -510,7 +518,7 @@ class _ApplicationMediumFilter(scoring_base.BaseFilter):
 
     def __init__(
             self,
-            medium: job_pb2.ApplicationMedium,
+            medium: 'job_pb2.ApplicationMedium.V',
             reasons: Optional[List[str]] = None) -> None:
         super().__init__(self._filter, reasons=reasons)
         self._medium = medium
@@ -548,8 +556,9 @@ class _LBBProjectFilter(scoring_base.BaseFilter):
 
 class _TrainingFullfilmentFilter(_ProjectFilter):
 
-    def __init__(self, training_fulfillment_estimate: project_pb2.TrainingFulfillmentEstimate) \
-            -> None:
+    def __init__(
+            self,
+            training_fulfillment_estimate: 'project_pb2.TrainingFulfillmentEstimate.V') -> None:
         super().__init__(self._filter)
         self.training_fulfillment_estimate = training_fulfillment_estimate
 
@@ -561,7 +570,7 @@ class _ContractTypeFilter(scoring_base.BaseFilter):
 
     def __init__(
             self,
-            selected_contracts: List['job_pb2.EmploymentType'],
+            selected_contracts: List['job_pb2.EmploymentType.V'],
             min_percentage: int) -> None:
         super().__init__(self._filter)
         self._selected_contracts = selected_contracts
@@ -623,7 +632,7 @@ class _AdviceFollowupEmail(scoring_base.ModelBase):
         if project.job_group_info().preferred_application_medium == job_pb2.APPLY_IN_PERSON:
             return NULL_EXPLAINED_SCORE
         if user_pb2.NO_OFFER_ANSWERS in project.user_profile.frustrations:
-            return ExplainedScore(2, [project.translate_string(
+            return ExplainedScore(2, [project.translate_static_string(
                 'vous nous avez dit ne pas avoir assez de réponses des recruteurs'
             )])
         return ExplainedScore(1, [])
@@ -693,9 +702,8 @@ class _FindWhatYouLikeFilter(scoring_base.BaseFilter):
         if age <= 30:
             # User is young, they should not be too experienced to change.
             return project.details.seniority < project_pb2.SENIOR
-        # User like their job but hasn't started and is not motivated.
-        if project.details.passionate_level <= project_pb2.LIKEABLE_JOB and \
-                project.details.job_search_has_not_started and has_never_done_job:
+        # User hasn't started search yet and is not motivated.
+        if project.details.job_search_has_not_started and has_never_done_job:
             return user_pb2.MOTIVATION in project.user_profile.frustrations
         if _CumulativeSearchFilter(2, 6).score(project):
             # User has been searching for some time, don't tell them to switch project.
@@ -732,6 +740,25 @@ class _MissingDiplomaFilter(scoring_base.BaseFilter):
             # They are too old and experienced for a diploma to be relevant.
             return False
         return True
+
+
+class _RiskyCovidFilter(scoring_base.BaseFilter):
+
+    def __init__(self) -> None:
+        super().__init__(self._filter)
+
+    def _filter(self, project: scoring_base.ScoringProject) -> bool:
+        covid_risk = project.job_group_info().covid_risk
+        if not covid_risk:
+            rome_id = project.details.target_job.job_group.rome_id
+            if not rome_id:
+                raise scoring_base.NotEnoughDataException(
+                    'Need a job group to determine if the job is affected by Covid',
+                    {'projects.0.targetJob.jobGroup.romeId'})
+            raise scoring_base.NotEnoughDataException(
+                'No information on Covid-related risks for this job',
+                {f'data.job_group_info.{rome_id}.covid_risk'})
+        return covid_risk == job_pb2.COVID_RISKY
 
 
 class _TryWithoutDiploma(scoring_base.ModelHundredBase):
@@ -773,7 +800,7 @@ class _FindLikeableJobScorer(scoring_base.ModelHundredBase):
 
 class _FindWhatYouLikeRelevance(scoring_base.RelevanceModelBase):
 
-    def score_relevance(self, project: ScoringProject) -> diagnostic_pb2.CategoryRelevance:
+    def score_relevance(self, project: ScoringProject) -> 'diagnostic_pb2.MainChallengeRelevance.V':
         """Compute a relevance for the given project."""
 
         if project.details.passionate_level == project_pb2.LIKEABLE_JOB:
@@ -787,7 +814,7 @@ class _FindWhatYouLikeRelevance(scoring_base.RelevanceModelBase):
 
 class _EnhanceMethodsRelevance(scoring_base.RelevanceModelBase):
 
-    def score_relevance(self, project: ScoringProject) -> diagnostic_pb2.CategoryRelevance:
+    def score_relevance(self, project: ScoringProject) -> 'diagnostic_pb2.MainChallengeRelevance.V':
         """Compute a relevance for the given project."""
 
         if project.get_search_length_at_creation() < 0:
@@ -843,7 +870,7 @@ class _ForAllProjects(_MultiProjectsModelBase):
         for score in self._iter_on_project_scores(project):
             if not score:
                 return score
-            elif not first_score:
+            if not first_score:
                 first_score = score
         return first_score
 
@@ -881,15 +908,15 @@ class _TryAlternanceScoringModel(scoring_base.ModelBase):
             return NULL_EXPLAINED_SCORE
 
         if age < 26:
-            return ExplainedScore(3, [project.translate_string('vous êtes jeune')])
+            return ExplainedScore(3, [project.translate_static_string('vous êtes jeune')])
         if age < 35 and project.details.kind in _UNEMPLOYED_KINDS:
-            return ExplainedScore(3, [project.translate_string('vous êtes encore jeune')])
+            return ExplainedScore(3, [project.translate_static_string('vous êtes encore jeune')])
         if age > 45:
             return ExplainedScore(
-                1, [project.translate_string("l'alternance n'est pas que pour les jeunes")])
+                1, [project.translate_static_string("l'alternance n'est pas que pour les jeunes")])
 
         return ExplainedScore(
-            2, [project.translate_string("l'alternance n'est pas que pour les jeunes")])
+            2, [project.translate_static_string("l'alternance n'est pas que pour les jeunes")])
 
 
 class _ResumeScoringModel(_ProjectFilter):
@@ -904,7 +931,7 @@ class _ResumeScoringModel(_ProjectFilter):
                 # TODO(pascal): Use project_id instead of 0. Same below.
                 {'projects.0.hasResume'},
             )
-        return project.has_resume == project_pb2.TRUE
+        return project.has_resume == boolean_pb2.TRUE
 
 
 class _CompanyCreatorScoringModel(_ProjectFilter):
@@ -921,18 +948,20 @@ class _CompanyCreatorScoringModel(_ProjectFilter):
         return project.kind == project_pb2.CREATE_OR_TAKE_OVER_COMPANY
 
 
-def unoptional(maybe_bool: project_pb2.OptionalBool, field: Optional[str] = None) -> bool:
+def unoptional(maybe_bool: 'boolean_pb2.OptionalBool.V', field: Optional[str] = None) -> bool:
     """Returns a boolean value from an optional one, or raise if the value is missing."""
 
-    if maybe_bool == project_pb2.UNKNOWN_BOOL:
+    if maybe_bool == boolean_pb2.UNKNOWN_BOOL:
         raise NotEnoughDataException(
             'An OptionalBool field is missing', fields=None if field is None else {field})
-    return maybe_bool == project_pb2.TRUE
+    return maybe_bool == boolean_pb2.TRUE
 
 
 def _is_long_term_mom(user: user_pb2.UserProfile) -> bool:
     return user.gender == user_pb2.FEMININE and user_pb2.STAY_AT_HOME_PARENT in user.frustrations
 
+
+_MIGRANT_FRUSTRATIONS = {user_pb2.LANGUAGE, user_pb2.FOREIGN_QUALIFICATIONS}
 
 # Matches strings like "for-job-group(M16)" or "for-job-group(A12, A13)".
 scoring_base.register_regexp(
@@ -1057,7 +1086,7 @@ scoring_base.register_model(
     'for-currently-in-training', _TrainingFullfilmentFilter(project_pb2.CURRENTLY_IN_TRAINING))
 scoring_base.register_model(
     'for-driver', _UserProfileFilter(
-        lambda user: user.has_car_driving_license >= project_pb2.TRUE or
+        lambda user: user.has_car_driving_license >= boolean_pb2.TRUE or
         bool(user.driving_licenses)))
 scoring_base.register_model(
     'for-employed', scoring_base.BaseFilter(
@@ -1139,6 +1168,10 @@ scoring_base.register_model(
 scoring_base.register_model(
     'for-medium-mobility(region)', _ProjectFilter(
         lambda project: project.area_type >= geo_pb2.REGION))
+# TODO(cyrille): Consider using a more explicit question to get this info.
+scoring_base.register_model(
+    'for-migrant', _UserProfileFilter(
+        lambda profile: bool(_MIGRANT_FRUSTRATIONS & set(profile.frustrations))))
 scoring_base.register_model(
     'for-most-likely-short-contract', _ContractTypeFilter(
         [job_pb2.CDD_LESS_EQUAL_3_MONTHS, job_pb2.INTERIM], 50))
@@ -1176,6 +1209,8 @@ scoring_base.register_model(
 scoring_base.register_model(
     'for-reorientation', _ProjectFilter(
         lambda project: project.kind == project_pb2.REORIENTATION))
+scoring_base.register_model(
+    'for-risky-covid', _RiskyCovidFilter())
 scoring_base.register_model(
     'for-rural-area-inhabitant', _ProjectFilter(
         lambda project: project.city.urban_score == -1))

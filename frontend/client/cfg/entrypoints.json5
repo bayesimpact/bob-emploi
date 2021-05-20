@@ -1,0 +1,34 @@
+{
+  'app': {
+    entry: './src/entry',
+    htmlFilename: 'index.html',
+    usesHotLoader: true,
+  },
+  'bootstrap': {
+    entry: './src/bootstrap_entry',
+    htmlFilename: 'bootstrap.html',
+    prefixes: ['/conseiller'],
+    usesHotLoader: true,
+  },
+  'design-system': {
+    entry: './src/design_system_entry',
+    htmlFilename: 'design_system.html',
+    prefixes: ['/design-system'],
+    usesHotLoader: true,
+  },
+  'nps': {
+    entry: './src/components/pages/nps',
+    htmlFilename: 'nps.html',
+    prefixes: ['/retours'],
+  },
+  'statusUpdate': {
+    entry: './src/components/pages/status_update',
+    htmlFilename: 'statut.html',
+    prefixes: ['/statut'],
+  },
+  'unsubscribe': {
+    entry: './src/components/pages/unsubscribe',
+    htmlFilename: 'unsubscribe.html',
+    prefixes: ['/unsubscribe'],
+  },
+}

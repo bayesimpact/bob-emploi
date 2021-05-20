@@ -127,7 +127,7 @@ def upload(batch_size: int = 5000, data_folder: str = 'data', out: TextIO = sys.
         # OK we're ready finally replace the index.
         client.move_index(tmp_index_name, index_name)
     except exceptions.AlgoliaException:
-        tmp_cities_index.clear_index()
+        tmp_cities_index.delete()
         out.write(json.dumps(suggestions[:10], indent=2))
         raise
 

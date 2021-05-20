@@ -1,9 +1,0 @@
-firstName
-frustration_NO_OFFER_ANSWERS
-frustration_NO_OFFERS
-frustration_RESUME
-gender
-loginUrl
-mayHaveSeekingChildren
-stopSeekingUrl
-unsubscribeLink

@@ -9,7 +9,7 @@ from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
 
 _AREA_TYPE_TO_ID_GETTER: Dict[
-    'geo_pb2.AreaType',
+    'geo_pb2.AreaType.V',
     Callable[[geo_pb2.FrenchCity], str]
 ] = {
     geo_pb2.REGION: lambda city: city.region_id,
@@ -68,9 +68,9 @@ class _AdviceOnlineSalons(scoring_base.ModelBase):
         reasons = []
         # TODO(cyrille): Refine this depending on salons' locations.
         if project.details.area_type >= geo_pb2.COUNTRY:
-            reasons.append(project.translate_string('vous êtes mobile partout en France'))
+            reasons.append(project.translate_static_string('vous êtes mobile partout en France'))
         elif any(salon.HasField('location') for salon in relevant_salons):
-            reasons.append(project.translate_string(
+            reasons.append(project.translate_static_string(
                 'certains salons concernent votre zone géographique'))
 
         if any(salon.job_group_ids for salon in relevant_salons):

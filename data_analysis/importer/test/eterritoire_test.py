@@ -2,9 +2,8 @@
 
 import json
 import unittest
-from unittest import mock
 
-import requests
+import requests_mock
 
 from bob_emploi.frontend.api import association_pb2
 from bob_emploi.data_analysis.importer import eterritoire
@@ -14,27 +13,29 @@ from bob_emploi.data_analysis.lib import mongo
 class ETerritoireImporterTestCase(unittest.TestCase):
     """Unit tests for the e-Territoire links importer."""
 
-    @mock.patch(requests.__name__ + '.get')
-    def test_get_cities_dicts(self, mock_get: mock.MagicMock) -> None:
+    @requests_mock.mock()
+    def test_get_cities_dicts(self, mock_requests: 'requests_mock._RequestObjectProxy') -> None:
         """Basic usage."""
 
-        mock_get().json.return_value = json.loads('''[
-            {
-                "idinsee": "01001",
-                "nom": "Abergement-Clémenciat",
-                "url": "\\/territoires\\/auvergne-rhone-alpes\\/ain\\/abergement\\/1001\\/1"
-            },
-            {
-                "idinsee":"32013",
-                "nom":"Auch",
-                "url":"\\/territoires\\/occitanie\\/gers\\/auch\\/32013\\/12474"
-            },
-            {
-                "idinsee":"2A004",
-                "nom":"Ajaccio",
-                "url":"\\/territoires\\/corse\\/corse-du-sud\\/ajaccio\\/992004\\/37369"
-            }
-        ]''')
+        mock_requests.get(
+            'http://www.eterritoire.fr/webservice/listeCommunes.php',
+            json=json.loads('''[
+                {
+                    "idinsee": "01001",
+                    "nom": "Abergement-Clémenciat",
+                    "url": "\\/territoires\\/auvergne-rhone-alpes\\/ain\\/abergement\\/1001\\/1"
+                },
+                {
+                    "idinsee":"32013",
+                    "nom":"Auch",
+                    "url":"\\/territoires\\/occitanie\\/gers\\/auch\\/32013\\/12474"
+                },
+                {
+                    "idinsee":"2A004",
+                    "nom":"Ajaccio",
+                    "url":"\\/territoires\\/corse\\/corse-du-sud\\/ajaccio\\/992004\\/37369"
+                }
+            ]'''))
 
         cities = dict(mongo.collection_to_proto_mapping(
             eterritoire.get_cities_dicts(),

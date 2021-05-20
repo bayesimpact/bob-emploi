@@ -1,0 +1,1189 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Metadata": {
+    "AWS::CloudFormation::Designer": {
+      "43268723-0fc4-4081-9048-d98272e654e4": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 480,
+          "y": 30
+        },
+        "z": 1,
+        "embeds": [],
+        "isassociatedwith": [
+          "e4c695c7-4665-4c2d-bc9c-2fd23c778504"
+        ]
+      },
+      "47c26739-fa30-4e10-840e-63ae24670314": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 480,
+          "y": 150
+        },
+        "z": 1,
+        "embeds": [],
+        "isassociatedwith": [
+          "43268723-0fc4-4081-9048-d98272e654e4"
+        ]
+      },
+      "15fcf7ad-e59e-4c48-90f4-fe849803d814": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 570,
+          "y": 270
+        },
+        "z": 1,
+        "embeds": []
+      },
+      "0951c592-7a9d-4e45-a6e0-530a093e4bbb": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 360,
+          "y": 150
+        },
+        "z": 1,
+        "embeds": []
+      },
+      "170bd25a-5e9a-40a2-b078-0a5446794a1f": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 690,
+          "y": 150
+        },
+        "z": 1,
+        "embeds": [],
+        "isassociatedwith": [
+          "15fcf7ad-e59e-4c48-90f4-fe849803d814",
+          "405c6c7a-bef4-48ff-a6e4-b664aa6e2809",
+          "9715756b-f38f-4d0c-b585-a15a8bda9b5e"
+        ],
+        "dependson": [
+          "47c26739-fa30-4e10-840e-63ae24670314"
+        ]
+      },
+      "405c6c7a-bef4-48ff-a6e4-b664aa6e2809": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 810,
+          "y": 270
+        },
+        "z": 1,
+        "embeds": []
+      },
+      "945fe599-eede-4d25-9d33-3e1d775dde35": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 900,
+          "y": 30
+        },
+        "z": 1,
+        "embeds": []
+      },
+      "e4c695c7-4665-4c2d-bc9c-2fd23c778504": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 690,
+          "y": 30
+        },
+        "z": 1,
+        "embeds": []
+      },
+      "9715756b-f38f-4d0c-b585-a15a8bda9b5e": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 900,
+          "y": 150
+        },
+        "z": 1,
+        "embeds": []
+      },
+      "18e7908a-06a3-4482-814c-ff1c8633b075": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 1140,
+          "y": 270
+        },
+        "z": 1,
+        "embeds": []
+      },
+      "4819e9ed-dd63-42a5-9bf1-5d18a353723a": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 1010,
+          "y": 150
+        },
+        "z": 1,
+        "embeds": []
+      },
+      "4e8bc41f-f359-4d89-8ad2-56e1b44132f5": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 1010,
+          "y": 270
+        },
+        "z": 1,
+        "embeds": []
+      }
+    }
+  },
+  "Resources": {
+    "LoadBalancer": {
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties": {
+        "Subnets": {
+          "Ref": "AvailabilitySubnets"
+        },
+        "SecurityGroups": [
+          {
+            "Ref": "LBSecurityGroup"
+          }
+        ]
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "43268723-0fc4-4081-9048-d98272e654e4"
+        }
+      }
+    },
+    "LBListener": {
+      "Type": "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties": {
+        "Certificates": [
+          {
+            "CertificateArn": {
+              "Ref": "Certificate"
+            }
+          }
+        ],
+        "LoadBalancerArn": {
+          "Ref": "LoadBalancer"
+        },
+        "DefaultActions": [
+          {
+            "TargetGroupArn": {
+              "Ref": "TargetGroup"
+            },
+            "Type": "forward"
+          }
+        ],
+        "Port": 443,
+        "Protocol": "HTTPS"
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "47c26739-fa30-4e10-840e-63ae24670314"
+        }
+      }
+    },
+    "TargetGroup": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "Port": 80,
+        "Protocol": "HTTP",
+        "TargetType": "ip",
+        "VpcId": {
+          "Ref": "ECSTargetVPC"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "15fcf7ad-e59e-4c48-90f4-fe849803d814"
+        }
+      }
+    },
+    "Certificate": {
+      "Type": "AWS::CertificateManager::Certificate",
+      "Properties": {
+        "ValidationMethod": "DNS",
+        "DomainName": {
+          "Ref": "DomainName"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "0951c592-7a9d-4e45-a6e0-530a093e4bbb"
+        }
+      }
+    },
+    "ECSService": {
+      "Type": "AWS::ECS::Service",
+      "Properties": {
+        "LoadBalancers": [
+          {
+            "ContainerName": "flask",
+            "ContainerPort": 80,
+            "TargetGroupArn": {
+              "Ref": "TargetGroup"
+            }
+          }
+        ],
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "AssignPublicIp": "ENABLED",
+            "Subnets": {
+              "Ref": "AvailabilitySubnets"
+            },
+            "SecurityGroups": [
+              {
+                "Ref": "ECSServiceSecurityGroup"
+              }
+            ]
+          }
+        },
+        "DesiredCount": {
+          "Ref": "DesiredServerCount"
+        },
+        "TaskDefinition": {
+          "Ref": "TaskDefinition"
+        },
+        "LaunchType": "FARGATE",
+        "Cluster": {
+          "Ref": "ECSCluster"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "170bd25a-5e9a-40a2-b078-0a5446794a1f"
+        }
+      },
+      "DependsOn": [
+        "LBListener"
+      ]
+    },
+    "ECSCluster": {
+      "Type": "AWS::ECS::Cluster",
+      "Properties": {},
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "405c6c7a-bef4-48ff-a6e4-b664aa6e2809"
+        }
+      }
+    },
+    "ECSServiceSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Inbound HTTP, outbound anything",
+        "SecurityGroupIngress": [
+          {
+            "FromPort": 80,
+            "ToPort": 80,
+            "IpProtocol": "tcp",
+            "SourceSecurityGroupId": {
+              "Ref": "LBSecurityGroup"
+            }
+          }
+        ],
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "IpProtocol": -1
+          }
+        ],
+        "VpcId": {
+          "Ref": "ECSTargetVPC"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "945fe599-eede-4d25-9d33-3e1d775dde35"
+        }
+      }
+    },
+    "LBSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Inboud HTTPS, outbound HTTP",
+        "SecurityGroupIngress": [
+          {
+            "FromPort": 443,
+            "ToPort": 443,
+            "IpProtocol": "tcp",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ],
+        "SecurityGroupEgress": [
+          {
+            "FromPort": 80,
+            "ToPort": 80,
+            "IpProtocol": "tcp",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ],
+        "VpcId": {
+          "Ref": "ECSTargetVPC"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "e4c695c7-4665-4c2d-bc9c-2fd23c778504"
+        }
+      }
+    },
+    "TaskDefinition": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "Family": "bob-frontend-server",
+        "ContainerDefinitions": [
+          {
+            "Environment": [
+              {
+                "Name": "ADMIN_AUTH_TOKEN",
+                "Value": {
+                  "Ref": "EnvAdminAuthToken"
+                }
+              },
+              {
+                "Name": "USERS_MONGO_URL",
+                "Value": {
+                  "Ref": "MongoUserWrite"
+                }
+              },
+              {
+                "Name": "EMPLOI_STORE_CLIENT_SECRET",
+                "Value": {
+                  "Ref": "EnvEmploiStoreClientSecret"
+                }
+              },
+              {
+                "Name": "FACEBOOK_APP_SECRET",
+                "Value": {
+                  "Ref": "EnvFacebookAppSecret"
+                }
+              },
+              {
+                "Name": "LINKED_IN_CLIENT_SECRET",
+                "Value": {
+                  "Ref": "EnvLinkedInClientSecret"
+                }
+              },
+              {
+                "Name": "MA_VOIE_API_URL",
+                "Value": {
+                  "Ref": "EnvMaVoieApiUrl"
+                }
+              },
+              {
+                "Name": "MA_VOIE_AUTH",
+                "Value": {
+                  "Ref": "EnvMaVoieAuth"
+                }
+              },
+              {
+                "Name": "MAILJET_SECRET",
+                "Value": {
+                  "Ref": "EnvMailjetSecret"
+                }
+              },
+              {
+                "Name": "MONGO_URL",
+                "Value": {
+                  "Ref": "MongoDataRead"
+                }
+              },
+              {
+                "Name": "EVAL_MONGO_URL",
+                "Value": {
+                  "Ref": "MongoEvalWrite"
+                }
+              },
+              {
+                "Name": "SECRET_SALT",
+                "Value": {
+                  "Ref": "EnvSecretSalt"
+                }
+              },
+              {
+                "Name": "SENTRY_DSN",
+                "Value": {
+                  "Ref": "EnvSentryDsn"
+                }
+              },
+              {
+                "Name": "SLACK_WEBHOOK_URL",
+                "Value": {
+                  "Ref": "EnvSlackWebhookUrl"
+                }
+              },
+              {
+                "Name": "EMAILS_FOR_EVALUATIONS",
+                "Value": "@bayesimpact.org$"
+              },
+              {
+                "Name": "EMPLOI_STORE_CLIENT_ID",
+                "Value": "PAR_bobemploi_be1afe53827b15e37c95e9439c7429936c74876cbc1ff3d42d6f28ca78676825"
+              },
+              {
+                "Name": "FACEBOOK_SSO_APP_ID",
+                "Value": "1576288225722008"
+              },
+              {
+                "Name": "GOOGLE_SSO_CLIENT_ID",
+                "Value": "524962411351-hl5h7ap6mbvsj4of7pl6i51heqsuqtgo.apps.googleusercontent.com"
+              },
+              {
+                "Name": "LINKED_IN_CLIENT_ID",
+                "Value": "78ndzo5nvl0gkh"
+              },
+              {
+                "Name": "MAILJET_APIKEY_PUBLIC",
+                "Value": "f53ee2bc432e531d209aa686e3a725e1"
+              },
+              {
+                "Name": "SERVER_VERSION",
+                "Value": {
+                  "Fn::Sub": "prod.${BobDeployment}.${FlaskDockerTag}"
+                }
+              },
+              {
+                "Name": "BOB_DEPLOYMENT",
+                "Value": {
+                  "Ref": "BobDeployment"
+                }
+              },
+              {
+                "Name": "BASE_URL",
+                "Value": {
+                  "Fn::Sub": "https://${PublicDomainName}"
+                }
+              }
+            ],
+            "Essential": true,
+            "Image": {
+              "Fn::Sub": "bayesimpact/bob-emploi-frontend-server:${FlaskDockerTag}"
+            },
+            "Name": "flask",
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "CloudWatchLogGroup"
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                },
+                "awslogs-stream-prefix": "bob-frontend-server"
+              }
+            },
+            "PortMappings": [
+              {
+                "ContainerPort": 80,
+                "HostPort": 80
+              }
+            ]
+          }
+        ],
+        "Cpu": 512,
+        "ExecutionRoleArn": "arn:aws:iam::951168128976:role/ecsTaskExecutionRole",
+        "Memory": 1024,
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE"
+        ]
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "9715756b-f38f-4d0c-b585-a15a8bda9b5e"
+        }
+      }
+    },
+    "ImporterTaskDefinition": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "Family": "bob-data-importer",
+        "ContainerDefinitions": [
+          {
+            "Environment": [
+              {
+                "Name": "MONGO_URL",
+                "Value": {
+                  "Ref": "MongoDataWrite"
+                }
+              },
+              {
+                "Name": "SLACK_IMPORT_URL",
+                "Value": {
+                  "Ref": "EnvSlackImportUrl"
+                }
+              },
+              {
+                "Name": "SENTRY_DSN",
+                "Value": {
+                  "Ref": "EnvSentryDsn"
+                }
+              },
+              {
+                "Name": "BASE_URL",
+                "Value": {
+                  "Fn::Sub": "https://${PublicDomainName}"
+                }
+              }
+            ],
+            "Essential": true,
+            "Image": {
+              "Fn::Sub": "951168128976.dkr.ecr.eu-west-3.amazonaws.com/bob-emploi/data-analysis-prepare:${ImporterDockerTag}"
+            },
+            "Name": "importer",
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": "bob-emploi",
+                "awslogs-region": "eu-west-3",
+                "awslogs-stream-prefix": "importer"
+              }
+            }
+          }
+        ],
+        "Cpu": 512,
+        "ExecutionRoleArn": "arn:aws:iam::951168128976:role/ecsTaskExecutionRole",
+        "Memory": 1024,
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE"
+        ]
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "18e7908a-06a3-4482-814c-ff1c8633b075"
+        }
+      }
+    },
+    "ScheduledTaskCleanGuests": {
+      "Type": "AWS::Events::Rule",
+      "DependsOn": [
+        "ECSCluster",
+        "TaskDefinition"
+      ],
+      "Properties": {
+        "Description": "Delete all personal information from guest accounts and support tickets older than a week.",
+        "Name": "clean-transient-pii",
+        "ScheduleExpression": "rate(24 hours)",
+        "State": {
+          "Ref": "ScheduledTasksStatus"
+        },
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "ECSCluster",
+                "Arn"
+              ]
+            },
+            "EcsParameters": {
+              "NetworkConfiguration": {
+                "AwsVpcConfiguration": {
+                  "AssignPublicIp": "ENABLED",
+                  "Subnets": {
+                    "Ref": "AvailabilitySubnets"
+                  },
+                  "SecurityGroups": [
+                    {
+                      "Ref": "ECSServiceSecurityGroup"
+                    }
+                  ]
+                }
+              },
+              "LaunchType": "FARGATE",
+              "TaskCount": 1,
+              "TaskDefinitionArn": {
+                "Ref": "TaskDefinition"
+              }
+            },
+            "Id": "clean-guest-user",
+            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python bob_emploi/frontend/server/asynchronous/clean_guests.py --registered-to-days-ago 7 --no-dry-run\"]}]}",
+            "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
+          },
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "ECSCluster",
+                "Arn"
+              ]
+            },
+            "EcsParameters": {
+              "NetworkConfiguration": {
+                "AwsVpcConfiguration": {
+                  "AssignPublicIp": "ENABLED",
+                  "Subnets": {
+                    "Ref": "AvailabilitySubnets"
+                  },
+                  "SecurityGroups": [
+                    {
+                      "Ref": "ECSServiceSecurityGroup"
+                    }
+                  ]
+                }
+              },
+              "LaunchType": "FARGATE",
+              "TaskCount": 1,
+              "TaskDefinitionArn": {
+                "Ref": "TaskDefinition"
+              }
+            },
+            "Id": "clean-support-tickets",
+            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python bob_emploi/frontend/server/asynchronous/clean_support_tickets.py\"]}]}",
+            "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
+          }
+        ]
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "4e8bc41f-f359-4d89-8ad2-56e1b44132f5"
+        }
+      }
+    },
+    "ScheduledTaskSendDailyMails": {
+      "Type": "AWS::Events::Rule",
+      "DependsOn": [
+        "ECSCluster",
+        "TaskDefinition"
+      ],
+      "Properties": {
+        "Description": "Send a NPS email daily to the users that registered 7 days ago, an RER email daily to the users that registered 3 months ago, coaching emails to users that match.",
+        "Name": "send-daily-emails",
+        "ScheduleExpression": "cron(15 8 * * ? *)",
+        "State": {
+          "Ref": "ScheduledTasksStatus"
+        },
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "ECSCluster",
+                "Arn"
+              ]
+            },
+            "EcsParameters": {
+              "NetworkConfiguration": {
+                "AwsVpcConfiguration": {
+                  "AssignPublicIp": "ENABLED",
+                  "Subnets": {
+                    "Ref": "AvailabilitySubnets"
+                  },
+                  "SecurityGroups": [
+                    {
+                      "Ref": "ECSServiceSecurityGroup"
+                    }
+                  ]
+                }
+              },
+              "LaunchType": "FARGATE",
+              "TaskCount": 1,
+              "TaskDefinitionArn": {
+                "Ref": "TaskDefinition"
+              }
+            },
+            "Id": "send-daily-nps-email",
+            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python bob_emploi/frontend/server/mail/mail_blast.py\",\"nps\",\"send\",\"--days-since-any-email\",\"0\",\"--registered-to-days-ago\",\"7\"]}]}",
+            "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
+          },
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "ECSCluster",
+                "Arn"
+              ]
+            },
+            "EcsParameters": {
+              "NetworkConfiguration": {
+                "AwsVpcConfiguration": {
+                  "AssignPublicIp": "ENABLED",
+                  "Subnets": {
+                    "Ref": "AvailabilitySubnets"
+                  },
+                  "SecurityGroups": [
+                    {
+                      "Ref": "ECSServiceSecurityGroup"
+                    }
+                  ]
+                }
+              },
+              "LaunchType": "FARGATE",
+              "TaskCount": 1,
+              "TaskDefinitionArn": {
+                "Ref": "TaskDefinition"
+              }
+            },
+            "Id": "send-daily-rer-email",
+            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python bob_emploi/frontend/server/mail/mail_blast.py employment-status send --registered-from-days-ago 97 --registered-to-days-ago 90\"]}]}",
+            "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
+          },
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "ECSCluster",
+                "Arn"
+              ]
+            },
+            "EcsParameters": {
+              "NetworkConfiguration": {
+                "AwsVpcConfiguration": {
+                  "AssignPublicIp": "ENABLED",
+                  "Subnets": {
+                    "Ref": "AvailabilitySubnets"
+                  },
+                  "SecurityGroups": [
+                    {
+                      "Ref": "ECSServiceSecurityGroup"
+                    }
+                  ]
+                }
+              },
+              "LaunchType": "FARGATE",
+              "TaskCount": 1,
+              "TaskDefinitionArn": {
+                "Ref": "TaskDefinition"
+              }
+            },
+            "Id": "send-coaching-email",
+            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python bob_emploi/frontend/server/mail/focus.py send\"]}]}",
+            "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
+          }
+        ]
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "4819e9ed-dd63-42a5-9bf1-5d18a353723a"
+        }
+      }
+    },
+    "ScheduledTaskWeeklyMaintenance": {
+      "Type": "AWS::Events::Rule",
+      "DependsOn": [
+        "ECSCluster",
+        "TaskDefinition"
+      ],
+      "Properties": {
+        "Description": "Recreate ElasticSearch index",
+        "Name": "weekly-maintenance",
+        "ScheduleExpression": "cron(0 2 ? * SUN *)",
+        "State": {
+          "Ref": "ScheduledTasksStatus"
+        },
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "ECSCluster",
+                "Arn"
+              ]
+            },
+            "EcsParameters": {
+              "NetworkConfiguration": {
+                "AwsVpcConfiguration": {
+                  "AssignPublicIp": "ENABLED",
+                  "Subnets": {
+                    "Ref": "AvailabilitySubnets"
+                  },
+                  "SecurityGroups": [
+                    {
+                      "Ref": "ECSServiceSecurityGroup"
+                    }
+                  ]
+                }
+              },
+              "LaunchType": "FARGATE",
+              "TaskCount": 1,
+              "TaskDefinitionArn": {
+                "Ref": "TaskDefinition"
+              }
+            },
+            "Id": "sync-user-elasticsearch",
+            "Input": {
+              "Fn::Sub": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python bob_emploi/frontend/server/asynchronous/sync_user_elasticsearch.py -r 2016-11 --no-dry-run --index bobusers-${BobDeployment} --force-recreate\"],\"environment\":[{\"name\":\"ELASTICSEARCH_URL\",\"value\":\"${EnvElasticSearchUrl}\"},{\"name\":\"USERS_MONGO_URL\",\"value\":\"${MongoUserRead}\"}]}],\"taskRoleArn\":\"arn:aws:iam::951168128976:role/ECS-ElasticSearch\"}"
+            },
+            "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
+          }
+        ]
+      }
+    },
+    "ScheduledTaskElasticSearch": {
+      "Type": "AWS::Events::Rule",
+      "DependsOn": [
+        "ECSCluster",
+        "TaskDefinition"
+      ],
+      "Properties": {
+        "Description": "Update ElasticSearch index.",
+        "Name": "sync-user-elasticsearch",
+        "ScheduleExpression": "rate(12 hours)",
+        "State": {
+          "Ref": "ScheduledTasksStatus"
+        },
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "ECSCluster",
+                "Arn"
+              ]
+            },
+            "EcsParameters": {
+              "NetworkConfiguration": {
+                "AwsVpcConfiguration": {
+                  "AssignPublicIp": "ENABLED",
+                  "Subnets": {
+                    "Ref": "AvailabilitySubnets"
+                  },
+                  "SecurityGroups": [
+                    {
+                      "Ref": "ECSServiceSecurityGroup"
+                    }
+                  ]
+                }
+              },
+              "LaunchType": "FARGATE",
+              "TaskCount": 1,
+              "TaskDefinitionArn": {
+                "Ref": "TaskDefinition"
+              }
+            },
+            "Id": "sync-user-elasticsearch",
+            "Input": {
+              "Fn::Sub": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python bob_emploi/frontend/server/asynchronous/sync_user_elasticsearch.py -r 2018-01-01 --no-dry-run --index bobusers-${BobDeployment}\"],\"environment\":[{\"name\":\"ELASTICSEARCH_URL\",\"value\":\"${EnvElasticSearchUrl}\"},{\"name\":\"USERS_MONGO_URL\",\"value\":\"${MongoUserRead}\"}]}],\"taskRoleArn\":\"arn:aws:iam::951168128976:role/ECS-ElasticSearch\"}"
+            },
+            "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
+          }
+        ]
+      }
+    },
+    "ScheduledTaskEvalPools": {
+      "Type": "AWS::Events::Rule",
+      "DependsOn": [
+        "ECSCluster",
+        "TaskDefinition"
+      ],
+      "Properties": {
+        "Description": "Create a pool of use-cases for evaluation.",
+        "Name": "create-eval-pool",
+        "ScheduleExpression": "cron(20 6 * * ? *)",
+        "State": {
+          "Ref": "ScheduledTasksStatus"
+        },
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "ECSCluster",
+                "Arn"
+              ]
+            },
+            "EcsParameters": {
+              "NetworkConfiguration": {
+                "AwsVpcConfiguration": {
+                  "AssignPublicIp": "ENABLED",
+                  "Subnets": {
+                    "Ref": "AvailabilitySubnets"
+                  },
+                  "SecurityGroups": [
+                    {
+                      "Ref": "ECSServiceSecurityGroup"
+                    }
+                  ]
+                }
+              },
+              "LaunchType": "FARGATE",
+              "TaskCount": 1,
+              "TaskDefinitionArn": {
+                "Ref": "TaskDefinition"
+              }
+            },
+            "Id": "create-eval-pool",
+            "Input": {
+              "Fn::Sub": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python bob_emploi/frontend/server/asynchronous/create_pool.py\"],\"environment\":[{\"name\":\"EVAL_MONGO_URL\",\"value\":\"${MongoEvalWrite}\"},{\"name\":\"USERS_MONGO_URL\",\"value\":\"${MongoUserRead}\"},{\"name\":\"SLACK_CREATE_POOL_URL\",\"value\":\"${EnvSlackWebhookUrl}\"}]}]}"
+            },
+            "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
+          }
+        ]
+      }
+    },
+    "ScheduledTaskUpdateEmailSentStatus": {
+      "Type": "AWS::Events::Rule",
+      "DependsOn": [
+        "ECSCluster",
+        "TaskDefinition"
+      ],
+      "Properties": {
+        "Description": "Update the \"sent status\" of the emails that we sent with Mailjet",
+        "Name": "update-email-sent-status",
+        "ScheduleExpression": "rate(24 hours)",
+        "State": {
+          "Ref": "ScheduledTasksStatus"
+        },
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "ECSCluster",
+                "Arn"
+              ]
+            },
+            "EcsParameters": {
+              "NetworkConfiguration": {
+                "AwsVpcConfiguration": {
+                  "AssignPublicIp": "ENABLED",
+                  "Subnets": {
+                    "Ref": "AvailabilitySubnets"
+                  },
+                  "SecurityGroups": [
+                    {
+                      "Ref": "ECSServiceSecurityGroup"
+                    }
+                  ]
+                }
+              },
+              "LaunchType": "FARGATE",
+              "TaskCount": 1,
+              "TaskDefinitionArn": {
+                "Ref": "TaskDefinition"
+              }
+            },
+            "Id": "bob-users",
+            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python bob_emploi/frontend/server/asynchronous/update_email_sent_status.py\"]}]}",
+            "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
+          }
+        ]
+      }
+    },
+    "ScheduledTaskImportTranslations": {
+      "Type": "AWS::Events::Rule",
+      "DependsOn": [
+        "ECSCluster",
+        "ImporterTaskDefinition"
+      ],
+      "Properties": {
+        "Description": "Import translations to Mongo nightly",
+        "Name": "import-translations",
+        "ScheduleExpression": "cron(0 2 * * ? *)",
+        "State": {
+          "Ref": "ScheduledTasksStatus"
+        },
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "ECSCluster",
+                "Arn"
+              ]
+            },
+            "EcsParameters": {
+              "NetworkConfiguration": {
+                "AwsVpcConfiguration": {
+                  "AssignPublicIp": "ENABLED",
+                  "Subnets": {
+                    "Ref": "AvailabilitySubnets"
+                  },
+                  "SecurityGroups": [
+                    {
+                      "Ref": "ECSServiceSecurityGroup"
+                    }
+                  ]
+                }
+              },
+              "LaunchType": "FARGATE",
+              "TaskCount": 1,
+              "TaskDefinitionArn": {
+                "Ref": "ImporterTaskDefinition"
+              }
+            },
+            "Id": "import-translations",
+            "Input": {
+              "Fn::Sub": "{\"containerOverrides\":[{\"name\":\"importer\",\"command\":[\"python bob_emploi/data_analysis/import_status.py --run translations\"],\"environment\":[{\"name\":\"AIRTABLE_API_KEY\",\"value\":\"${EnvAirtableApiKey}\"}]}]}"
+            },
+            "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
+          }
+        ]
+      }
+    },
+    "CloudWatchLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Ref": "AWS::StackName"
+        },
+        "RetentionInDays": 30
+      }
+    }
+  },
+  "Parameters": {
+    "PublicDomainName": {
+      "Type": "String",
+      "Default": "www.bob-emploi.fr",
+      "Description": "Hostnames to use to publicly serve this Bob client instance"
+    },
+    "DomainName": {
+      "Type": "String",
+      "Description": "Hostname to use to publicly serve this Bob server instance"
+    },
+    "AvailabilitySubnets": {
+      "Type": "List<AWS::EC2::Subnet::Id>",
+      "Description": "Subnets in which the service will be hosted"
+    },
+    "BobDeployment": {
+      "Type": "String",
+      "Default": "fr",
+      "Description": "The identifier for this specific deployment in Bob"
+    },
+    "ECSTargetVPC": {
+      "Type": "AWS::EC2::VPC::Id",
+      "Description": "The VPC for the TargetGroup listing fargate instances"
+    },
+    "EnvAdminAuthToken": {
+      "Type": "String",
+      "Description": "A unique token to allow admins to authenticate directly in the app"
+    },
+    "EnvAirtableApiKey": {
+      "Type": "String",
+      "Default": "",
+      "Description": "The client secret to a read-access to Airtable API"
+    },
+    "EnvElasticSearchUrl": {
+      "Type": "String",
+      "Description": "The ElasticSearch URL to save anonymized user data for analytics"
+    },
+    "EnvEmploiStoreClientSecret": {
+      "Type": "String",
+      "Description": "The client secret to access Emploi Store Dev APIs"
+    },
+    "EnvFacebookAppSecret": {
+      "Type": "String",
+      "Description": "The client secret to access Facebook APIs"
+    },
+    "EnvLinkedInClientSecret": {
+      "Type": "String",
+      "Description": "The client secret to access LinkedIn APIs"
+    },
+    "EnvMailjetSecret": {
+      "Type": "String",
+      "Description": "The client secret to access Mailjet APIs"
+    },
+    "EnvSecretSalt": {
+      "Type": "String",
+      "Description": "Secret hashing salt to ensure proper authentication"
+    },
+    "EnvSentryDsn": {
+      "Type": "String",
+      "Description": "Sentry DSN to report errors"
+    },
+    "EnvSlackImportUrl": {
+      "Type": "String",
+      "Description": "Slack webhook URL to report importer status"
+    },
+    "EnvSlackWebhookUrl": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Slack webhook URL to report from server"
+    },
+    "FlaskDockerTag": {
+      "Type": "String",
+      "Description": "Docker tag for the flask server"
+    },
+    "ImporterDockerTag": {
+      "Type": "String",
+      "Description": "Docker tag for the importer tasks"
+    },
+    "ScheduledTasksStatus": {
+      "Type": "String",
+      "Default": "ENABLED",
+      "Description": "Status for the scheduled tasks relevant to the product"
+    },
+    "EnvMaVoieApiUrl": {
+      "Type": "String",
+      "Default": "",
+      "Description": "An (optional) URL for the \"Ma Voie\" API"
+    },
+    "EnvMaVoieAuth": {
+      "Type": "String",
+      "Default": "",
+      "Description": "A basic authentication for the \"Ma Voie\" API"
+    },
+    "DesiredServerCount": {
+      "Type": "Number",
+      "Default": 1,
+      "Description": "The number of concurrent servers we wish to be up at the same time."
+    },
+    "MongoDataRead": {
+      "Type": "String",
+      "Default": "",
+      "Description": "The read-only Mongo URL of the DB containing LMI data"
+    },
+    "MongoDataWrite": {
+      "Type": "String",
+      "Default": "",
+      "Description": "The read-write Mongo URL of the DB containing LMI data"
+    },
+    "MongoUserRead": {
+      "Type": "String",
+      "Default": "",
+      "Description": "The read-only Mongo URL of the DB containing user data"
+    },
+    "MongoUserWrite": {
+      "Type": "String",
+      "Default": "",
+      "Description": "The read-write Mongo URL of the DB containing user data"
+    },
+    "MongoEvalWrite": {
+      "Type": "String",
+      "Default": "",
+      "Description": "The read-write Mongo URL of the DB containing evaluation data"
+    }
+  },
+  "Outputs": {
+    "LoadBalancerDnsName": {
+      "Description": "The DNSName of the Load Balancer",
+      "Value": {
+        "Fn::GetAtt": [
+          "LoadBalancer",
+          "DNSName"
+        ]
+      }
+    },
+    "ECSServiceSecurityGroup": {
+      "Description": "The Security group protecting the servers",
+      "Value": {
+        "Ref": "ECSServiceSecurityGroup"
+      }
+    },
+    "ECSCluster": {
+      "Description": "The ECS Cluster where the servers are run",
+      "Value": {
+        "Ref": "ECSCluster"
+      }
+    }
+  }
+}

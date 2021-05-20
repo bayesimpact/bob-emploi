@@ -18,6 +18,7 @@ class _AdviceReorientJobbing(scoring_base.ModelBase):
         self._db: proto.MongoCachedCollection[reorient_jobbing_pb2.LocalJobbingStats] = \
             proto.MongoCachedCollection(reorient_jobbing_pb2.LocalJobbingStats, 'reorient_jobbing')
 
+    # TODO(sil): Translate job names properly when needed.
     def get_local_jobbing(self, project: scoring_base.ScoringProject) \
             -> reorient_jobbing_pb2.JobbingReorientJobs:
         """Get the jobbing opportunities for the departement."""
@@ -40,7 +41,7 @@ class _AdviceReorientJobbing(scoring_base.ModelBase):
                         break
                     offers_gain = 0
                 recommended_jobs.reorient_jobbing_jobs.add(
-                    name=french.genderize_job(job, gender),
+                    name=project.translate_string(french.genderize_job(job, gender)),
                     offers_percent_gain=offers_gain)
         return recommended_jobs
 
@@ -66,7 +67,7 @@ class _AdviceReorientJobbing(scoring_base.ModelBase):
             if project.job_group_info().growth_2012_2022 < .1:
                 score_modifier = -1
         if score_modifier >= 0:
-            reasons.append(project.translate_string(
+            reasons.append(project.translate_static_string(
                 'votre métier ne vous tient pas trop à cœur'))
 
         if project.user_profile.highest_degree <= job_pb2.CAP_BEP:

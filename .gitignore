@@ -6,7 +6,6 @@ __pycache__/
 *_pb2.py
 *_pb2.pyi
 *_pb.js
-*_pb.d.ts
 
 # Distribution / packaging
 .Python
@@ -45,7 +44,7 @@ coverage
 # Translations
 *.mo
 *.pot
-!**/testdata/*.pot
+!**/testdata/**/*.pot
 
 # Django stuff:
 *.log
@@ -64,6 +63,9 @@ bigquery_credentials.dat
 # TODO: Refactor to avoid this.
 /data_analysis/bob_emploi/frontend/
 
+# Files that are automatically created by frontend/release/deploy_api.sh
+frontend/release/api/assets
+
 # File automatically created when running frontend/release/build.sh
 /frontend/release/nginx.conf
 
@@ -73,3 +75,6 @@ bigquery_credentials.dat
 
 # NPM Packages installed locally
 /node_modules
+
+# Environment files
+*.env

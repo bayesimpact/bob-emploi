@@ -6,7 +6,7 @@ Data was originally from https://80000hours.org/articles/skills-most-employable/
 import collections
 import os
 import typing
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Mapping, Optional
 
 from airtable import airtable
 
@@ -62,21 +62,23 @@ def _group_by(records: Iterable[_T], list_keys: Callable[[_T], Iterable[_U]]) ->
     return grouped
 
 
-def _list_rome_prefixes(record: Dict[str, Any]) -> Iterator[str]:
+def _list_rome_prefixes(record: airtable.Record[Mapping[str, Any]]) -> Iterator[str]:
     for rome_prefix in record['fields']['rome_prefixes'].split(','):
         yield rome_prefix.strip()
 
 
-def _create_skills_protos(skills_list: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _create_skills_protos(
+        skills_list: Iterable[airtable.Record[Mapping[str, Any]]]) -> List[Dict[str, Any]]:
     return [
         _create_skill_proto(skill['fields'])
-        for skill in sorted(skills_list, key=lambda skill: -skill['fields']['value_score'])
+        for skill in sorted(
+            skills_list, key=lambda skill: -typing.cast(float, skill['fields']['value_score']))
     ][:_MAX_NUM_SKILLS]
 
 
-def _create_skill_proto(skill: Dict[str, Any]) -> Dict[str, Any]:
-    assets = {
-        skill_pb2.SkillAsset.Value(asset_name): skill.get(asset_name, 0)
+def _create_skill_proto(skill: Mapping[str, Any]) -> Dict[str, Any]:
+    assets: Mapping['skill_pb2.SkillAsset.V', float] = {
+        skill_pb2.SkillAsset.Value(asset_name): typing.cast(float, skill.get(asset_name, 0))
         for asset_name in skill_pb2.SkillAsset.keys()
         if skill_pb2.SkillAsset.Value(asset_name)
     }

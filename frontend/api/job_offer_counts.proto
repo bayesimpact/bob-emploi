@@ -3,6 +3,7 @@ syntax = "proto3";
 import "bob_emploi/frontend/api/geo.proto";
 
 package bayes.bob;
+option go_package="bayes.org/bob_emploi/frontend/api/job_offer_counts";
 
 
 message JobOfferCounts {

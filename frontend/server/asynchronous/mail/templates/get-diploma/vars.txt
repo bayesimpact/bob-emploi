@@ -1,9 +1,0 @@
-changeEmailSettingsUrl
-deepTrainingAdviceUrl
-firstName
-gender
-inDepartement
-loginUrl
-numTrainings
-ofJobName
-statusUpdateUrl

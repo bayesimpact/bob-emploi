@@ -1,0 +1,8 @@
+msgid "A string to translate"
+msgstr ""
+
+msgid "A string missing translation"
+msgstr ""
+
+msgid "Another string missing translation"
+msgstr ""

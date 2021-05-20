@@ -1,74 +1,115 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react'
+import React, {useCallback, useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useDispatch, useSelector} from 'react-redux'
 import PropTypes from 'prop-types'
 
-import {useSafeDispatch} from 'store/promise'
+import isMobileVersion from 'store/mobile'
+import {useSafeDispatch, useAsynceffect} from 'store/promise'
 import {DispatchAllActions, RootState, diagnoseOnboarding,
-  getDiagnoticCategories} from 'store/actions'
+  getDiagnosticMainChallenges} from 'store/actions'
 
-import {Trans} from 'components/i18n'
-import {CircularProgress, Input, Inputable, Markdown, RadioButton,
-  RadioGroup} from 'components/theme'
-import {FieldSet} from 'components/pages/connected/form_utils'
+import useFocusableRefAs, {Focusable} from 'hooks/focus'
+
+import CircularProgress from 'components/circular_progress'
+import Emoji from 'components/emoji'
+import Trans from 'components/i18n_trans'
+import ValidateInput from 'components/validate_input'
+import Markdown from 'components/markdown'
+import {useRadioGroup} from 'components/radio_group'
+import {useHoverAndFocus} from 'components/radium'
 
 import {ProjectStepProps, Step} from './step'
 
-type ValidCategory = bayes.bob.DiagnosticCategory & {categoryId: string}
-
-interface SelectOption {
-  name: React.ReactNode
-  value: string
+interface MainChallengeButtonProps {
+  index: number
+  isSelected: boolean
+  onBlur?: () => void
+  onClick: (value: ValidMainChallenge) => void
+  onFocus: (index: number) => void
+  style?: React.CSSProperties
+  tabIndex?: number
+  value: ValidMainChallenge
 }
 
+const computeButtonStyle = (isHighlighted: boolean, isSelected: boolean): React.CSSProperties => ({
+  alignItems: 'center',
+  backgroundColor: isSelected ? colors.BOB_BLUE :
+    isHighlighted ? colors.MODAL_PROJECT_GREY : 'transparent',
+  border: `1px solid ${isSelected ? colors.BOB_BLUE : colors.FOOTER_GREY}`,
+  borderRadius: 25,
+  color: isSelected ? '#fff' : colors.DARK_TWO,
+  display: 'flex',
+  minHeight: 44,
+  padding: '0 15px',
+  ...(isSelected ? {fontWeight: 'bold'} : undefined),
+})
+
+const emojiStyle: React.CSSProperties = {
+  marginLeft: 3,
+  marginRight: 13,
+}
+
+const MainChallengeButtonBase = (
+  props: MainChallengeButtonProps, ref?: React.Ref<Focusable>,
+): React.ReactElement => {
+  const {index, isSelected, onBlur, onClick, onFocus, style, value, tabIndex} = props
+  const handleFocus = useCallback((): void => onFocus(index), [onFocus, index])
+  const {isFocused, isHovered, ...handlers} = useHoverAndFocus({onBlur, onFocus: handleFocus})
+  const handleClick = useCallback((): void => onClick(value), [onClick, value])
+  const isHighlighted = isFocused || isHovered
+  const containerStyle = useMemo((): React.CSSProperties => ({
+    ...computeButtonStyle(isHighlighted, isSelected),
+    fontSize: 14,
+    ...style,
+  }), [isHighlighted, isSelected, style])
+  return <button
+    ref={useFocusableRefAs(ref)} {...handlers} onClick={handleClick} style={containerStyle}
+    tabIndex={tabIndex}>
+    {value.emoji ? <Emoji style={emojiStyle} size={22}>{value.emoji}</Emoji> : undefined}
+    <Markdown content={value.description} isSingleLine={true} />
+  </button>
+}
+const MainChallengeButton = React.memo(React.forwardRef(MainChallengeButtonBase))
+
+
 interface CustomDiagnosticProps {
+  index: number
   isSelected: boolean
+  onBlur?: () => void
   onChange?: (value: string) => void
   onClick?: () => void
+  onFocus: (index: number) => void
+  tabIndex?: number
   value?: string
 }
 
-const customDiagnosticStyle = {
-  alignItems: 'center',
-  display: 'flex',
-  marginBottom: 10,
-  width: '100%',
-} as const
-
-const inputStyle = {
-  flex: 1,
-  height: 35,
-  marginLeft: 10,
-  width: 'initial',
-}
-
-const CustomDiagnosticBase = (props: CustomDiagnosticProps): React.ReactElement => {
-  const {isSelected, onChange, onClick, value} = props
+const CustomDiagnosticBase = (
+  props: CustomDiagnosticProps, ref?: React.Ref<Focusable>,
+): React.ReactElement => {
+  const {index, isSelected, onBlur, onChange, onClick, onFocus, tabIndex, value} = props
   const {t} = useTranslation()
 
-  const input = useRef<Inputable>(null)
+  const handleFocus = useCallback((): void => onFocus(index), [onFocus, index])
+  const {isFocused, isHovered, ...handlers} = useHoverAndFocus({onBlur, onFocus: handleFocus})
+  const isHighlighted = isFocused || isHovered
+
   const handleChange = useCallback(
     (value: string): void => onChange?.(value),
     [onChange],
   )
-  const handleClick = useCallback((): void => input.current?.focus(), [])
 
-  return <div style={customDiagnosticStyle}>
-    <RadioButton onClick={handleClick} isSelected={isSelected} />
-    <Input
-      value={value} style={inputStyle} ref={input}
-      onFocus={onClick}
-      placeholder={t('Autre…')} onChangeDelayMillisecs={1000}
-      onChange={handleChange} />
-  </div>
+  const containerStyle = useMemo(
+    (): React.CSSProperties =>
+      computeButtonStyle(isHighlighted, isSelected && !isFocused),
+    [isFocused, isHighlighted, isSelected],
+  )
+
+  return <ValidateInput
+    defaultValue={value} style={containerStyle} ref={useFocusableRefAs(ref)} onClick={onClick}
+    placeholder={t('Autre…')}
+    onChange={handleChange} {...handlers} tabIndex={tabIndex} />
 }
-CustomDiagnosticBase.propTypes = {
-  isSelected: PropTypes.bool,
-  onChange: PropTypes.func,
-  onClick: PropTypes.func,
-  value: PropTypes.string,
-}
-const CustomDiagnostic = React.memo(CustomDiagnosticBase)
+const CustomDiagnostic = React.memo(React.forwardRef(CustomDiagnosticBase))
 
 
 interface SelfDiagnosticProps {
@@ -77,8 +118,9 @@ interface SelfDiagnosticProps {
 }
 
 
-const radioGroupStyle: React.CSSProperties = {
-  flexDirection: 'column',
+const challengeButtonStyle: React.CSSProperties = {
+  marginBottom: 15,
+  width: '100%',
 }
 const progressContainerStyle: React.CSSProperties = {
   alignItems: 'center',
@@ -93,49 +135,55 @@ const SelfDiagnosticBase = (props: SelfDiagnosticProps): React.ReactElement => {
   const dispatch = useSafeDispatch<DispatchAllActions>()
   const {
     onChange,
-    value: {categoryId = '', categoryDetails = '', selfDiagnosticStatus},
+    value: {categoryId = '', categoryDetails = '', status},
   } = props
 
-  const [options, setOptions] = useState<undefined|readonly SelectOption[]>(undefined)
-  const locale = useSelector(({user: {profile: {locale = 'fr'} = {}}}: RootState): string => locale)
+  const [options, setOptions] = useState<undefined|readonly ValidMainChallenge[]>(undefined)
+  const [answeredInOrder, setIsSorted] = useState<undefined|bayes.OptionalBool>(undefined)
+  const {i18n, t} = useTranslation()
+  const locale = useSelector(({user: {profile: {
+    locale = i18n.language,
+  } = {}}}: RootState): string => locale)
 
-  useEffect((): void => {
-    dispatch(getDiagnoticCategories()).
-      then((response: readonly bayes.bob.DiagnosticCategory[]|void): void => {
-        setOptions((response || []).
-          filter((c: bayes.bob.DiagnosticCategory): c is ValidCategory => !!c.categoryId).
-          map((category: ValidCategory): SelectOption => ({
-            name: <Markdown content={category.description} isSingleLine={true} />,
-            value: category.categoryId,
-          })).concat([{
-            name: <Trans parent="span">
-              Je ne sais pas
-            </Trans>,
-            value: 'UNDEFINED_SELF_DIAGNOSTIC',
-          }]),
-        )
-      })
-  }, [dispatch, locale])
-
-  const selfDiagnostic = categoryId || selfDiagnosticStatus
-  const handleChangeDiagnostic = useCallback((categoryId: string): void => {
-    if (categoryId === 'UNDEFINED_SELF_DIAGNOSTIC') {
-      onChange({selfDiagnosticStatus: categoryId})
+  useAsynceffect(async (checkIfCanceled) => {
+    const response = await dispatch(getDiagnosticMainChallenges(locale))
+    if (!response || checkIfCanceled()) {
       return
     }
-    onChange({categoryId, selfDiagnosticStatus: 'KNOWN_SELF_DIAGNOSTIC'})
-  }, [onChange])
+    setIsSorted(response.isSorted)
+    setOptions([...(response.categories || []).
+      filter((c: bayes.bob.DiagnosticMainChallenge): c is ValidMainChallenge => !!c.categoryId),
+    {
+      categoryId: 'UNDEFINED_SELF_DIAGNOSTIC',
+      description: t('Je ne sais pas'),
+    }])
+  }, [dispatch, locale, t])
+
+  const selfDiagnostic = categoryId || status
+  const handleChangeDiagnostic = useCallback(({categoryId}: ValidMainChallenge): void => {
+    if (categoryId === 'UNDEFINED_SELF_DIAGNOSTIC') {
+      onChange({answeredInOrder, status: categoryId})
+      return
+    }
+    onChange({answeredInOrder, categoryId, status: 'KNOWN_SELF_DIAGNOSTIC'})
+  }, [answeredInOrder, onChange])
 
   const handleChangeCustomDiagnostic = useCallback((categoryDetails: string): void => {
-    onChange({categoryDetails, selfDiagnosticStatus: 'OTHER_SELF_DIAGNOSTIC'})
-  }, [onChange])
+    onChange({answeredInOrder, categoryDetails, status: 'OTHER_SELF_DIAGNOSTIC'})
+  }, [answeredInOrder, onChange])
 
-  const isOtherSelfDiagnostic = selfDiagnosticStatus === 'OTHER_SELF_DIAGNOSTIC'
+  const isOtherSelfDiagnostic = status === 'OTHER_SELF_DIAGNOSTIC'
   const handleCustomDiagnosticClick = useCallback((): void => {
     if (!isOtherSelfDiagnostic) {
-      onChange({selfDiagnosticStatus: 'OTHER_SELF_DIAGNOSTIC'})
+      onChange({answeredInOrder, status: 'OTHER_SELF_DIAGNOSTIC'})
     }
-  }, [isOtherSelfDiagnostic, onChange])
+  }, [answeredInOrder, isOtherSelfDiagnostic, onChange])
+
+  const selectedIndex = isOtherSelfDiagnostic ?
+    (options?.length || 0) :
+    (options || []).findIndex(({categoryId}) => categoryId === selfDiagnostic)
+  const {childProps, containerProps} =
+    useRadioGroup<HTMLDivElement>((options?.length || 0) + 1, selectedIndex)
 
   if (!options) {
     return <div style={progressContainerStyle}>
@@ -143,25 +191,38 @@ const SelfDiagnosticBase = (props: SelfDiagnosticProps): React.ReactElement => {
     </div>
   }
 
-  return <React.Fragment>
-    <FieldSet isInline={true}>
-      <RadioGroup<string>
-        options={options}
-        onChange={handleChangeDiagnostic}
-        value={selfDiagnostic} style={radioGroupStyle} />
-    </FieldSet>
+  return <div {...containerProps}>
+    {options.map((mainChallenge, index) => <MainChallengeButton
+      key={mainChallenge.categoryId} value={mainChallenge}
+      onClick={handleChangeDiagnostic} style={challengeButtonStyle}
+      {...childProps(index)}
+    />)}
     <CustomDiagnostic
       value={categoryDetails}
-      isSelected={isOtherSelfDiagnostic}
       onClick={handleCustomDiagnosticClick}
-      onChange={handleChangeCustomDiagnostic} />
-  </React.Fragment>
+      onChange={handleChangeCustomDiagnostic}
+      {...childProps(options.length)} />
+  </div>
 }
 const SelfDiagnostic = React.memo(SelfDiagnosticBase)
 
 
+const lateTitleStyle: React.CSSProperties = {
+  color: '#000',
+  fontSize: 20,
+  marginTop: isMobileVersion ? 10 : 30,
+}
+
+
 const SelfDiagnosticStepBase = (props: ProjectStepProps): React.ReactElement => {
-  const {newProject: {originalSelfDiagnostic = {}} = {}, onSubmit, t} = props
+  const {
+    featuresEnabled: {lateSelfDiagnostic} = {},
+    newProject: {originalSelfDiagnostic = {}} = {},
+    onSubmit,
+    t,
+    totalStepCount,
+  } = props
+  const isLateSelfDiagnostic = lateSelfDiagnostic === 'ACTIVE'
 
   const dispatch = useDispatch<DispatchAllActions>()
 
@@ -169,10 +230,10 @@ const SelfDiagnosticStepBase = (props: ProjectStepProps): React.ReactElement => 
     dispatch(diagnoseOnboarding({projects: [{originalSelfDiagnostic}]}))
   }, [dispatch])
 
-  const isFormValid = originalSelfDiagnostic.selfDiagnosticStatus &&
-    (originalSelfDiagnostic.selfDiagnosticStatus !== 'KNOWN_SELF_DIAGNOSTIC' ||
+  const isFormValid = originalSelfDiagnostic.status &&
+    (originalSelfDiagnostic.status !== 'KNOWN_SELF_DIAGNOSTIC' ||
       !!originalSelfDiagnostic.categoryId) &&
-    (originalSelfDiagnostic.selfDiagnosticStatus !== 'OTHER_SELF_DIAGNOSTIC' ||
+    (originalSelfDiagnostic.status !== 'OTHER_SELF_DIAGNOSTIC' ||
       !!originalSelfDiagnostic.categoryDetails)
   const handleSubmit = useCallback(
     (): void => void (isFormValid && onSubmit({originalSelfDiagnostic})),
@@ -184,20 +245,24 @@ const SelfDiagnosticStepBase = (props: ProjectStepProps): React.ReactElement => 
       return
     }
     handleChange(
-      {categoryId: 'stuck-market', selfDiagnosticStatus: 'KNOWN_SELF_DIAGNOSTIC'})
+      {categoryId: 'stuck-market', status: 'KNOWN_SELF_DIAGNOSTIC'})
   }, [isFormValid, handleChange, handleSubmit])
 
 
-  const explanation = <Trans>
-    Quel est, selon vous, votre plus grand défi dans votre retour à l'emploi&nbsp;?<br />
-  </Trans>
+  const explanation = isLateSelfDiagnostic ? <Trans style={lateTitleStyle}>
+    Quelle est, selon vous, <strong>la plus grande priorité</strong> de votre recherche
+    d'emploi&nbsp;?
+  </Trans> : t(
+    "Quel est, selon vous, votre plus grand défi dans votre retour à l'emploi\u00A0?")
 
   return <Step
-    title={t('Votre grand défi')}
+    title={isLateSelfDiagnostic ? undefined : t('Votre grand défi')}
     explanation={explanation}
     fastForward={fastForward}
     onNextButtonClick={isFormValid ? handleSubmit : undefined}
-    {...props}>
+    nextButtonContent={isLateSelfDiagnostic ?
+      t("Découvrir l'avis de {{productName}}", {productName: config.productName}) : undefined}
+    {...props} totalStepCount={isLateSelfDiagnostic ? 0 : totalStepCount}>
     <SelfDiagnostic
       value={originalSelfDiagnostic}
       onChange={handleChange} />
@@ -209,7 +274,7 @@ SelfDiagnosticStepBase.propTypes = {
     originalSelfDiagnostic: PropTypes.shape({
       categoryDetails: PropTypes.string,
       categoryId: PropTypes.string,
-      selfDiagnosticStatus: PropTypes.string.isRequired,
+      status: PropTypes.string.isRequired,
     }),
   }).isRequired,
   onSubmit: PropTypes.func.isRequired,

@@ -1,92 +1,43 @@
 import PropTypes from 'prop-types'
-import React, {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react'
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useDispatch} from 'react-redux'
-import {RouteComponentProps, StaticContext, withRouter} from 'react-router'
-import ReactRouterPropTypes from 'react-router-prop-types'
+import {useLocation} from 'react-router'
 
+import useFastForward from 'hooks/fast_forward'
+import {Focusable} from 'hooks/focus'
 import {DispatchAllActions, registerNewGuestUser} from 'store/actions'
 import {inDepartement, lowerFirstLetter} from 'store/french'
-import {getLanguage, isTuPossible} from 'store/i18n'
+import {getLanguage, getTranslatedMainChallenges, isTuPossible} from 'store/i18n'
+import isMobileVersion from 'store/mobile'
+import {parseQueryString} from 'store/parse'
+import {NO_CHALLENGE_CATEGORY_ID} from 'store/project'
 import {useCancelablePromises} from 'store/promise'
+import {useSelfDiagnosticInIntro, useUserExample} from 'store/user'
 
-import {useFastForward} from 'components/fast_forward'
-import {Trans} from 'components/i18n'
-import {isMobileVersion} from 'components/mobile'
+import Button from 'components/button'
+import ExternalLink from 'components/external_link'
+import Trans from 'components/i18n_trans'
+import LabeledToggle from 'components/labeled_toggle'
+import Markdown from 'components/markdown'
 import {PageWithNavigationBar} from 'components/navigation'
 import {BubbleToRead, Discussion, DiscussionBubble, NoOpElement,
   QuestionBubble} from 'components/phylactery'
-import {Button, ExternalLink, Focusable, Input, Inputable, InputProps, LabeledToggle,
-  RadioGroup} from 'components/theme'
+import {SelfDiagnostic} from 'components/pages/connected/profile/self_diagnostic'
+import RadioGroup from 'components/radio_group'
 import {Routes} from 'components/url'
-
-
-type ValidateInputProps = InputProps & {
-  defaultValue?: string
-  onChange: (newValue: string) => void
-  // Should never set a value, but used defaultValue and onChange.
-  value?: never
-}
-
-
-const ValidateInputBase = (props: ValidateInputProps): React.ReactElement => {
-  const {style, defaultValue, onChange, ...otherProps} = props
-  const [value, setValue] = useState('')
-  const input = useRef<Inputable>(null)
-
-  const handleFocus = useCallback((): void => {
-    input.current?.focus()
-  }, [])
-
-  useLayoutEffect((): void => {
-    setValue(defaultValue || '')
-  }, [defaultValue])
-
-  const handleClick = useCallback((): void => {
-    if (!value) {
-      handleFocus()
-      return
-    }
-    input.current?.blur()
-    onChange(value)
-  }, [handleFocus, onChange, value])
-
-  const handleSubmit = useCallback((e: React.FormEvent): void => {
-    e.preventDefault()
-    handleClick()
-  }, [handleClick])
-
-  const buttonStyle: React.CSSProperties = {
-    fontSize: 13,
-    padding: '6px 16px 7px',
-    position: 'absolute',
-    right: 6,
-    top: 6,
-  }
-  return <form style={{...style, position: 'relative'}} onSubmit={handleSubmit}>
-    <Input {...otherProps} ref={input} value={value} onChange={setValue} />
-    <Button style={buttonStyle} onClick={handleClick} isRound={true}>
-      <Trans parent={null}>Valider</Trans>
-    </Button>
-  </form>
-}
-ValidateInputBase.propTypes = {
-  defaultValue: PropTypes.string,
-  onChange: PropTypes.func.isRequired,
-  shouldFocusOnMount: PropTypes.bool,
-  style: PropTypes.object,
-}
-const ValidateInput = React.memo(ValidateInputBase)
+import ValidateInput from 'components/validate_input'
 
 
 const tutoiementOptions = [
   {name: 'oui, pourquoi pas', value: true},
-  {name: 'non, je ne préfère pas', value: false},
+  {name: 'non, merci', value: false},
 ]
 
 
 interface IntroProps {
   city?: bayes.bob.FrenchCity
+  isGuest?: boolean
   job?: bayes.bob.Job
   name?: string
   onSubmit: (userData: bayes.bob.AuthUserData, name: string) => Promise<boolean>
@@ -98,24 +49,54 @@ interface IntroState {
   areCGUAccepted?: boolean
   canTutoie?: boolean
   isFastForwarded?: boolean
-  isGuest?: boolean
   isSubmitClicked?: boolean
   isTuNeeded: boolean
   newName?: string
 }
 
-
+const boldStyle = {
+  color: colors.BOB_BLUE,
+}
+const linkStyle: React.CSSProperties = {
+  color: colors.BOB_BLUE,
+  textDecoration: 'none',
+}
+const buttonStyle = {
+  maxWidth: 250,
+  padding: '12px 20px 13px',
+}
+const discussionStyle = {
+  flexGrow: 1,
+  flexShrink: 0,
+  paddingBottom: 10,
+  width: isMobileVersion ? 335 : 'initial',
+}
+const nameStyle: React.CSSProperties = {
+  borderRadius: 100,
+  marginBottom: 5,
+  marginTop: 15,
+}
+const tuStyle: React.CSSProperties = {
+  justifyContent: 'space-between',
+  margin: '20px 0',
+}
+const MarkdownSpan = (props: React.HTMLProps<HTMLParagraphElement>): React.ReactElement =>
+  <span {...props} />
+const markdownComponents = {p: MarkdownSpan}
 const IntroBase = (props: IntroProps): React.ReactElement => {
   const {
     city, city: {departementName = ''} = {},
+    isGuest,
     job: {jobGroup: {name: jobGroupName = ''} = {}} = {},
     name,
     onSubmit,
     stats: {localStats: {imt: {yearlyAvgOffersPer10Candidates = 0} = {}} = {}} = {},
   } = props
   const {i18n, t} = useTranslation()
-  const [areCGUAccepted, setAreCguAccepted] = useState(!!name)
-  const [isGuest] = useState(!name)
+  const [areCGUAccepted, setAreCguAccepted] = useState(!isGuest)
+  const isNameUpdateNeeded = !name
+  const {search} = useLocation()
+  const nameFromURL = parseQueryString(search).name || ''
   const [newName, setNewName] = useState('')
   const [isSubmitClicked, setIsSubmitClicked] = useState(false)
   // Keep it as state so that we do not change the question even if the language changes.
@@ -123,15 +104,21 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
   const [canTutoie, setCanTutoie] = useState<undefined|boolean>()
   const [isFastForwarded, setIsFastForwarded] = useState(false)
   const cancelOnUnmount = useCancelablePromises()
-
+  const [selfDiagnostic, setSelfDiagnostic] = useState<bayes.bob.SelfDiagnostic>({})
   const tutoieRadioGroup = useRef<Focusable>(null)
   const cguRef = useRef<Focusable>(null)
+  const hasSelfDiagnostic = useSelfDiagnosticInIntro()
+  const {categoryDetails, categoryId, status} = selfDiagnostic
+  const isSelfDiagnosticAnswered = status &&
+    (status !== 'OTHER_SELF_DIAGNOSTIC' || !!categoryDetails)
+  const noPriority = status === 'UNDEFINED_SELF_DIAGNOSTIC' ||
+      (status === 'KNOWN_SELF_DIAGNOSTIC' && categoryId === NO_CHALLENGE_CATEGORY_ID)
 
   const toggleCGU = useCallback((): void => {
     setAreCguAccepted((before: boolean): boolean => !before)
   }, [])
 
-  const finalName = isGuest ? newName : name
+  const finalName = isNameUpdateNeeded && newName || name
   const canSubmit =
     !!(areCGUAccepted && finalName && (!isTuNeeded || typeof canTutoie === 'boolean'))
 
@@ -141,17 +128,18 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
     i18n.changeLanguage(locale)
   }, [i18n, locale])
 
-  const handleSubmit = useCallback((): void => {
-    if (canSubmit && finalName) {
-      setIsSubmitClicked(true)
-      cancelOnUnmount(onSubmit({
-        isAlpha: isFastForwarded,
-        locale,
-      }, finalName)).then((): void => {
-        setIsSubmitClicked(false)
-      })
+  const handleSubmit = useCallback(async (): Promise<void> => {
+    if (!canSubmit || !finalName) {
+      return
     }
-  }, [canSubmit, cancelOnUnmount, finalName, isFastForwarded, locale, onSubmit])
+    setIsSubmitClicked(true)
+    await cancelOnUnmount(onSubmit({
+      isAlpha: isFastForwarded,
+      locale,
+      originalSelfDiagnostic: selfDiagnostic,
+    }, finalName))
+    setIsSubmitClicked(false)
+  }, [canSubmit, cancelOnUnmount, finalName, isFastForwarded, locale, onSubmit, selfDiagnostic])
 
   const handleTutoieQuestionIsShown = useCallback((): void => {
     tutoieRadioGroup.current?.focus()
@@ -161,7 +149,16 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
     cguRef.current?.focus()
   }, [])
 
-  const updateName = useCallback((newName: string): void => setNewName(newName.trim()), [])
+  const updateName = useCallback((newName: string): void => {
+    isNameUpdateNeeded && setNewName(newName.trim())
+  }, [isNameUpdateNeeded])
+
+  const challengesData = getTranslatedMainChallenges(t, 'UNKNOWN_GENDER')
+  const selfDiagnosticDescription = status === 'KNOWN_SELF_DIAGNOSTIC' && categoryId ?
+    challengesData[categoryId]?.descriptionAnswer || '' :
+    status === 'OTHER_SELF_DIAGNOSTIC' ? categoryDetails : ''
+
+  const {profile: {name: nameExample}} = useUserExample()
 
   const onFastForward = useCallback((): void => {
     if (!isFastForwarded) {
@@ -169,13 +166,17 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
       return
     }
     let isInfoComplete = true
-    if (isGuest && !newName) {
-      setNewName(t('Angèle'))
+    if (isNameUpdateNeeded && !newName) {
+      setNewName(nameFromURL || nameExample)
       isInfoComplete = false
     }
     if (typeof canTutoie !== 'boolean' && isTuNeeded) {
       setCanTutoie(Math.random() < .5)
       isInfoComplete = false
+    }
+    if (hasSelfDiagnostic && !status) {
+      // TODO(émilie): Randomize the self diagnostic.
+      setSelfDiagnostic({categoryId: 'stuck-market', status: 'KNOWN_SELF_DIAGNOSTIC'})
     }
     if (!areCGUAccepted) {
       setAreCguAccepted(true)
@@ -184,31 +185,14 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
     if (isInfoComplete) {
       handleSubmit()
     }
-  }, [areCGUAccepted, canTutoie, handleSubmit, isFastForwarded, isGuest, isTuNeeded, newName, t])
+  }, [areCGUAccepted, canTutoie, handleSubmit, hasSelfDiagnostic, isFastForwarded,
+    isNameUpdateNeeded, isTuNeeded, newName, nameFromURL, nameExample, status])
   useFastForward(onFastForward)
 
   const isCompetitionShown = jobGroupName && departementName && !!yearlyAvgOffersPer10Candidates
   const isToughCompetition = isCompetitionShown && yearlyAvgOffersPer10Candidates < 6
-  const boldStyle = {
-    color: colors.BOB_BLUE,
-  }
-  const linkStyle: React.CSSProperties = {
-    color: colors.BOB_BLUE,
-    textDecoration: 'none',
-  }
-  const buttonStyle = {
-    maxWidth: 250,
-    padding: '12px 20px 13px',
-  }
-  const discussionStyle = {
-    flexGrow: 1,
-    flexShrink: 0,
-    paddingBottom: 10,
-    width: isMobileVersion ? 280 : 'initial',
-  }
   const inCity = city ? inDepartement(city, t) : ''
   const toughCompetition = isToughCompetition ? t('rude') : t('faible')
-  const isNameNeeded = isGuest
   return <React.Fragment>
     <Discussion style={discussionStyle} isFastForwarded={isFastForwarded}>
       <DiscussionBubble>
@@ -227,7 +211,7 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
             t("C'est une très bonne nouvelle\u00A0!")}
         </BubbleToRead> : null}
         <BubbleToRead><Trans parent={null}>
-          Bienvenue<strong>{{optionalName: isGuest ? '' : (' ' + name)}}</strong>&nbsp;!
+          Bienvenue<strong>{{optionalName: !name ? '' : (' ' + name)}}</strong>&nbsp;!
         </Trans></BubbleToRead>
         <BubbleToRead>
           <Trans parent={null}>
@@ -241,7 +225,7 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
             plus vite.
           </Trans>
         </BubbleToRead>
-        {isNameNeeded ? <BubbleToRead>
+        {isNameUpdateNeeded ? <BubbleToRead>
           <Trans parent={null}>
             Mais avant de commencer, comment vous appelez-vous&nbsp;?
           </Trans>
@@ -250,15 +234,16 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
             Mais avant de commencer, peut-on se tutoyer&nbsp;?
           </BubbleToRead> : null}
       </DiscussionBubble>
-      {isNameNeeded ? <QuestionBubble isDone={!!newName}>
+      {isNameUpdateNeeded ? <QuestionBubble isDone={!!newName}>
         <ValidateInput
-          defaultValue={name || newName} onChange={updateName}
+          defaultValue={name || newName || nameFromURL} onChange={updateName}
+          autoComplete="given-name"
           placeholder={t('Tapez votre prénom')}
-          style={{marginBottom: 5, marginTop: 15}} shouldFocusOnMount={true} />
+          style={nameStyle} shouldFocusOnMount={true} />
       </QuestionBubble> : null}
-      {isNameNeeded ? <BubbleToRead>
+      {isNameUpdateNeeded ? <BubbleToRead>
         <Trans parent={null}>
-          Enchanté, {{newName: newName || ''}}&nbsp;!
+          Enchanté, {{newName}}&nbsp;!
         </Trans>{' '}{isTuNeeded ? <React.Fragment>
           Peut-on se tutoyer&nbsp;?
         </React.Fragment> : null}
@@ -267,19 +252,50 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
         isDone={typeof canTutoie === 'boolean'}
         onShown={handleTutoieQuestionIsShown}>
         <RadioGroup
-          style={{justifyContent: 'space-between', margin: 20}}
+          style={tuStyle}
           ref={tutoieRadioGroup}
           onChange={setCanTutoie}
-          options={tutoiementOptions} value={canTutoie} />
+          options={tutoiementOptions}
+          value={canTutoie}
+          type="button" />
       </QuestionBubble> : null}
-      <DiscussionBubble>
+      {hasSelfDiagnostic ? <DiscussionBubble>
         {isTuNeeded ? <BubbleToRead>
           Parfait, c'est noté.
         </BubbleToRead> : null}
         <BubbleToRead>
           <Trans parent={null}>
-            Pour évaluer votre projet je vais avoir besoin de vous poser quelques questions
-            rapides.
+            Selon vous, quelle est <strong>la plus grande priorité de votre
+            recherche d'emploi</strong>&nbsp;?
+          </Trans>
+        </BubbleToRead>
+        <BubbleToRead>
+          <Trans parent={null}>
+            Votre choix m'aidera à comprendre ce qui vous semble prioritaire, mais je vous
+            préviendrai si je pense que votre priorité est ailleurs. Promis&nbsp;!
+          </Trans>
+        </BubbleToRead>
+      </DiscussionBubble> : null}
+      {hasSelfDiagnostic ? <QuestionBubble isDone={isSelfDiagnosticAnswered}>
+        <div style={{marginBottom: 5, marginTop: 15}}>
+          <SelfDiagnostic value={selfDiagnostic} onChange={setSelfDiagnostic} />
+        </div>
+      </QuestionBubble> : null}
+      {!hasSelfDiagnostic || isSelfDiagnosticAnswered ? <DiscussionBubble
+        key={categoryId || status}>
+        {!hasSelfDiagnostic && isTuNeeded || (isSelfDiagnosticAnswered && noPriority) ?
+          <BubbleToRead>
+            Parfait, c'est noté.
+          </BubbleToRead> : null}
+        {isSelfDiagnosticAnswered && selfDiagnosticDescription && !noPriority ? <BubbleToRead>
+          <Trans parent={null}>
+            Compris, <Markdown content={lowerFirstLetter(selfDiagnosticDescription)}
+              components={markdownComponents} /> est votre priorité en ce moment.
+          </Trans>
+        </BubbleToRead> : null}
+        <BubbleToRead>
+          <Trans parent={null}>
+            Nous allons maintenant analyser votre projet grâce à un petit questionnaire.
           </Trans>
         </BubbleToRead>
         <BubbleToRead>
@@ -294,8 +310,8 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
             On commence&nbsp;?
           </Trans>
         </BubbleToRead>
-      </DiscussionBubble>
-      <NoOpElement
+      </DiscussionBubble> : null}
+      {!hasSelfDiagnostic || isSelfDiagnosticAnswered ? <NoOpElement
         style={{margin: '20px auto 0', textAlign: 'center'}}
         onShown={handleFinalGroupIsShown}>
         {isGuest ? <React.Fragment>
@@ -312,7 +328,7 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
           disabled={!canSubmit || isSubmitClicked} isProgressShown={isSubmitClicked}>
           <Trans parent={null}>Commencer le questionnaire</Trans>
         </Button>
-      </NoOpElement>
+      </NoOpElement> : null}
     </Discussion>
   </React.Fragment>
 }
@@ -320,6 +336,7 @@ IntroBase.propTypes = {
   city: PropTypes.shape({
     cityId: PropTypes.string.isRequired,
   }),
+  isGuest: PropTypes.bool,
   job: PropTypes.shape({
     codeOgr: PropTypes.string.isRequired,
   }),
@@ -353,30 +370,29 @@ const pageStyle: React.CSSProperties = {
 }
 
 
-const IntroPageBase =
-(props: RouteComponentProps<{}, StaticContext, IntroState>): React.ReactElement => {
-  const {location} = props
+const IntroPageBase = (): React.ReactElement => {
+  const location = useLocation<IntroState>()
 
   const dispatch = useDispatch<DispatchAllActions>()
+  // TODO(cyrille): Also fetch the email, and pre-fill it in the relevant form.
+  const {maVoieId, stepId} = parseQueryString(location.search)
+  const authUserData = useMemo((): bayes.bob.AuthUserData => maVoieId ? {
+    maVoie: {maVoieId, stepId},
+  } : {}, [maVoieId, stepId])
   const handleSubmit = useCallback(
-    (userData: bayes.bob.AuthUserData, name: string): Promise<boolean> => {
-      return dispatch(registerNewGuestUser(name, userData)).
-        then((response): boolean => !!response)
-    },
-    [dispatch],
+    async (userData: bayes.bob.AuthUserData, name: string): Promise<boolean> =>
+      !!await dispatch(registerNewGuestUser(name, {...authUserData, ...userData})),
+    [authUserData, dispatch],
   )
 
   const {city = undefined, job = undefined, stats = undefined} = location.state || {}
   return <PageWithNavigationBar page="intro" style={pageStyle}>
     <div style={{maxWidth: 440}}>
-      <Intro onSubmit={handleSubmit} {...{city, job, stats}} />
+      <Intro onSubmit={handleSubmit} isGuest={true} {...{city, job, stats}} />
     </div>
   </PageWithNavigationBar>
 }
-IntroPageBase.propTypes = {
-  location: ReactRouterPropTypes.location.isRequired,
-}
-const IntroPage = withRouter(React.memo(IntroPageBase))
+const IntroPage = React.memo(IntroPageBase)
 
 
 export {Intro, IntroPage}

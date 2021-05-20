@@ -181,7 +181,7 @@ class AdviceSeasonalRelocateTestCase(scoring_test.ScoringModelTestBase):
         self.persona.user_profile.highest_degree = job_pb2.BAC_BACPRO
         self.persona.user_profile.family_situation = user_pb2.SINGLE
         self.persona.project.area_type = geo_pb2.COUNTRY
-        self.persona.project.job_search_length_months = 7
+        self._enforce_search_length_duration(self.persona.project, exact_months=7)
         self.persona.project.employment_types.append(job_pb2.CDD_LESS_EQUAL_3_MONTHS)
 
         expanded_data = typing.cast(

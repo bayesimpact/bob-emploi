@@ -10,7 +10,29 @@
 
 set -e
 
-readonly FOLDER="$(dirname "${BASH_SOURCE[0]}")/scheduled-tasks"
+readonly RELEASE_FOLDER="$(dirname "${BASH_SOURCE[0]}")"
+source "$RELEASE_FOLDER/../cli/bashrc"
+
+# Keep in sync with cloudformation.json
+readonly TASK_NAME="bob-frontend-server"
+REGION=$(__bob_get_stack_region $1)
+if [ "$REGION" ]; then
+  readonly DEPLOYMENT="$1"
+fi
+if [ "$DEPLOYMENT" ]; then
+  shift
+else
+  # TODO(cyrille): Update all scheduled tasks targets to point to
+  # stack cluster and task definitions.
+  readonly DEPLOYMENT="fr"
+  REGION="$(__bob_get_stack_region fr)"
+fi
+
+export AWS_DEFAULT_REGION="$REGION"
+
+echo Running script for deployment "$DEPLOYMENT"
+
+readonly FOLDER="$RELEASE_FOLDER/scheduled-tasks/$DEPLOYMENT"
 
 # Python script that unpacks the 'Input' vars that are stored as JSON strings in AWS, also redact
 # environment variables.
@@ -19,6 +41,8 @@ rule = json.load(sys.stdin)
 for target in rule.get('Targets', []):
   # The target's inputs are JSON stringified inside the JSON, so we extract
   # it.
+  if 'Input' not in target:
+    continue
   target['Input'] = json.loads(target['Input'])
   if len(sys.argv) > 1 and sys.argv[1] == 'REDACTED':
     # Redact all env vars.
@@ -55,21 +79,39 @@ function download_and_unpack_rule() {
     python3 -c "$PY_UNPACK_INPUT_AND_REDACT_ENV_VARS" "$should_redact"
 }
 
+function download_index_file() {
+  local stack_rules
+  stack_rules="$(jq '[.Resources[]|select(.Type == "AWS::Events::Rule")|.Properties|select(has("ScheduleExpression")).Name]' "$RELEASE_FOLDER/cloudformation/main_template.json")"
+  aws events list-rules |
+    # We only keep rules not created by Zappa.
+    jq -S '.Rules |= [.[] | select(.RoleArn // "" | test("Zappa") | not)]' |
+    # We only keep rules that are not in the CloudFormation stack.
+    jq --argjson stack_rules "$stack_rules" '.Rules |= [.[]|select([.Name]|inside($stack_rules)|not)]' > "$FOLDER/index.json"
+}
+
 function check_rule() {
+  if [[ $1 == --exit-code ]]; then
+    local return=1
+    shift
+  fi
   local rule="$1"
   local verb="$2"
 
-  readonly ALL_INDEX_RULES=$(jq -rc '.Rules[].Name' $FOLDER/index.json)
-  readonly ALL_TARGET_RULES=$(cd $FOLDER && ls *.json | sed s/\.json$//)
-  readonly ALL_COMMON_RULES=$(sort <<< "$ALL_INDEX_RULES $ALL_TARGET_RULES" | uniq -d)
+  local ALL_INDEX_RULES=$(jq -rc '.Rules[].Name' $FOLDER/index.json)
+  local ALL_TARGET_RULES=$(cd $FOLDER && ls *.json | sed s/\.json$//)
+  local ALL_COMMON_RULES=$(echo "$ALL_INDEX_RULES $ALL_TARGET_RULES" | tr " " "\n" | sort | uniq -d)
   if ! grep -x "$rule" <<< "$ALL_COMMON_RULES" > /dev/null ; then
     echo "Invalid choice '$rule'. choose the rule to $verb from" $ALL_COMMON_RULES
-    exit 2
+    if [ "$return" ]; then
+      return 2
+    else
+      exit 2
+    fi
   fi
 }
 
 if [ "$1" == "list" ]; then
-  for rule in $(jq ".Rules[].Name" -r frontend/release/scheduled-tasks/index.json); do
+  for rule in $(jq ".Rules[].Name" -r "$FOLDER/index.json"); do
     echo $rule
   done
   exit 0
@@ -83,8 +125,8 @@ if [ "$1" == "download" ]; then
     exit 0
   fi
 
-  aws events list-rules | jq -S . > "$FOLDER/index.json"
-  for rule in $(jq ".Rules[].Name" -r frontend/release/scheduled-tasks/index.json); do
+  download_index_file
+  for rule in $(jq ".Rules[].Name" -r "$FOLDER/index.json"); do
      download_and_unpack_rule $rule "REDACTED" > "$FOLDER/$rule.json"
   done
   exit 0
@@ -121,10 +163,44 @@ if [ "$1" == "run" ]; then
   exit 0
 fi
 
+if [ "$1" == "delete" ]; then
+  readonly RULE="$2"
+  if [[ -z "$RULE" ]]; then
+    echo "Need a rule name to delete."
+    exit 1
+  fi
+
+  check_rule "$RULE" delete
+
+  readonly TASK_IDS=$(jq -r '.Targets[].Id' "$FOLDER/$RULE.json")
+  read -p "Are you sure you want to delete $RULE [yN]? " -n 1 -r
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Cancelled deletion for $RULE."
+    exit 0
+  fi
+  aws events remove-targets --rule "$RULE" --ids $TASK_IDS
+  aws events delete-rule --name "$RULE"
+  download_index_file
+  exit 0
+fi
+
+if [ "$1" == "clean" ]; then
+  download_index_file
+  sleep 1
+  for file in "$FOLDER"/*.json; do
+    filename="${file%".json"}"
+    filename="${filename#"$FOLDER/"}"
+    if [[ $filename != index ]] && ! check_rule --exit-code "$filename" clean > /dev/null; then
+      rm "$file"
+    fi
+  done
+  exit
+fi
+
 echo "Usage:"
-echo "  > \`deploy_scheduled_tasks.sh list\` to list all available rules."
-echo "  > \`deploy_scheduled_tasks.sh download\` to download all rules from AWS to this folder."
-echo "  > \`deploy_scheduled_tasks.sh upload <rule_name>\` to upload one of them."
-echo "  > \`deploy_scheduled_tasks.sh download <rule_name>\` to view a rule's definition."
-echo "  > \`deploy_scheduled_tasks.sh run <rule_name>\` to run a rule immediately."
+echo "  > \`deploy_scheduled_tasks.sh [deployment] list\` to list all available rules."
+echo "  > \`deploy_scheduled_tasks.sh [deployment] download\` to download all rules from AWS to this folder."
+echo "  > \`deploy_scheduled_tasks.sh [deployment] upload <rule_name>\` to upload one of them."
+echo "  > \`deploy_scheduled_tasks.sh [deployment] download <rule_name>\` to view a rule's definition."
+echo "  > \`deploy_scheduled_tasks.sh [deployment] run <rule_name>\` to run a rule immediately."
 exit 1

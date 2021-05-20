@@ -1,7 +1,8 @@
 import {TFunction} from 'i18next'
+import _uniqWith from 'lodash/uniqWith'
 import {stringify} from 'query-string'
 
-import {prepareT} from 'store/i18n'
+import {LocalizableString, prepareT} from 'store/i18n'
 
 // Genderize a job name.
 function genderizeJob(job?: bayes.bob.Job, gender?: bayes.bob.Gender): string {
@@ -18,35 +19,58 @@ function genderizeJob(job?: bayes.bob.Job, gender?: bayes.bob.Gender): string {
 }
 
 // Return url for job name search.
-function getJobSearchURL(job?: bayes.bob.Job, gender?: bayes.bob.Gender): string {
+function getJobSearchURL(
+  t: TFunction, job?: bayes.bob.Job, gender?: bayes.bob.Gender): string {
   if (!job || Object.keys(job).length === 0) {
     return ''
   }
-  const searchTerms = encodeURIComponent('métier ' + genderizeJob(job, gender))
-  return `https://www.google.fr/search?q=${searchTerms}`
+  const searchTerms = encodeURIComponent(
+    `${t('métier', {ns: 'translation'})} ${genderizeJob(job, gender)}`,
+  )
+  return `https://${config.googleTopLevelDomain}/search?q=${searchTerms}`
+}
+
+// Return url for job name search.
+function getJobGroupSearchURL(t: TFunction, jobGroup?: bayes.bob.JobGroup): string {
+  if (!jobGroup?.name) {
+    return ''
+  }
+  const searchTerms = encodeURIComponent(
+    `${t('métier', {ns: 'translation'})} ${jobGroup?.name}`,
+  )
+  return `https://${config.googleTopLevelDomain}/search?q=${searchTerms}`
 }
 
 
 // Return URL to access the IMT.
-function getIMTURL(job?: {codeOgr?: string}, city?: {departementId?: string}): string {
+function getIMTURL(
+  interpolate: TFunction,
+  job?: {codeOgr?: string},
+  city?: {departementId?: string},
+): string {
   if (!job || !job.codeOgr || !city || !city.departementId) {
     return ''
   }
-  return 'http://candidat.pole-emploi.fr/marche-du-travail/statistiques?' +
-    `codeMetier=${job.codeOgr}&` +
-    `codeZoneGeographique=${city.departementId}&typeZoneGeographique=DEPARTEMENT`
+  try {
+    return interpolate(config.externalLmiUrl, {
+      codeOgr: job.codeOgr,
+      departementId: city.departementId,
+    })
+  } catch {
+    return ''
+  }
 }
 
 
-const arrondissementPatch: {[cityId: string]: {lieux: string; rayon?: number}} = {
-  13055: {lieux: '13201', rayon: 20},
-  69123: {lieux: '69381'},
-  75056: {lieux: '75D'},
+const arrondissementPatch: {[cityId: string]: {lieux: string; rayon?: number} | undefined} = {
+  13_055: {lieux: '13201', rayon: 20},
+  69_123: {lieux: '69381'},
+  75_056: {lieux: '75D'},
 }
 function getPEJobBoardURL(
   {jobGroup: {name = '', romeId = ''} = {}, name: jobName = ''}: bayes.bob.Job = {},
   {cityId = ''}: bayes.bob.FrenchCity = {},
-  otherParams?: {}): string {
+  otherParams?: Record<string, string|number>): string {
   if (!cityId || !(romeId || name || jobName)) {
     return ''
   }
@@ -58,6 +82,15 @@ function getPEJobBoardURL(
   })}`
 }
 
+function getGoogleJobSearchUrl(t: TFunction, jobName?: string): string {
+  const queryTerms = [t("offres d'emploi", {ns: 'translation'})]
+  if (jobName) {
+    queryTerms.push(jobName)
+  }
+  const query = queryTerms.join(' ')
+  return `https://${config.googleTopLevelDomain}/search?q=${encodeURIComponent(query)}&ibp=htl;jobs&sa=X`
+}
+
 
 interface JobPlaces {
   inDepartement: string
@@ -65,50 +98,44 @@ interface JobPlaces {
 }
 
 
+type StatsList = readonly bayes.bob.MonthlySeasonalDepartementStats[]
 // From departement stats, find a list of situation in different departements.
 // For instance, it will return: [
 //   {'inDepartement': 'en Savoie', 'jobGroup': 'Hôtellerie'},
 //   {'inDepartement': 'en Haute Savoie', 'jobGroup': 'Animation sportive'},
 // ]
-function getJobPlacesFromDepartementStats(
-  departementStats: readonly bayes.bob.MonthlySeasonalDepartementStats[]): readonly JobPlaces[] {
+function getJobPlacesFromDepartementStats(departementStats: StatsList): readonly JobPlaces[] {
   if (!departementStats || !departementStats.length) {
     return []
   }
-  const seenRomes = new Set()
-  const jobPlaces: JobPlaces[] = []
-  const nbDep = departementStats.length
-  const currentJobGroupForDep = departementStats.map((unusedDep): number => 0)
-  for (let i = 0; i < 8; ++i) {
-    const depIndex = i % nbDep
-    const dep = departementStats[i % nbDep]
-    const {jobGroups} = departementStats[depIndex]
-    if (!jobGroups) {
-      continue
-    }
-    while (currentJobGroupForDep[depIndex] < jobGroups.length - 1 &&
-      seenRomes.has(jobGroups[currentJobGroupForDep[depIndex]].romeId)) {
-      currentJobGroupForDep[depIndex]++
-    }
-    if (currentJobGroupForDep[depIndex] >= jobGroups.length) {
-      continue
-    }
-    const jobGroup = jobGroups[currentJobGroupForDep[depIndex]]
-    seenRomes.add(jobGroup.romeId)
-    jobPlaces.push({inDepartement: dep.departementInName || '', jobGroup: jobGroup.name || ''})
-  }
-  return jobPlaces
+  const maxRepeat = Math.ceil(8 / departementStats.length)
+  // Keep the first 8 departements, possibly looping back to the first if there are less.
+  const allPossible = Array.from<StatsList>({length: maxRepeat}).fill(departementStats).flat().
+    slice(0, 8).
+    flatMap(({departementInName = '', jobGroups = []}, index) =>
+      jobGroups.map(({name = '', romeId}) => ({
+        inDepartement: departementInName,
+        index,
+        jobGroup: name,
+        romeId,
+      })))
+  const keptValues = _uniqWith(
+    allPossible, (({index, romeId}, {index: otherIndex, romeId: otherRome}) =>
+      // Drop a JobPlace if it's in the same departement or in the same job group as a previous one.
+      index === otherIndex || romeId === otherRome))
+  return keptValues.map(({inDepartement, jobGroup}) => ({inDepartement, jobGroup}))
 }
 
 
 function missionLocaleUrl(
+  translate: TFunction,
   missionLocaleData?: bayes.bob.MissionLocaleData, departementName?: string): string {
   return missionLocaleData && missionLocaleData.agenciesListLink ||
-      `https://www.google.fr/search?q=${
-        encodeURIComponent(`mission locale ${departementName || ''}`)}`
+      `https://${config.googleTopLevelDomain}/search?q=${
+        encodeURIComponent(`{translate('mission locale'} ${departementName || ''}`)}`
 }
 
-const _APPLICATION_MODES = {
+const _APPLICATION_MODES: {[mode in bayes.bob.ApplicationMode]: LocalizableString} = {
   OTHER_CHANNELS: prepareT('Autre canal (réponse à une offre, concours, salon, ...)'),
   PERSONAL_OR_PROFESSIONAL_CONTACTS: prepareT('Réseau personnel ou professionnel'),
   PLACEMENT_AGENCY: prepareT('Agence de recrutement'),
@@ -124,7 +151,7 @@ function getApplicationModes(jobGroup: bayes.bob.JobGroup): readonly bayes.bob.M
 
 
 function getApplicationModeText(translate: TFunction, mode?: bayes.bob.ApplicationMode): string {
-  return translate(_APPLICATION_MODES[mode || 'UNDEFINED_APPLICATION_MODE'])
+  return translate(..._APPLICATION_MODES[mode || 'UNDEFINED_APPLICATION_MODE'])
 }
 
 
@@ -137,7 +164,35 @@ const weeklyApplicationOptions = [
 ] as const
 
 
+const weeklyOfferOptions: readonly {
+  name: LocalizableString
+  value: bayes.bob.NumberOfferEstimateOption
+}[] = [
+  {name: prepareT('0 ou 1 offre intéressante par semaine'), value: 'LESS_THAN_2'},
+  {name: prepareT('2 à 5 offres intéressantes par semaine'), value: 'SOME'},
+  {name: prepareT('6 à 15 offres intéressantes  par semaine'), value: 'DECENT_AMOUNT'},
+  {name: prepareT('Plus de 15 offres intéressantes par semaine'), value: 'A_LOT'},
+] as const
+
+
+// Get the lowest diploma needed to reach percent% of the diplomas
+function getMostlyRequiredDiploma(
+  diplomas: readonly bayes.bob.JobRequirement[], percent = 50): bayes.bob.JobRequirement {
+  const requiredDiplomas: bayes.bob.JobRequirement[] = []
+  const sum = diplomas.reduce((acc, diploma): number => acc + (diploma.percentRequired || 0), 0)
+  diplomas.reduce((acc, diploma): number => {
+    // TODO (émilie): Update for a functional or imperative style coding (not both).
+    if (acc < percent || (sum > 0 && requiredDiplomas.length === 0)) {
+      requiredDiplomas.push(diploma)
+    }
+    return acc + (diploma.percentRequired || 0)
+  }, 100 - sum)
+  return requiredDiplomas[requiredDiplomas.length - 1]
+}
+
 export {genderizeJob, getIMTURL, getJobSearchURL, missionLocaleUrl, getApplicationModes,
-  getJobPlacesFromDepartementStats, getApplicationModeText, getPEJobBoardURL,
-  weeklyApplicationOptions}
+  getJobPlacesFromDepartementStats, getApplicationModeText, getMostlyRequiredDiploma,
+  getPEJobBoardURL, weeklyApplicationOptions, weeklyOfferOptions, getGoogleJobSearchUrl,
+  getJobGroupSearchURL,
+}
 

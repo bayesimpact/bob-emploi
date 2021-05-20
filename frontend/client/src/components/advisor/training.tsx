@@ -1,15 +1,18 @@
 import {TFunction} from 'i18next'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
-import React, {useMemo} from 'react'
+import React, {useMemo, useState} from 'react'
 
 import {lowerFirstLetter, ofJobName, slugify} from 'store/french'
 import {LocalizableString, prepareT} from 'store/i18n'
 import {genderizeJob} from 'store/job'
+import {useAsynceffect} from 'store/promise'
 
-import {Trans} from 'components/i18n'
+import ExternalLink from 'components/external_link'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import {RadiumExternalLink} from 'components/radium'
-import {ExternalLink, GrowingNumber} from 'components/theme'
+import {fetchCity} from 'components/suggestions'
 import laBonneFormationImage from 'images/labonneformation-picto.png'
 import Picto from 'images/advices/picto-training.svg'
 
@@ -42,11 +45,11 @@ const valueToText: {[K in keyof typeof valueToColor]: LocalizableString} = {
 
 
 // TODO(cyrille): Make a working link.
-function createLBFLink(domain?: string): string {
-  if (!domain) {
-    return 'https://labonneformation.pole-emploi.fr/formations/'
+function createTrainingLink(domain?: string): string {
+  if (!domain || config.countryId !== 'fr') {
+    return config.trainingFindUrl
   }
-  return `https://labonneformation.pole-emploi.fr/formations/${domain}/france`
+  return `${config.trainingFindUrl}/${domain}/france`
 }
 
 
@@ -54,10 +57,10 @@ const TrainingMethod = (props: CardProps): React.ReactElement => {
   const {
     handleExplore,
     profile: {gender = undefined, hasHandicap = false} = {},
-    project: {targetJob = undefined} = {},
+    project: {targetJob = undefined, city: {departementId = undefined} = {}} = {},
     t,
   } = props
-  const {trainings = emptyArray} = useAdviceData<bayes.bob.Trainings>(props)
+  const {data: {trainings = emptyArray}, loading} = useAdviceData<bayes.bob.Trainings>(props)
 
   const tipsTemplates = useMemo(
     (): readonly Pick<EmailTemplateProps, 'content' | 'contentName' | 'title'>[] => {
@@ -138,7 +141,8 @@ de \\[années d'experience\\] serait suffisante même si le·a candidat·e n'a p
         style={{height: 20, marginRight: 10}} src={laBonneFormationImage}
         alt="la bonne formation" />
       Trouvez une formation et lisez des témoignages sur <ExternalLink
-        style={linkStyle} href={createLBFLink(domain)}>labonneformation.fr</ExternalLink>
+        style={linkStyle} href={createTrainingLink(domain)}>
+        {{trainingFindName: config.trainingFindName}}</ExternalLink>
     </Trans>
   }, [t, targetJob])
 
@@ -161,8 +165,7 @@ de \\[années d'experience\\] serait suffisante même si le·a candidat·e n'a p
     </HandyLink> : trainings.length ? null : footer
     return <MethodSuggestionList title={title} footer={listFooter}>
       {templates.map((template, index): ReactStylableElement => <EmailTemplate
-        onContentShown={handleExplore('tip')}
-        key={index} {...template} isMethodSuggestion={true} />)}
+        onContentShown={handleExplore('tip')} key={index} {...template} />)}
     </MethodSuggestionList>
   }, [trainings, footer, handleExplore, hasHandicap, t, tipsTemplates])
 
@@ -180,10 +183,14 @@ de \\[années d'experience\\] serait suffisante même si le·a candidat·e n'a p
     </Trans>
     return <MethodSuggestionList title={title} footer={footer} style={wrapperStyle}>
       {trainings.map((training, index): ReactStylableElement => <TrainingSuggestion
-        onClick={handleExplore('training')} training={training} key={index} t={t} />)}
+        onClick={handleExplore('training')} training={training} key={index} t={t}
+        departementId={departementId} />)}
     </MethodSuggestionList>
-  }, [footer, t, handleExplore, trainings, wrapperStyle])
+  }, [departementId, footer, t, handleExplore, trainings, wrapperStyle])
 
+  if (loading) {
+    return loading
+  }
   return <div>
     {tipsSection}
     {renderTrainings}
@@ -197,6 +204,7 @@ const ExpandedAdviceCardContent = React.memo(TrainingMethod)
 
 
 interface SuggestionProps {
+  departementId?: string
   onClick: () => void
   style?: RadiumCSSProperties
   t: TFunction
@@ -230,7 +238,7 @@ const boxesContainerStyle: React.CSSProperties = {
 
 
 const TrainingSuggestionBase = (props: SuggestionProps): React.ReactElement => {
-  const {onClick, training: {
+  const {departementId, onClick, training: {
     cityName = '',
     name = '',
     hiringPotential: score = undefined,
@@ -246,7 +254,7 @@ const TrainingSuggestionBase = (props: SuggestionProps): React.ReactElement => {
     // There might be a more elegant way to do that, but it would be overkill and less readable.
     return <div style={boxesContainerStyle}>
       <div style={{color: valueToColor[scoreKey], textAlign: 'center'}}>
-        {translate(valueToText[scoreKey])}
+        {translate(...valueToText[scoreKey])}
       </div>
       <div style={{width: 105}}>
         <div style={{...boxStyle, backgroundColor: selectedColor, borderRadius: '20px 0 0 20px'}} />
@@ -259,6 +267,19 @@ const TrainingSuggestionBase = (props: SuggestionProps): React.ReactElement => {
     </div>
   }, [score, translate])
 
+  const [cityDisplay, setCityDisplay] = useState(cityName)
+  // The training is available in their departement, so that's why we use this city
+  useAsynceffect(async (checkIfCanceled): Promise<void> => {
+    if (cityName) {
+      setCityDisplay(cityName)
+      return
+    }
+    const {name} = await fetchCity({departementId})
+    if (checkIfCanceled() || !name) {
+      return
+    }
+    setCityDisplay(name)
+  }, [cityName, departementId])
   const containerStyle = useMemo((): React.CSSProperties => ({
     color: 'inherit',
     textDecoration: 'none',
@@ -267,7 +288,7 @@ const TrainingSuggestionBase = (props: SuggestionProps): React.ReactElement => {
   }), [style])
   return <RadiumExternalLink style={containerStyle} onClick={onClick} href={url}>
     <span style={trainingStyle}>
-      <strong>{name}</strong> - {cityName}
+      <strong>{name}</strong> - {cityDisplay}
     </span>
     <div style={{flex: 1}} />
     {boxes}

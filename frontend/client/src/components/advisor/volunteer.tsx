@@ -3,8 +3,9 @@ import React from 'react'
 
 import {closeToCity} from 'store/french'
 
-import {Trans} from 'components/i18n'
-import {ExternalLink, GrowingNumber} from 'components/theme'
+import ExternalLink from 'components/external_link'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import Picto from 'images/advices/picto-volunteer.svg'
 import logoTousBenevoles from 'images/logo-tous-benevoles.png'
 
@@ -13,7 +14,10 @@ import {CardProps, MethodSuggestionList, Mission, useAdviceData} from './base'
 
 const VolunteerMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
   const {handleExplore, project: {city: {name = ''} = {}}, t} = props
-  const adviceData = useAdviceData<bayes.bob.VolunteeringMissions>(props)
+  const {data: adviceData, loading} = useAdviceData<bayes.bob.VolunteeringMissions>(props)
+  if (loading) {
+    return loading
+  }
   const associationMap: Set<string> = new Set()
   const missions = (adviceData.missions || []).filter(({associationName}): boolean => {
     if (!associationName || associationMap.has(associationName)) {

@@ -3,6 +3,7 @@ syntax = "proto3";
 import "bob_emploi/frontend/api/geo.proto";
 
 package bayes.bob;
+option go_package="bayes.org/bob_emploi/frontend/api/commute";
 
 message HiringCity {
   // City that is hiring.
@@ -10,8 +11,7 @@ message HiringCity {
 
   // Offers in this city, possibly for a given job group depending on context. Only the comparison
   // of this number to other cities will be meaningful.
-  // TODO(cyrille): Consider deprecating this, since we're actually only looking at the offers per
-  // inhabitant.
+  // DEPRECATED(2020-11): Now use offers_per_inhabitant.
   float offers = 4;
 
   // Offers in this city, divided by the population of the city, if known.

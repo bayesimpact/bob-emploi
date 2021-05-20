@@ -15,8 +15,7 @@ class ReorientJobbingImporterTestCase(unittest.TestCase):
     data_folder = path.dirname(__file__)
     market_score = path.join(data_folder, 'testdata/imt/market_score.csv')
     offers_csv = path.join(data_folder, 'testdata/job_offers/offers_per_departement.csv')
-    rome_job_groups = path.join(data_folder, 'testdata/unix_referentiel_code_rome_v327_utf8.csv')
-    item_arborescence = path.join(data_folder, 'testdata/unix_item_arborescence_v333_utf8.csv')
+    item_arborescence = path.join(data_folder, 'testdata/unix_item_arborescence_v327_utf8.csv')
     referentiel_apellation = path.join(
         data_folder, 'testdata/unix_referentiel_appellation_v327_utf8.csv')
 
@@ -24,8 +23,9 @@ class ReorientJobbingImporterTestCase(unittest.TestCase):
         """Test basic usage of the csv2dicts function."""
 
         offers = reorient_jobbing.csv2dicts(
-            self.market_score, self.offers_csv, self.rome_job_groups, self.item_arborescence,
-            self.referentiel_apellation)
+            market_score_csv=self.market_score, offers_csv=self.offers_csv,
+            rome_item_arborescence=self.item_arborescence,
+            referentiel_apellation_rome_csv=self.referentiel_apellation)
 
         offers_proto = dict(mongo.collection_to_proto_mapping(
             offers, reorient_jobbing_pb2.LocalJobbingStats))

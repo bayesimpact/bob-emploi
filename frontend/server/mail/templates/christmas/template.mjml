@@ -1,0 +1,488 @@
+{
+  "attributes": {
+    "owa": "desktop",
+    "version": "4.3.0"
+  },
+  "children": [
+    {
+      "attributes": {
+        "background-color": "#ffffff",
+        "color": "#55575d",
+        "font-family": "Arial, sans-serif",
+        "passport": {
+          "id": "VR8vUGxh1"
+        }
+      },
+      "children": [
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "background-size": "auto",
+            "padding": "20px 0px 20px 0px",
+            "passport": {
+              "header": true,
+              "hidden": true,
+              "id": "0BokW90U6_QT6"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "hidden": true,
+                  "id": "mZbZrfH-4SH6o"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "11px",
+                    "line-height": "22px",
+                    "padding": "0px 0px 0px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "hidden": true,
+                      "id": "IQ0VDibvzhpNh"
+                    }
+                  },
+                  "content": "<p style=\"margin: 10px 0;\">Donnez un résumé de cet email à vos destinataires</p>",
+                  "id": "86BA9VhTtpHV",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "G57gPSCuN6Od",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "VbXKRRYKYEv6",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-color": "transparent",
+            "background-repeat": "repeat",
+            "full-width": "full-width",
+            "padding": "20px 0px 20px 0px",
+            "padding-bottom": "12px",
+            "padding-top": "12px",
+            "passport": {
+              "id": "1rYM2JkmAo"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "kMQ3j-9T7E"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "0px 25px 0px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "3oO5lMBGvd"
+                    }
+                  },
+                  "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"font-size:14px\"><span style=\"color:#000000; text-decoration:none\">Hello {{var:firstName:\"Élise\"}},</span></span></span></p>",
+                  "id": "ELbpUdWN97yH",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "W7lwn3FKMCvv",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "6glBJjNs8p0z",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "77rLQp4z9YI_e"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "Jj1Ez7VpYb"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "0e1DPDjo16"
+                    }
+                  },
+                  "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">Je voudrais vous souhaiter une excellente fin d'année.</span></span></p>",
+                  "id": "Vvla9GoP53E-",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "BUDm1u4MPt25",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "hENCOdid0TLe",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "tRaeoT7rAS"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "dJOecfnSP3"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "NU1qxeCT6R"
+                    }
+                  },
+                  "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">Que vous fêtiez Hanoucca, Noël, rien du tout ou autre chose — les vacances, la nouvelle année, le changement de saison, l'arrivée du froid ou de la neige — nous vous souhaitons de bien terminer 2018 et de vous lancer heureu{%if var:gender:\"\" == \"FEMININE\"%}se{%else%}x{%endif%} et confiant{%if var:gender:\"\" == \"FEMININE\"%}e{%endif%} dans 2019. La fin d'année est le moment de faire attention à soi, de se recentrer sur ce qui est important et de s'entourer de ceux qui comptent. C'est tout ce que je vous souhaite.</span></span></p>",
+                  "id": "TjFETP6CqGy1c",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "H0B3w9Qg6x-H",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "n9AbvQ73iuld",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "lFSX1viPgR"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "9Nuz5siblR"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "VuyTfvQ9X2"
+                    }
+                  },
+                  "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">En décembre, tout le monde ne parle que de faire des bilans, mais de mon côté je préfère me poser ces questions :</span></span></p><ul><li style=\"line-height:1.38\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">✌️ Comment est-ce que je me sens dans ma vie ?</span></span></li><li style=\"line-height:1.38\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">🔮 De quoi ai-je envie pour l'avenir ?</span></span></li><li style=\"line-height:1.38\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">🍀 Y a-t-il des choses que je pourrais faire pour être plus épanouie ?</span></span></li></ul>",
+                  "id": "N8DLMyC5SQWTP",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "QQYpLC2LKYCzt",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "4NFkW88svPWdO",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "sbLZeKFs_Ct"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "BELCWzVk9Q2"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "mA7wXkkayrR"
+                    }
+                  },
+                  "content": "<p style=\"margin: 10px 0;\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">Je {%if var:startedSearchingSince:\"\" != \"\"%}sais que vous vous êtes lancé{%if var:gender:\"\" == \"FEMININE\"%}e{%endif%} dans votre recherche {{var:startedSearchingSince:\"depuis peu\"}}, et je{%endif%} pense que la fin d'année pourrait être le bon moment pour remettre les compteurs à zéro, vous inspirer et ouvrir de nouveaux horizons.</span></span></p>",
+                  "id": "ZdO1CbwFGq5XF",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "GWRs3A2qdgq"
+                    }
+                  },
+                  "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">Quelques questions pour commencer...</span></span></p><ul><li style=\"line-height:1.38\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">🔧 Et si j'apprenais quelque chose de nouveau ?</span></span></li><li style=\"line-height:1.38\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">{%if var:inCommuteCity:\"\" != \"\"%}📍 <a target=\"_blank\" href=\"{{var:adviceUrlCommute:\"https://www.bob-emploi.fr/\"}}\">Et si je travaillais {{var:inCommuteCity:\"\"}} ?</a></span></span></li><li style=\"line-height:1.38\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">{%endif%}{%if var:inRelocateDepartement:\"\" != \"\"%}🌍 <a target=\"_blank\" href=\"{{var:adviceUrlRelocate:\"https://www.bob-emploi.fr/\"}}\">Et si je déménageais {{var:inRelocateDepartement:\"\"}} ?</a></span></span></li><li style=\"line-height:1.38\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">{%endif%}🔦 Et si j'explorais cette piste que j'avais mise de côté ?</span></span></li><li style=\"line-height:1.38\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">{%if var:couldFreelance:\"\" == \"True\"%}🎒 <a target=\"_blank\" href=\"{{var:adviceUrlCreateYourCompany:\"https://www.bob-emploi.fr/\"}}\">Et si je me lançais à mon compte ?</a></span></span></li><li style=\"line-height:1.38\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">{%endif%}💡 Et si je faisais ce métier qui m'a toujours fait rêver ?</span></span></li>{%if var:adviceUrlBodyLanguage:\"\" != \"\"%}<li style=\"line-height:1.38\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">⭐️ <a target=\"_blank\" href=\"{{var:adviceUrlBodyLanguage:\"https://www.bob-emploi.fr/\"}}\">Et si je développais ma confiance en moi ?</a></span></span></li>{%endif%}<li style=\"line-height:1.38\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">🤝 Et si je donnais un coup de main à une association ?</span></span></li></ul><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">(Plein d'autres questions sur votre page Bob : </span><a target=\"_blank\" style=\"text-decoration:none\" href=\"http://www.bob-emploi.fr?email={{var:emailInUrl}}\"><u style=\"color:#1155cc; font-family:Arial; font-size:11pt; text-decoration:underline\">www.bob-emploi.fr</u></a><span style=\"color:#000000; font-size:11pt; text-decoration:none\">)</span></span></p>",
+                  "id": "A0I3kTPdqjT0d",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "XPbIF2kRPi7"
+                    }
+                  },
+                  "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">Ce n'est pas forcément le moment de se lancer dans l'action : pas de précipitation. Considérez simplement ces possibilités, et prenez le temps de les laisser mûrir. Qui sait où elles vous mèneront ?</span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">Si vous avez des questionnements ou des avancées à partager, répondez simplement à ce mail.</span></span></p>",
+                  "id": "CSdTEv-RCEwUy",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "bfuyO8wLgGl9b",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "050GT8eQVb4eX",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-color": "#ffffff",
+            "background-repeat": "repeat",
+            "background-size": "auto",
+            "full-width": "full-width",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "ehpULkCI0wO"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "XD325KJUyGr"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "Yj1pHTtVwqz"
+                    }
+                  },
+                  "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">Bonne fin d'année, {{var:firstName:\"Élise\"}}. </span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\">Plein de bonnes choses,</span></span></p>",
+                  "id": "DnTb2FVYJr3Fk",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "S7qk9KxTZeI"
+                    }
+                  },
+                  "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14.6667px\">Joanna de Bob</span></span></p>",
+                  "id": "e2UQZZPwrDeQb",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "alt": "www.bob-emploi.fr",
+                    "border": "none",
+                    "height": "auto",
+                    "href": "",
+                    "padding": "10px 25px",
+                    "padding-left": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "yaIa0w06UOBJDH",
+                      "image-id": 6116893
+                    },
+                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/44ky/2vvvu.png",
+                    "target": "_blank",
+                    "title": "",
+                    "width": "142px"
+                  },
+                  "id": "HXg1ikizUGOZc",
+                  "tagName": "mj-image"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "15px",
+                    "passport": {
+                      "id": "oPcLYS-9pjn"
+                    }
+                  },
+                  "content": "<p style=\"margin: 10px 0;\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#000000; font-size:11pt; text-decoration:none\"><span style=\"color:#242323\"><span style=\"font-size:14px\">PS : Si vous souhaitez faire un don à Bob à l'occasion de la fin d'année, </span></span><span style=\"font-size:14px\"><a target=\"_blank\" style=\"color:#242323\" href=\"https://www.helloasso.com/associations/bayes-impact-france\"><span style=\"color:#242323\">vous pouvez le faire via notre page sur Hello Asso</span></a></span></span><span style=\"font-size:14px\"><span style=\"color:#242323\">. Les dons aux associations sont défiscalisables à 66% 👍</span></span></span></p>",
+                  "id": "9BHqNJf8kloPj",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "15px",
+                    "passport": {
+                      "id": "jVvAdKZEA8B"
+                    }
+                  },
+                  "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:11px\">Vous recevez cet email car vous êtes inscrit sur <a target=\"_blank\" href=\"https://www.bob-emploi.fr\">Bob</a>. <a target=\"_blank\" href=\"{{var:unsubscribeLink}}\"><u>Cliquez ici</u></a> si vous souhaitez vous désinscrire.</span></p>",
+                  "id": "qEw3S5BU8xbdc",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "GEv8Snl5BncUE",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "gd_AEez74iZev",
+          "tagName": "mj-section"
+        }
+      ],
+      "id": "doyVCZ73lkOF",
+      "tagName": "mj-body"
+    }
+  ],
+  "id": "sbv0jrL3FzzW",
+  "tagName": "mjml"
+}

@@ -5,18 +5,19 @@ import {useDispatch, useSelector} from 'react-redux'
 import {useHistory} from 'react-router'
 
 import {AllActions, DispatchAllActions, RootState, createFirstProject} from 'store/actions'
+import {useSelfDiagnosticInIntro} from 'store/user'
 
 import {NEW_PROJECT_ID, Routes} from 'components/url'
 
-import {GeneralStep} from './general'
-import {NoticeStep} from './notice'
-import {FrustrationsStep} from './frustrations'
-import {SettingsStep} from './settings'
+import GeneralStep from './general'
+import NoticeStep from './notice'
+import FrustrationsStep from './frustrations'
+import SettingsStep from './settings'
 
-import {NewProjectGoalStep} from './goal'
-import {NewProjectCriteriaStep} from './criteria'
-import {NewProjectExperienceStep} from './experience'
-import {NewProjectJobsearchStep} from './jobsearch'
+import NewProjectGoalStep from './goal'
+import NewProjectCriteriaStep from './criteria'
+import NewProjectExperienceStep from './experience'
+import NewProjectJobsearchStep from './jobsearch'
 import {SelfDiagnosticStep} from './self_diagnostic'
 import {ProfileStepProps, ProjectStepProps} from './step'
 
@@ -25,7 +26,9 @@ interface BaseStep {
   doesNotCount?: boolean
   isBlockingBackwardsNavigation?: boolean
   name: string
-  shouldSkip?: (project: bayes.bob.Project, featuresEnabled: bayes.bob.Features) => boolean
+  shouldSkip?: (
+    project: bayes.bob.Project, featuresEnabled: bayes.bob.Features,
+    isSelfDiagnosticInIntro: boolean) => boolean
   type?: AllActions['type']
 }
 
@@ -69,6 +72,10 @@ const STEPS: readonly AnyOnboardingStep[] = [
     component: SelfDiagnosticStep,
     name: 'defi',
     path: Routes.NEW_PROJECT_PAGE,
+    shouldSkip: (
+      project: unknown, {lateSelfDiagnostic}: bayes.bob.Features, isSelfDiagnosticInIntro: boolean,
+    ): boolean =>
+      lateSelfDiagnostic === 'ACTIVE' || isSelfDiagnosticInIntro,
     type: 'FINISH_PROJECT_SELF_DIAGNOSTIC',
   },
   {
@@ -101,11 +108,21 @@ const STEPS: readonly AnyOnboardingStep[] = [
     path: Routes.PROFILE_PAGE,
     type: 'FINISH_PROFILE_SETTINGS',
   },
+  {
+    component: SelfDiagnosticStep,
+    name: 'priorite',
+    path: Routes.NEW_PROJECT_PAGE,
+    shouldSkip: (
+      project: unknown, {lateSelfDiagnostic}: bayes.bob.Features, isSelfDiagnosticInIntro: boolean,
+    ): boolean => {
+      return lateSelfDiagnostic !== 'ACTIVE' || isSelfDiagnosticInIntro
+    },
+    type: 'FINISH_PROJECT_SELF_DIAGNOSTIC',
+  },
 ]
 // Compute stepNumber for each step.
 export interface WithNumber {
   index: number
-  isLastProjectStep?: boolean
   stepNumber?: number
 }
 type NumberedStep = AnyOnboardingStep & WithNumber
@@ -116,8 +133,7 @@ const NUMBERED_STEPS = STEPS.map((step: AnyOnboardingStep, index: number): Numbe
     return {...step, index}
   }
   ++nextStepNumber
-  const isLastProjectStep = STEPS.length === index + 1
-  return {...step, index, isLastProjectStep, stepNumber}
+  return {...step, index, stepNumber}
 })
 
 
@@ -134,7 +150,7 @@ function isProjectStep(step: NumberedStep): step is ProjectBaseStep & WithNumber
 }
 
 
-const PRFOJECT_STEPS = _keyBy(NUMBERED_STEPS.filter(isProjectStep), 'name')
+const PROJECT_STEPS = _keyBy(NUMBERED_STEPS.filter(isProjectStep), 'name')
 
 
 // Total number of steps in the onboarding.
@@ -145,7 +161,7 @@ type OnboardingPath = typeof Routes.PROFILE_PAGE | typeof Routes.NEW_PROJECT_PAG
 
 
 function getProjectOnboardingStep(name?: string): ProjectBaseStep & WithNumber | undefined {
-  return name && PRFOJECT_STEPS[name] || undefined
+  return name && PROJECT_STEPS[name] || undefined
 }
 
 
@@ -164,7 +180,8 @@ function getOnboardingStep(path: OnboardingPath, name: string): NumberedStep | u
 
 function gotoRelativeStep(
   path: OnboardingPath, name: string, dispatch: DispatchAllActions|undefined, history: History,
-  relativeStep: 1|-1, project: bayes.bob.Project, featuresEnabled: bayes.bob.Features): boolean {
+  relativeStep: 1|-1, project: bayes.bob.Project, featuresEnabled: bayes.bob.Features,
+  isSelfDiagnosticInIntro: boolean): boolean {
   const currentStep = getOnboardingStep(path, name)
   if (!currentStep) {
     return false
@@ -177,7 +194,7 @@ function gotoRelativeStep(
     newStepIndex += relativeStep
   ) {
     const newStep = STEPS[newStepIndex]
-    if (newStep.shouldSkip?.(project, featuresEnabled)) {
+    if (newStep.shouldSkip?.(project, featuresEnabled, isSelfDiagnosticInIntro)) {
       continue
     }
     history.push(`${newStep.path}/${newStep.name}`)
@@ -204,9 +221,23 @@ function hasPreviousStep(path: string, name: string): boolean {
 }
 
 
+function hasNextStep(
+  currentStep: WithNumber, project: bayes.bob.Project, featuresEnabled: bayes.bob.Features,
+  isSelfDiagnosticInIntro: boolean): boolean {
+  const {index} = currentStep
+  for (const nextStep of STEPS.slice(index + 1)) {
+    if (!nextStep.shouldSkip?.(project, featuresEnabled, isSelfDiagnosticInIntro)) {
+      return true
+    }
+  }
+  return false
+}
+
+
 interface OnboardingProps<T extends BaseStep> {
   goBack: (() => void) | undefined
   goNext: () => void
+  hasNextStep: boolean
   step: T & WithNumber | undefined
   stepCount: number
 }
@@ -227,16 +258,21 @@ function useOnboarding<T extends BaseStep>(
   const featuresEnabled = useSelector(
     ({user: {featuresEnabled}}: RootState): bayes.bob.Features => featuresEnabled || emptyObject,
   )
+  const isSelfDiagnosticInIntro = useSelfDiagnosticInIntro()
   const goNext = useCallback((): void => {
-    name && gotoRelativeStep(path, name, dispatch, history, 1, project, featuresEnabled)
-  }, [path, name, dispatch, history, project, featuresEnabled])
+    name && gotoRelativeStep(path, name, dispatch, history, 1, project, featuresEnabled,
+      isSelfDiagnosticInIntro)
+  }, [path, name, dispatch, history, project, featuresEnabled, isSelfDiagnosticInIntro])
   const goBack = useCallback((): void => {
-    name && gotoRelativeStep(path, name, undefined, history, -1, project, featuresEnabled)
-  }, [path, name, history, project, featuresEnabled])
+    name && gotoRelativeStep(path, name, undefined, history, -1, project, featuresEnabled,
+      isSelfDiagnosticInIntro)
+  }, [path, name, history, project, featuresEnabled, isSelfDiagnosticInIntro])
   return {
     goBack: name && hasPreviousStep(path, name) ? goBack : undefined,
     goNext,
-    step: step?.shouldSkip?.(project, featuresEnabled) ? undefined : step,
+    hasNextStep: !!step && hasNextStep(step, project, featuresEnabled, isSelfDiagnosticInIntro),
+    // TODO(pascal): Fix step numbering depending on skipped steps.
+    step: step?.shouldSkip?.(project, featuresEnabled, isSelfDiagnosticInIntro) ? undefined : step,
     stepCount: onboardingStepCount,
   }
 }

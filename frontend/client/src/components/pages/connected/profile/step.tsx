@@ -4,12 +4,15 @@ import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useState} from 'react'
 import {useDispatch, useSelector} from 'react-redux'
 
+import useFastForward from 'hooks/fast_forward'
 import {DispatchAllActions, RootState, onboardingCommentIsShown} from 'store/actions'
+import isMobileVersion from 'store/mobile'
 
-import {useFastForward} from 'components/fast_forward'
-import {isMobileVersion} from 'components/mobile'
+import Button from 'components/button'
+import {FixedButtonNavigation} from 'components/navigation'
+import PercentBar from 'components/percent_bar'
 import {Ellipsis} from 'components/phylactery'
-import {Button, PaddedOnMobile, PercentBar} from 'components/theme'
+import {PADDED_ON_MOBILE} from 'components/theme'
 import bobHeadImage from 'images/bob-head.svg'
 
 
@@ -17,7 +20,7 @@ export interface StepProps {
   buttonsOverride?: React.ReactNode
   contentStyle?: React.CSSProperties
   explanation?: React.ReactNode
-  isNextButtonDisabled?: boolean
+  isLastOnboardingStep: boolean
   isShownAsStepsDuringOnboarding: boolean
   nextButtonContent?: React.ReactNode
   onPreviousButtonClick?: (() => void) | null
@@ -26,6 +29,13 @@ export interface StepProps {
   style?: React.CSSProperties
   t: TFunction
   totalStepCount?: number
+}
+
+
+const navigationStyle: React.CSSProperties = {
+  display: 'flex',
+  marginBottom: 40,
+  marginTop: 15,
 }
 
 
@@ -57,9 +67,10 @@ interface BaseStepProps extends StepProps {
 
 
 const StepBase = (props: BaseStepProps): React.ReactElement => {
-  const {buttonsOverride, children, explanation, fastForward, isShownAsStepsDuringOnboarding,
+  const {buttonsOverride, children, explanation, fastForward, isLastOnboardingStep,
+    isShownAsStepsDuringOnboarding,
     nextButtonContent, onPreviousButtonClick, onNextButtonClick, contentStyle, progressInStep = 0,
-    style, stepNumber, totalStepCount, isNextButtonDisabled, t, title} = props
+    style, stepNumber, totalStepCount, t, title} = props
   const stepStyle: React.CSSProperties = {
     alignItems: isMobileVersion ? 'stretch' : 'center',
     display: 'flex',
@@ -73,6 +84,7 @@ const StepBase = (props: BaseStepProps): React.ReactElement => {
     lineHeight: 1.3,
     marginBottom: isMobileVersion && !isShownAsStepsDuringOnboarding ? 20 : 0,
     marginTop: isMobileVersion && !isShownAsStepsDuringOnboarding ? 0 : 40,
+    padding: PADDED_ON_MOBILE,
     textAlign: 'center',
   }
   const explanationStyle: React.CSSProperties = {
@@ -80,6 +92,7 @@ const StepBase = (props: BaseStepProps): React.ReactElement => {
     fontSize: 14,
     lineHeight: 1.4,
     marginTop: 10,
+    padding: '0 20px',
     textAlign: 'center',
   }
   const containerStyle: React.CSSProperties = {
@@ -91,21 +104,19 @@ const StepBase = (props: BaseStepProps): React.ReactElement => {
     width: isMobileVersion ? 'initial' : 480,
     ...contentStyle,
   }
-  const navigationStyle: React.CSSProperties = {
-    display: 'flex',
-    marginBottom: isMobileVersion ? 20 : 40,
-    marginTop: 15,
-  }
   const mobileButtonStyle: React.CSSProperties = {
+    borderRadius: 13,
+    flex: 1,
     margin: '0 auto',
     minWidth: 130,
     padding: '13px 16px',
   }
   const buttonStyle = isMobileVersion ? mobileButtonStyle : {}
-  const isLastOnboardingStep = totalStepCount && totalStepCount === stepNumber
   useFastForward(fastForward)
+  const nextButtonText = nextButtonContent || (isLastOnboardingStep ?
+    t('Terminer le questionnaire') : t('Suivant'))
   return <div style={stepStyle} className={isShownAsStepsDuringOnboarding ? '' : 'profile'}>
-    {title ? <PaddedOnMobile><div style={titleStyle}>{title}</div></PaddedOnMobile> : null}
+    {title ? <div style={titleStyle}>{title}</div> : null}
     {stepNumber && totalStepCount ? <PercentBar
       color={colors.BOB_BLUE}
       height={15}
@@ -118,22 +129,26 @@ const StepBase = (props: BaseStepProps): React.ReactElement => {
     <div style={containerStyle}>
       {children}
     </div>
-    {buttonsOverride ? buttonsOverride :
-      onPreviousButtonClick || onNextButtonClick ? <div style={navigationStyle}>
+    {buttonsOverride || (isMobileVersion ?
+      <FixedButtonNavigation
+        onClick={onNextButtonClick}
+        disabled={!onNextButtonClick}>
+        {nextButtonText}
+      </FixedButtonNavigation> :
+      <div style={navigationStyle}>
         {onPreviousButtonClick ? <Button
           type="back" onClick={onPreviousButtonClick} style={{...buttonStyle, marginRight: 20}}
           isRound={true}>
           {t('Précédent')}
         </Button> : null}
-        {onNextButtonClick ? <Button
+        <Button
           isRound={true}
           onClick={onNextButtonClick}
-          disabled={isNextButtonDisabled}
+          disabled={!onNextButtonClick}
           style={buttonStyle}>
-          {nextButtonContent || (isLastOnboardingStep ?
-            t('Terminer le questionnaire') : t('Suivant'))}
-        </Button> : null}
-      </div> : null}
+          {nextButtonText}
+        </Button>
+      </div>)}
   </div>
 }
 StepBase.propTypes = {
@@ -142,7 +157,6 @@ StepBase.propTypes = {
   contentStyle: PropTypes.object,
   explanation: PropTypes.node,
   fastForward: PropTypes.func.isRequired,
-  isNextButtonDisabled: PropTypes.bool,
   isShownAsStepsDuringOnboarding: PropTypes.bool,
   nextButtonContent: PropTypes.node,
   onNextButtonClick: PropTypes.func,
@@ -172,7 +186,7 @@ const OnboardingCommentContentBase = (props: OnboardingCommentContentProps): Rea
   useEffect((): (() => void) => {
     if (isWaiting) {
       const timeout = window.setTimeout((): void => setIsWaiting(false), 2000)
-      return (): void => clearTimeout(timeout)
+      return (): void => window.clearTimeout(timeout)
     }
     onShown?.()
     return (): void => void 0
@@ -271,7 +285,7 @@ const OnboardingCommentBase = (props: OnboardingCommentProps): React.ReactElemen
       return (): void => void 0
     }
     const timeout = window.setTimeout((): void => setIsComputing(false), computingDelayMillisecs)
-    return (): void => clearTimeout(timeout)
+    return (): void => window.clearTimeout(timeout)
   }, [computingDelayMillisecs, isComputing])
 
   useEffect((): void => {

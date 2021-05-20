@@ -1,13 +1,15 @@
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import React from 'react'
+import {useTranslation} from 'react-i18next'
 import {Link} from 'react-router-dom'
 
-import {isMobileVersion} from 'components/mobile'
-import {StaticPage} from 'components/static'
-import {Markdown, Button} from 'components/theme'
-import {Routes} from 'components/url'
+import {STATIC_NAMESPACE} from 'store/i18n'
+import isMobileVersion from 'store/mobile'
 
-import content from './vision/content.txt'
+import Button from 'components/button'
+import Markdown from 'components/markdown'
+import {StaticPage} from 'components/static'
+import {Routes} from 'components/url'
 
 
 const leftTitleStyle: React.CSSProperties = {
@@ -31,13 +33,14 @@ if (isMobileVersion) {
 }
 
 
-const VisionPage: React.FC = (): React.ReactElement =>
-  <StaticPage page="vision" title={<strong>Notre mission</strong>} style={style}>
+const VisionPage: React.FC = (): React.ReactElement => {
+  const [translate] = useTranslation(STATIC_NAMESPACE)
+  return <StaticPage page="vision" title={<strong>Notre mission</strong>} style={style}>
     <div style={leftTitleStyle}>
       Mettre la technologie au service de chacun
     </div>
     <div style={{fontSize: 16, lineHeight: 1.63, maxWidth: 600}}>
-      <Markdown content={content} />
+      <Markdown content={translate('vision')} />
 
       <div style={{margin: '50px 0', textAlign: isMobileVersion ? 'center' : 'right'}}>
         <Link to={Routes.CONTRIBUTION_PAGE}>
@@ -50,17 +53,9 @@ const VisionPage: React.FC = (): React.ReactElement =>
           </Button>
         </Link>
       </div>
-
-      <div style={{fontWeight: 'bold'}}>
-        Écoutez notre fondateur, Paul Duan, expliquer notre mission&nbsp;:
-        <iframe
-          style={{marginTop: 10}}
-          width={isMobileVersion ? 280 : 600} height={isMobileVersion ? 180 : 320}
-          scrolling="no" frameBorder={0}
-          src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/326192410&amp;color=%23ff5500&amp;auto_play=false&amp;hide_related=false&amp;show_comments=true&amp;show_user=true&amp;show_reposts=false&amp;visual=true" />
-      </div>
     </div>
   </StaticPage>
+}
 
 
 export default React.memo(VisionPage)

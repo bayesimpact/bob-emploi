@@ -1,6 +1,7 @@
 """Tests for the bob_emploi.importer.online_salons module."""
 
 import datetime
+import os
 from os import path
 import unittest
 from unittest import mock
@@ -24,7 +25,7 @@ class OnlineSalonsImporterTestCase(airtablemock.TestCase):
 
     events_filename = path.join(_TESTDATA_FOLDER, 'online_salons.json')
 
-    @mock.patch(online_salons.airtable_to_protos.__name__ + '._AIRTABLE_API_KEY', new='apikey')
+    @mock.patch.dict(os.environ, {'AIRTABLE_API_KEY': 'apikey'})
     @mock.patch(online_salons.__name__ + '._REGIONS', new=[{'94': {'prefix': 'en '}}])
     @mock.patch(online_salons.__name__ + '.search_client')
     @mock.patch(online_salons.logging.__name__ + '.warning')

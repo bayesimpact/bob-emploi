@@ -22,7 +22,7 @@ import csv
 import datetime
 import sys
 import typing
-from typing import Iterator
+from typing import Iterator, Optional
 
 import tqdm
 
@@ -33,8 +33,8 @@ from bob_emploi.data_analysis.lib import fhs
 class _JobseekerCriteria(typing.NamedTuple):
     jobseeker_id: str
     code_rome: str
-    city_id: str
-    gender: str
+    city_id: Optional[str]
+    gender: Optional[str]
 
 
 # TODO(sil): Add tests.

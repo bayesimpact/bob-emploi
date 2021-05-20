@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "baseUrl": "../.."
+  },
+  "extends": "../../tsconfig.json",
+  "include": [
+    "/tmp/bob_emploi/frontend/api/*.d.ts",
+    "../../custom.d.ts",
+    "../../src",
+    "custom.d.ts",
+    "src"
+  ],
+}

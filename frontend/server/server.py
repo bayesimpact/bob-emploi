@@ -10,44 +10,52 @@ import datetime
 import logging
 import os
 import random
+import re
 import typing
-from typing import Any, Dict, Optional, Set, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 from urllib import parse
 import uuid
 
 import flask
 from google.protobuf import json_format
 from google.protobuf import message
+import requests
 import sentry_sdk
 from sentry_sdk.integrations import flask as sentry_flask
 from sentry_sdk.integrations import logging as sentry_logging
 import werkzeug
 from werkzeug.middleware import proxy_fix
 
+from bob_emploi.common.python import now
 from bob_emploi.frontend.server import action
 from bob_emploi.frontend.server import advisor
 from bob_emploi.frontend.server import apps
 from bob_emploi.frontend.server import auth
+from bob_emploi.frontend.server import cache
 from bob_emploi.frontend.server import diagnostic
 from bob_emploi.frontend.server import i18n
 from bob_emploi.frontend.server import jobs
 from bob_emploi.frontend.server import mongo
-from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import proto
+from bob_emploi.frontend.server import proto_flask
 from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server import strategist
 from bob_emploi.frontend.server import tick
 from bob_emploi.frontend.server import user
-from bob_emploi.frontend.server.asynchronous.mail import focus
+from bob_emploi.frontend.server.mail import campaign
+from bob_emploi.frontend.server.mail import focus
+from bob_emploi.frontend.server.mail.templates import mailjet_templates
 from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import auth_pb2
+from bob_emploi.frontend.api import boolean_pb2
 from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import feedback_pb2
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import options_pb2
 from bob_emploi.frontend.api import project_pb2
+from bob_emploi.frontend.api import reflection_pb2
 from bob_emploi.frontend.api import stats_pb2
 from bob_emploi.frontend.api import strategy_pb2
 from bob_emploi.frontend.api import use_case_pb2
@@ -59,14 +67,11 @@ app.wsgi_app = proxy_fix.ProxyFix(app.wsgi_app)  # type: ignore
 
 RANDOMIZER = random.Random()
 
-_FlaskResponse = Union[str, werkzeug.Response]
+_FlaskResponse = Union[str, werkzeug.Response, Tuple[str, int]]
 
 # TODO(pascal): Split this module then remove next line.
 # pylint: disable=too-many-lines
 
-
-# TODO(sil): Clean up the unverified_data_zones table in _DB.
-_DB, _USER_DB, _EVAL_DB = mongo.get_connections_from_env()
 
 # How long a support ticket should be kept open.
 _SUPPORT_TICKET_LIFE_DAYS = 7
@@ -74,6 +79,10 @@ _SUPPORT_TICKET_LIFE_DAYS = 7
 # Time of the day (as a number of hours since midnight) at which focus emails are sent.
 # Only used for simulation, the actual timing is handled by scheduled tasks.
 _FOCUS_EMAIL_SENDING_TIME = 9
+
+# Environment variables needed.
+_SERVER_TAG: Dict[str, str] = {}
+_SERVER_TAG['_server'] = os.getenv('SERVER_VERSION', 'dev')
 
 
 @app.errorhandler(auth.ExpiredTokenException)
@@ -84,9 +93,11 @@ def expired_token(error: auth.ExpiredTokenException) -> Tuple[str, int]:
 
 
 @app.route('/api/user', methods=['DELETE'])
-@proto.flask_api(in_type=user_pb2.User, out_type=user_pb2.UserId)
+@proto_flask.api(in_type=user_pb2.User, out_type=user_pb2.UserId)
 def delete_user(user_data: user_pb2.User) -> user_pb2.UserId:
     """Delete a user and their authentication information."""
+
+    user_db = mongo.get_connections_from_env().user_db
 
     auth_token = flask.request.headers.get('Authorization', '').replace('Bearer ', '')
     filter_user: Optional[Dict[str, Any]]
@@ -105,7 +116,7 @@ def delete_user(user_data: user_pb2.User) -> user_pb2.UserId:
         except ValueError:
             flask.abort(403, i18n.flask_translate(
                 'Accès refusé, action seulement pour le super-administrateur.'))
-        filter_user = _USER_DB.user.find_one({
+        filter_user = user_db.user.find_one({
             'hashedEmail': auth.hash_user_email(user_data.profile.email)}, {'_id': 1})
     else:
         flask.abort(400, i18n.flask_translate(
@@ -115,14 +126,14 @@ def delete_user(user_data: user_pb2.User) -> user_pb2.UserId:
         return user_pb2.UserId()
 
     user_proto = user.get_user_data(str(filter_user['_id']))
-    if not auth.delete_user(user_proto, _USER_DB):
+    if not auth.delete_user(user_proto, user_db):
         flask.abort(500, i18n.flask_translate('Erreur serveur, impossible de supprimer le compte.'))
 
     return user_pb2.UserId(user_id=str(filter_user['_id']))
 
 
 @app.route('/api/user/<user_id>/settings', methods=['POST'])
-@proto.flask_api(in_type=user_pb2.UserProfile, out_type=user_pb2.UserId)
+@proto_flask.api(in_type=user_pb2.UserProfile, out_type=user_pb2.UserId)
 @auth.require_user(lambda unused_profile, user_id: typing.cast(str, user_id), role='settings')
 def update_user_settings(profile: user_pb2.UserProfile, user_id: str) -> user_pb2.UserId:
     """Update user's settings."""
@@ -136,13 +147,14 @@ def update_user_settings(profile: user_pb2.UserProfile, user_id: str) -> user_pb
         # by the focus email script.
         updater['$unset'] = {'sendCoachingEmailAfter': 1}
 
-    _USER_DB.user.update_one({'_id': user.safe_object_id(user_id)}, updater)
+    user_db = mongo.get_connections_from_env().user_db
+    user_db.user.update_one({'_id': user.safe_object_id(user_id)}, updater)
 
     return user_pb2.UserId(user_id=user_id)
 
 
 @app.route('/api/user/<user_id>', methods=['GET'])
-@proto.flask_api(out_type=user_pb2.User)
+@proto_flask.api(out_type=user_pb2.User)
 @auth.require_user(lambda user_id: typing.cast(str, user_id))
 def get_user(user_id: str) -> user_pb2.User:
     """Return the user identified by user_id.
@@ -156,7 +168,7 @@ def get_user(user_id: str) -> user_pb2.User:
 
 
 @app.route('/api/user', methods=['POST'])
-@proto.flask_api(in_type=user_pb2.User, out_type=user_pb2.User)
+@proto_flask.api(in_type=user_pb2.User, out_type=user_pb2.User)
 @auth.require_user(lambda user_data: typing.cast(user_pb2.User, user_data).user_id)
 def save_user(user_data: user_pb2.User) -> user_pb2.User:
     """Save the user data sent by client.
@@ -173,7 +185,7 @@ def save_user(user_data: user_pb2.User) -> user_pb2.User:
 
 
 @app.route('/api/user/<user_id>/project/<project_id>', methods=['POST'])
-@proto.flask_api(in_type=project_pb2.Project, out_type=project_pb2.Project)
+@proto_flask.api(in_type=project_pb2.Project, out_type=project_pb2.Project)
 @auth.require_user(lambda project, user_id, project_id: typing.cast(str, user_id))
 def save_project(
         project_data: project_pb2.Project, user_id: str, project_id: str) -> project_pb2.Project:
@@ -192,13 +204,15 @@ def save_project(
         if p.project_id == project_id), None)
     if project_index is None:
         flask.abort(404, i18n.flask_translate("Le projet n'existe pas."))
-    # TODO(cyrille): Add a route for resetting
-    user_proto.projects[project_index].MergeFrom(project_data)
+    project_info = user_proto.projects[project_index]
+    _clear_replaceable_fields(project_info, project_data)
+    # TODO(cyrille): Add a route for resetting.
+    project_info.MergeFrom(project_data)
     return _get_project_data(user.save_user(user_proto, is_new_user=False), project_id)
 
 
 @app.route('/api/user/<user_id>/project/<project_id>/advice/<advice_id>', methods=['POST'])
-@proto.flask_api(in_type=project_pb2.Advice, out_type=project_pb2.Advice)
+@proto_flask.api(in_type=project_pb2.Advice, out_type=project_pb2.Advice)
 @auth.require_user(lambda project, user_id, project_id, advice_id: typing.cast(str, user_id))
 def update_advice(advice_data: project_pb2.Advice, user_id: str, project_id: str, advice_id: str) \
         -> project_pb2.Advice:
@@ -228,7 +242,7 @@ def update_advice(advice_data: project_pb2.Advice, user_id: str, project_id: str
 
 
 @app.route('/api/user/<user_id>/project/<project_id>/strategy/<strategy_id>', methods=['POST'])
-@proto.flask_api(in_type=project_pb2.WorkingStrategy, out_type=project_pb2.WorkingStrategy)
+@proto_flask.api(in_type=project_pb2.WorkingStrategy, out_type=project_pb2.WorkingStrategy)
 @auth.require_user(lambda project, user_id, project_id, strategy_id: typing.cast(str, user_id))
 def update_strategy(
         strategy_data: project_pb2.WorkingStrategy,
@@ -279,8 +293,10 @@ def stop_strategy(user_id: str, project_id: str, strategy_id: str) -> str:
     return 'OK'
 
 
-def _clear_replaceable_fields(
-        user_proto: message.Message, request_proto: message.Message) -> None:
+_Replaceable = typing.TypeVar('_Replaceable', bound=message.Message)
+
+
+def _clear_replaceable_fields(user_proto: _Replaceable, request_proto: _Replaceable) -> None:
     """Clear replaceable fields of a message.
 
     Input:
@@ -301,8 +317,15 @@ def _clear_replaceable_fields(
         list_format_field = list_format_options.Extensions[options_pb2.list_format]
         if options_pb2.REPLACEABLE == list_format_field:
             user_proto.ClearField(field_descriptor.name)
+            if len(request_value) > 1:
+                continue
+            sole_value = request_value[0]
             # Replaceable list with only one falsy value means that the field should be emptied.
-            if len(request_value) == 1 and not request_value[0]:
+            deletion_command = not sole_value
+            # Replaceable list with only one empty message value means the same.
+            if field_descriptor.type == field_descriptor.TYPE_MESSAGE:
+                deletion_command = sole_value == type(sole_value)()
+            if deletion_command:
                 request_proto.ClearField(field_descriptor.name)
         if field_descriptor.type == field_descriptor.TYPE_MESSAGE:
             if field_descriptor.label == field_descriptor.LABEL_REPEATED:
@@ -314,7 +337,7 @@ def _clear_replaceable_fields(
     '/api/user/<user_id>/update-and-quick-diagnostic', methods=['POST'],
     defaults={'project_id': None})
 @app.route('/api/user/<user_id>/update-and-quick-diagnostic/<project_id>', methods=['POST'])
-@proto.flask_api(in_type=user_pb2.QuickDiagnosticRequest, out_type=diagnostic_pb2.QuickDiagnostic)
+@proto_flask.api(in_type=user_pb2.QuickDiagnosticRequest, out_type=diagnostic_pb2.QuickDiagnostic)
 @auth.require_user(lambda request, user_id, project_id: typing.cast(str, user_id))
 def update_and_quick_diagnose(
         request: user_pb2.QuickDiagnosticRequest, user_id: str, project_id: str) \
@@ -352,12 +375,13 @@ def update_and_quick_diagnose(
         elif user_proto.projects:
             project_proto = user_proto.projects[0]
 
+    database = mongo.get_connections_from_env().stats_db
     return diagnostic.quick_diagnose(
-        user_proto, project_proto or project_pb2.Project(), request.user, _DB)
+        user_proto, project_proto or project_pb2.Project(), request.user, database)
 
 
 @app.route('/api/user/<user_id>/migrate-to-advisor', methods=['POST'])
-@proto.flask_api(out_type=user_pb2.User)
+@proto_flask.api(out_type=user_pb2.User)
 @auth.require_user(lambda user_id: typing.cast(str, user_id))
 def migrate_to_advisor(user_id: str) -> user_pb2.User:
     """Migrate a user of the Mashup to use the Advisor."""
@@ -370,7 +394,8 @@ def migrate_to_advisor(user_id: str) -> user_pb2.User:
     user_proto.features_enabled.ClearField('advisor')
     user_proto.features_enabled.ClearField('advisor_email')
     user_proto.features_enabled.switched_from_mashup_to_advisor = was_using_mashup
-    _USER_DB.user.update_one(
+    user_db = mongo.get_connections_from_env().user_db
+    user_db.user.update_one(
         {'_id': user.safe_object_id(user_id)}, {'$set': {
             'featuresEnabled': json_format.MessageToDict(user_proto.features_enabled)}},
         upsert=False)
@@ -379,43 +404,62 @@ def migrate_to_advisor(user_id: str) -> user_pb2.User:
 
 
 @app.route('/api/project/diagnose', methods=['POST'])
-@proto.flask_api(in_type=user_pb2.User, out_type=diagnostic_pb2.Diagnostic)
+@proto_flask.api(in_type=user_pb2.User, out_type=diagnostic_pb2.Diagnostic)
 def diagnose_project(user_proto: user_pb2.User) -> diagnostic_pb2.Diagnostic:
     """Diagnose a user project."""
 
     if not user_proto.projects:
         flask.abort(422, i18n.flask_translate("Il n'y a pas de projet à conseiller."))
     project = user_proto.projects[0]
-    user_diagnostic, unused_missing = diagnostic.diagnose(user_proto, project, _DB)
-    return user_diagnostic
+    database = mongo.get_connections_from_env().stats_db
+    return diagnostic.diagnose(user_proto, project, database)
 
 
 @app.route('/api/project/strategize', methods=['POST'])
-@proto.flask_api(in_type=user_pb2.User, out_type=strategy_pb2.Strategies)
+@proto_flask.api(in_type=user_pb2.User, out_type=strategy_pb2.Strategies)
 def strategize_project(user_proto: user_pb2.User) -> strategy_pb2.Strategies:
     """Strategize a user project."""
 
     if not user_proto.projects:
         flask.abort(422, i18n.flask_translate("Il n'y a pas de projet à conseiller."))
     project = user_proto.projects[0]
-    strategist.strategize(user_proto, project, _DB)
+    database = mongo.get_connections_from_env().stats_db
+    strategist.strategize(user_proto, project, database)
     response = strategy_pb2.Strategies()
     response.strategies.extend(project.strategies)
     return response
 
 
 @app.route('/api/project/compute-advices', methods=['POST'])
-@proto.flask_api(in_type=user_pb2.User, out_type=project_pb2.Advices)
+@proto_flask.api(in_type=user_pb2.User, out_type=project_pb2.Advices)
 def compute_advices_for_project(user_proto: user_pb2.User) -> project_pb2.Advices:
     """Advise on a user project."""
 
     if not user_proto.projects:
         flask.abort(422, i18n.flask_translate("Il n'y a pas de projet à conseiller."))
-    return advisor.compute_advices_for_project(user_proto, user_proto.projects[0], _DB)
+    database = mongo.get_connections_from_env().stats_db
+    return advisor.compute_advices_for_project(user_proto, user_proto.projects[0], database)
+
+
+@app.route('/api/project/compute-all', methods=['POST'])
+@proto_flask.api(in_type=user_pb2.User, out_type=user_pb2.User)
+def diagnose_advise_and_strategize(user_proto: user_pb2.User) -> user_pb2.User:
+    """Diagnose, advise and strategize all the user's projects, all in one go."""
+
+    if not user_proto.projects:
+        flask.abort(422, i18n.flask_translate("Il n'y a pas de projet à conseiller."))
+    database = mongo.get_connections_from_env().stats_db
+    for project in user_proto.projects:
+        user_diagnostic = diagnostic.diagnose(user_proto, project, database)
+        project.diagnostic.CopyFrom(user_diagnostic)
+        advices = advisor.compute_advices_for_project(user_proto, project, database)
+        project.advices.extend(advices.advices)
+        strategist.strategize(user_proto, project, database)
+    return user_proto
 
 
 @app.route('/api/app/use/<user_id>', methods=['POST'])
-@proto.flask_api(out_type=user_pb2.User)
+@proto_flask.api(out_type=user_pb2.User)
 @auth.require_user(lambda user_id: typing.cast(str, user_id))
 def use_app(user_id: str) -> user_pb2.User:
     """Update the user's data to mark that they have just used the app."""
@@ -428,16 +472,6 @@ def use_app(user_id: str) -> user_pb2.User:
     # No need to pollute our DB with super precise timestamps.
     user_proto.requested_by_user_at_date.nanos = 0
     return user.save_user(user_proto, is_new_user=False)
-
-
-_SHOW_UNVERIFIED_DATA_USERS: Set[str] = set()
-
-
-def _show_unverified_data_users() -> Set[str]:
-    if not _SHOW_UNVERIFIED_DATA_USERS:
-        for document in _USER_DB.show_unverified_data_users.find():
-            _SHOW_UNVERIFIED_DATA_USERS.add(document['_id'])
-    return _SHOW_UNVERIFIED_DATA_USERS
 
 
 def _validate_city(city: geo_pb2.FrenchCity) -> Optional[geo_pb2.FrenchCity]:
@@ -487,7 +521,7 @@ _ACTION_STOPPED_STATUSES = frozenset([
 # TODO: Split this into separate endpoints for registration and login.
 # Having both in the same endpoint makes refactoring the frontend more difficult.
 @app.route('/api/user/authenticate', methods=['POST'])
-@proto.flask_api(in_type=auth_pb2.AuthRequest, out_type=auth_pb2.AuthResponse)
+@proto_flask.api(in_type=auth_pb2.AuthRequest, out_type=auth_pb2.AuthResponse)
 def authenticate(auth_request: auth_pb2.AuthRequest) -> auth_pb2.AuthResponse:
     """Authenticate a user."""
 
@@ -496,7 +530,7 @@ def authenticate(auth_request: auth_pb2.AuthRequest) -> auth_pb2.AuthResponse:
 
 
 @app.route('/api/user/reset-password', methods=['POST'])
-@proto.flask_api(in_type=auth_pb2.AuthRequest)
+@proto_flask.api(in_type=auth_pb2.AuthRequest)
 def reset_password(auth_request: auth_pb2.AuthRequest) -> str:
     """Sends an email to user with a reset token so that they can reset their password."""
 
@@ -505,19 +539,17 @@ def reset_password(auth_request: auth_pb2.AuthRequest) -> str:
     return '{}'
 
 
-@app.route('/api/user/proto', methods=['POST'])
-@proto.flask_api(
-    in_type=user_pb2.UserWithAdviceSelection, out_type=user_pb2.UserWithAdviceSelection)
-def convert_user_proto(user_with_advice: user_pb2.UserWithAdviceSelection) \
-        -> user_pb2.UserWithAdviceSelection:
+@app.route('/api/proto', methods=['POST'])
+@proto_flask.api(in_type=reflection_pb2.Reflection, out_type=reflection_pb2.Reflection)
+def reflect_proto(value: reflection_pb2.Reflection) -> reflection_pb2.Reflection:
     """A simple reflection to let client converts this proto from/to different formats."""
 
-    return user_with_advice
+    return value
 
 
 @app.route('/api/user/<user_id>/generate-auth-tokens', methods=['GET'])
 @auth.require_user(lambda user_id: typing.cast(str, user_id))
-@proto.flask_api(out_type=auth_pb2.AuthTokens)
+@proto_flask.api(out_type=auth_pb2.AuthTokens)
 def generate_auth_tokens(user_id: str) -> auth_pb2.AuthTokens:
     r"""Generates auth token for a given user.
 
@@ -527,12 +559,15 @@ def generate_auth_tokens(user_id: str) -> auth_pb2.AuthTokens:
     The "easiest" way to use it:
      - open a the Chrome Console on Bob
      - run the following js commands: ```
-        (() => {const authToken = window.localStorage.getItem('authToken');
-        const userId = window.localStorage.getItem('userId');
-        fetch(`/api/user/${userId}/generate-auth-tokens`, {
+        (async () => {
+          const authToken = window.localStorage.getItem('authToken')
+          const userId = window.localStorage.getItem('userId')
+          const response = await fetch(`/api/user/${userId}/generate-auth-tokens`, {
             headers: {Authorization: `Bearer ${authToken}`},
-         }).then(response => response.json()).then(console.log)})()
-       ```
+          })
+          console.log(await response.json())
+        })()
+     ```
     - warning: may not work in other browsers or in Private Navigation mode.
     """
 
@@ -563,13 +598,14 @@ def generate_auth_tokens(user_id: str) -> auth_pb2.AuthTokens:
 
 
 @app.route('/api/job/requirements/<rome_id>', methods=['GET'])
-@proto.flask_api(out_type=job_pb2.JobRequirements)
+@proto_flask.api(out_type=job_pb2.JobRequirements)
 def job_requirements(rome_id: str) -> job_pb2.JobRequirements:
     """Get requirements for a job."""
 
     no_requirements = job_pb2.JobRequirements()
 
-    job_group_info = jobs.get_group_proto(_DB, rome_id)
+    database = mongo.get_connections_from_env().stats_db
+    job_group_info = jobs.get_group_proto(database, rome_id)
     if not job_group_info:
         return no_requirements
 
@@ -578,7 +614,8 @@ def job_requirements(rome_id: str) -> job_pb2.JobRequirements:
 
 def _get_expanded_card_data(
         user_proto: user_pb2.User, project: project_pb2.Project, advice_id: str) -> message.Message:
-    module = advisor.get_advice_module(advice_id, _DB)
+    database = mongo.get_connections_from_env().stats_db
+    module = advisor.get_advice_module(advice_id, database)
     if not module or not module.trigger_scoring_model:
         flask.abort(404, i18n.flask_translate(
             'Le module "{advice_id}" n\'existe pas').format(advice_id=advice_id))
@@ -589,13 +626,12 @@ def _get_expanded_card_data(
             i18n.flask_translate('Le module "{advice_id}" n\'a pas de données supplémentaires')
             .format(advice_id=advice_id))
 
-    scoring_project = scoring.ScoringProject(
-        project, user_proto, _DB, now=now.get())
+    scoring_project = scoring.ScoringProject(project, user_proto, database, now=now.get())
     return model.get_expanded_card_data(scoring_project)
 
 
 @app.route('/api/advice/<advice_id>/<user_id>/<project_id>', methods=['GET'])
-@proto.flask_api(out_type=message.Message)
+@proto_flask.api(out_type=message.Message)
 @auth.require_user(lambda user_id, project_id, advice_id: typing.cast(str, user_id))
 def get_advice_expanded_card_data(user_id: str, project_id: str, advice_id: str) \
         -> message.Message:
@@ -606,7 +642,7 @@ def get_advice_expanded_card_data(user_id: str, project_id: str, advice_id: str)
 
 
 @app.route('/api/advice/<advice_id>', methods=['POST'])
-@proto.flask_api(in_type=user_pb2.User, out_type=message.Message)
+@proto_flask.api(in_type=user_pb2.User, out_type=message.Message)
 def compute_expanded_card_data(user_proto: user_pb2.User, advice_id: str) -> message.Message:
     """Retrieve expanded card data for an advice module for a project."""
 
@@ -616,7 +652,7 @@ def compute_expanded_card_data(user_proto: user_pb2.User, advice_id: str) -> mes
 
 
 @app.route('/api/advice/tips/<advice_id>/<user_id>/<project_id>', methods=['GET'])
-@proto.flask_api(out_type=action_pb2.AdviceTips)
+@proto_flask.api(out_type=action_pb2.AdviceTips)
 @auth.require_user(lambda user_id, project_id, advice_id: typing.cast(str, user_id))
 def advice_tips(user_id: str, project_id: str, advice_id: str) -> action_pb2.AdviceTips:
     """Get all available tips for a piece of advice."""
@@ -625,20 +661,22 @@ def advice_tips(user_id: str, project_id: str, advice_id: str) -> action_pb2.Adv
     project = _get_project_data(user_proto, project_id)
     piece_of_advice = _get_advice_data(project, advice_id)
 
-    all_tips = advisor.list_all_tips(user_proto, project, piece_of_advice, _DB)
+    database = mongo.get_connections_from_env().stats_db
+    all_tips = advisor.list_all_tips(user_proto, project, piece_of_advice, database)
 
     response = action_pb2.AdviceTips()
     for tip_template in all_tips:
-        action.instantiate(response.tips.add(), user_proto, project, tip_template, _DB)
+        action.instantiate(response.tips.add(), user_proto, project, tip_template, database)
     return response
 
 
 @app.route('/api/emails/simulate', methods=['POST'])
-@proto.flask_api(in_type=user_pb2.User, out_type=user_pb2.User)
-def simulate_focus_emails(user_proto: user_pb2.User) -> user_pb2.User:
-    """Simulate sending focus emails."""
+@proto_flask.api(in_type=user_pb2.User, out_type=user_pb2.EmailHistory)
+def simulate_coaching_emails(user_proto: user_pb2.User) -> user_pb2.EmailHistory:
+    """Compute the email coaching schedule."""
 
     instant = now.get()
+    database, user_db, unused_ = mongo.get_connections_from_env()
 
     # Complete the user's proto with mandatory fields.
     if not user_proto.HasField('registered_at'):
@@ -650,7 +688,7 @@ def simulate_focus_emails(user_proto: user_pb2.User) -> user_pb2.User:
 
     for attempt in range(200):
         campaign_id = focus.send_focus_email_to_user(
-            'ghost', user_proto, database=_DB, users_database=_USER_DB, instant=instant)
+            'ghost', user_proto, database=database, users_database=user_db, instant=instant)
         if attempt and not campaign_id:
             # No more email to send.
             # Note that the first call might not return a campaign ID as we do not send focus emails
@@ -662,18 +700,109 @@ def simulate_focus_emails(user_proto: user_pb2.User) -> user_pb2.User:
             instant += datetime.timedelta(days=1)
         instant = instant.replace(hour=9, minute=0)
 
-    output = user_pb2.User()
+    output = user_pb2.EmailHistory()
     output.emails_sent.extend(user_proto.emails_sent)
     return output
 
 
-# Split for testing.
-def _clear_cache() -> None:
-    _SHOW_UNVERIFIED_DATA_USERS.clear()
-    proto.CachedCollection.update_cache_version()
-    proto.clear_mongo_fetcher_cache()
-    strategist.clear_cache()
-    i18n.clear_cache()
+def _send_email(
+        user_proto: user_pb2.User, *, campaign_id: mailjet_templates.Id) -> user_pb2.EmailSent:
+    """Sends a prepared campaign to a user."""
+
+    if campaign_id not in campaign.list_all_campaigns():
+        flask.abort(
+            404,
+            i18n.flask_translate('Campagne {campaign_id} inconnue.').
+            format(campaign_id=campaign_id))
+    if not user_proto.profile.email:
+        flask.abort(422, i18n.flask_translate('Adresse email manquante.'))
+
+    database, user_db, unused_ = mongo.get_connections_from_env()
+
+    a_campaign = campaign.get_campaign(campaign_id)
+    current_time = now.get()
+    emails_sent = a_campaign.send_mail(
+        user_proto, database=database, users_database=user_db, now=current_time, action='send')
+    if not emails_sent:
+        flask.abort(
+            404,
+            i18n.flask_translate('Campagne {campaign_id} non disponible pour cet utilisateur').
+            format(campaign_id=campaign_id))
+    return emails_sent
+
+
+@app.route('/api/emails/send/<campaign_id>', methods=['POST'])
+@auth.require_google_user(email_kwarg='requester_email')
+@proto_flask.api(in_type=user_pb2.User, out_type=user_pb2.EmailSent)
+def _send_email_from_proto(
+        user_proto: user_pb2.User, *, campaign_id: mailjet_templates.Id, requester_email: str) \
+        -> user_pb2.EmailSent:
+
+    if not user_proto.profile.email:
+        user_proto.profile.email = requester_email
+    elif requester_email != user_proto.profile.email:
+        mongo.get_connections_from_env().eval_db.email_requests.insert_one({
+            'email': user_proto.profile.email,
+            'registeredAt': proto.datetime_to_json_string(now.get()),
+            'requesterEmail': requester_email,
+            'action': 'send',
+        })
+    return _send_email(user_proto, campaign_id=campaign_id)
+
+
+@app.route('/api/user/<user_id>/emails/send/<campaign_id>', methods=['POST'])
+@auth.require_user(lambda user_id, campaign_id: typing.cast(str, user_id))
+@proto_flask.api(out_type=user_pb2.EmailSent)
+def _send_email_for_user(
+        *, user_id: str, campaign_id: mailjet_templates.Id) -> user_pb2.EmailSent:
+    user_proto = user.get_user_data(user_id)
+    return _send_email(user_proto, campaign_id=campaign_id)
+
+
+# Pattern to match src link to http images, e.g. ' src="http://r.bob-emploi.fr/image.png"'.
+_SRC_LINKS = re.compile(r'( src=")(http:[^"?]*)(")')
+
+
+def _convert_to_proxy_link(match: typing.Match[str]) -> str:
+    prefix, src, suffix = match.groups()
+    url = flask.url_for('_proxy_http_image', _external=True)
+    return f'{prefix}{url}?src={parse.quote(src)}{suffix}'
+
+
+def _get_email_content(user_proto: user_pb2.User, *, campaign_id: mailjet_templates.Id) -> str:
+    if campaign_id not in campaign.list_all_campaigns():
+        flask.abort(
+            404,
+            i18n.flask_translate('Campagne {campaign_id} inconnue.').
+            format(campaign_id=campaign_id))
+
+    database, user_db, unused_ = mongo.get_connections_from_env()
+
+    a_campaign = campaign.get_campaign(campaign_id)
+    current_time = now.get()
+    email_content = a_campaign.get_content(
+        user_proto, database=database, users_database=user_db, now=current_time)
+    if not email_content:
+        flask.abort(
+            404,
+            i18n.flask_translate('Campagne {campaign_id} non disponible pour cet utilisateur').
+            format(campaign_id=campaign_id))
+    email_content = _SRC_LINKS.sub(_convert_to_proxy_link, email_content)
+    return email_content
+
+
+@app.route('/api/emails/content/<campaign_id>', methods=['GET'])
+@proto_flask.api(in_type=user_pb2.User)
+def _get_email_from_proto(user_proto: user_pb2.User, *, campaign_id: mailjet_templates.Id) -> str:
+    return _get_email_content(user_proto, campaign_id=campaign_id)
+
+
+@app.route('/api/user/<user_id>/emails/content/<campaign_id>', methods=['GET'])
+# TODO(pascal): Authorize access with a smaller role (email) instead of auth.
+@auth.require_user(lambda user_id, campaign_id: typing.cast(str, user_id))
+def _get_email_for_user(*, user_id: str, campaign_id: mailjet_templates.Id) -> str:
+    user_proto = user.get_user_data(user_id)
+    return _get_email_content(user_proto, campaign_id=campaign_id)
 
 
 @app.route('/api/cache/clear', methods=['GET'])
@@ -685,16 +814,16 @@ def clear_cache() -> str:
     from 2 or 3 additional MongoDB requests on next queries.
     """
 
-    _clear_cache()
+    cache.clear()
     return i18n.flask_translate('Cache serveur vidé.')
 
 
 @app.route('/api/jobs/<rome_id>', methods=['GET'])
-@proto.flask_api(out_type=job_pb2.JobGroup)
+@proto_flask.api(out_type=job_pb2.JobGroup)
 def get_job_group_jobs(rome_id: str) -> job_pb2.JobGroup:
     """Retrieve information about jobs whithin a job group."""
 
-    job_group = jobs.get_group_proto(_DB, rome_id)
+    job_group = jobs.get_group_proto(mongo.get_connections_from_env().stats_db, rome_id)
     if not job_group:
         flask.abort(404, i18n.flask_translate(
             'Groupe de métiers "{rome_id}" inconnu.').format(rome_id=rome_id))
@@ -706,25 +835,23 @@ def get_job_group_jobs(rome_id: str) -> job_pb2.JobGroup:
 
 
 @app.route('/api/job/application-modes/<rome_id>', methods=['GET'])
-@proto.flask_api(out_type=job_pb2.JobGroup)
+@proto_flask.api(out_type=job_pb2.JobGroup)
 def get_job_group_application_modes(rome_id: str) -> job_pb2.JobGroup:
     """Retrieve information about application modes whithin a job group."""
 
-    job_group = jobs.get_group_proto(_DB, rome_id)
+    job_group = jobs.get_group_proto(mongo.get_connections_from_env().stats_db, rome_id)
     if not job_group:
         flask.abort(404, i18n.flask_translate(
             'Groupe de métiers "{rome_id}" inconnu.').format(rome_id=rome_id))
 
     result = job_pb2.JobGroup()
-    # TODO(cyrille): Add MergeFrom as method on map fields in mypy-protobuf and remove the
-    # type ignore.
-    result.application_modes.MergeFrom(job_group.application_modes)  # type: ignore
+    result.application_modes.MergeFrom(job_group.application_modes)
     return result
 
 
 @app.route('/api/feedback', methods=['POST'])
-@proto.flask_api(in_type=feedback_pb2.Feedback)
-def give_feedback(feedback: feedback_pb2.Feedback) -> str:
+@proto_flask.api(in_type=feedback_pb2.Feedback)
+def give_feedback(feedback: feedback_pb2.Feedback) -> _FlaskResponse:
     # TODO(pascal): Change this doc.
     """Retrieve information about jobs whithin a job group."""
 
@@ -737,20 +864,20 @@ def give_feedback(feedback: feedback_pb2.Feedback) -> str:
         except ValueError:
             flask.abort(403, i18n.flask_translate('Jeton non autorisé'))
     user.give_feedback(feedback, slack_text=feedback.feedback)
-    return ''
+    return '', 204
 
 
 # TODO(cyrille): Consider using the same ticket for several requests with the same ID.
 @app.route('/api/support/<user_id>', methods=['POST'], defaults={'ticket_id': None})
 @app.route('/api/support/<user_id>/<ticket_id>', methods=['POST'])
 @auth.require_user(lambda user_id, ticket_id: typing.cast(str, user_id))
-@proto.flask_api(out_type=user_pb2.SupportTicket)
+@proto_flask.api(out_type=user_pb2.SupportTicket)
 def create_support_ticket(user_id: str, ticket_id: str) -> user_pb2.SupportTicket:
     """Create a support ticket for the user, to be able to link them to support tickets."""
 
     ticket = user_pb2.SupportTicket(ticket_id=ticket_id or f'support:{uuid.uuid4().hex}')
     ticket.delete_after.FromDatetime(now.get() + datetime.timedelta(days=_SUPPORT_TICKET_LIFE_DAYS))
-    _USER_DB.user.update_one(
+    mongo.get_connections_from_env().user_db.user.update_one(
         {'_id': user.safe_object_id(user_id)},
         {'$push': {'supportTickets': json_format.MessageToDict(ticket)}})
     return ticket
@@ -768,13 +895,14 @@ def health_check() -> str:
 
 @app.route('/api/user/nps-survey-response', methods=['POST'])
 @auth.require_admin
-@proto.flask_api(in_type=user_pb2.NPSSurveyResponse)
-def set_nps_survey_response(nps_survey_response: user_pb2.NPSSurveyResponse) -> str:
+@proto_flask.api(in_type=user_pb2.NPSSurveyResponse)
+def set_nps_survey_response(nps_survey_response: user_pb2.NPSSurveyResponse) -> _FlaskResponse:
     """Save user response to the Net Promoter Score survey."""
 
+    user_db = mongo.get_connections_from_env().user_db
     # Note that this endpoint doesn't use authentication: only the email is necessary to
     # update the user record.
-    user_dict = _USER_DB.user.find_one({
+    user_dict = user_db.user.find_one({
         'hashedEmail': auth.hash_user_email(nps_survey_response.email)}, {'_id': 1})
     if not user_dict:
         flask.abort(
@@ -787,14 +915,14 @@ def set_nps_survey_response(nps_survey_response: user_pb2.NPSSurveyResponse) -> 
     user_proto.net_promoter_score_survey_response.MergeFrom(nps_survey_response)
     # No need to keep the email field in the survey response as it is the same as in profile.email.
     user_proto.net_promoter_score_survey_response.ClearField('email')
-    _USER_DB.user.update_one(
+    user_db.user.update_one(
         {'_id': user.safe_object_id(user_id)},
         {'$set': {'netPromoterScoreSurveyResponse': json_format.MessageToDict(
             user_proto.net_promoter_score_survey_response
         )}},
         upsert=False
     )
-    return ''
+    return '', 204
 
 
 @app.route('/api/nps', methods=['GET'])
@@ -813,7 +941,7 @@ def set_nps_response(user_id: str) -> _FlaskResponse:
         flask.abort(422, i18n.flask_translate('Paramètre score invalide.'))
     user_to_update.net_promoter_score_survey_response.score = score
 
-    _USER_DB.user.update_one(
+    mongo.get_connections_from_env().user_db.user.update_one(
         {'_id': user.safe_object_id(user_id)},
         {'$set': json_format.MessageToDict(user_to_update)},
         upsert=False)
@@ -821,18 +949,41 @@ def set_nps_response(user_id: str) -> _FlaskResponse:
     return _maybe_redirect()
 
 
+@app.route('/api/nps/user/<user_id>', methods=['GET'])
+@auth.require_user(lambda user_id: typing.cast(str, user_id), role='nps')
+@proto_flask.api(out_type=user_pb2.User)
+def get_user_for_nps(user_id: str) -> user_pb2.User:
+    """Get user info for the Net Promoter Score's page."""
+
+    user_proto = user.get_user_data(user_id)
+
+    response = user_pb2.User()
+    response.profile.gender = user_proto.profile.gender
+    if user_proto.projects:
+        response.projects.add(
+            city=user_proto.projects[0].city,
+            target_job=user_proto.projects[0].target_job,
+        )
+    return response
+
+
 @app.route('/api/nps', methods=['POST'])
-@proto.flask_api(in_type=user_pb2.SetNPSCommentRequest)
+@proto_flask.api(in_type=user_pb2.SetNPSCommentRequest)
 @auth.require_user(
     lambda set_nps_request: typing.cast(user_pb2.SetNPSCommentRequest, set_nps_request).user_id,
     role='nps')
-def set_nps_response_comment(set_nps_request: user_pb2.SetNPSCommentRequest) -> str:
+def set_nps_response_comment(set_nps_request: user_pb2.SetNPSCommentRequest) -> _FlaskResponse:
     """Save user's freeform comment and self-diagnostic after the Net Promoter Score survey."""
 
     user_to_update = user_pb2.User()
     user_to_update.net_promoter_score_survey_response.general_feedback_comment = \
         set_nps_request.comment
 
+    if set_nps_request.HasField('answers'):
+        # Remove fields that the user cannot choose.
+        set_nps_request.answers.ClearField('email')
+        set_nps_request.answers.ClearField('responded_at')
+        user_to_update.net_promoter_score_survey_response.MergeFrom(set_nps_request.answers)
     if set_nps_request.HasField('self_diagnostic'):
         user_to_update.net_promoter_score_survey_response.nps_self_diagnostic.CopyFrom(
             set_nps_request.self_diagnostic)
@@ -841,9 +992,10 @@ def set_nps_response_comment(set_nps_request: user_pb2.SetNPSCommentRequest) -> 
             set_nps_request.has_actions_idea
 
     user_id = user.safe_object_id(set_nps_request.user_id)
+    user_db = mongo.get_connections_from_env().user_db
 
     if set_nps_request.comment:
-        previous_user = _USER_DB.user.find_one(
+        previous_user = user_db.user.find_one(
             {'_id': user_id}, {'netPromoterScoreSurveyResponse.score': 1})
         if previous_user and 'netPromoterScoreSurveyResponse' in previous_user:
             score = previous_user['netPromoterScoreSurveyResponse'].get('score', 0)
@@ -858,13 +1010,16 @@ def set_nps_response_comment(set_nps_request: user_pb2.SetNPSCommentRequest) -> 
                 feedback=set_nps_request.comment,
                 source=feedback_pb2.PRODUCT_FEEDBACK),
             slack_text=f'[NPS Score: {score}] <{user_url}|{set_nps_request.user_id}>\n> {comment}')
+    if set_nps_request.next_actions:
+        del user_to_update.net_promoter_score_survey_response.next_actions[:]
+        user_to_update.net_promoter_score_survey_response.next_actions.extend(
+            set_nps_request.next_actions)
 
     mongo_update = _flatten_mongo_fields(json_format.MessageToDict(user_to_update))
     if mongo_update:
-        _USER_DB.user.update_one({'_id': user_id}, {'$set': mongo_update}, upsert=False)
+        user_db.user.update_one({'_id': user_id}, {'$set': mongo_update}, upsert=False)
 
-    # TODO(cyrille): Switch to a 204 status code.
-    return ''
+    return '', 204
 
 
 def _flatten_mongo_fields(root: Dict[str, Any], prefix: str = '') -> Dict[str, str]:
@@ -880,10 +1035,10 @@ def _flatten_mongo_fields(root: Dict[str, Any], prefix: str = '') -> Dict[str, s
 
 
 @app.route('/api/employment-status/<user_id>', methods=['POST'])
-@proto.flask_api(in_type=user_pb2.EmploymentStatus)
+@proto_flask.api(in_type=user_pb2.EmploymentStatus)
 @auth.require_user(
     lambda unused_new_status, user_id: typing.cast(str, user_id), role='employment-status')
-def update_employment_status(new_status: user_pb2.EmploymentStatus, user_id: str) -> str:
+def update_employment_status(new_status: user_pb2.EmploymentStatus, user_id: str) -> _FlaskResponse:
     """Update user's last employment status."""
 
     user_proto = user.get_user_data(user_id)
@@ -902,12 +1057,12 @@ def update_employment_status(new_status: user_pb2.EmploymentStatus, user_id: str
 
     new_status.ClearField('created_at')
     recent_status.MergeFrom(new_status)
-    _USER_DB.user.update_one(
+    mongo.get_connections_from_env().user_db.user.update_one(
         {'_id': user.safe_object_id(user_id)},
         {'$set': json_format.MessageToDict(user_to_update)},
         upsert=False)
 
-    return ''
+    return '', 204
 
 
 @app.route('/api/employment-status', methods=['GET'])
@@ -926,7 +1081,7 @@ def get_employment_status(user_id: str) -> _FlaskResponse:
         json_format.ParseDict(flask.request.args, employment_status, ignore_unknown_fields=True)
     except json_format.ParseError:
         flask.abort(422, i18n.flask_translate('Paramètres invalides.'))
-    _USER_DB.user.update_one(
+    mongo.get_connections_from_env().user_db.user.update_one(
         {'_id': user.safe_object_id(user_id)},
         {'$set': json_format.MessageToDict(user_to_update)},
         upsert=False)
@@ -934,7 +1089,8 @@ def get_employment_status(user_id: str) -> _FlaskResponse:
     return _maybe_redirect(
         id=survey_id,
         gender=user_pb2.Gender.Name(user_proto.profile.gender),
-        hl=scoring.get_user_locale(user_proto.profile))
+        hl=scoring.get_user_locale(user_proto.profile),
+        employed=any([p.kind == project_pb2.FIND_ANOTHER_JOB for p in user_proto.projects]))
 
 
 def _maybe_redirect(**kwargs: Any) -> _FlaskResponse:
@@ -950,25 +1106,37 @@ def _maybe_redirect(**kwargs: Any) -> _FlaskResponse:
 
 
 @app.route('/api/usage/stats', methods=['GET'])
-@proto.flask_api(out_type=stats_pb2.UsersCount)
+@proto_flask.api(out_type=stats_pb2.UsersCount)
 def get_usage_stats() -> stats_pb2.UsersCount:
     """Get stats of the app usage."""
 
     now_utc = now.get().astimezone(datetime.timezone.utc)
     start_of_second = now_utc.replace(microsecond=0, tzinfo=None)
     last_week = start_of_second - datetime.timedelta(days=7)
+    user_db = mongo.get_connections_from_env().user_db
 
     # Compute weekly user count.
-    weekly_new_user_count = _USER_DB.user.find({
+    weekly_new_user_count = user_db.user.count_documents({
         'registeredAt': {
             '$gt': proto.datetime_to_json_string(last_week),
             '$lte': proto.datetime_to_json_string(start_of_second),
         },
         'featuresEnabled.excludeFromAnalytics': {'$ne': True},
-    }).count()
+    })
+
+    users_by_categories = list(user_db.user.aggregate([
+        {'$unwind': '$projects'},
+        {'$match': {'featuresEnabled.excludeFromAnalytics': {'$ne': True}}},
+        {'$group': {'_id': '$projects.diagnostic.categoryId', 'count': {'$sum': 1}}},
+    ]))
+
+    main_challenge_counts = {
+        category.get('_id'): category.get('count') for category in
+        users_by_categories if category.get('_id')}
 
     return stats_pb2.UsersCount(
-        total_user_count=_USER_DB.user.count_documents({
+        main_challenge_counts=main_challenge_counts,
+        total_user_count=user_db.user.count_documents({
             'featuresEnabled.excludeFromAnalytics': {'$ne': True},
         }),
         weekly_new_user_count=weekly_new_user_count,
@@ -979,23 +1147,24 @@ def get_usage_stats() -> stats_pb2.UsersCount:
 def redirect_eterritoire(city_id: str) -> werkzeug.Response:
     """Redirect to the e-Territoire page for a city."""
 
+    database = mongo.get_connections_from_env().stats_db
     link = proto.fetch_from_mongo(
-        _DB, association_pb2.SimpleLink, 'eterritoire_links', city_id) or \
+        database, association_pb2.SimpleLink, 'eterritoire_links', city_id) or \
         association_pb2.SimpleLink()
     return flask.redirect(f'http://www.eterritoire.fr{link.path}')
 
 
 @app.route('/api/compute-labor-stats', methods=['POST'])
-@proto.flask_api(in_type=user_pb2.User, out_type=use_case_pb2.LaborStatsData)
+@proto_flask.api(in_type=user_pb2.User, out_type=use_case_pb2.LaborStatsData)
 def compute_labor_stats(user_proto: user_pb2.User) -> use_case_pb2.LaborStatsData:
     """Compute labor statistics relevant for the user's project."""
 
     if not user_proto.projects:
         flask.abort(422, i18n.flask_translate("Il n'y a pas de projet à conseiller."))
+    database = mongo.get_connections_from_env().stats_db
     project = user_proto.projects[0]
     rome_id = project.target_job.job_group.rome_id
     departement_id = project.city.departement_id
-    database = flask.current_app.config['DATABASE']
     local_stats = jobs.get_local_stats(database, departement_id, rome_id)
     job_group_info = jobs.get_group_proto(database, rome_id)
     # TODO(cyrille): Maybe only keep the relevant departement and job group.
@@ -1004,24 +1173,54 @@ def compute_labor_stats(user_proto: user_pb2.User) -> use_case_pb2.LaborStatsDat
         job_group_info=job_group_info, local_stats=local_stats, user_counts=user_counts)
 
 
-@app.route('/api/diagnostic/categories', methods=['POST'])
-@proto.flask_api(in_type=user_pb2.User, out_type=diagnostic_pb2.DiagnosticCategories)
-def list_user_categories(user_proto: user_pb2.User) -> diagnostic_pb2.DiagnosticCategories:
-    """List the possible categories that the diagnostic could return.
+@app.route('/api/diagnostic/main-challenges', methods=['POST'])
+@proto_flask.api(in_type=user_pb2.User, out_type=diagnostic_pb2.DiagnosticMainChallenges)
+def list_user_main_challenges(user_proto: user_pb2.User) -> diagnostic_pb2.DiagnosticMainChallenges:
+    """List the possible challenges that the diagnostic could return.
 
     The input is a user to translate and genderize names properly, as well to check the feature
     flags.
     """
 
+    database = mongo.get_connections_from_env().stats_db
     project = scoring.ScoringProject(
         user_proto.projects[0] if user_proto.projects else project_pb2.Project(),
-        user_proto, _DB, now=now.get())
-    return diagnostic_pb2.DiagnosticCategories(
+        user_proto, database, now=now.get())
+    return diagnostic_pb2.DiagnosticMainChallenges(
         categories=[
-            diagnostic.translate_category(category, project)
-            for category in diagnostic.list_categories(_DB)
-            if user_proto.features_enabled.alpha or not category.are_strategies_for_alpha_only
+            diagnostic.translate_main_challenge(main_challenge, project)
+            for main_challenge in diagnostic.list_main_challenges(database)
+            if user_proto.features_enabled.alpha or not main_challenge.are_strategies_for_alpha_only
         ],
+        is_sorted=boolean_pb2.TRUE,
+    )
+
+
+@app.route('/api/image', methods=['GET'])
+def _proxy_http_image() -> flask.Response:
+    """Proxy request to HTTP images."""
+
+    src = flask.request.args.get('src', '')
+    if not src:
+        flask.abort(404)
+    url = parse.urlparse(src)
+    if url.scheme != 'http' or url.query:
+        flask.abort(401)
+    response = requests.get(src)
+    response.raise_for_status()
+    return flask.Response(
+        response=response.content,
+        headers=dict(response.headers),
+    )
+
+
+@app.route('/api/monitoring', methods=['GET'])
+@proto_flask.api(out_type=stats_pb2.Monitoring)
+def monitoring() -> stats_pb2.Monitoring:
+    """Retrieve data to be monitored."""
+
+    return stats_pb2.Monitoring(
+        server_version=_SERVER_TAG['_server'],
     )
 
 
@@ -1030,13 +1229,11 @@ apps.register_blueprints(app)
 app.before_request(tick.before_request)
 app.teardown_request(tick.teardown_request)
 
-app.config['DATABASE'] = _DB
-app.config['USER_DATABASE'] = _USER_DB
-app.config['EVAL_DATABASE'] = _EVAL_DB
 if os.getenv('SENTRY_DSN'):
     # Setup logging basic's config first so that we also get basic logging to STDERR.
     logging.basicConfig(level=logging.INFO)
-    sentry_sdk.init(
+    # TODO(pascal): Fix when https://github.com/getsentry/sentry-python/issues/1081 is solved.
+    sentry_sdk.init(  # pylint: disable=abstract-class-instantiated
         dsn=os.getenv('SENTRY_DSN'), release=user.SERVER_TAG['_server'],
         integrations=[
             sentry_logging.LoggingIntegration(level=logging.INFO, event_level=logging.WARNING),

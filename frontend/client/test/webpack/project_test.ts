@@ -30,7 +30,6 @@ const createNewProject = (): bayes.bob.Project => {
 const fakeT = (text: string): string => text
 
 describe('createProjectTitle', (): void => {
-
   it('should include the job and the city when looking for a job with areaType CITY', (): void => {
     const title = createProjectTitle(createNewProject(), fakeT, 'MASCULINE')
     expect(title).to.equal('Pâtissier à Rennes')
@@ -172,53 +171,53 @@ describe('createProjectTitleComponents', (): void => {
 
 describe('PROJECT_EMPLOYMENT_TYPE_OPTIONS', (): void => {
   it('should contain identifiers in values, not in names', (): void => {
-    PROJECT_EMPLOYMENT_TYPE_OPTIONS.forEach(({name, value}): void => {
+    for (const {name, value} of PROJECT_EMPLOYMENT_TYPE_OPTIONS) {
       expect(EmploymentType).to.have.property(value)
       expect(name).not.to.match(/^[\dA-Z]*_[\dA-Z_]*$/)
-    })
+    }
   })
 })
 
 
 // TODO(cyrille): Add test for all keys from proto to be present.
 describe('TRAINING_FULFILLMENT_ESTIMATE_OPTIONS', (): void => {
-  (['FEMININE', 'MASCULINE'] as const).forEach((gender): void => {
+  for (const gender of (['FEMININE', 'MASCULINE'] as const)) {
     it(`has proper values for ${gender}`, (): void => {
       expect(TRAINING_FULFILLMENT_ESTIMATE_OPTIONS).to.have.length.above(2)
-      TRAINING_FULFILLMENT_ESTIMATE_OPTIONS.forEach((option): void => {
+      for (const option of TRAINING_FULFILLMENT_ESTIMATE_OPTIONS) {
         expect(option).to.include.all.keys('name', 'value')
         const {name, value} = option
         expect(name).to.be.ok
         expect(value).to.be.ok
         expect(TrainingFulfillmentEstimate).to.include.all.keys(value)
-      })
+      }
     })
-  })
+  }
 })
 
 
 // TODO(cyrille): Add test for all keys from proto to be present.
 describe('PROJECT_EXPERIENCE_OPTIONS', (): void => {
   expect(PROJECT_EXPERIENCE_OPTIONS).to.have.length.above(2)
-  PROJECT_EXPERIENCE_OPTIONS.forEach((option): void => {
+  for (const option of PROJECT_EXPERIENCE_OPTIONS) {
     expect(option).to.include.all.keys('name', 'value')
     const {name, value} = option
     expect(name).to.be.ok
     expect(value).to.be.ok
     expect(PreviousJobSimilarity).to.include.all.keys(value)
-  })
+  }
 })
 
 
 describe('PROJECT_KIND_OPTIONS', (): void => {
   expect(PROJECT_KIND_OPTIONS).to.have.length.above(2)
-  PROJECT_KIND_OPTIONS.forEach((option): void => {
+  for (const option of PROJECT_KIND_OPTIONS) {
     expect(option).to.include.all.keys('name', 'value')
     const {name, value} = option
     expect(name).to.be.ok
     expect(value).to.be.ok
     expect(ProjectKind).to.include.all.keys(value)
-  })
+  }
 
   expect(PROJECT_KIND_OPTIONS.map(({value}): bayes.bob.ProjectKind => value)).to.have.all.members(
     Object.keys(ProjectKind).filter((key): boolean =>
@@ -229,13 +228,13 @@ describe('PROJECT_KIND_OPTIONS', (): void => {
 
 describe('PROJECT_PASSIONATE_OPTIONS', (): void => {
   expect(PROJECT_PASSIONATE_OPTIONS).to.have.length.above(2)
-  PROJECT_PASSIONATE_OPTIONS.forEach((option): void => {
+  for (const option of PROJECT_PASSIONATE_OPTIONS) {
     expect(option).to.include.all.keys('name', 'value')
     const {name, value} = option
     expect(name).to.be.ok
     expect(value).to.be.ok
     expect(PassionateLevel).to.include.all.keys(value)
-  })
+  }
 
   expect(PROJECT_PASSIONATE_OPTIONS.map(({value}): bayes.bob.PassionateLevel => value)).
     to.have.all.members(
@@ -266,9 +265,6 @@ describe('flattenProject', (): void => {
 })
 
 describe('newProject', (): void => {
-
-  const fakeT = (text: string): string => text
-
   it('should set a title to the project', (): void => {
     const project = newProject(createNewProject(), fakeT, 'MASCULINE')
     expect(project.title).not.to.be.empty

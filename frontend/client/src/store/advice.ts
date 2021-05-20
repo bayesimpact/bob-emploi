@@ -1,11 +1,11 @@
 import {TFunction} from 'i18next'
-import {getAdviceModule} from 'store/french'
+import {getAdviceModule} from 'store/i18n'
 
 
 const MAX_NUMBER_ROCKETS = 5
 
 
-function getAdviceTitle(advice: bayes.bob.Advice, t?: TFunction): string {
+function getAdviceTitle(advice: bayes.bob.Advice, t: TFunction): string {
   if (advice.title) {
     return advice.title
   }
@@ -20,7 +20,7 @@ function getAdviceTitle(advice: bayes.bob.Advice, t?: TFunction): string {
 
 
 function getAdviceShortTitle(
-  {adviceId, shortTitle: adviceShortTitle}: bayes.bob.Advice, t?: TFunction): string {
+  {adviceId, shortTitle: adviceShortTitle}: bayes.bob.Advice, t: TFunction): string {
   if (adviceShortTitle) {
     return adviceShortTitle
   }
@@ -31,7 +31,7 @@ function getAdviceShortTitle(
   return shortTitle || ''
 }
 
-function getAdviceGoal({adviceId, goal: adviceGoal}: bayes.bob.Advice, t?: TFunction): string {
+function getAdviceGoal({adviceId, goal: adviceGoal}: bayes.bob.Advice, t: TFunction): string {
   if (adviceGoal) {
     return adviceGoal
   }
@@ -56,5 +56,9 @@ export type ValidAdvice = bayes.bob.Advice & {adviceId: string}
 const isValidAdvice = (a?: bayes.bob.Advice): a is ValidAdvice => !!(a && a.adviceId)
 
 
+function getAdviceTheme({adviceId}: ValidAdvice, translate: TFunction): string {
+  return getAdviceModule(adviceId, translate)?.resourceTheme || ''
+}
+
 export {getAdviceShortTitle, getAdviceTitle, getRocketFromStars, MAX_NUMBER_ROCKETS, getAdviceGoal,
-  isValidAdvice}
+  isValidAdvice, getAdviceTheme}

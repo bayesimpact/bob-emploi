@@ -1,16 +1,10 @@
 import * as Sentry from '@sentry/browser'
-import i18n, {TFunction, TOptions} from 'i18next'
-import _mapValues from 'lodash/mapValues'
+import i18n, {TFunction} from 'i18next'
 import _memoize from 'lodash/memoize'
-import _pick from 'lodash/pick'
 
-import {prepareNamespace, prepareT} from 'store/i18n'
+import {LocalizableString, combineTOptions, prepareT,
+  prepareT as prepareTNoExtract} from 'store/i18n'
 
-// TODO(pascal): Move these files to the store.
-import adviceModulesVous from 'components/advisor/data/advice_modules.json'
-import emailTemplatesVous from 'components/advisor/data/email_templates.json'
-import categoriesVous from 'components/strategist/data/categories.json'
-import goalsVous from 'components/strategist/data/goals.json'
 
 // Module to help with phrasing French sentences.
 //
@@ -41,8 +35,10 @@ const unaccentedList = [
 export const slugify = (term: string): string => {
   const lower = term.toLowerCase()
   const noAccents = lower.normalize ? lower.normalize('NFD').replace(/[\u0300-\u036F]/g, '') :
-    accentedList.reduce((replacing: string, accented: string, index: number): string =>
-      replacing.replace(accented, unaccentedList[index]), lower)
+    accentedList.reduce((replacing: string, accented: string, index: number): string => {
+      const unaccented = unaccentedList[index]
+      return unaccented ? replacing.replace(accented, unaccented) : replacing
+    }, lower)
   return noAccents.replace(/ /g, '-')
 }
 
@@ -100,7 +96,7 @@ const oneDayInMillisecs = 1000 * 60 * 60 * 24
 
 type TimeUnit = {
   days: number
-  unit: string
+  unit: LocalizableString
 }
 
 
@@ -109,7 +105,7 @@ const deltaDays: readonly TimeUnit[] = [
   {days: 30, unit: prepareT('mois', {count: 2})},
   {days: 7, unit: prepareT('semaine', {count: 2})},
   {days: 1, unit: prepareT('jour', {count: 2})},
-  {days: 0, unit: ''},
+  {days: 0, unit: prepareTNoExtract('')},
 ] as const
 
 // Get difference between two dates or months expressed as a sentence
@@ -128,11 +124,14 @@ export const getDiffBetweenDatesInString =
   }
   const {days, unit} = timeUnit
   const numUnits = Math.floor(diffInDays / days)
-  return t('il y a {{numUnits}} {{unit}}', {numUnits, unit: translate(unit, {count: numUnits})})
+  return t('il y a {{numUnits}} {{unit}}', {
+    numUnits,
+    unit: translate(...combineTOptions(unit, {count: numUnits})),
+  })
 }
 
 
-interface CityNameAndPrefix {
+export interface CityNameAndPrefix {
   cityName: string
   prefix: string
 }
@@ -173,11 +172,11 @@ export const inCityPrefix = (fullName: string, t: TFunction): CityNameAndPrefix 
       prefix: 'aux ',
     }
   }
-  const matches = fullName.match(/^L(a |')(.*)/)
-  if (matches) {
+  const [, prefix, cityName] = fullName.match(/^L(a |')(.*)/) || []
+  if (prefix && cityName) {
     return {
-      cityName: matches[2],
-      prefix: 'à l' + lowerFirstLetter(matches[1]),
+      cityName,
+      prefix: 'à l' + lowerFirstLetter(prefix),
     }
   }
   return {
@@ -196,8 +195,7 @@ interface ModifiedNameAndPrefix {
 // Compute the prefix in front of a name when writing about "of Name N",
 // e.g. "Toulouse" => "de ", "Le Mans" => "du ", "Orange" => "d'". Also return the part of the
 // name without the prefix.
-// TODO(pascal): Change all callers and make t required.
-export const ofPrefix = (fullName: string, t?: TFunction): ModifiedNameAndPrefix => {
+export const ofPrefix = (fullName: string, t: TFunction): ModifiedNameAndPrefix => {
   if (t) {
     const translated = t('de {{fullName}}', {fullName, ns: 'translation'})
     if (!translated.startsWith('de ')) {
@@ -207,7 +205,7 @@ export const ofPrefix = (fullName: string, t?: TFunction): ModifiedNameAndPrefix
       }
     }
   }
-  if (fullName.match(/^[AEIOUY]/)) {
+  if (/^[AEIOUY]/.test(fullName)) {
     return {
       modifiedName: fullName,
       prefix: "d'",
@@ -225,11 +223,11 @@ export const ofPrefix = (fullName: string, t?: TFunction): ModifiedNameAndPrefix
       prefix: 'des ',
     }
   }
-  const matches = fullName.match(/^L(a |')(.*)/)
-  if (matches) {
+  const [, prefix, modifiedName] = fullName.match(/^L(a |')(.*)/) || []
+  if (prefix && modifiedName) {
     return {
-      modifiedName: matches[2],
-      prefix: 'de l' + lowerFirstLetter(matches[1]),
+      modifiedName,
+      prefix: 'de l' + lowerFirstLetter(prefix),
     }
   }
   return {
@@ -243,18 +241,15 @@ export const closeToCity = (cityName: string, t: TFunction): string => {
   if (!closeToCity.startsWith('près de ')) {
     return closeToCity
   }
-  const {modifiedName, prefix} = ofPrefix(cityName)
+  const {modifiedName, prefix} = ofPrefix(cityName, t)
   return `près ${prefix}${modifiedName}`
 }
 
-// TODO(pascal): Change all callers and make t required.
-export const inDepartement = (city: bayes.bob.FrenchCity, t?: TFunction): string|null => {
+export const inDepartement = (city: bayes.bob.FrenchCity, t: TFunction): string|null => {
   const {departementName = '', departementPrefix = ''} = city || {}
-  if (t) {
-    const inDepartement = t('dans {{departementName}}', {departementName, ns: 'translation'})
-    if (!inDepartement.startsWith('dans ')) {
-      return inDepartement
-    }
+  const inDepartement = t('dans {{departementName}}', {departementName, ns: 'translation'})
+  if (!inDepartement.startsWith('dans ')) {
+    return inDepartement
   }
   if (departementName && departementPrefix) {
     return departementPrefix + departementName
@@ -283,142 +278,6 @@ export const ofJobName = (jobName: string, t: TFunction): string => {
   }
   return maybeContractPrefix('de ', "d'", jobName)
 }
-
-
-// TODO(pascal): Move to user.ts
-export type ClientFilter = 'for-experienced(2)'|'for-experienced(6)'
-
-interface EmailTemplate {
-  readonly content: string
-  readonly filters?: readonly ClientFilter[]
-  readonly personalizations?: readonly string[]
-  readonly reason?: string
-  readonly title: string
-}
-interface EmailTemplates {
-  readonly [adviceModule: string]: readonly EmailTemplate[]
-}
-
-
-export interface AdviceModule {
-  callToAction?: string
-  explanations?: readonly string[]
-  goal: string
-  shortTitle: string
-  title: string
-  titleXStars: {[num: string]: string}
-  userGainCallout?: string
-  userGainDetails?: string
-}
-type AdviceModuleId = keyof typeof adviceModulesVous
-type AdviceModules = {
-  [adviceModule in AdviceModuleId]: AdviceModule
-}
-
-
-// TODO(pascal): Move to i18n.ts.
-
-function getFieldsTranslator<K extends string, T extends {readonly [k in K]?: string}>(
-  translate: TFunction, keys: readonly K[], ns?: string, tOptions?: TOptions): ((raw: T) => T) {
-  if (ns) {
-    prepareNamespace(ns)
-  }
-  return (raw: T): T => {
-    const translated: {[k in K]: string|undefined} = _mapValues(
-      _pick(raw, keys),
-      (fieldValue?: string): string|undefined =>
-        fieldValue && translate(fieldValue, {...tOptions, ns}),
-    )
-    return {...raw, ...translated}
-  }
-}
-
-
-const translatedAdviceModules = _memoize(
-  (translate: TFunction): AdviceModules => {
-    const translator = getFieldsTranslator<'goal'|'title'|'userGainDetails', AdviceModule>(
-      translate, ['goal', 'title', 'userGainDetails'], 'adviceModules')
-    const stringTranslate = (s: string): string => translate(s, {ns: 'adviceModules'})
-    const adviceModules: AdviceModules = adviceModulesVous
-    return _mapValues(adviceModules, (adviceModule: AdviceModule): AdviceModule => ({
-      ...translator(adviceModule),
-      explanations: adviceModule.explanations?.map(stringTranslate),
-      titleXStars: _mapValues(adviceModule.titleXStars, stringTranslate),
-    }))
-  },
-  (): string => i18n.language,
-)
-
-
-const emptyObject = {} as const
-
-
-export const getAdviceModule = (adviceModuleId: string, translate?: TFunction): AdviceModule => {
-  const modules = translate ? translatedAdviceModules(translate) : adviceModulesVous
-  return modules[adviceModuleId as AdviceModuleId] || emptyObject
-}
-
-
-export interface StrategyGoal {
-  content: string
-  goalId: string
-  stepTitle: string
-}
-
-const translatedGoals = _memoize(
-  (translate: TFunction): {[k in keyof typeof goalsVous]: readonly StrategyGoal[]} => {
-    const translator = getFieldsTranslator<'content'|'stepTitle', StrategyGoal>(
-      translate, ['content', 'stepTitle'], 'goals', {productName: config.productName})
-    return _mapValues(goalsVous, goals => goals.map(translator))
-  },
-  (): string => i18n.language,
-)
-
-
-const emptyArray = [] as const
-
-
-export const getStrategyGoals =
-  (strategyId: string, translate?: TFunction): readonly StrategyGoal[] => {
-    const goals = translate ? translatedGoals(translate) : goalsVous
-    const strategyGoals = goals[strategyId as keyof typeof goalsVous] || emptyArray
-    if (!strategyGoals.length) {
-      Sentry.captureMessage(`No goals defined for the strategy "${strategyId}"`)
-    }
-    return strategyGoals
-  }
-
-
-interface DiagnosticCategoryMap {
-  readonly [categoryId: string]: bayes.bob.DiagnosticCategory
-}
-
-
-export const getTranslatedCategories = _memoize(
-  (translate: TFunction, gender?: bayes.bob.Gender): DiagnosticCategoryMap => {
-    return _mapValues(
-      categoriesVous,
-      getFieldsTranslator(
-        translate, ['metricDetails', 'metricTitle'], 'categories', {context: gender}),
-    )
-  },
-  (unusedTranslate: TFunction, gender?: bayes.bob.Gender): string => i18n.language + (gender || ''),
-)
-
-
-export const getEmailTemplates = _memoize(
-  (translate: TFunction): EmailTemplates => {
-    // TODO(cyrille): Load lazily if files get too big.
-    const emailTemplates: EmailTemplates = emailTemplatesVous as EmailTemplates
-    const translator = getFieldsTranslator<'content'|'reason'|'title', EmailTemplate>(
-      translate, ['content', 'reason', 'title'], 'emailTemplates')
-    return _mapValues(
-      emailTemplates,
-      (values: readonly EmailTemplate[]): readonly EmailTemplate[] => values.map(translator),
-    )
-  },
-  (): string => i18n.language,
-)
 
 
 export const genderize =
@@ -450,24 +309,33 @@ export const getDateString = (timestamp: string | Date | number, t: TFunction): 
   return `${day} ${getMonthsShort(t)[month]} ${year}`
 }
 
-/* eslint-disable sort-keys */
-const _FRENCH_MONTHS = {
-  JANUARY: 'janvier',
-  FEBRUARY: 'février',
-  MARCH: 'mars',
-  APRIL: 'avril',
-  MAY: 'mai',
-  JUNE: 'juin',
-  JULY: 'juillet',
-  AUGUST: 'août',
-  SEPTEMBER: 'septembre',
-  OCTOBER: 'octobre',
-  NOVEMBER: 'novembre',
-  DECEMBER: 'décembre',
-  UNKNOWN_MONTH: '',
-} as const
-/* eslint-enable sort-keys */
-export const getMonthName = (month: bayes.bob.Month): string =>
-  _FRENCH_MONTHS[month] || ''
+const _getMonthNames = _memoize(
+  (t: TFunction): readonly string[] =>
+    t(
+      'janvier/février/mars/avril/mai/juin/juillet/août/septembre/octobre/novembre/décembre',
+      {ns: 'translation'},
+    ).split('/'),
+  (): string => i18n.language,
+)
+
+
+const _MONTHS = [
+  'JANUARY',
+  'FEBRUARY',
+  'MARCH',
+  'APRIL',
+  'MAY',
+  'JUNE',
+  'JULY',
+  'AUGUST',
+  'SEPTEMBER',
+  'OCTOBER',
+  'NOVEMBER',
+  'DECEMBER',
+] as const
+export const getMonthName = (translate: TFunction, month: bayes.bob.Month): string => {
+  const monthAsIndex = _MONTHS.indexOf(month as (typeof _MONTHS)[number])
+  return _getMonthNames(translate)[monthAsIndex] || ''
+}
 
 export const getPluralS = (count: number): string => count > 1 ? 's' : ''

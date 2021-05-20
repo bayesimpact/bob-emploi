@@ -2,22 +2,24 @@ import * as Sentry from '@sentry/browser'
 import {TFunction} from 'i18next'
 import _memoize from 'lodash/memoize'
 import PropTypes from 'prop-types'
-import React, {Suspense, useEffect, useMemo, useState} from 'react'
+import React, {useEffect, useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useSelector} from 'react-redux'
 import VisibilitySensor from 'react-visibility-sensor'
 
-import {RootState, adviceCardIsShown, exploreAdvice, seeAdvice, useDispatch} from 'store/actions'
+import useMedia from 'hooks/media'
+import {RootState, advicePageIsShown, exploreAdvice, seeAdvice, useDispatch} from 'store/actions'
 import {getAdviceTitle} from 'store/advice'
-import {getAdviceModule, upperFirstLetter} from 'store/french'
+import {upperFirstLetter} from 'store/french'
+import {getAdviceModule} from 'store/i18n'
 
 import constructionImage from 'images/construction-picto.svg'
 import defaultPicto from 'images/default-picto.svg'
-import {AlphaTag} from 'components/pages/connected/project/advice'
-import {RocketChain} from 'components/rocket_chain'
-import {isMobileVersion} from 'components/mobile'
-import {CircularProgress, StringJoiner} from 'components/theme'
-import {TipsList} from 'components/tips'
+import AlphaTag from 'components/pages/connected/project/alpha_tag'
+import RocketChain from 'components/rocket_chain'
+import isMobileVersion from 'store/mobile'
+import StringJoiner from 'components/string_joiner'
+import TipsList from 'components/tips_list'
 
 import {CardProps, WithAdvice} from './advisor/base'
 import Alternance from './advisor/alternance'
@@ -32,6 +34,7 @@ import DrivingLicenseLowIncome from './advisor/driving_license_low_income'
 import DrivingLicenseWritten from './advisor/driving_license_written'
 import Events from './advisor/events'
 import ExploreOtherJobs from './advisor/explore_other_jobs'
+import ExploreSafeJobs from './advisor/explore_safe_jobs'
 import FollowUp from './advisor/follow_up'
 import FromServer from './advisor/from_server'
 import Immersion from './advisor/immersion'
@@ -83,6 +86,7 @@ export const ADVICE_MODULES: {[moduleId: string]: Module} = {
   'driving-license-written': DrivingLicenseWritten,
   'events': Events,
   'explore-other-jobs': ExploreOtherJobs,
+  'explore-safe-jobs': ExploreSafeJobs,
   'find-a-jobboard': JobBoards,
   'follow-up': FollowUp,
   'fresh-resume': ImproveResume,
@@ -129,6 +133,7 @@ function getAdvicePicto(adviceId: string): string {
 
 
 interface AdviceCardProps extends WithAdvice {
+  'aria-live'?: 'polite'
   areTipsShown?: boolean
   onShow?: () => void
   style?: React.CSSProperties
@@ -136,11 +141,12 @@ interface AdviceCardProps extends WithAdvice {
 
 
 const AdviceCardBase: React.FC<AdviceCardProps> = (props: AdviceCardProps): React.ReactElement => {
-  const {advice, areTipsShown, onShow, project, style} = props
-  const [hasBeenSeen, setHasBeenSeen] = useState(false)
+  const {'aria-live': ariaLive, advice, areTipsShown, onShow, project, style} = props
+  const isForPrint = useMedia() === 'print'
+  const [hasBeenSeen, setHasBeenSeen] = useState(isForPrint)
   const dispatch = useDispatch()
   useEffect((): void => {
-    dispatch(adviceCardIsShown(project, advice))
+    dispatch(advicePageIsShown(project, advice))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [advice.adviceId, dispatch, project.projectId])
   const handleVisibilityChange = useMemo(() => (isVisible: boolean): void => {
@@ -150,8 +156,8 @@ const AdviceCardBase: React.FC<AdviceCardProps> = (props: AdviceCardProps): Reac
     setHasBeenSeen(true)
     dispatch(seeAdvice(project, advice))
     onShow?.()
-  }, [advice, dispatch, project, setHasBeenSeen, onShow])
-  return <div style={style} id={advice.adviceId}>
+  }, [advice, dispatch, project, onShow])
+  return <div style={style} id={advice.adviceId} aria-live={ariaLive}>
     <VisibilitySensor
       active={!hasBeenSeen} intervalDelay={250} minTopValue={10}
       partialVisibility={true} onChange={handleVisibilityChange}>
@@ -185,12 +191,12 @@ export interface ExplorerAdviceCardConfig extends ExpandedAdviceCardProps {
 
 const ExplorerLeftPanelBase: React.FC<ExplorerAdviceCardConfig> = (props: ExplorerAdviceCardConfig):
 React.ReactElement => {
-  const {advice, howToSeeMore} = props
+  const {advice, howToSeeMore, onClick} = props
   const {howToSeeMore: omittedHowToSeeMore, style, ...otherProps} = props
   const {t} = useTranslation()
   const title = getAdviceTitle(advice, t)
-  const {explanations: staticExplanations = []} = getAdviceModule(advice.adviceId, t) || {}
-  const allExplanations = (staticExplanations || []).concat(advice.explanations || [])
+  const {staticExplanations = []} = getAdviceModule(advice.adviceId, t) || {}
+  const allExplanations = [...(staticExplanations || []), ...(advice.explanations || [])]
   const containerStyle: React.CSSProperties = {
     background: '#fff',
     display: 'flex',
@@ -235,6 +241,7 @@ React.ReactElement => {
     +
   </span>
   const selectForMoreStyle: React.CSSProperties = {
+    background: 'none',
     color: colors.BOB_BLUE,
     fontSize: 15,
     fontStyle: 'italic',
@@ -277,9 +284,9 @@ React.ReactElement => {
         right: 0,
       }} /> : null}
     </div>
-    <div style={selectForMoreStyle}>
+    <button style={selectForMoreStyle} onClick={onClick}>
       {howToSeeMore}
-    </div>
+    </button>
   </div>
 }
 const ExplorerLeftPanel = React.memo(ExplorerLeftPanelBase)
@@ -359,16 +366,15 @@ const ExplorerRightPanel = React.memo(ExplorerRightPanelBase)
 
 const ExplorerAdviceCardBase: React.FC<ExplorerAdviceCardConfig> =
 (props: ExplorerAdviceCardConfig): React.ReactElement => {
-  const {onClick, style} = props
+  const {style} = props
   const containerStyle: React.CSSProperties = {
     boxShadow: '0 10px 30px rgba(0, 0, 0, .2)',
-    cursor: onClick ? 'pointer' : 'initial',
     display: 'flex',
     flexDirection: isMobileVersion ? 'column' : 'row',
     position: 'relative',
     ...style,
   }
-  return <div style={containerStyle} onClick={onClick}>
+  return <div style={containerStyle}>
     <ExplorerLeftPanel {...props} style={{flex: 3}} />
     <ExplorerRightPanel {...props} style={{flex: 1}} />
   </div>
@@ -425,11 +431,6 @@ const GenericExpandedAdviceBase: React.FC<GenericExpandedAdviceProps> =
 const GenericExpandedAdvice = React.memo(GenericExpandedAdviceBase)
 
 
-const suspenseWaitingStyle: React.CSSProperties = {
-  margin: 'auto',
-}
-
-
 // TODO(pascal): Add a visual marker if this advice is only shown to alpha users.
 const ExpandedAdviceCardContentBase: React.FC<ExpandedAdviceCardProps> =
 (props: ExpandedAdviceCardProps): React.ReactElement => {
@@ -444,9 +445,7 @@ const ExpandedAdviceCardContentBase: React.FC<ExpandedAdviceCardProps> =
   const pageProps = {...props, dispatch, handleExplore, profile, t}
   const PageComponent = ADVICE_MODULES[advice.adviceId]?.ExpandedAdviceCardContent || null
   if (PageComponent) {
-    return <Suspense fallback={<CircularProgress style={suspenseWaitingStyle} />}>
-      <PageComponent {...pageProps} />
-    </Suspense>
+    return <PageComponent {...pageProps} />
   }
   return <GenericExpandedAdvice {...{profile, style, t}} />
 }
@@ -512,6 +511,8 @@ const MethodHeader = React.memo(MethodHeaderBase)
 MethodHeaderBase.propTypes = {
   advice: PropTypes.shape({
     adviceId: PropTypes.string.isRequired,
+    isForAlphaOnly: PropTypes.bool,
+    numStars: PropTypes.number,
   }).isRequired,
   project: PropTypes.shape({
     projectId: PropTypes.string.isRequired,

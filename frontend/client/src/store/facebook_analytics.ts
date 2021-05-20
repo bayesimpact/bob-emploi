@@ -10,18 +10,18 @@ import {AllActions, DispatchAllActions, RootState} from './actions'
 /* eslint-enable unicorn/no-abusive-eslint-disable */
 
 
-type MiddlewareReturnType = ReturnType<Middleware<{}, RootState, DispatchAllActions>>
+type MiddlewareReturnType = ReturnType<Middleware<unknown, RootState, DispatchAllActions>>
 
 
 interface ActionType {
-  params?: {}
+  params?: Record<string, unknown>
   predicate?: (action: AnyAction) => boolean
   type: string
 }
 
 
 type WindowWithFbq = (typeof window) & {
-  fbq: ((action: 'track', type: string, params?: {}) => void) &
+  fbq: ((action: 'track', type: string, params?: Record<string, unknown>) => void) &
   ((action: 'init', pixelId: string) => void) & {
     disablePushState: boolean
   }
@@ -34,7 +34,7 @@ const windowFbq = window as WindowWithFbq
 function createFacebookAnalyticsMiddleWare(
   facebookPixelID: string,
   actionsTypesToLog: {[actionType in AllActions['type']]?: ActionType|string}):
-  Middleware<{}, RootState, DispatchAllActions> {
+  Middleware<unknown, RootState, DispatchAllActions> {
   // We do not want to use Facebook Analytics to track our page history. We
   // only use it to measure the effectiveness of Facebook ads, therefore
   // sending one PageView is enough.
@@ -69,4 +69,4 @@ function createFacebookAnalyticsMiddleWare(
 }
 
 
-export {createFacebookAnalyticsMiddleWare}
+export default createFacebookAnalyticsMiddleWare

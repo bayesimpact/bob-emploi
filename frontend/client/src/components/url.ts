@@ -1,28 +1,56 @@
-const Routes: {[varName: string]: string} = {
-  ROOT: '/',
-}
 
 export const STATS_PAGE = 'stats'
 
-Routes.CONTRIBUTION_PAGE = Routes.ROOT + 'contribuer'
-Routes.COOKIES_PAGE = Routes.ROOT + 'cookies'
-Routes.COVID_PAGE = Routes.ROOT + 'covid-19'
-Routes.IMILO_INTEGRATION_PAGE = Routes.ROOT + 'conseiller/integration-imilo'
-Routes.PARTNERS_PAGE = Routes.ROOT + 'partenaires'
-Routes.PRIVACY_PAGE = Routes.ROOT + 'vie-privee'
-Routes.PROFESSIONALS_PAGE = Routes.ROOT + 'professionnels'
-Routes.STATIC_ADVICE_PAGE = Routes.ROOT + 'conseil'
-Routes.STATIC_ADVICE_PATH = Routes.STATIC_ADVICE_PAGE + '/:adviceId?'
-Routes.TEAM_PAGE = Routes.ROOT + 'equipe'
-Routes.TERMS_AND_CONDITIONS_PAGE = Routes.ROOT + 'conditions-generales'
-Routes.TRANSPARENCY_PAGE = Routes.ROOT + 'transparence'
-Routes.VIDEO_SIGNUP_PAGE = Routes.ROOT + 'inscription'
-Routes.VISION_PAGE = Routes.ROOT + 'notre-mission'
+const ROOT = '/'
+
+const BOOTSTRAP_ROOT = ROOT + 'conseiller/'
+const NEW_PROJECT_PAGE = ROOT + 'nouveau-projet'
+const PROFILE_PAGE = ROOT + 'profil'
+const PROJECT_PAGE = ROOT + 'projet'
+const PROJECT_PATH = PROJECT_PAGE + '/:projectId'
+const STATIC_ADVICE_PAGE = ROOT + 'conseil'
+const STRATEGY_PATH = PROJECT_PATH + '/:strategyId'
+
+const Routes = {
+  ADVICE_PATH: STRATEGY_PATH + '/:adviceId',
+  BOOTSTRAP_PAGE: BOOTSTRAP_ROOT + 'nouveau-profil-et-projet',
+  BOOTSTRAP_ROOT,
+  CONTRIBUTION_PAGE: ROOT + 'contribuer',
+  COOKIES_PAGE: ROOT + 'cookies',
+  COVID_PAGE: ROOT + 'covid-19',
+  EMAILS_PAGE: PROFILE_PAGE + '/emails',
+  IMILO_INTEGRATION_PAGE: BOOTSTRAP_ROOT + 'integration-imilo',
+  INTRO_PAGE: ROOT + 'intro',
+  INVITE_PATH: ROOT + 'invite',
+  JOB_SIGNUP_PAGE: ROOT + 'metier/:romeId/:specificJobName',
+  NEW_PROJECT_ONBOARDING_PAGES: NEW_PROJECT_PAGE + '/:stepName?',
+  NEW_PROJECT_PAGE,
+  PARTNERS_PAGE: ROOT + 'partenaires',
+  PRIVACY_PAGE: ROOT + 'vie-privee',
+  PROFESSIONALS_PAGE: ROOT + 'professionnels',
+  PROFILE_ONBOARDING_PAGES: PROFILE_PAGE + '/:stepName?',
+  PROFILE_PAGE,
+  PROJECT_PAGE,
+  PROJECT_PATH,
+  RESOURCES_PAGE: BOOTSTRAP_ROOT + 'ressources',
+  ROOT,
+  SIGNUP_PAGE: ROOT + 'connexion',
+  STATIC_ADVICE_PAGE,
+  STATIC_ADVICE_PATH: STATIC_ADVICE_PAGE + '/:adviceId?',
+  STATS_PATH: PROJECT_PATH + '/' + STATS_PAGE,
+  STRATEGY_PATH,
+  TEAM_PAGE: ROOT + 'equipe',
+  TERMS_AND_CONDITIONS_PAGE: ROOT + 'conditions-generales',
+  TRANSPARENCY_PAGE: ROOT + 'transparence',
+  VIDEO_SIGNUP_PAGE: ROOT + 'inscription',
+  VISION_PAGE: ROOT + 'notre-mission',
+  WAITING_PAGE: ROOT + 'chargement',
+} as const
+
 export const staticPages = [
   Routes.CONTRIBUTION_PAGE,
   Routes.COOKIES_PAGE,
   Routes.COVID_PAGE,
-  Routes.IMILO_INTEGRATION_PAGE,
   Routes.PARTNERS_PAGE,
   Routes.PRIVACY_PAGE,
   Routes.PROFESSIONALS_PAGE,
@@ -34,28 +62,12 @@ export const staticPages = [
   Routes.VISION_PAGE,
 ]
 
-Routes.PROFILE_PAGE = Routes.ROOT + 'profil'
-Routes.PROFILE_ONBOARDING_PAGES = Routes.PROFILE_PAGE + '/:stepName?'
-Routes.NEW_PROJECT_PAGE = Routes.ROOT + 'nouveau-projet'
-Routes.NEW_PROJECT_ONBOARDING_PAGES = Routes.NEW_PROJECT_PAGE + '/:stepName?'
-Routes.PROJECT_PAGE = Routes.ROOT + 'projet'
-Routes.PROJECT_PATH = Routes.PROJECT_PAGE + '/:projectId'
-Routes.STATS_PATH = Routes.PROJECT_PATH + '/' + STATS_PAGE
-Routes.STRATEGY_PATH = Routes.PROJECT_PATH + '/:strategyId'
-Routes.ADVICE_PATH = Routes.STRATEGY_PATH + '/:adviceId'
-Routes.WAITING_PAGE = Routes.ROOT + 'chargement'
-Routes.JOB_SIGNUP_PAGE = Routes.ROOT + 'metier/:romeId/:specificJobName'
-Routes.EVAL_PAGE = Routes.ROOT + 'eval'
-Routes.CONCEPT_EVAL_PAGE = Routes.EVAL_PAGE + '/concept'
-Routes.EVAL_PATH = Routes.EVAL_PAGE + '/:useCaseId?'
-Routes.BOOTSTRAP_PAGE = Routes.ROOT + 'conseiller/nouveau-profil-et-projet'
-Routes.RESOURCES_PAGE = Routes.ROOT + 'conseiller/ressources'
-Routes.INVITE_PATH = Routes.ROOT + 'invite'
-Routes.INTRO_PAGE = Routes.ROOT + 'intro'
-Routes.SIGNUP_PAGE = Routes.ROOT + 'connexion'
-
 export const NEW_PROJECT_ID = 'nouveau'
 
+// Sub pages of the project page.
+export const ACHIEVEMENTS_PAGE = 'bravo'
+export const CONVINCE_PAGE = 'priorite'
+export const STRAT_PREVIEW_PAGE = 'comment'
 export const FEEDBACK_TAB = 'evaluer'
 
 export const SIGNUP_HASH = '#inscription'

@@ -8,11 +8,12 @@ import {DispatchAllActions, RootState, diagnoseOnboarding, fetchProjectRequireme
 import {localizeOptions, prepareT} from 'store/i18n'
 import {PROJECT_EXPERIENCE_OPTIONS, SENIORITY_OPTIONS,
   TRAINING_FULFILLMENT_ESTIMATE_OPTIONS} from 'store/project'
-import {userExample} from 'store/user'
+import {useUserExample} from 'store/user'
 
-import {Trans} from 'components/i18n'
-import {RadioGroup} from 'components/theme'
-import {FieldSet, Select} from 'components/pages/connected/form_utils'
+import FieldSet from 'components/field_set'
+import Trans from 'components/i18n_trans'
+import RadioGroup from 'components/radio_group'
+import Select from 'components/select'
 
 import {OnboardingComment, ProjectStepProps, Step} from './step'
 
@@ -49,7 +50,7 @@ function hasGroupWithRomeId(job?: bayes.bob.Job): job is {jobGroup: {romeId: str
 const emptyObject = {} as const
 
 
-const NewProjectExperienceStepBase = (props: ProjectStepProps): React.ReactElement => {
+const NewProjectExperienceStep = (props: ProjectStepProps): React.ReactElement => {
   const {newProject = {}, onSubmit, profile: {gender, hasCarDrivingLicense}} = props
   const {trainingFulfillmentEstimate: projectTrainingEstimate, previousJobSimilarity,
     networkEstimate, seniority, city, targetJob} = newProject
@@ -119,6 +120,7 @@ const NewProjectExperienceStepBase = (props: ProjectStepProps): React.ReactEleme
     hasCarDrivingLicense, seniority, onSubmit, isFormValid,
   ])
 
+  const userExample = useUserExample()
   const fastForward = useCallback((): void => {
     if (isFormValid) {
       handleSubmit()
@@ -152,10 +154,10 @@ const NewProjectExperienceStepBase = (props: ProjectStepProps): React.ReactEleme
   }, [
     networkEstimate, previousJobSimilarity, seniority, hasCarDrivingLicense,
     trainingFulfillmentEstimate, handleSubmit, dispatch, isDrivingLicenseRequired, isFormValid,
-    readTrainingComment, readNetworkComment,
+    readTrainingComment, readNetworkComment, userExample,
   ])
 
-  const handleDrivingLicenseChange = useCallback((value: bayes.bob.OptionalBool): void => {
+  const handleDrivingLicenseChange = useCallback((value: bayes.OptionalBool): void => {
     dispatch(diagnoseOnboarding({profile: {hasCarDrivingLicense: value}}))
   }, [dispatch])
 
@@ -245,7 +247,7 @@ const NewProjectExperienceStepBase = (props: ProjectStepProps): React.ReactEleme
         style={{maxWidth: 600}}
         isValid={!!hasCarDrivingLicense}
         isValidated={isValidated} hasCheck={true}>
-        <RadioGroup<bayes.bob.OptionalBool>
+        <RadioGroup<bayes.OptionalBool>
           style={{justifyContent: 'space-around'}}
           onChange={handleDrivingLicenseChange}
           options={localizeOptions(t, drivingLicenseOptions)}
@@ -270,7 +272,7 @@ const NewProjectExperienceStepBase = (props: ProjectStepProps): React.ReactEleme
     </div>
   </Step>
 }
-NewProjectExperienceStepBase.propTypes = {
+NewProjectExperienceStep.propTypes = {
   newProject: PropTypes.shape({
     city: PropTypes.shape({
       transportScore: PropTypes.number,
@@ -290,7 +292,6 @@ NewProjectExperienceStepBase.propTypes = {
     hasCarDrivingLicense: PropTypes.oneOf(drivingLicenseOptions.map(({value}): string => value)),
   }).isRequired,
 }
-const NewProjectExperienceStep = React.memo(NewProjectExperienceStepBase)
 
 
-export {NewProjectExperienceStep}
+export default React.memo(NewProjectExperienceStep)

@@ -1,7 +1,7 @@
 import React from 'react'
 
-import {Trans} from 'components/i18n'
-import {isMobileVersion} from 'components/mobile'
+import Trans from 'components/i18n_trans'
+import isMobileVersion from 'store/mobile'
 import {StaticPage, StrongTitle} from 'components/static'
 
 

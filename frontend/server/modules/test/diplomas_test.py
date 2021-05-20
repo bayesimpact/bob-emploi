@@ -1,6 +1,8 @@
 """ Tests for the diplomas module."""
 
 from bob_emploi.frontend.api import job_pb2
+from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.server.test import filters_test
 from bob_emploi.frontend.server.test import scoring_test
 
 
@@ -78,3 +80,22 @@ class MissingDiplomaScoringModelTestCase(scoring_test.ScoringModelTestBase):
         persona.project.target_job.job_group.rome_id = 'A1234'
         persona.user_profile.highest_degree = job_pb2.LICENCE_MAITRISE
         self.assertEqual(3, self._score_persona(persona))
+
+
+class ForeignDiplomaTestCase(filters_test.FilterTestBase):
+    """Tests for the for-foreign-diploma filter."""
+
+    model_id = 'for-foreign-diploma'
+
+    def test_frustrated_by_foreign_diploma(self) -> None:
+        """User is frustrated about their unrecognized foreign diploma."""
+
+        self.persona.user_profile.frustrations.append(user_pb2.FOREIGN_QUALIFICATIONS)
+        self._assert_pass_filter()
+
+    def test_not_frustrated(self) -> None:
+        """User isn't frustrated by a foreign diploma."""
+
+        if user_pb2.FOREIGN_QUALIFICATIONS in self.persona.user_profile.frustrations:
+            self.persona.user_profile.frustrations.remove(user_pb2.FOREIGN_QUALIFICATIONS)
+        self._assert_fail_filter()

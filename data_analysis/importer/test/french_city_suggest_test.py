@@ -195,7 +195,7 @@ class UploadTestCase(unittest.TestCase):
             french_city_suggest.upload(data_folder=self.testdata_folder, out=output)
 
         mock_client.move_index.assert_not_called()
-        mock_client.init_index().clear_index.assert_called_once_with()
+        mock_client.init_index().delete.assert_called_once_with()
         output_value = output.getvalue()
         self.assertTrue(
             output_value.startswith('[\n  {\n    "objectID": "01001"'), msg=output_value)

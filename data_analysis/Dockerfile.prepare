@@ -4,92 +4,46 @@ RUN mkdir /work
 WORKDIR /work
 
 RUN apt-get update -qqy && \
-  apt-get install jq unzip python-pdfminer python-dev locales -qqy && \
+  apt-get install jq zip unzip python-pdfminer python-dev locales -qqy && \
   # Install locale fr_FR so that we can format dates for French users.
   sed -i -e "s/# fr_FR.UTF/fr_FR.UTF/" /etc/locale.gen && locale-gen && \
   rm /bin/sh && ln -s /bin/bash /bin/sh
 
-# Requirements for python code (outside of notebooks). Keep them sorted.
-RUN pip install --upgrade \
-  airtable \
-  airtablemock \
-  algoliasearch \
-  awscli \
-  coverage \
-  csvkit \
-  demjson \
-  dnspython \
-  google-api-python-client \
-  httplib2 \
-  js2py \
-  json5 \
-  mongomock \
-  mypy \
-  mypy-protobuf \
-  nbformat \
-  nose \
-  nose-exclude \
-  nose-watch \
-  nose-terse-output \
-  # TODO(pascal): Uncap once https://github.com/pandas-dev/pandas/issues/31441 fix is released.
-  "pandas<1.0.0" \
-  polib \
-  protobuf \
-  pycodestyle \
-  "pylint>=2.5.0" \
-  pylint-doc-spacing \
-  pylint-import-modules \
-  pylint-quotes \
-  pymongo \
-  python-emploi-store \
-  requests \
-  requests_mock \
-  runipy \
-  sas7bdat \
-  scrapy \
-  sentry-sdk \
-  sklearn \
-  termcolor \
-  tqdm \
-  typing_extensions \
-  xmltodict
+COPY data_analysis/requirements.txt data_analysis/installed_requirements.txt data_analysis/check_requirements.sh ./
+# Install requirements.
+RUN ./check_requirements.sh && pip install -r requirements.txt
 
 ARG PROTOBUF_VERSION=3.9.2
 
 # Install Protobuf compiler.
-RUN \
-  curl --silent -L "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip" -o protoc.zip && \
-  unzip -qq protoc.zip && rm protoc.zip && rm readme.txt && mv bin/protoc /usr/local/bin && mkdir /usr/local/share/proto && mv include/google /usr/local/share/proto
+COPY frontend/client/vendor/install-protoc.sh ./
+RUN PROTOBUF_VERSION=$PROTOBUF_VERSION ./install-protoc.sh /usr/local
 
 ENV PYTHONPATH=/work:/usr/lib/python3/dist-packages/
 
 CMD ["make", "all"]
 
+# TODO(pascal): Clean up our typing stubs for parsel and scrapy packages once they get typed.
+RUN [ ! -f /usr/local/lib/python3.8/site-packages/parsel/__init__.pyi ]
+RUN [ ! -f /usr/local/lib/python3.8/site-packages/scrapy/__init__.pyi ]
+RUN ! ls /usr/local/lib/python3.8/site-packages/mypy/typeshed/third_party/*/parsel/__init__.pyi 2> /dev/null
+RUN ! ls /usr/local/lib/python3.8/site-packages/mypy/typeshed/third_party/*/scrapy/__init__.pyi 2> /dev/null
+COPY common/vendor/parsel/ /usr/local/lib/python3.8/site-packages/mypy/typeshed/third_party/2and3/parsel/
+COPY common/vendor/scrapy/ /usr/local/lib/python3.8/site-packages/mypy/typeshed/third_party/2and3/scrapy/
+COPY common/vendor/patch.sh /usr/local/bin/patch_vendor.sh
+
+RUN /usr/local/bin/patch_vendor.sh
+
 COPY data_analysis/ /work/bob_emploi/data_analysis/
 RUN mv /work/bob_emploi/data_analysis/data /work/data
 COPY data_analysis/.coveragerc data_analysis/entrypoint.sh data_analysis/lint_and_test.sh data_analysis/Makefile* .pylintrc /work/
 COPY .pycodestyle /work/setup.cfg
+COPY common/python/ /work/bob_emploi/common/python/
 COPY frontend/api/*.proto /work/bob_emploi/frontend/api/
+COPY frontend/api/radar/*.proto /work/bob_emploi/frontend/api/radar/
 COPY frontend/server/ /work/bob_emploi/frontend/server/
 COPY frontend/client/airtable_fields.json5 /work/bob_emploi/frontend/client/airtable_fields.json5
 COPY frontend/release/scheduled-tasks /work/bob_emploi/frontend/release/scheduled-tasks
-# TODO(pascal): Clean up our typing stubs for mongomock package once it gets typed.
-RUN [ ! -f /usr/local/lib/python3.7/site-packages/mongomock/__init__.pyi ]
-RUN ! ls /usr/local/lib/python3.7/site-packages/mypy/typeshed/third_party/*/mongomock/__init__.pyi 2> /dev/null
-COPY data_analysis/vendor/mongomock/ /usr/local/lib/python3.7/site-packages/mypy/typeshed/third_party/3/mongomock/
-# TODO(pascal): Clean up our typing stubs for requests_mock package once it gets typed.
-RUN [ ! -f /usr/local/lib/python3.7/site-packages/requests_mock/__init__.pyi ]
-RUN ! ls /usr/local/lib/python3.7/site-packages/mypy/typeshed/third_party/*/requests_mock/__init__.pyi 2> /dev/null
-COPY frontend/server/test/vendor/requests_mock/ /usr/local/lib/python3.7/site-packages/mypy/typeshed/third_party/2and3/requests_mock/
-# TODO(pascal): Clean up our typing stubs for parsel and scrapy packages once they get typed.
-RUN [ ! -f /usr/local/lib/python3.7/site-packages/parsel/__init__.pyi ]
-RUN [ ! -f /usr/local/lib/python3.7/site-packages/scrapy/__init__.pyi ]
-RUN ! ls /usr/local/lib/python3.7/site-packages/mypy/typeshed/third_party/*/parsel/__init__.pyi 2> /dev/null
-RUN ! ls /usr/local/lib/python3.7/site-packages/mypy/typeshed/third_party/*/scrapy/__init__.pyi 2> /dev/null
-COPY data_analysis/vendor/parsel/ /usr/local/lib/python3.7/site-packages/mypy/typeshed/third_party/2and3/parsel/
-COPY data_analysis/vendor/scrapy/ /usr/local/lib/python3.7/site-packages/mypy/typeshed/third_party/2and3/scrapy/
-
-RUN /work/bob_emploi/data_analysis/vendor/patch.sh
 
 ARG SKIP_TEST=
 RUN test -n "$SKIP_TEST" && echo "Skipping tests" || TEST_ENV=1 ./entrypoint.sh ./lint_and_test.sh --with-coverage --cover-inclusive --cover-package=. --cover-html --cover-xml

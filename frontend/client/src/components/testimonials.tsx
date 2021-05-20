@@ -2,8 +2,9 @@ import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 
-import {isMobileVersion} from 'components/mobile'
-import {Img, SmoothTransitions} from 'components/theme'
+import isMobileVersion from 'store/mobile'
+import ExternalImage from 'components/external_image'
+import {SmoothTransitions} from 'components/theme'
 import manImage from 'images/man-icon.svg'
 import womanImage from 'images/woman-icon.svg'
 
@@ -13,7 +14,7 @@ const useTimeout =
   useEffect((): (() => void) => {
     const timeout = window.setTimeout(callback, periodMs)
     return (): void => {
-      clearTimeout(timeout)
+      window.clearTimeout(timeout)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callback, periodMs, ...cacheBusters])
@@ -62,10 +63,10 @@ function useRotate(numItems: number, periodMs: number): RotateVars {
   }, [index, gotoIndex])
 
   useEffect((): void => {
-    if (state.isNew) {
+    if (isNew) {
       setState({...state, isNew: false})
     }
-  }, [state])
+  }, [isNew, state])
 
   useTimeout(setNextIndex, periodMs, numManualTimeReset)
 
@@ -94,11 +95,20 @@ const selectedBulletStyle: React.CSSProperties = {
   backgroundColor: '#fff',
 }
 
+const noListItemStyle: React.CSSProperties = {
+  display: 'inline-block',
+}
+
 
 const BulletBase = (props: BulletProps): React.ReactElement => {
   const {index, isSelected, onClick} = props
+  const {t} = useTranslation()
   const handleClick = useCallback((): void => onClick(index), [index, onClick])
-  return <li onClick={handleClick} style={isSelected ? selectedBulletStyle : bulletStyle} />
+  return <li style={noListItemStyle}>
+    <button
+      onClick={handleClick} style={isSelected ? selectedBulletStyle : bulletStyle}
+      aria-label={t('témoignage n°{{index}}', {index})} />
+  </li>
 }
 const Bullet = React.memo(BulletBase)
 
@@ -238,7 +248,7 @@ const TestimonialCardBase: React.FC<CardProps> = (props: CardProps): React.React
     right: 0,
     top: isLong ? 'initial' : '100%',
   }), [author.imageLink, horizontalPadding, isLong])
-  const authorPicto = <Img
+  const authorPicto = <ExternalImage
     style={{height: 'auto', marginRight: 15, maxHeight: 100, maxWidth: 100, width: 'auto'}}
     src={author.imageLink ? author.imageLink : author.isMan ? manImage : womanImage}
     fallbackSrc={author.isMan ? manImage : womanImage}

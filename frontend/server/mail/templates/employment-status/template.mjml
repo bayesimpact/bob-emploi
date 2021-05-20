@@ -1,0 +1,466 @@
+{
+  "attributes": {
+    "owa": "desktop",
+    "version": "4.3.0"
+  },
+  "children": [
+    {
+      "attributes": {},
+      "children": [
+        {
+          "attributes": {
+            "href": "https://fonts.googleapis.com/css?family=arial",
+            "name": "arial"
+          },
+          "id": "3rwmwdTLFjDi2",
+          "tagName": "mj-font"
+        },
+        {
+          "content": "",
+          "id": "mSglF32Ms7Iz0",
+          "tagName": "mj-preview"
+        }
+      ],
+      "id": "6Q3s41tTuty-j",
+      "tagName": "mj-head"
+    },
+    {
+      "attributes": {
+        "background-color": "#ffffff",
+        "color": "#2C3449",
+        "font-family": "Arial, sans-serif",
+        "font-size": "13px",
+        "passport": {
+          "id": "A3-mqFtZj"
+        }
+      },
+      "children": [
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "background-size": "auto",
+            "padding": "20px 0px 20px 0px",
+            "passport": {
+              "header": true,
+              "hidden": true,
+              "id": "1b2WGVTXmZuG"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "ZmKxMxfJW9"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#2C3449",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "11px",
+                    "line-height": "22px",
+                    "padding": "0px 0px 0px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "mW06cfXOzlOR"
+                    }
+                  },
+                  "content": "<p style=\"margin: 10px 0;\">[[HEADLINE]]</p>",
+                  "id": "lGJxsDnO-Kmb8",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "CB2kEzeJbkxln",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "Qmq37y9qaaZXX",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "MPoZr5PkFPBn",
+              "name": "Nouvelle section"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "Si4Ah_Toyw"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#2C3449",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "PjOrN2oTLx"
+                    }
+                  },
+                  "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:13px\"><span style=\"font-family:Arial; text-decoration:none\">Bonjour, </span>{{var:firstName}} ! </span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"> </p><p style=\"color: #2c3449; font-family: Arial,sans-serif; font-size: 13px; margin: 10px 0; text-align: left;\">Je suis Florian de Bob. Je vous écris parce qu'il y a <span style=\"color:#222222; font-family:arial,sans-serif; font-size:12.8px\">{{var:registeredMonthsAgo:\"3\"}}</span> mois on vous a donné des conseils sur votre recherche d'emploi. <span style=\"font-size:small\">Et aujourd'hui je viens aux nouvelles.</span></p><p style=\"color: #2c3449; font-family: Arial,sans-serif; font-size: 13px; margin: 10px 0; text-align: left;\">Jeune association à but non lucratif, nous croyons que chacun mérite d'avoir toutes les clés en main pour sa recherche d'emploi. Et on avance grâce à vos retours.</p><p style=\"color: #2c3449; font-family: Arial,sans-serif; font-size: 13px; margin: 10px 0; text-align: left;\">C'est pour ça que savoir où vous en êtes nous est très précieux.</p><p style=\"line-height: 1.38; margin: 10px 0;\"><b><span style=\"color:#000000\">Aujourd'hui, êtes-vous toujours à la recherche d'un emploi ?</span></b></p>",
+                  "id": "lSWYaCbJ_CKIK",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "REsVgeVdhu1LA",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "aECuVoGV69x4n",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "passport": {
+              "id": "oc5dJHHkqv"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "MBKearyznW"
+                },
+                "width": "50%"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "center",
+                    "background-color": "#58BBFB",
+                    "border": "none",
+                    "border-radius": "100px",
+                    "color": "#ffffff",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "font-weight": "normal",
+                    "href": "{{var:seekingUrl}}",
+                    "inner-padding": "10px 25px",
+                    "padding": "10px 25px",
+                    "passport": {
+                      "id": "3At3NdWlBJ"
+                    },
+                    "text-decoration": "none",
+                    "text-transform": "none",
+                    "vertical-align": "middle"
+                  },
+                  "content": "<span style=\"background-color:#58bbfb\">Oui, je cherche toujours</span>",
+                  "id": "7_y76dyBXUYpR",
+                  "tagName": "mj-button"
+                }
+              ],
+              "id": "iwXyai-nNrxmi",
+              "tagName": "mj-column"
+            },
+            {
+              "attributes": {
+                "passport": {
+                  "id": "QgOGmMzufN"
+                },
+                "width": "50%"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "center",
+                    "background-color": "#58BBFB",
+                    "border": "none",
+                    "border-radius": "100px",
+                    "color": "#ffffff",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "font-weight": "normal",
+                    "href": "{{var:stopSeekingUrl}}",
+                    "inner-padding": "10px 25px",
+                    "padding": "10px 25px",
+                    "passport": {
+                      "id": "YdR4Yn15jR"
+                    },
+                    "text-decoration": "none",
+                    "text-transform": "none",
+                    "vertical-align": "middle"
+                  },
+                  "content": "Non, je ne cherche plus",
+                  "id": "wLNqq6XnnzsHT",
+                  "tagName": "mj-button"
+                }
+              ],
+              "id": "ct-MHxiKb2OgG",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "tLrQQj6jW9qYr",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "passport": {
+              "id": "rVd2rcdROf"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "XVis1-l5GP"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#2C3449",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "EmxYcaKJim"
+                    }
+                  },
+                  "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\">Merci de votre aide ! Vous êtes au top 👍</span><br><br><span style=\"color:#000000\">Florian de Bob</span></p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\">PS: On lit tous les mails de réponse 😉</span></p>",
+                  "id": "vOrRD7BewyfnF6",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "alt": "www.bob-emploi.fr",
+                    "border": "none",
+                    "border-radius": "0px",
+                    "height": "auto",
+                    "href": "",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "HAw3DiZjOwSsZ",
+                      "image-id": 6124833
+                    },
+                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/p43g/2vros.png",
+                    "target": "_blank",
+                    "title": "",
+                    "width": "116px"
+                  },
+                  "id": "_h9dbeGrCRWrv9",
+                  "tagName": "mj-image"
+                }
+              ],
+              "id": "uDHPw8h4ZzfohD",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "xKvkHunyxV3blm",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-color": "#ffffff",
+            "background-repeat": "repeat",
+            "background-size": "auto",
+            "full-width": "full-width",
+            "padding": "20px 0",
+            "padding-top": "0px",
+            "passport": {
+              "hidden": false,
+              "id": "zmi3ieP6O374s",
+              "name": "New section"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "ew_OZkjOlS9"
+                },
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "border-color": "#E9EBF0",
+                    "border-style": "solid",
+                    "border-width": "1px",
+                    "container-background-color": "transparent",
+                    "padding": "10px 25px",
+                    "padding-bottom": "20px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "20px",
+                    "passport": {
+                      "id": "2x5SqDe0AJW"
+                    },
+                    "width": "100%"
+                  },
+                  "id": "KEljS1mlfBKNUm",
+                  "tagName": "mj-divider"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#2C3449",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "9o7FU2zTDBA"
+                    }
+                  },
+                  "content": "<p style=\"margin: 10px 0;\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"font-size:11px\"><i><a target=\"_blank\" style=\"color:#535b6e\" href=\"https://www.bob-emploi.fr/vie-privee\"><span style=\"color:#535b6e\">Comme promis</span></a><span style=\"color:#535b6e\">, Bob ne partage pas vos réponses avec d'autres organismes : vos données sont confidentielles et le resteront pour toujours.</span></i></span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#535b6e\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"font-size:11px\"><i>Bob est un projet à but non lucratif et indépendant. réalisé en partenariat avec Pôle emploi et de nombreuses associations d'accompagnement personnel et professionnel.</i></span></span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#535b6e\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"font-size:11px\"><i>Ce message vous a été envoyé à la suite du recueil de vos données suite à votre inscription sur ce site. La fréquence des envois est limitée, mais peut être plus importante en fonction de l'action de l'association. Vous avez la possibilité d'exercer vos droits d'accès, de rectification et de suppression en écrivant à l'adresse suivante : donnees@bobemploi.fr.</i></span></span></span></p>",
+                  "id": "jg1FsJV0huo-sk",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "border-color": "#E9EBF0",
+                    "border-style": "solid",
+                    "border-width": "1px",
+                    "container-background-color": "transparent",
+                    "padding": "10px 25px",
+                    "padding-bottom": "20px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "20px",
+                    "passport": {
+                      "id": "RsIVnSWBffR"
+                    },
+                    "width": "100%"
+                  },
+                  "id": "xysre17djaLvAL",
+                  "tagName": "mj-divider"
+                },
+                {
+                  "attributes": {
+                    "align": "right",
+                    "base-url": "https://www.mailjet.com/images/theme/v1/icons/ico-social/",
+                    "color": "#2C3449",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "google-href": "[[SHORT_PERMALINK]]",
+                    "google-icon-color": "#dc4e41",
+                    "google-sharer": false,
+                    "icon-size": "20px",
+                    "instagram-href": "[[SHORT_PERMALINK]]",
+                    "instagram-icon-color": "#3f729b",
+                    "instagram-sharer": false,
+                    "line-height": "22px",
+                    "linkedin-href": "[[SHORT_PERMALINK]]",
+                    "linkedin-icon-color": "#0077b5",
+                    "linkedin-sharer": false,
+                    "mode": "horizontal",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "yV1pnO1twDo"
+                    },
+                    "pinterest-href": "[[SHORT_PERMALINK]]",
+                    "pinterest-icon-color": "#bd081c",
+                    "pinterest-sharer": false,
+                    "text-decoration": "none",
+                    "text-mode": false
+                  },
+                  "children": [
+                    {
+                      "attributes": {
+                        "background-color": "#3b5998",
+                        "href": "https://www.facebook.com/bobemploi",
+                        "icon-color": "#3b5998",
+                        "name": "facebook-noshare",
+                        "passport": {
+                          "content": "Partager",
+                          "duplicated-background-color": "#3b5998",
+                          "id": "DIXbsMFXnymyC",
+                          "shareLink": false,
+                          "socialId": "facebook-id"
+                        },
+                        "sharer": false,
+                        "src": "https://www.mailjet.com/images/theme/v1/icons/ico-social/facebook.png"
+                      },
+                      "content": "",
+                      "id": "6NOALjkWpzUO3v",
+                      "tagName": "mj-social-element"
+                    },
+                    {
+                      "attributes": {
+                        "background-color": "#55acee",
+                        "href": "https://twitter.com/bobemploi",
+                        "icon-color": "#55acee",
+                        "name": "twitter-noshare",
+                        "passport": {
+                          "content": "Tweet",
+                          "duplicated-background-color": "#55acee",
+                          "id": "vA-fuyWpk-G7d",
+                          "shareLink": false,
+                          "socialId": "twitter-id"
+                        },
+                        "sharer": false,
+                        "src": "https://www.mailjet.com/images/theme/v1/icons/ico-social/twitter.png"
+                      },
+                      "content": "",
+                      "id": "0Xo49nfUwTqr3-",
+                      "tagName": "mj-social-element"
+                    }
+                  ],
+                  "id": "EAeBb9pkdIoZOc",
+                  "tagName": "mj-social"
+                }
+              ],
+              "id": "escE4zQGLkjxf3",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "tg6JfvDhLb4wPG",
+          "tagName": "mj-section"
+        }
+      ],
+      "id": "XBTQsfCBzMQ_v",
+      "tagName": "mj-body"
+    }
+  ],
+  "id": "etdZSGCbAhfr",
+  "tagName": "mjml"
+}

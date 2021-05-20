@@ -3,11 +3,13 @@ import PropTypes from 'prop-types'
 import React, {useCallback, useMemo} from 'react'
 
 import {inCityPrefix, lowerFirstLetter} from 'store/french'
+import isMobileVersion from 'store/mobile'
 
-import {Trans} from 'components/i18n'
-import {isMobileVersion} from 'components/mobile'
+import AppearingList from 'components/appearing_list'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import {useRadium} from 'components/radium'
-import {AppearingList, GrowingNumber, Tag} from 'components/theme'
+import Tag from 'components/tag'
 import Picto from 'images/advices/picto-commute.svg'
 
 import {CardProps, PercentageBoxes, useAdviceData} from './base'
@@ -30,7 +32,7 @@ const targetCityStyle: React.CSSProperties = {
   marginRight: 10,
 }
 const multiplierStyle: React.CSSProperties = {
-  color: colors.HOVER_GREEN,
+  color: colors.LIME_GREEN,
   fontWeight: 'bold',
   marginRight: 0,
 }
@@ -41,9 +43,9 @@ const CommuteCitySuggestionBase: React.FC<CommuteCitySuggestionProps> =
   const {city: {name}, isTargetCity, onClick, style, t, targetCity: {name: targetName}} = props
   const handleClick = useCallback((): void => {
     // TODO(cyrille): Add INSEE code to avoid sending user to an homonymous city.
-    const searchOrigin = encodeURIComponent(`${targetName}, france`)
-    const searchTarget = encodeURIComponent(`${name}, france`)
-    window.open(`https://www.google.fr/maps/dir/${searchOrigin}/${searchTarget}`, '_blank')
+    const searchOrigin = encodeURIComponent(`${targetName}, ${config.countryName}`)
+    const searchTarget = encodeURIComponent(`${name}, ${config.countryName}`)
+    window.open(`https://${config.googleTopLevelDomain}/maps/dir/${searchOrigin}/${searchTarget}`, '_blank')
     onClick?.()
   }, [onClick, name, targetName])
 
@@ -54,32 +56,34 @@ const CommuteCitySuggestionBase: React.FC<CommuteCitySuggestionProps> =
     'alignItems': 'center',
     'backgroundColor': '#fff',
     'border': `solid 1px ${colors.MODAL_PROJECT_GREY}`,
-    'cursor': 'pointer',
+    'color': 'inherit',
     'display': 'flex',
     'fontSize': 13,
     'fontWeight': 'bold',
     'height': 50,
     'padding': '0 20px',
+    'width': '100%',
     ...style,
   }), [style])
 
-  const [radiumProps] = useRadium<HTMLDivElement>({style: containerStyle})
+  const [radiumProps] = useRadium<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
+    {style: containerStyle})
 
   if (isTargetCity) {
     const {hasComplexTarget} = props
     const {prefix, cityName} = inCityPrefix(name || '', t)
     const hasSimpleLayout = !hasComplexTarget || isMobileVersion
-    return <div style={containerStyle} onClick={handleClick}>
+    return <button style={containerStyle} onClick={handleClick}>
       <span style={targetCityStyle}>
         {hasSimpleLayout ? t("Plus d'offres à\u00A0:") :
           t('{{cityName}}, votre ville', {cityName: name})}
       </span>
-      <div style={{flex: 1}} />
-      <div style={{fontStyle: 'italic', fontWeight: 'normal'}}>
+      <span style={{flex: 1}} />
+      <span style={{fontStyle: 'italic', fontWeight: 'normal'}}>
         {hasSimpleLayout ? null :
           t('Offres par habitant {{inCity}}\u00A0:', {inCity: prefix + cityName})}
-      </div> {hasSimpleLayout ? null : <PercentageBoxes percentage={1} />}
-    </div>
+      </span> {hasSimpleLayout ? null : <PercentageBoxes percentage={1} />}
+    </button>
   }
 
   const {distanceKm = 0, relativeOffersPerInhabitant = 0} = props.city
@@ -89,22 +93,22 @@ const CommuteCitySuggestionBase: React.FC<CommuteCitySuggestionProps> =
     backgroundColor: distanceKm > 20 ? colors.SQUASH : colors.GREENISH_TEAL,
   }
 
-  return <div {...radiumProps} onClick={handleClick}>
+  return <button {...radiumProps} onClick={handleClick}>
     <span style={{fontWeight: 'bold', marginRight: 10}}>
       {name}
     </span>
     <Tag style={tagStyle}>
       {` à ${Math.round(distanceKm)} km`}
     </Tag>
-    <div style={{flex: 1}} />
+    <span style={{flex: 1}} />
     <span>
       {roundedOffers > 1.1 ? <span style={{alignItems: 'center', display: 'flex'}}>
-        <div style={multiplierStyle}>
+        <span style={multiplierStyle}>
           {roundedOffers}x plus
-        </div> {isMobileVersion ? null : <PercentageBoxes percentage={roundedOffers} />}</span> :
+        </span> {isMobileVersion ? null : <PercentageBoxes percentage={roundedOffers} />}</span> :
         null}
     </span>
-  </div>
+  </button>
 }
 CommuteCitySuggestionBase.propTypes = {
   city: PropTypes.shape({
@@ -133,7 +137,7 @@ const Commute: React.FC<CardProps> = (props: CardProps): React.ReactElement|null
     project: {city: targetCity = {}, targetJob: {jobGroup: {name: jobGroupName = ''} = {}} = {}},
     t,
   } = props
-  const {cities = []} = useAdviceData<bayes.bob.CommutingCities>(props)
+  const {data: {cities = []}, loading} = useAdviceData<bayes.bob.CommutingCities>(props)
 
   const targetCityName = targetCity.name
   const otherCities = useMemo(
@@ -148,6 +152,10 @@ const Commute: React.FC<CardProps> = (props: CardProps): React.ReactElement|null
         style={suggestionStyle} onClick={handleExplore('city')} />),
     [otherCities, handleExplore, t, targetCity],
   )
+
+  if (loading) {
+    return loading
+  }
 
   if (!otherCitiesList.length) {
     return null
@@ -171,7 +179,7 @@ const Commute: React.FC<CardProps> = (props: CardProps): React.ReactElement|null
       </strong> ces deux dernières années&nbsp;:
     </Trans>
     <AppearingList style={{marginTop: 15}}>
-      {[targetCityList].concat(otherCitiesList)}
+      {[targetCityList, ...otherCitiesList]}
     </AppearingList>
   </div>
 }

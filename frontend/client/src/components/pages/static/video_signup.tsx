@@ -3,10 +3,9 @@ import React, {useState} from 'react'
 
 import {parseQueryString} from 'store/parse'
 
-import {LoginLink} from 'components/login'
-import {isMobileVersion} from 'components/mobile'
+import {LoginButton} from 'components/login'
+import isMobileVersion from 'store/mobile'
 import {PageWithNavigationBar} from 'components/navigation'
-import {Button} from 'components/theme'
 
 
 interface PageProps {
@@ -26,11 +25,9 @@ const style: React.CSSProperties = {
 const buttonStyle: React.CSSProperties = {
   fontSize: 15,
   letterSpacing: 1,
+  marginTop: 30,
   padding: '18px 28px',
   textTransform: 'uppercase',
-}
-const linkStyle = {
-  marginTop: 30,
 }
 
 
@@ -40,14 +37,13 @@ const VideoSignUpPage = ({location: {search}}: PageProps): React.ReactElement =>
     <iframe
       width={isMobileVersion ? 320 : 900} height={isMobileVersion ? 200 : 506}
       allowFullScreen={true}
-      src="https://www.youtube.com/embed/KSsVpeFqcaU?autoplay=1" frameBorder="0" />
-    <LoginLink
-      style={linkStyle} email={email}
+      src="https://www.youtube.com/embed/KSsVpeFqcaU?autoplay=1" frameBorder="0"
+      title={`Pourquoi ${config.productName}, par Paul Duan`} />
+    <LoginButton
+      style={buttonStyle} email={email} type="navigation"
       isSignUp={true} visualElement="video-signup">
-      <Button style={buttonStyle} type="navigation">
-        Commencez, c'est gratuit&nbsp;!
-      </Button>
-    </LoginLink>
+      Commencez, c'est gratuit&nbsp;!
+    </LoginButton>
   </PageWithNavigationBar>
 }
 VideoSignUpPage.propTypes = {

@@ -167,10 +167,9 @@ def load_applications_sample_df(database: Any) -> pd.DataFrame:
     def _rename_column(col: str) -> str:
         if '_french' in col:
             return f'{column_names[col[:-7]]}_french'
-        elif '_english' in col:
+        if '_english' in col:
             return f'{column_names[col[:-8]]}_english'
-        else:
-            return column_names[col]
+        return column_names[col]
 
     # Load codebook from spreadsheet and replace column codes with column names
     # everywhere

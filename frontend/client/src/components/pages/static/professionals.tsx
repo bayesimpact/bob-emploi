@@ -5,11 +5,12 @@ import {useDispatch} from 'react-redux'
 
 import {DispatchAllActions, sendProfessionalFeedback} from 'store/actions'
 
-import {InfoCollNotificationBox} from 'components/info_coll'
-import {isMobileVersion} from 'components/mobile'
+import Button from 'components/button'
+import ExternalLink from 'components/external_link'
+import isMobileVersion from 'store/mobile'
 import {StaticPage} from 'components/static'
 import {TestimonialCard, Testimonials} from 'components/testimonials'
-import {Button, ExternalLink, Textarea} from 'components/theme'
+import Textarea from 'components/textarea'
 
 
 const width = isMobileVersion ? 300 : 800
@@ -109,7 +110,7 @@ const ProfessionalsPageBase = (): React.ReactElement => {
     <iframe
       width={isMobileVersion ? '100%' : 560} height={315} frameBorder={0}
       src="https://www.youtube.com/embed/ZmOZhDdFrL0"
-      allowFullScreen={true} />
+      allowFullScreen={true} title={`Comment créer un compte sur ${config.productName}`} />
   </section>, [])
 
   const why = useMemo((): React.ReactNode => <section style={whiteBackgroundStyle}>
@@ -164,7 +165,6 @@ const ProfessionalsPageBase = (): React.ReactElement => {
   return <StaticPage
     page="professionals" isContentScrollable={true}
     style={{fontSize: 27, textAlign: 'center'}}>
-    <InfoCollNotificationBox />
     {title}
     {demo}
     {why}

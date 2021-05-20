@@ -17,4 +17,4 @@ const createSentryMiddleware = (dsn = config.sentryDSN): ReturnType<typeof creat
   })
 }
 
-export {createSentryMiddleware}
+export default createSentryMiddleware

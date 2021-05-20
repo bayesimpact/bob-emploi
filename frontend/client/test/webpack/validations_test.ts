@@ -34,7 +34,7 @@ describe('validateObjectId', (): void => {
     expect(res).to.equal(false)
   })
 
-  it('should return false for a short ObjectId', (): void => {
+  it('should return false for a long ObjectId', (): void => {
     const res = validateObjectId('e9d58eb646883a7d5bc9089a123ad12')
     expect(res).to.equal(false)
   })
@@ -48,5 +48,4 @@ describe('validateObjectId', (): void => {
     const res = validateObjectId('ObjectId("e9d58eb646883a7d5bc9089a")')
     expect(res).to.equal(false)
   })
-
 })

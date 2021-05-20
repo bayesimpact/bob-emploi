@@ -1,9 +1,0 @@
-changeEmailSettingsUrl
-firstName
-gender
-hasEnoughExperience
-isAdministrativeAssistant
-isOld
-isYoung
-jobName
-statusUpdateUrl

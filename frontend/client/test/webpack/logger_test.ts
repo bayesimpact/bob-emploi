@@ -1,7 +1,7 @@
 import {expect} from 'chai'
+import {subDays} from 'date-fns'
 import {RootState} from 'store/actions'
 import {Logger, daysSince} from 'store/logging'
-import moment from 'moment'
 
 describe('Logger', (): void => {
   const emptyState: RootState = {
@@ -11,7 +11,6 @@ describe('Logger', (): void => {
     asyncState: {
       errorMessage: undefined,
       isFetching: {},
-      pendingFetch: {},
     },
     user: {},
   }
@@ -54,7 +53,7 @@ describe('Logger', (): void => {
 
 describe('daysSince', (): void => {
   it('count the number of days elapsed since a given timestamp', (): void => {
-    const threeDaysAgo = moment().subtract(3, 'days').valueOf()
+    const threeDaysAgo = subDays(new Date(), 3).toISOString()
     expect(daysSince(threeDaysAgo)).to.eql(3)
   })
 })

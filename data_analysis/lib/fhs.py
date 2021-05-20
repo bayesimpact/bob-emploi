@@ -1,11 +1,11 @@
 """Module for helpers to work with the FHS dataset."""
 
-import collections
 import datetime
 from os import path
 import re
 import typing
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Final, Iterable, Iterator, List, Literal, Optional, Tuple, \
+    TypedDict, Union
 
 from bob_emploi.data_analysis.lib import migration_helpers
 
@@ -13,79 +13,126 @@ from bob_emploi.data_analysis.lib import migration_helpers
 
 # The main FHS table with a row for each unemployment period. In French it's
 # "Demande d'Emploi" (which means "Job Search") and is abbreviated as "de".
-UNEMPLOYMENT_PERIOD_TABLE = 'de'
+UNEMPLOYMENT_PERIOD_TABLE: Final = 'de'
 
 # A table containing number of hours worked in each month for job seekers that
 # are partially working.
-PART_TIME_WORK_TABLE = 'e0'
+PART_TIME_WORK_TABLE: Final = 'e0'
 
 # A table containing historical values for the targeted job when this one
 # change during one unemployment period.
-TARGETED_JOB_TABLE = 'rome'
+TARGETED_JOB_TABLE: Final = 'rome'
 
 # A table containing historical values for the training programs that job seekers
 # have followed.
-TRAINING_TABLE = 'p2'
+TRAINING_TABLE: Final = 'p2'
 
 
 # The fields in FHS.
 
 # Unique (inside a region) ID per job seeker: it can only be used as join key
 # between tables as it is recreated on each export from Pôle Emploi data.
-JOBSEEKER_ID_FIELD = 'IDX'
+JOBSEEKER_ID_FIELD: Final = 'IDX'
 
 # The FHS is split in multiple regions: because multiple job seeker can have the
 # same IDX but should be in different regions it can be distinguish them.
-JOBSEEKER_REGION_FIELD = 'region'
+JOBSEEKER_REGION_FIELD: Final = 'region'
 
 # Date at which a job seeker registered at Pôle Emploi.
-REGISRATION_DATE_FIELD = 'DATINS'
+REGISRATION_DATE_FIELD: Final = 'DATINS'
 
 # Reason the job seeker registered at Pôle Emploi. See RegistrationReason.
-REGISTRATION_REASON_FIELD = 'MOTINS'
+REGISTRATION_REASON_FIELD: Final = 'MOTINS'
 
 # Date at which the job seeker canceled their Pôle Emploi registration.
-CANCELATION_DATE_FIELD = 'DATANN'
+CANCELATION_DATE_FIELD: Final = 'DATANN'
 
 # Reason the job seeker canceled their Pôle Emploi registration. See
 # CancellationReason.
-CANCELATION_REASON_FIELD = 'MOTANN'
+CANCELATION_REASON_FIELD: Final = 'MOTANN'
 
 # Category of unemployment for a period.
-PERIOD_CATEGORY_FIELD = 'CATREGR'
+PERIOD_CATEGORY_FIELD: Final = 'CATREGR'
 
 # INSEE ID of the city in which the job seeker is looking for a job.
-CITY_ID_FIELD = 'DEPCOM'
+CITY_ID_FIELD: Final = 'DEPCOM'
 
 # ID of the job group (ROME) of the job that the job seeker is looking for.
-JOB_GROUP_ID_FIELD = 'ROME'
+JOB_GROUP_ID_FIELD: Final = 'ROME'
 
 # ID of the job (ROME appelation) that the job seeker is looking for.
-JOB_ID_FIELD = 'ROMEAPL'
+JOB_ID_FIELD: Final = 'ROMEAPL'
 
 # Month on which a job seeker worked partially.
-PART_TIME_WORK_MONTH_FIELD = 'MOIS'
+PART_TIME_WORK_MONTH_FIELD: Final = 'MOIS'
 
 # Amount of the salary that the job seeker is looking for.
-SALARY_AMOUNT_FIELD = 'SALMT'
+SALARY_AMOUNT_FIELD: Final = 'SALMT'
 
 # Unit for the salary in SALARY_AMOUNT_FIELD.
-SALARY_UNIT_FIELD = 'SALUNIT'
+SALARY_UNIT_FIELD: Final = 'SALUNIT'
 
 # Gender of the job seeker.
-GENDER_FIELD = 'SEXE'
+GENDER_FIELD: Final = 'SEXE'
 
 # Date at which the job seeker made its job group change.
-JOB_GROUP_START_DATE_FIELD = 'JOURDV'
+JOB_GROUP_START_DATE_FIELD: Final = 'JOURDV'
 
 # Date at which the job seeker made its job group change.
-JOB_GROUP_END_DATE_FIELD = 'JOURFV'
+JOB_GROUP_END_DATE_FIELD: Final = 'JOURFV'
 
 # Date at which the job seeker starts a training.
-TRAINING_START_DATE = 'P2DATDEB'
+TRAINING_START_DATE: Final = 'P2DATDEB'
 
 # Date at which the job seeker ends a training.
-TRAINING_END_DATE = 'P2DATFIN'
+TRAINING_END_DATE: Final = 'P2DATFIN'
+
+
+class _MetadataWithRome(TypedDict, total=False):
+    IDX: str
+    ROME: str
+
+
+class _UnemploymentPeriodData(_MetadataWithRome, total=False):
+    DATINS: datetime.date
+    DATANN: Optional[datetime.date]
+    CATREGR: Literal['1', '2', '3', '4', '5']
+    MOTINS: Literal[
+        '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        'Z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'I', 'J', 'K', 'Y',
+    ]
+    MOTANN: Literal[
+        '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15',
+        '16', '90', '91',
+    ]
+    DEPCOM: str
+    SEXE: Literal['1', '2']
+    NIVFOR: str
+
+
+class _PartTimeData(TypedDict):
+    MOIS: str
+
+
+class _TargetedJobData(_MetadataWithRome):
+    JOURDV: datetime.date
+    JOURFV: datetime.date
+
+
+class _TrainingData(_MetadataWithRome, total=False):
+    P2DATDEB: datetime.date
+    P2DATFIN: Optional[datetime.date]
+    P2NIVFOR: int
+    DEPCOM: str
+    FORMACOD: str
+    OBJFORM: str
+
+
+class _JobSeekerData(TypedDict, total=False):
+    de: List[_UnemploymentPeriodData]
+    e0: List[_PartTimeData]
+    rome: List[_TargetedJobData]
+    p2: List[_TrainingData]
 
 
 # Regular expression to search the number of the region in an FHS filename.
@@ -93,12 +140,13 @@ TRAINING_END_DATE = 'P2DATFIN'
 # it isolates "27" as the first group.
 _REGION_MATCHER = re.compile(r'/Reg(\d+)/')
 
+
 # Jobseeker criteria provided per unemployment period.
-_JobseekerCriteria = collections.namedtuple('JobseekerCriteria', [
-    'jobseeker_unique_id',
-    'code_rome',
-    'departement',
-    'gender'])
+class _JobseekerCriteria(typing.NamedTuple):
+    jobseeker_unique_id: str
+    code_rome: str
+    departement: Optional[str]
+    gender: Optional[str]
 
 
 def job_seeker_iterator(fhs_folder: str, tables: Iterable[str] = (UNEMPLOYMENT_PERIOD_TABLE,)) \
@@ -144,7 +192,7 @@ def job_seeker_iterator(fhs_folder: str, tables: Iterable[str] = (UNEMPLOYMENT_P
                 values.append(current)
                 next(i)
             job_seeker[table] = values
-        yield JobSeeker(key.IDX, key.region, job_seeker)
+        yield JobSeeker(key.IDX, key.region, typing.cast(_JobSeekerData, job_seeker))
 
 
 # A key representing a job seeker.
@@ -230,14 +278,14 @@ class PeekIterator(Iterable[_T]):
             self.done = True
 
 
-class JobSeeker(object):
+class JobSeeker:
     """A job seeker.
 
     This holds all the data we have about a job seeker in the FHS and helps get
     or compute properties that feels more natural.
     """
 
-    def __init__(self, job_seeker_id: int, region_id: str, data: Dict[str, List[Dict[str, Any]]]) \
+    def __init__(self, job_seeker_id: int, region_id: str, data: _JobSeekerData) \
             -> None:
         self._data = data
         self._job_seeker_id = job_seeker_id
@@ -248,7 +296,7 @@ class JobSeeker(object):
         self._data.get('p2', []).sort(key=lambda p2: p2[TRAINING_START_DATE])
 
     def _unemployment_periods(self, cover_holes_up_to: int, period_type: Optional[str]) \
-            -> 'DateIntervals':
+            -> 'DateIntervals[_UnemploymentPeriodData]':
         # Category A, B and C are defined by: CATREGR being 1, 2 or 3.
 
         # Find disjoint periods from "de" table which have CATREGR 1, 2, or 3.
@@ -264,13 +312,13 @@ class JobSeeker(object):
         if cover_holes_up_to >= 0:
             periods.cover_holes(
                 datetime.timedelta(days=cover_holes_up_to),
-                lambda m1, m2: dict(m2, **{
+                lambda m1, m2: typing.cast(_UnemploymentPeriodData, dict(m2, **{
                     REGISTRATION_REASON_FIELD: m1[REGISTRATION_REASON_FIELD],
-                    REGISRATION_DATE_FIELD: m1[REGISRATION_DATE_FIELD]}))
+                    REGISRATION_DATE_FIELD: m1[REGISRATION_DATE_FIELD]})))
 
         return periods
 
-    def all_training_periods(self) -> 'DateIntervals':
+    def all_training_periods(self) -> 'DateIntervals[_TrainingData]':
         """Periods of training at Pôle emploi for this job seeker.
 
         Returns:
@@ -282,7 +330,11 @@ class JobSeeker(object):
         """
 
         registration_periods = self._unemployment_periods(cover_holes_up_to=-1, period_type=None)
-        training_periods = []
+        training_periods: List[Tuple[
+            Union[str, datetime.date, None],
+            Union[str, datetime.date, None],
+            _TrainingData,
+        ]] = []
         for p2_record in self._data[TRAINING_TABLE]:
             last_registration_period = registration_periods.last_contiguous_period_before(
                 p2_record[TRAINING_START_DATE])
@@ -297,7 +349,8 @@ class JobSeeker(object):
 
         return DateIntervals(training_periods)
 
-    def all_registration_periods(self, cover_holes_up_to: int = -1) -> 'DateIntervals':
+    def all_registration_periods(self, cover_holes_up_to: int = -1) \
+            -> 'DateIntervals[_UnemploymentPeriodData]':
         """Periods of registration at Pôle emploi for this job seeker.
 
         Args:
@@ -319,7 +372,8 @@ class JobSeeker(object):
 
         return self._unemployment_periods(cover_holes_up_to, period_type=None)
 
-    def unemployment_abc_periods(self, cover_holes_up_to: int = 0) -> 'DateIntervals':
+    def unemployment_abc_periods(self, cover_holes_up_to: int = 0) \
+            -> 'DateIntervals[_UnemploymentPeriodData]':
         """Periods of category ABC unemployment for this job seeker.
 
         Args:
@@ -340,7 +394,8 @@ class JobSeeker(object):
 
         return self._unemployment_periods(cover_holes_up_to, 'abc')
 
-    def unemployment_a_periods(self, cover_holes_up_to: int = 0) -> 'DateIntervals':
+    def unemployment_a_periods(self, cover_holes_up_to: int = 0) \
+            -> 'DateIntervals[_UnemploymentPeriodData]':
         """Periods of category A unemployment for this job seeker.
 
         Args:
@@ -361,7 +416,7 @@ class JobSeeker(object):
 
         return self._unemployment_periods(cover_holes_up_to, 'a')
 
-    def _exclude_worked_months(self, periods: 'DateIntervals') -> None:
+    def _exclude_worked_months(self, periods: 'DateIntervals[_UnemploymentPeriodData]') -> None:
         """Exlude months where the job seeker worked at least one hour."""
 
         for work_time_month in self._data[PART_TIME_WORK_TABLE]:
@@ -369,15 +424,15 @@ class JobSeeker(object):
             periods.exclude_period(
                 begin,
                 end,
-                lambda m: dict(m, **{
+                lambda m: typing.cast(_UnemploymentPeriodData, dict(m, **{
                     REGISTRATION_REASON_FIELD: RegistrationReason.END_OF_PART_TIME_WORK,
-                    REGISRATION_DATE_FIELD: end}),  # pylint: disable=cell-var-from-loop
-                lambda m: dict(m, **{
+                    REGISRATION_DATE_FIELD: end})),  # pylint: disable=cell-var-from-loop
+                lambda m: typing.cast(_UnemploymentPeriodData, dict(m, **{
                     CANCELATION_REASON_FIELD: CancellationReason.STARTING_PART_TIME_WORK,
-                    CANCELATION_DATE_FIELD: begin}),  # pylint: disable=cell-var-from-loop
+                    CANCELATION_DATE_FIELD: begin})),  # pylint: disable=cell-var-from-loop
             )
 
-    def state_at_date(self, when: datetime.datetime) -> Optional['_PeriodMetadata']:
+    def state_at_date(self, when: datetime.date) -> Optional[_UnemploymentPeriodData]:
         """Computes the state of the job seeker at a given date.
 
         Raises:
@@ -389,7 +444,8 @@ class JobSeeker(object):
         """
 
         for period in self._data[UNEMPLOYMENT_PERIOD_TABLE]:
-            if period[CANCELATION_DATE_FIELD] and period[CANCELATION_DATE_FIELD] <= when:
+            cancelation_date = period[CANCELATION_DATE_FIELD]
+            if cancelation_date and cancelation_date <= when:
                 continue
             if period[REGISRATION_DATE_FIELD] > when:
                 return None
@@ -412,11 +468,12 @@ class JobSeeker(object):
         """
 
         unemployment_periods = self._unemployment_periods(cover_holes_up_to, period_type)
-        unemployment_periods.exclude_after(now, lambda m: dict(m, MOTANN=CancellationReason.NOW))
+        unemployment_periods.exclude_after(
+            now, lambda m: typing.cast(
+                _UnemploymentPeriodData, dict(m, MOTANN=CancellationReason.NOW)))
         job_group_history = self._data[TARGETED_JOB_TABLE]
         for unemployment_period in unemployment_periods:
-            periods_including_changes: List[Period] = []
-            state = unemployment_period.metadata
+            periods_including_changes: List[Period[_MetadataWithRome]] = []
             if job_group_history:
                 for change in self._data[TARGETED_JOB_TABLE]:
                     change_period = Period(
@@ -426,14 +483,16 @@ class JobSeeker(object):
                     if change_period.touches(unemployment_period):
                         periods_including_changes.append(change_period)
             periods_including_changes.append(unemployment_period)
-            for period in sorted(periods_including_changes, key=lambda p: p.end):
+            for period in sorted(periods_including_changes, key=lambda p: p.end or now):
                 state = period.metadata
                 jobseeker_unique_id = self.get_unique_id()
                 yield _JobseekerCriteria(
                     jobseeker_unique_id=jobseeker_unique_id,
                     code_rome=state[JOB_GROUP_ID_FIELD],
-                    departement=state.get(CITY_ID_FIELD),
-                    gender=state.get(GENDER_FIELD))
+                    # Note that state isn't always an _UnemploymentPeriodData: when it is, then the
+                    # get call will return the proper value, when it is not, it will return None.
+                    departement=typing.cast(_UnemploymentPeriodData, state).get(CITY_ID_FIELD),
+                    gender=typing.cast(_UnemploymentPeriodData, state).get(GENDER_FIELD))
 
     def get_unique_id(self) -> str:
         """Returns an unique ID for this jobseeker."""
@@ -441,7 +500,7 @@ class JobSeeker(object):
         return f'{self._job_seeker_id}_{self._region_id}'
 
 
-class RegistrationReason(object):
+class RegistrationReason:
     """Class enumerating reason for job seeker registration.
 
     These are the possible values for MOTINS.
@@ -473,7 +532,7 @@ class RegistrationReason(object):
 
 
 # TODO(pascal): Rename to CancelationReason (US spelling).
-class CancellationReason(object):
+class CancellationReason:
     """Class enumerating the reason for job seeker cancellation.
 
     These are the possible values of MOTANN.
@@ -501,15 +560,20 @@ class CancellationReason(object):
     STARTING_PART_TIME_WORK = '91'
 
 
-_PeriodMetadata = Dict[str, Any]
+class _AnyPeriod(typing.Protocol):
+    begin: Optional[datetime.date]
+    end: Optional[datetime.date]
 
 
-class Period(object):
+_MetadataType = typing.TypeVar('_MetadataType', covariant=True)
+
+
+class Period(typing.Generic[_MetadataType]):
     """Defines a single contiguous period of time (whole days)."""
 
     def __init__(
             self, begin: Union[str, datetime.date, None],
-            end: Union[str, datetime.date, None], metadata: _PeriodMetadata) -> None:
+            end: Union[str, datetime.date, None], metadata: _MetadataType) -> None:
         """Initialize with begin/end dates (or string dates) and metadata."""
 
         self.begin: Optional[datetime.date]
@@ -535,7 +599,7 @@ class Period(object):
             return (self.end - self.begin).days
         return None
 
-    def __lt__(self, other: 'Period') -> bool:
+    def __lt__(self, other: _AnyPeriod) -> bool:
         if other.begin is None:
             return False
         if self.begin is None:
@@ -545,7 +609,7 @@ class Period(object):
     def __eq__(self, other: Any) -> bool:
         return isinstance(other, Period) and self.as_tuple == other.as_tuple
 
-    def touches(self, other: 'Period') -> bool:
+    def touches(self, other: _AnyPeriod) -> bool:
         """Check if another period touches this one."""
 
         if self.begin and other.end and self.begin > other.end:
@@ -558,13 +622,13 @@ class Period(object):
         return repr(self.as_tuple)
 
 
-class DateIntervals(object):
+class DateIntervals(typing.Generic[_T]):
     """Defines potentially non-contiguous periods of time."""
 
     def __init__(self, periods: Iterable[Tuple[
             Union[str, datetime.date, None],
             Union[str, datetime.date, None],
-            _PeriodMetadata,
+            _T,
     ]]) -> None:
         """Initialize with a list of non-overlapping periods.
 
@@ -583,7 +647,7 @@ class DateIntervals(object):
 
         self._periods = sorted(Period(*p) for p in periods)
 
-    def __iter__(self) -> Iterator[Period]:
+    def __iter__(self) -> Iterator[Period[_T]]:
         for period in self._periods:
             yield period
 
@@ -596,17 +660,17 @@ class DateIntervals(object):
     def __eq__(self, other: Any) -> bool:
         return isinstance(other, self.__class__) and self._periods == other._periods
 
-    def first_contiguous_period(self) -> Optional[Period]:
+    def first_contiguous_period(self) -> Optional[Period[_T]]:
         """First contiguous period of time."""
 
         return self._periods[0] if self._periods else None
 
-    def last_contiguous_period(self) -> Optional[Period]:
+    def last_contiguous_period(self) -> Optional[Period[_T]]:
         """Last contiguous period of time."""
 
         return self._periods[-1] if self._periods else None
 
-    def last_contiguous_period_before(self, begin: datetime.date) -> Optional[Period]:
+    def last_contiguous_period_before(self, begin: datetime.date) -> Optional[Period[_T]]:
         """Last contiguous period of time before a given date."""
 
         periods_before = [p for p in self._periods if p.end and p.end < begin]
@@ -619,8 +683,8 @@ class DateIntervals(object):
 
     def exclude_period(
             self, begin: datetime.date, end: datetime.date,
-            metadata_cut_begin: Callable[[_PeriodMetadata], _PeriodMetadata],
-            metadata_cut_end: Callable[[_PeriodMetadata], _PeriodMetadata]) -> None:
+            metadata_cut_begin: Callable[[_T], _T],
+            metadata_cut_end: Callable[[_T], _T]) -> None:
         """Exclude a period from the existing interval.
 
         Note that the period to exclude can be completely unrelated to the
@@ -659,7 +723,7 @@ class DateIntervals(object):
 
     def exclude_after(
             self, date: datetime.date,
-            update_metadata: Callable[[_PeriodMetadata], _PeriodMetadata]) -> None:
+            update_metadata: Callable[[_T], _T]) -> None:
         """Exclude all dates after a given date."""
 
         periods = []
@@ -673,7 +737,7 @@ class DateIntervals(object):
 
     def cover_holes(
             self, max_duration: datetime.timedelta,
-            merge_metadata: Callable[[_PeriodMetadata, _PeriodMetadata], _PeriodMetadata]) \
+            merge_metadata: Callable[[_T, _T], _T]) \
             -> None:
         """Cover holes between contiguous periods.
 

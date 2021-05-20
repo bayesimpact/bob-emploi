@@ -4,22 +4,32 @@ import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import React, {useCallback, useEffect, useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {Link} from 'react-router-dom'
-import {connect} from 'react-redux'
+import {useDispatch, useSelector} from 'react-redux'
 
-import {DispatchAllActions, RootState, getCurrentUserLaborStats, openStatsPageAction,
+import {DispatchAllActions, RootState, getLaborStats, openStatsPageAction,
   statsPageIsShown} from 'store/actions'
 import {lowerFirstLetter} from 'store/french'
 import {localizeOptions} from 'store/i18n'
-import {getIMTURL, weeklyApplicationOptions} from 'store/job'
+import {genderizeJob, getIMTURL, weeklyApplicationOptions} from 'store/job'
+import isMobileVersion from 'store/mobile'
+import {getSearchLenghtCounts} from 'store/statistics'
 import {getJobSearchLengthMonths} from 'store/user'
 
-import {Trans} from 'components/i18n'
-import {isMobileVersion} from 'components/mobile'
+import Button from 'components/button'
+import ExternalLink from 'components/external_link'
+import Trans from 'components/i18n_trans'
 import {PageWithNavigationBar} from 'components/navigation'
-import {CategoriesTrain, DiplomaRequirementsHistogram, FrenchDepartementsMap, InterviewHistogram,
-  JobGroupStressBars, MostVaeDiplomaTable, StressPictorialChart,
-  DoughnutChart, PassionLevelHistogram, getSearchLenghtCounts} from 'components/stats_charts'
-import {Button, ExternalLink} from 'components/theme'
+import AutomationRiskGauge from 'components/statistics/automation_risk_gauge'
+import CountryMap from 'components/statistics/country_map'
+import DiplomaRequirementsHistogram from 'components/statistics/diploma_requirements_histogram'
+import DoughnutChart from 'components/statistics/doughnut_chart'
+import InterviewHistogram from 'components/statistics/interview_histogram'
+import JobGroupStressBars from 'components/statistics/job_groups_stress_bars'
+import MainChallengesTrain from 'components/statistics/vertical_main_challenges_train'
+import MostVaeDiplomaTable from 'components/statistics/most_vae_diploma_table'
+import PassionLevelHistogram from 'components/statistics/passion_level_histogram'
+import RelatedAutomationRisk from 'components/statistics/related_automation_risk'
+import StressPictorialChart from 'components/statistics/stress_pictorial_chart'
 import {BobThinksVisualCard} from './diagnostic'
 
 
@@ -107,31 +117,32 @@ React.ReactElement => {
 const BreadCrumbs = React.memo(BreadCrumbsBase)
 
 
-interface PageConnectedProps {
-  gender?: bayes.bob.Gender
-  highestDegree?: bayes.bob.DegreeLevel
-  laborStats: bayes.bob.LaborStatsData | undefined
-}
-
 interface PageConfig {
   baseUrl: string
   project: bayes.bob.Project
 }
 
-interface PageProps extends PageConnectedProps, PageConfig {
-  dispatch: DispatchAllActions
+interface PageProps extends PageConfig {
+  gender?: bayes.bob.Gender
+  highestDegree?: bayes.bob.DegreeLevel
+  laborStats: bayes.bob.LaborStatsData | undefined
 }
 
 
 // TODO(cyrille): Make sure to understand when/if the data is relevant.
-const RomeMobilitySectionBase: React.FC<PageProps> = (props: PageProps):
-React.ReactElement|null => {
-  const {project: {
-    localStats = {}, localStats: {
-      imt: {yearlyAvgOffersPer10Candidates: marketScore = 0} = {},
-      lessStressfulJobGroups = emptyArray} = {},
-    targetJob: {jobGroup = {}} = {},
-  } = {}} = props
+const RomeMobilitySectionBase = (
+  props: Pick<PageProps, 'laborStats'|'project'>,
+): React.ReactElement|null => {
+  const {
+    project: {targetJob: {jobGroup = {}} = {}} = {},
+    laborStats: {
+      localStats = {},
+      localStats: {
+        imt: {yearlyAvgOffersPer10Candidates: marketScore = 0} = {},
+        lessStressfulJobGroups = emptyArray,
+      } = {},
+    } = {},
+  } = props
   const {t} = useTranslation()
   const header = useMemo((): string => t(
     'Concurrence sur un métier proche du vôtre',
@@ -149,10 +160,10 @@ React.ReactElement|null => {
 const RomeMobilitySection = React.memo(RomeMobilitySectionBase)
 
 
-const MarketStressWaffleSectionBase: React.FC<PageProps> = (props: PageProps):
+const MarketStressWaffleSectionBase = (props: Pick<PageProps, 'gender'|'laborStats'>):
 React.ReactElement|null => {
   const {
-    gender, project: {localStats: {moreStressedJobseekersPercentage = undefined} = {}},
+    gender, laborStats: {localStats: {moreStressedJobseekersPercentage = undefined} = {}} = {},
   } = props
   const {t} = useTranslation()
   const header = useMemo(
@@ -169,34 +180,42 @@ React.ReactElement|null => {
 const MarketStressWaffleSection = React.memo(MarketStressWaffleSectionBase)
 
 
-const MarketStressMapSectionBase: React.FC<PageProps> = (props: PageProps):
+const MarketStressMapSectionBase = (props: Pick<PageProps, 'laborStats'|'project'>):
 React.ReactElement|null => {
   const {
-    laborStats: {jobGroupInfo: {departementScores = undefined} = {}} = {},
+    laborStats: {jobGroupInfo: {
+      admin1AreaScores = undefined,
+      departementScores = undefined,
+    } = {}} = {},
     project: {
-      city: {departementId: selectedDepartementId = undefined} = {},
+      city: {
+        departementId: selectedDepartementId = undefined,
+        regionId: selectedRegionId = undefined,
+      } = {},
       targetJob: {jobGroup: {name: jobGroupName = ''} = {}} = {},
     },
   } = props
-  const findSelectedDepartement = ({departementId}: bayes.bob.DepartementStats): boolean =>
-    departementId === selectedDepartementId
+  const areaScores = admin1AreaScores || departementScores
+  const findSelectedArea = ({areaId, departementId}: bayes.bob.DepartementStats): boolean =>
+    departementId === selectedDepartementId || areaId === selectedRegionId
   const {t} = useTranslation()
-  if (!departementScores ||
-    (departementScores.length < 5 && !departementScores.find(findSelectedDepartement))) {
+  if (!config.countryMapName || !areaScores ||
+    (areaScores.length < 5 && !areaScores.some(findSelectedArea))) {
     return null
   }
   return <Section header={t(
     'Carte de la concurrence en {{jobGroupName}}',
     {jobGroupName: lowerFirstLetter(jobGroupName)},
   )}>
-    <FrenchDepartementsMap
-      departements={departementScores} selectedDepartementId={selectedDepartementId} />
+    <CountryMap
+      stats={areaScores}
+      selectedAreaId={areaScores === admin1AreaScores ? selectedRegionId : selectedDepartementId} />
   </Section>
 }
 const MarketStressMapSection = React.memo(MarketStressMapSectionBase)
 
 
-const InterviewsCountSectionBase: React.FC<PageProps> = (props: PageProps):
+const InterviewsCountSectionBase = (props: Pick<PageProps, 'laborStats'|'project'>):
 React.ReactElement|null => {
   const {
     laborStats: {
@@ -229,7 +248,7 @@ React.ReactElement|null => {
 const InterviewsCountSection = React.memo(InterviewsCountSectionBase)
 
 
-const DiplomaRequirementsSectionBase: React.FC<PageProps> = (props: PageProps):
+const DiplomaRequirementsSectionBase = (props: Pick<PageProps, 'laborStats'|'highestDegree'>):
 React.ReactElement|null => {
   const {
     laborStats: {
@@ -252,7 +271,7 @@ React.ReactElement|null => {
 const DiplomaRequirementsSection = React.memo(DiplomaRequirementsSectionBase)
 
 
-const MostVaeDiplomaTableSectionBase: React.FC<PageProps> = (props: PageProps):
+const MostVaeDiplomaTableSectionBase = (props: Pick<PageProps, 'highestDegree'|'project'>):
 React.ReactElement|null => {
   const {
     highestDegree,
@@ -261,7 +280,8 @@ React.ReactElement|null => {
     } = {},
   } = props
   const {t} = useTranslation()
-  if (highestDegree === 'LICENCE_MAITRISE' || highestDegree === 'DEA_DESS_MASTER_PHD') {
+  if (!config.hasVAEData || highestDegree === 'LICENCE_MAITRISE' ||
+    highestDegree === 'DEA_DESS_MASTER_PHD') {
     return null
   }
   return <Section
@@ -278,7 +298,7 @@ React.ReactElement|null => {
 const MostVaeDiplomaTableSection = React.memo(MostVaeDiplomaTableSectionBase)
 
 
-const ApplicationDistributionSectionBase: React.FC<PageProps> = (props: PageProps):
+const ApplicationDistributionSectionBase = (props: Pick<PageProps, 'laborStats'|'project'>):
 React.ReactElement|null => {
   const {
     laborStats: {
@@ -303,7 +323,7 @@ React.ReactElement|null => {
 const ApplicationDistributionSection = React.memo(ApplicationDistributionSectionBase)
 
 
-const MotivationDistributionSectionBase: React.FC<PageProps> = (props: PageProps):
+const MotivationDistributionSectionBase = (props: Pick<PageProps, 'laborStats'|'project'>):
 React.ReactElement|null => {
   const {
     laborStats: {
@@ -320,7 +340,7 @@ React.ReactElement|null => {
   if (!passionLevelCounts) {
     return null
   }
-  const searchLengthMonths = getJobSearchLengthMonths(project) || 0
+  const searchLengthMonths = getJobSearchLengthMonths(project)
   const searchLengthCounts = getSearchLenghtCounts(searchLengthMonths, passionLevelCounts) || []
   if (!searchLengthCounts.length) {
     return null
@@ -338,6 +358,42 @@ React.ReactElement|null => {
 }
 const MotivationDistributionSection = React.memo(MotivationDistributionSectionBase)
 
+
+const AutomationRiskSectionBase = (props: Pick<PageProps, 'gender' | 'laborStats' | 'project'>):
+null|React.ReactElement => {
+  const {
+    gender,
+    laborStats: {jobGroupInfo: {automationRisk = 0} = {}} = {},
+    project: {targetJob},
+  } = props
+  const {t} = useTranslation()
+  if (!automationRisk || !targetJob) {
+    return null
+  }
+  const jobName = lowerFirstLetter(genderizeJob(targetJob, gender))
+  return <Section header={t("Risque d'automatisation du métier")}>
+    <AutomationRiskGauge percent={automationRisk} jobName={jobName} />
+  </Section>
+}
+const AutomationRiskSection = React.memo(AutomationRiskSectionBase)
+
+
+const RelatedAutomationRiskSectionBase = ({laborStats = {}}: Pick<PageProps, 'laborStats'>):
+null|React.ReactElement => {
+  const {t} = useTranslation()
+  const {jobGroupInfo, jobGroupInfo: {relatedJobGroups = emptyArray} = {}} = laborStats
+  const targetJobGroups = useMemo(() => [{jobGroup: jobGroupInfo}], [jobGroupInfo])
+  if (!relatedJobGroups.some(({jobGroup: {automationRisk = 0} = {}}) => automationRisk)) {
+    return null
+  }
+  return <Section header={t("Risque d'automatisation de métiers proches")}>
+    <RelatedAutomationRisk
+      // TODO(cyrille): Update source once we have data for different deployments.
+      areMarketScoresShown={true} source="RSA Future of Work 2017"
+      jobGroups={relatedJobGroups} targetJobGroups={targetJobGroups} />
+  </Section>
+}
+const RelatedAutomationRiskSection = React.memo(RelatedAutomationRiskSectionBase)
 
 // A React hook to get the user's scroll percentage in the page, 0 when the window is at the top
 // of the document, 1 when it's at the bottom.
@@ -366,48 +422,47 @@ const useScroll = (): number => {
 }
 
 
-const pageHeaderStyle: React.CSSProperties = {
-  margin: '0 auto',
+const contentStyle: React.CSSProperties = {
+  margin: '50px auto',
   maxWidth: 600,
-  padding: '0 20px',
-  textAlign: 'center',
+  paddingTop: 50,
+}
+const imtLinkStyle: React.CSSProperties = {
+  alignItems: 'center',
+  border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
+  display: 'inline-flex',
+  fontSize: 13,
+  fontWeight: 'bold',
 }
 
-const StatisticsPageBase: React.FC<PageProps> = (props: PageProps): React.ReactElement => {
-  const {baseUrl, dispatch, gender, laborStats, project} = props
+
+const StatisticsSectionsBase = ({project}: {project: bayes.bob.Project}): React.ReactElement => {
+  const dispatch = useDispatch<DispatchAllActions>()
+  const gender = useSelector(({user}: RootState) => user.profile?.gender)
+  const highestDegree = useSelector(({user}: RootState) => user.profile?.highestDegree)
+  const {
+    city, diagnostic: {categories = undefined} = {}, localStats, projectId, targetJob,
+  } = project
+  const localId = `${targetJob?.jobGroup?.romeId || ''}:${city?.departementId || ''}`
+  // TODO(cyrille): Consider using useCachedData.
+  const additionalLaborStats = useSelector(
+    ({app: {laborStats}}: RootState) => laborStats?.[localId] || undefined,
+  )
   const scroll = useScroll()
   useEffect((): void => {
-    dispatch(statsPageIsShown(project))
+    if (projectId) {
+      dispatch(statsPageIsShown(project))
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, project.projectId])
-  const hasLaborStats = !!laborStats
+  }, [dispatch, projectId])
+  const hasLaborStats = !!additionalLaborStats
   useEffect((): void => {
     if (!hasLaborStats) {
-      dispatch(getCurrentUserLaborStats())
+      dispatch(getLaborStats(project))
     }
-  }, [dispatch, hasLaborStats])
+  }, [dispatch, hasLaborStats, project])
   const {t} = useTranslation()
   const handleIMTLinkClick = useCallback(() => dispatch(openStatsPageAction), [dispatch])
-  const {city, diagnostic: {categoryId = '', categories = undefined} = {},
-    targetJob} = project
-  const pageStyle: React.CSSProperties = {
-    backgroundColor: '#fff',
-    padding: isMobileVersion ? 20 : '0 0 50px',
-    position: 'relative',
-  }
-  const contentStyle: React.CSSProperties = {
-    borderTop: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
-    margin: '50px auto',
-    maxWidth: 600,
-    paddingTop: 50,
-  }
-  const imtLinkStyle: React.CSSProperties = {
-    alignItems: 'center',
-    border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
-    display: 'inline-flex',
-    fontSize: 13,
-    fontWeight: 'bold',
-  }
   const scrollBarStyle: React.CSSProperties = {
     backgroundColor: colors.BOB_BLUE,
     height: 5,
@@ -419,11 +474,70 @@ const StatisticsPageBase: React.FC<PageProps> = (props: PageProps): React.ReactE
     width: `${scroll * 100}%`,
     zIndex: 2,
   }
+  const externalLmiURL = getIMTURL(t, targetJob, city)
+  const laborStats = useMemo((): bayes.bob.LaborStatsData => ({
+    ...localStats ? {localStats} : undefined,
+    ...additionalLaborStats,
+  }), [localStats, additionalLaborStats])
+  return <React.Fragment>
+    {isMobileVersion ? null : <div style={scrollBarStyle} />}
+    <div style={contentStyle}>
+      {categories ? <Section header={t('Facteurs pris en compte pour votre score')}>
+        <MainChallengesTrain
+          hasFirstBlockerTag={true} mainChallenges={categories} gender={gender} />
+      </Section> : null}
+      <MarketStressWaffleSection {...{gender, laborStats}} />
+      <RomeMobilitySection {...{laborStats, project}} />
+      <MarketStressMapSection {...{laborStats, project}} />
+      <InterviewsCountSection {...{laborStats, project}} />
+      <DiplomaRequirementsSection {...{highestDegree, laborStats}} />
+      <MostVaeDiplomaTableSection {...{highestDegree, project}} />
+      <ApplicationDistributionSection {...{laborStats, project}} />
+      <MotivationDistributionSection {...{laborStats, project}} />
+      <AutomationRiskSection {...{gender, laborStats, project}} />
+      <RelatedAutomationRiskSection {...{laborStats}} />
+    </div>
+    {externalLmiURL ? <section style={{marginTop: 50, textAlign: 'center'}}>
+      <ExternalLink
+        onClick={handleIMTLinkClick}
+        href={externalLmiURL} style={{textDecoration: 'none'}}>
+        <Button type="discreet" isRound={true} isNarrow={true} style={imtLinkStyle}>
+          {t("Accéder à plus d'informations sur le marché du travail")}
+          <ChevronRightIcon size={18} style={{marginRight: -7}} />
+        </Button>
+      </ExternalLink>
+      {config.externalLmiSiteName ? <div style={{fontSize: 11, fontStyle: 'italic', marginTop: 8}}>
+        {t('Vous allez être redirigé·e vers un site de {{externalLmiSiteName}}', {
+          context: gender,
+          externalLmiSiteName: config.externalLmiSiteName,
+        })}
+      </div> : null}
+    </section> : null}
+  </React.Fragment>
+}
+const StatisticsSections = React.memo(StatisticsSectionsBase)
+
+
+const pageHeaderStyle: React.CSSProperties = {
+  borderBottom: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
+  margin: '0 auto',
+  maxWidth: 600,
+  padding: '0 20px',
+  textAlign: 'center',
+}
+
+const StatisticsPageBase: React.FC<PageConfig> = (props: PageConfig): React.ReactElement => {
+  const {baseUrl, project} = props
+  const {diagnostic: {categoryId = ''} = {}} = project
+  const {t} = useTranslation()
+  const pageStyle: React.CSSProperties = {
+    backgroundColor: '#fff',
+    padding: isMobileVersion ? 20 : '0 0 50px',
+    position: 'relative',
+  }
   const headerText = isMobileVersion ? t('Information principale') :
     t('Statistiques pour mieux comprendre votre diagnostic')
-  return <PageWithNavigationBar
-    page="statistiques" onBackClick={baseUrl} isLogoShown={true} style={pageStyle}>
-    {isMobileVersion ? null : <div style={scrollBarStyle} />}
+  return <PageWithNavigationBar page="statistiques" onBackClick={baseUrl} style={pageStyle}>
     {isMobileVersion ? null : <BreadCrumbs baseUrl={baseUrl} style={{height: 50}} />}
     {isMobileVersion && categoryId ?
       <Section header={headerText}>
@@ -433,42 +547,10 @@ const StatisticsPageBase: React.FC<PageProps> = (props: PageProps): React.ReactE
       </Section> : <header style={pageHeaderStyle}>
         <h1 style={{margin: 0}}>{headerText}</h1>
       </header>}
-    <div style={contentStyle}>
-      {categories ? <Section header={t('Facteurs pris en compte pour votre score')}>
-        <CategoriesTrain hasFirstBlockerTag={true} categories={categories} gender={gender} />
-      </Section> : null}
-      <MarketStressWaffleSection {...props} />
-      <RomeMobilitySection {...props} />
-      <MarketStressMapSection {...props} />
-      <InterviewsCountSection {...props} />
-      <DiplomaRequirementsSection {...props} />
-      <MostVaeDiplomaTableSection {...props} />
-      <ApplicationDistributionSection {...props} />
-      <MotivationDistributionSection {...props} />
-    </div>
-    <section style={{marginTop: 50, textAlign: 'center'}}>
-      <ExternalLink
-        onClick={handleIMTLinkClick}
-        href={getIMTURL(targetJob, city)} style={{textDecoration: 'none'}}>
-        <Button type="discreet" isRound={true} isNarrow={true} style={imtLinkStyle}>
-          {t("Accéder à plus d'informations sur le marché du travail")}
-          <ChevronRightIcon size={18} style={{marginRight: -7}} />
-        </Button>
-      </ExternalLink>
-      <div style={{fontSize: 11, fontStyle: 'italic', marginTop: 8}}>
-        {t('Vous allez être redirigé·e vers un site de Pôle emploi', {context: gender})}
-      </div>
-    </section>
+    <StatisticsSections project={project} />
   </PageWithNavigationBar>
 }
-const StatisticsPage = connect(
-  ({app: {laborStats = {}}, user}: RootState, {project: {projectId}}: PageConfig):
-  PageConnectedProps => ({
-    gender: user.profile ? user.profile.gender : undefined,
-    highestDegree: user.profile ? user.profile.highestDegree : undefined,
-    laborStats: projectId && laborStats[projectId] || undefined,
-  }),
-)(React.memo(StatisticsPageBase))
+const StatisticsPage = React.memo(StatisticsPageBase)
 
 
-export {StatisticsPage, RomeMobilitySection}
+export {StatisticsPage, StatisticsSections, RomeMobilitySection}

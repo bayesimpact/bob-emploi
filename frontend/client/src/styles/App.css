@@ -54,6 +54,16 @@ input[type=number]::-webkit-outer-spin-button {
   margin: 0;
 }
 
+button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+}
+
 button.login.google-login {
   background: #dc4e41;
   padding: 7px 18px 7px 10px;
@@ -83,7 +93,6 @@ button.login {
   border: none;
   border-radius: 100px;
   color: #fff;
-  cursor: pointer;
   font-size: 14px;
   height: 41px;
   letter-spacing: 0.4px;
@@ -216,6 +225,15 @@ button.login .fa {
   color: #9596a0 !important;
 }
 
+.no-scrollbars::-webkit-scrollbar {
+  height: 0 !important;
+  width: 0 !important;
+}
+.no-scrollbars {
+  overflow: -moz-scrollbars-none;
+  -ms-overflow-style: none;
+}
+
 /* React Select adjustments.
  *
  * - Keep the same height as other inputs.
@@ -278,6 +296,11 @@ input::-ms-reveal, input::-ms-clear {
     25% {-webkit-transform:translateY(-35%)}
     75% {-webkit-transform:translateY(35%)}
     100% {-webkit-transform:translateY(0%)}
+}
+
+@keyframes spin {
+    0% {transform: rotate(0deg)}
+    100% {transform: rotate(360deg)}
 }
 
 @import url('https://fonts.googleapis.com/css?family=Droid+Serif:italic&subset=latin,latin-ext')

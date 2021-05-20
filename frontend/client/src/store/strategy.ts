@@ -1,4 +1,4 @@
-import {getStrategyGoals} from 'store/french'
+import {getStrategyGoals} from 'store/i18n'
 
 type ValidWorkingStrategy = bayes.bob.WorkingStrategy & {strategyId: string}
 const getStartedStrategy = (project: bayes.bob.Project, sId: string): ValidWorkingStrategy =>

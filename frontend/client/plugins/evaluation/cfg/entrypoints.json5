@@ -1,0 +1,8 @@
+{
+  eval: {
+    entry: './src/entry',
+    htmlFilename: 'eval.html',
+    prefixes: ['/eval'],
+    usesHotLoader: true,
+  },
+}

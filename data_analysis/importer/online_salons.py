@@ -130,7 +130,7 @@ def _isodate_from_string(date_string: str, is_end_of_day: bool = False) -> str:
     return date.isoformat() + 'Z'
 
 
-class _OnlineSalonRule(object):
+class _OnlineSalonRule:
 
     def __init__(
             self, rule: online_salon_pb2.SalonFilterRule,
@@ -194,7 +194,8 @@ def json2dicts(
         _OnlineSalonRule(rule, french_regions_tsv, prefix_tsv)
         for _, rule in mongo.collection_to_proto_mapping(
             airtable_to_protos.airtable2dicts(
-                'appXmyc7yYj0pOcae', 'tbl6eAgUh8JGoiYnp', 'SalonFilterRule',
+                collection_name='localisation', base_id='appXmyc7yYj0pOcae',
+                table='tbl6eAgUh8JGoiYnp', proto='SalonFilterRule',
                 view='Ready to Import'),
             online_salon_pb2.SalonFilterRule)
     ]

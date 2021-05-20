@@ -2,8 +2,10 @@ import {TOptions} from 'i18next'
 import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
-import {Trans} from 'components/i18n'
-import {DataSource, GrowingNumber, ExternalLink} from 'components/theme'
+import ExternalLink from 'components/external_link'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
+import DataSource from 'components/data_source'
 import Picto from 'images/advices/picto-better-job-in-group.svg'
 
 import {ActionWithHandyLink, CardProps, ExpandableAction, MethodSuggestionList} from './base'
@@ -42,32 +44,32 @@ const AlternanceMethod: React.FC<CardProps> = (props: CardProps): React.ReactEle
     plutôt que de chercher son centre de formation, augmente ses chances de réussir.
   </Trans>
   const tOptions = useMemo((): TOptions => ({context: gender}), [gender])
-  return <MethodSuggestionList title={title} headerContent={subtitle}>
+  return <MethodSuggestionList title={title} headerContent={subtitle} isNotClickable={true}>
     {hasHandicap ? <ActionWithHandyLink
-      isNotClickable={true} onClick={handleClick}
+      onClick={handleClick}
       linkName={t("Découvrir l'alternance")} linkIntro={t('Se renseigner\u00A0:')}
       discoverUrl="https://www.service-public.fr/particuliers/vosdroits/F219">
       {t("Contrat d'Apprentissage")}
     </ActionWithHandyLink> : isYoung ? <ActionWithHandyLink
-      isNotClickable={true} onClick={handleClick}
+      onClick={handleClick}
       linkName={t("Découvrir l'alternance")} linkIntro={t('Se renseigner\u00A0:')}
       discoverUrl="https://www.alternance.emploi.gouv.fr/portail_alternance/jcms/recleader_6113/decouvrir-l-alternance">
       {t("Contrat d'Apprentissage ou Contrat de Professionalisation\u00A0?")}
     </ActionWithHandyLink> : <ActionWithHandyLink
-      isNotClickable={true} onClick={handleClick}
+      onClick={handleClick}
       linkName={t('Voir les conditions')} linkIntro={t('Se renseigner\u00A0:')}
       discoverUrl="https://www.pole-emploi.fr/employeur/le-contrat-de-professionnalisation-@/article.jspz?id=60624">
       {t("Vérifier si c'est pour vous")}
     </ActionWithHandyLink>}
     <ActionWithHandyLink
-      isNotClickable={true} onClick={handleClick}
+      onClick={handleClick}
       linkName={t("Portail de l'alternance")} linkIntro={t('Simulateur\u00A0:')}
       discoverUrl="https://www.alternance.emploi.gouv.fr/portail_alternance/jcms/gc_5504/simulateur-employeur">
       {t('Simulez votre rémunération')}
     </ActionWithHandyLink>
     <ExpandableAction
       title={t("Identifiez 3 débouchés possibles d'une formation")}
-      contentName={t('comment')} onContentShown={handleClick} isMethodSuggestion={true}>
+      contentName={t('comment')} onContentShown={handleClick}>
       <Trans t={t} tOptions={tOptions}>
         Pour donner une impression de professionnalisme, lorsque vous contactez une entreprise
         pour une alternance, soyez clair·e sur le poste que vous visez. Par exemple, si vous
@@ -78,7 +80,7 @@ const AlternanceMethod: React.FC<CardProps> = (props: CardProps): React.ReactEle
       </Trans>
     </ExpandableAction>
     <ExpandableAction
-      title={t("Préparez que dire à l'entreprise")} isMethodSuggestion={true}
+      title={t("Préparez que dire à l'entreprise")}
       contentName={t("un exemple d'argumentation")}
       onContentShown={handleClick}>
       <div>

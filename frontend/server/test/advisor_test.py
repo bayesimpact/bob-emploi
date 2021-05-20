@@ -1,6 +1,7 @@
 """Unit tests for the bob_emploi.frontend.advisor module."""
 
 import datetime
+import os
 from os import path
 import re
 import time
@@ -11,34 +12,34 @@ from unittest import mock
 
 import mongomock
 
+from bob_emploi.common.python import now
 from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import advisor
-from bob_emploi.frontend.server import now
+from bob_emploi.frontend.server import i18n
+from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server.test import mailjetmock
 from bob_emploi.frontend.server.test import scoring_test
 
 
-_TEMPLATE_PATH = path.join(path.dirname(path.dirname(__file__)), 'asynchronous/mail/templates')
+_TEMPLATE_PATH = path.join(path.dirname(path.dirname(__file__)), 'mail/templates')
+_FAKE_TRANSLATIONS_FILE = path.join(path.dirname(__file__), 'testdata/translations.json')
 
 
 class _BaseTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.database = mongomock.MongoClient().test
+        self.database = mongo.NoPiiMongoDatabase(mongomock.MongoClient().test)
         self.database.action_templates.insert_one({
             '_id': 'rec1CWahSiEtlwEHW',
             'goal': 'Reorientation !',
         })
-        self.database.translations.insert_one({
-            'string': 'de {job_name}',
-            'fr@tu': 'de {job_name}',
-        })
+        i18n.cache.clear()
 
         self.user = user_pb2.User(
             features_enabled=user_pb2.Features(advisor=user_pb2.ACTIVE, workbench=user_pb2.ACTIVE),
@@ -115,8 +116,9 @@ class MaybeAdviseTestCase(_BaseTestCase):
         self.assertEqual(1, len(mails_sent), msg=mails_sent)
         data = mails_sent[0].properties['Variables']
         with open(path.join(_TEMPLATE_PATH, 'activation-email', 'vars.txt'), 'r') as vars_file:
-            template_vars = {v.strip() for v in vars_file}
-        self.assertEqual(template_vars, set(data.keys()))
+            template_vars = {v.strip() for v in vars_file if not v.startswith('#')}
+        self.assertFalse(
+            template_vars - set(data.keys()), msg='Some variables from the email are not given')
 
         self.assertEqual('10 juin 2018', data['date'])
         self.assertEqual('Margaux', data['firstName'])
@@ -132,6 +134,91 @@ class MaybeAdviseTestCase(_BaseTestCase):
             rf'^{base_url}&auth=\d+\.[a-f0-9]+&coachingEmailFrequency=UNKNOWN_EMAIL_FREQUENCY&'
             r'hl=fr%40tu$')
         self.assertEqual('', data['isCoachingEnabled'])
+        self.assertEqual('Bob', data['productName'])
+        self.assertEqual('https://www.bob-emploi.fr', data['baseUrl'])
+
+    @mock.patch.dict(os.environ, {'I18N_TRANSLATIONS_FILE': _FAKE_TRANSLATIONS_FILE})
+    @mock.patch(now.__name__ + '.get')
+    @mailjetmock.patch()
+    def test_activation_email_in_english(self, mock_now: mock.MagicMock) -> None:
+        """Test that the date is set in English in the activation email."""
+
+        mock_now.return_value = datetime.datetime(2018, 6, 10)
+
+        self.user.profile.locale = 'en'
+        project = project_pb2.Project()
+        self.database.advice_modules.insert_one({
+            'adviceId': 'spontaneous-application',
+            'categories': ['first'],
+            'triggerScoringModel': 'constant(2)',
+            'isReadyForProd': True,
+        })
+
+        advisor.maybe_advise(self.user, project, self.database, 'http://base.example.com')
+
+        mails_sent = mailjetmock.get_all_sent_messages()
+        self.assertEqual(1, len(mails_sent), msg=mails_sent)
+        data = mails_sent[0].properties['Variables']
+
+        self.assertEqual('June 10 2018', data['date'])
+        self.assertIn('mailto:?body=Hi%2C%0A%0A', data['viralityTemplate'])
+        self.assertIn(
+            'subject=It+made+me+think+about+you%E2%80%A6', data['viralityTemplate'])
+
+    @mock.patch(now.__name__ + '.get')
+    @mailjetmock.patch()
+    def test_activation_email_in_english_uk(self, mock_now: mock.MagicMock) -> None:
+        """Test that the date is set in English for the UK in the activation email."""
+
+        mock_now.return_value = datetime.datetime(2018, 6, 10)
+
+        self.user.profile.locale = 'en_UK'
+        project = project_pb2.Project()
+        self.database.advice_modules.insert_one({
+            'adviceId': 'spontaneous-application',
+            'categories': ['first'],
+            'triggerScoringModel': 'constant(2)',
+            'isReadyForProd': True,
+        })
+
+        advisor.maybe_advise(self.user, project, self.database, 'http://base.example.com')
+
+        mails_sent = mailjetmock.get_all_sent_messages()
+        self.assertEqual(1, len(mails_sent), msg=mails_sent)
+        data = mails_sent[0].properties['Variables']
+
+        self.assertEqual('June 10 2018', data['date'])
+
+    @mock.patch(advisor.logging.__name__ + '.exception')
+    @mock.patch(now.__name__ + '.get')
+    @mailjetmock.patch()
+    def test_activation_email_in_spanish(
+            self, mock_now: mock.MagicMock, mock_logger: mock.MagicMock) -> None:
+        """Test that we log an error when sending the activation email in an unknown locale."""
+
+        mock_now.return_value = datetime.datetime(2018, 6, 10)
+
+        self.user.profile.locale = 'es'
+        project = project_pb2.Project()
+        self.database.advice_modules.insert_one({
+            'adviceId': 'spontaneous-application',
+            'categories': ['first'],
+            'triggerScoringModel': 'constant(2)',
+            'isReadyForProd': True,
+        })
+
+        advisor.maybe_advise(self.user, project, self.database, 'http://base.example.com')
+
+        mails_sent = mailjetmock.get_all_sent_messages()
+        self.assertEqual(1, len(mails_sent), msg=mails_sent)
+
+        mock_logger.assert_called()
+        for call_args in mock_logger.call_args_list:
+            error = call_args[0][0] % call_args[0][1:]
+            if 'Sending an email with an unknown locale: es' in error:
+                break
+        else:
+            self.fail(f'1234 was never logged as an error\n{mock_logger.call_args_list}')
 
     @mailjetmock.patch()
     def test_missing_email_address(self) -> None:
@@ -377,6 +464,7 @@ class MaybeAdviseTestCase(_BaseTestCase):
     @mock.patch(advisor.scoring.scoring_base.__name__ + '.SCORING_MODELS', new_callable=dict)
     @mock.patch(advisor.logging.__name__ + '.exception')
     @mailjetmock.patch()
+    @mock.patch.dict(os.environ, {'I18N_TRANSLATIONS_FILE': _FAKE_TRANSLATIONS_FILE})
     def test_module_crashes(
             self, mock_logger: mock.MagicMock,
             mock_scoring_models: Dict[str, Any]) -> None:
@@ -410,6 +498,7 @@ class MaybeAdviseTestCase(_BaseTestCase):
             },
         ])
 
+        self.user.profile.locale = 'fr'
         advisor.maybe_advise(self.user, project, self.database)
 
         self.assertEqual(['network'], [a.advice_id for a in project.advices])
@@ -528,6 +617,7 @@ class OverrideAdviceTestCase(_BaseTestCase):
             'isReadyForProd': True,
         })
         self.database.specific_to_job_advice.insert_one({
+            'id': 'baker',
             'title': 'Présentez-vous au chef boulanger dès son arrivée tôt le matin',
             'shortTitle': 'Astuces de boulanger',
             'goal': 'impressionner le patron',
@@ -562,6 +652,50 @@ class OverrideAdviceTestCase(_BaseTestCase):
             [diagnostic_pb2.MARKET_DIAGNOSTIC, diagnostic_pb2.PROJECT_DIAGNOSTIC],
             advice.diagnostic_topics)
         self.assertEqual('impressionner le patron', advice.goal)
+
+    @mock.patch.dict(os.environ, {'I18N_TRANSLATIONS_FILE': _FAKE_TRANSLATIONS_FILE})
+    def test_advice_specific_to_job_override_i18n(self) -> None:
+        """Test that the advisor translate overrides with the "Specific to Job" module."""
+
+        self.user.profile.locale = 'en'
+        self.database.translations.insert_many([
+            {'string': 'specificToJobAdvice:baker:title', 'en': 'Get there early'},
+            {'string': 'Astuces de boulanger', 'en': 'Baker tips'},
+        ])
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(job_group=job_pb2.JobGroup(rome_id='D1102')),
+        )
+        self.database.advice_modules.insert_one({
+            'adviceId': 'custom-advice-id',
+            'categories': ['first'],
+            'triggerScoringModel': 'advice-specific-to-job',
+            'isReadyForProd': True,
+        })
+        self.database.specific_to_job_advice.insert_one({
+            'id': 'baker',
+            'title': 'Présentez-vous au chef boulanger dès son arrivée tôt le matin',
+            'shortTitle': 'Astuces de boulanger',
+            'goal': 'impressionner le patron',
+            'filters': ['for-job-group(D1102)', 'not-for-job(12006)'],
+            'cardText':
+            'Allez à la boulangerie la veille pour savoir à quelle '
+            'heure arrive le chef boulanger.',
+            'expandedCardHeader': "Voilà ce qu'il faut faire",
+            'expandedCardItems': [
+                'Se présenter aux boulangers entre 4h et 7h du matin.',
+                'Demander au vendeur / à la vendeuse à quelle heure arrive le chef le matin',
+                'Contacter les fournisseurs de farine locaux : ils connaissent '
+                'tous les boulangers du coin et sauront où il y a des '
+                'embauches.',
+            ],
+        })
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        advice = next(a for a in project.advices if a.advice_id == 'custom-advice-id')
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
+        self.assertEqual('Get there early', advice.title)
+        self.assertEqual('Baker tips', advice.short_title)
 
 
 if __name__ == '__main__':

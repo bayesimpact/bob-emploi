@@ -10,7 +10,8 @@ services:
     volumes:
       - ./data_analysis/data:/home/jovyan/data:rw
       - ./analytics/data:/home/jovyan/data_analytics:ro
-      - ./data_analysis:/opt/conda/lib/python3.7/bob_emploi/data_analysis:ro
+      # TODO(cyrille): Try to link to current python version.
+      - ./data_analysis:/opt/conda/lib/python3.8/bob_emploi/data_analysis:ro
       - ./data_analysis/notebooks:/home/jovyan/notebooks
     environment:
       AIRTABLE_API_KEY:
@@ -19,37 +20,65 @@ services:
   data-analysis-prepare:
     image: docker.bayesimpact.org/bob-emploi/data-analysis-prepare
     build:
+      args:
+        - SKIP_TEST
       context: .
       dockerfile: data_analysis/Dockerfile.prepare
     entrypoint: ./entrypoint.sh
     environment:
       AIRTABLE_API_KEY:
+      ALGOLIA_API_KEY:
       BOB_PLUGINS:
       EMPLOI_STORE_CLIENT_ID:
       EMPLOI_STORE_CLIENT_SECRET:
+      MAILJET_APIKEY_PUBLIC:
+      MAILJET_SECRET:
+      REQUIRED_LOCALES:
     tty: true
   frontend-db:
     build: frontend/server/db
     ports:
       - "27016:27017"
-  frontend-dev:
+  frontend-dev: &dev
     image: bayesimpact/bob-emploi-dev
     build:
       context: .
       dockerfile: frontend/client/Dockerfile
+      target: dev
+      args:
+        - AIRTABLE_API_KEY
+        - REACT_BASE_TAG
     command: npm start
     entrypoint: ./entrypoint.sh
     tty: true
     links:
       - frontend-flask
     environment:
+      BOB_DEPLOYMENT:
       BOB_PLUGINS:
+  frontend-test:
+    image: bayesimpact/bob-emploi-test
+    build:
+      context: .
+      dockerfile: frontend/client/Dockerfile
+      target: test
+      args:
+        - AIRTABLE_API_KEY
+        - REACT_BASE_TAG
+        - SKIP_TEST
+    tty: true
+    environment:
+      BOB_DEPLOYMENT:
+      BOB_PLUGINS:
+    network_mode: none
+  dev: *dev
   frontend-flask:
     build:
       context: .
       dockerfile: frontend/server/Dockerfile
       target: server
       args:
+        - AIRTABLE_API_KEY
         - GIT_SHA1
     image: bayesimpact/bob-emploi-frontend-server
     environment:
@@ -73,6 +102,10 @@ services:
       - frontend-db
   frontend-flask-test:
     build:
+      args:
+        - AIRTABLE_API_KEY
+        - SKIP_STRINGS_EXTRACT
+        - SKIP_TEST
       context: .
       dockerfile: frontend/server/Dockerfile
       target: test
@@ -84,3 +117,10 @@ services:
       TEST_ENV: '1'
     tty: true
     network_mode: none
+  mailjet:
+    build:
+      context: .
+      dockerfile: frontend/mailjet/Dockerfile
+    environment:
+      MAILJET_APIKEY_PUBLIC:
+      MAILJET_SECRET:

@@ -3,11 +3,12 @@
 # TODO(pascal): Probably move to its own package.
 
 import datetime
+import functools
 import io
 import json
 import time
 import typing
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Type, Union
 from unittest import mock
 import uuid
 
@@ -29,7 +30,7 @@ def _check_not_null_variable(
             _check_not_null_variable(element)
 
 
-class _SentMessage(object):
+class _SentMessage:
 
     def __init__(
             self, recipient: _JsonDict, properties: _JsonDict,
@@ -100,7 +101,7 @@ def _check_valid_template_id(template_id: Any) -> bool:
     })
 
 
-class _InMemoryMailjetServer(object):
+class _InMemoryMailjetServer:
 
     def __init__(self) -> None:
         self.messages: List[_SentMessage] = []
@@ -136,7 +137,7 @@ class _InMemoryMailjetServer(object):
 _MOCK_SERVER = _InMemoryMailjetServer()
 
 
-class _Client(object):
+class _Client:
     """A MailJet mock client."""
 
     def __init__(self, auth: Optional[Any] = None, version: str = 'v3'):
@@ -146,7 +147,7 @@ class _Client(object):
         self.send = _Sender(version)
 
 
-class _Messager(object):
+class _Messager:
 
     def __init__(self, client_version: str) -> None:
         self._version = client_version
@@ -183,7 +184,7 @@ class _Messager(object):
         })
 
 
-class _Sender(object):
+class _Sender:
 
     def __init__(self, client_version: str) -> None:
         self._version = client_version
@@ -238,39 +239,59 @@ class _Sender(object):
         return _create_json_response(json_content)
 
 
-def patch() -> 'mock._patch':
+_T = typing.TypeVar('_T')
+
+
+class _Patch:
+
+    def __init__(self) -> None:
+        self._patcher = mock.patch('mailjet_rest.Client', _Client)
+
+    def __call__(self, func: Union[Type[Any], Callable[..., Any]]) -> Any:
+        if isinstance(func, type):
+            return self._decorate_class(func)
+        return self._decorate_callable(func)
+
+    def _decorate_class(self, klass: Any) -> Any:
+        for attr in dir(klass):
+            if not attr.startswith(mock.patch.TEST_PREFIX):
+                continue
+
+            attr_value = getattr(klass, attr)
+            if not hasattr(attr_value, '__call__'):
+                continue
+
+            setattr(klass, attr, self._decorate_callable(attr_value))
+        return klass
+
+    def _decorate_callable(self, func: Any) -> Any:
+        @functools.wraps(func)
+        def _wrapped(*args: Any, **kwargs: Any) -> Any:
+            self.start()
+            try:
+                return func(*args, **kwargs)
+            finally:
+                self.stop()
+        return _wrapped
+
+    def start(self) -> Any:
+        """Activate a patch, returning any created mock."""
+
+        _MOCK_SERVER.clear()
+        return self._patcher.start()
+
+    def stop(self) -> Any:  # pylint: disable=invalid-name
+        """Stop an active patch."""
+
+        return self._patcher.stop()
+
+
+def patch() -> _Patch:
     """Patch the mailjet_rest module with a mock.
 
     This also clears all messages sent known by the mock module when the patch starts."""
 
-    # We're using the famous mock.patch: it's super cool as it allows to patch
-    # manually (using start/stop), as a function decorator or even as a test
-    # class decorator. Unfortunately it does not have a hook to launch special
-    # code when the patch is applied, so we need the little hack below to clear
-    # sent messages before entering the patch context.
-
-    def _clear_and_call(func: Callable[..., Any]) -> Callable[..., Any]:
-        def _wrapped(*args: Any, **kwargs: Any) -> Any:
-            _MOCK_SERVER.clear()
-            return func(*args, **kwargs)
-        return _wrapped
-
-    # To work as a class decorator, the patcher object knows how to copy
-    # itself: we need to propagate the hack above to the copies as well.
-
-    def _copy_and_patch_enter(
-            func: Callable[..., Any]) -> Callable[..., Any]:
-        def _wrapped(*args: Any, **kwargs: Any) -> Any:
-            result = func(*args, **kwargs)
-            result.__enter__ = _clear_and_call(result.__enter__)
-            result.copy = _copy_and_patch_enter(result.copy)
-            return result
-        return _wrapped
-
-    patcher = mock.patch('mailjet_rest.Client', _Client)
-    patcher.__enter__ = _clear_and_call(patcher.__enter__)  # type: ignore
-    patcher.copy = _copy_and_patch_enter(patcher.copy)  # type: ignore
-    return patcher
+    return _Patch()
 
 
 def get_all_sent_messages() -> List[_SentMessage]:

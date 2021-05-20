@@ -3,6 +3,7 @@ syntax = "proto3";
 import "google/protobuf/timestamp.proto";
 
 package bayes.ali;
+option go_package="bayes.org/bob_emploi/frontend/api/ali";
 
 message User {
   // The date and time at which the user has registered with the app.

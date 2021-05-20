@@ -1,0 +1,321 @@
+{
+  "Aliases": {
+    "Items": [
+      "www.jobflix.app"
+    ],
+    "Quantity": 1
+  },
+  "CacheBehaviors": {
+    "Items": [
+      {
+        "AllowedMethods": {
+          "CachedMethods": {
+            "Items": [
+              "HEAD",
+              "GET"
+            ],
+            "Quantity": 2
+          },
+          "Items": [
+            "HEAD",
+            "DELETE",
+            "POST",
+            "GET",
+            "OPTIONS",
+            "PUT",
+            "PATCH"
+          ],
+          "Quantity": 7
+        },
+        "Compress": true,
+        "DefaultTTL": 86400,
+        "FieldLevelEncryptionId": "",
+        "ForwardedValues": {
+          "Cookies": {
+            "Forward": "none"
+          },
+          "Headers": {
+            "Items": [
+              "*"
+            ],
+            "Quantity": 1
+          },
+          "QueryString": true,
+          "QueryStringCacheKeys": {
+            "Quantity": 0
+          }
+        },
+        "FunctionAssociations": {
+          "Quantity": 0
+        },
+        "LambdaFunctionAssociations": {
+          "Quantity": 0
+        },
+        "MaxTTL": 31536000,
+        "MinTTL": 0,
+        "PathPattern": "api/*",
+        "SmoothStreaming": false,
+        "TargetOriginId": "ELB-flask",
+        "TrustedKeyGroups": {
+          "Enabled": false,
+          "Quantity": 0
+        },
+        "TrustedSigners": {
+          "Enabled": false,
+          "Quantity": 0
+        },
+        "ViewerProtocolPolicy": "https-only"
+      },
+      {
+        "AllowedMethods": {
+          "CachedMethods": {
+            "Items": [
+              "HEAD",
+              "GET"
+            ],
+            "Quantity": 2
+          },
+          "Items": [
+            "HEAD",
+            "GET"
+          ],
+          "Quantity": 2
+        },
+        "CachePolicyId": "8ce898f3-e013-42bb-b7ae-5239de8a1ecb",
+        "Compress": false,
+        "FieldLevelEncryptionId": "",
+        "FunctionAssociations": {
+          "Quantity": 0
+        },
+        "LambdaFunctionAssociations": {
+          "Quantity": 0
+        },
+        "PathPattern": "favicon.ico",
+        "SmoothStreaming": false,
+        "TargetOriginId": "OVH Jobflix assets",
+        "TrustedKeyGroups": {
+          "Enabled": false,
+          "Quantity": 0
+        },
+        "TrustedSigners": {
+          "Enabled": false,
+          "Quantity": 0
+        },
+        "ViewerProtocolPolicy": "allow-all"
+      }
+    ],
+    "Quantity": 2
+  },
+  "CallerReference": "1610634268197",
+  "Comment": "",
+  "CustomErrorResponses": {
+    "Items": [
+      {
+        "ErrorCachingMinTTL": 300,
+        "ErrorCode": 404,
+        "ResponseCode": "200",
+        "ResponsePagePath": "/upskilling.html"
+      },
+      {
+        "ErrorCachingMinTTL": 300,
+        "ErrorCode": 500,
+        "ResponseCode": "200",
+        "ResponsePagePath": "/upskilling.html"
+      }
+    ],
+    "Quantity": 2
+  },
+  "DefaultCacheBehavior": {
+    "AllowedMethods": {
+      "CachedMethods": {
+        "Items": [
+          "HEAD",
+          "GET"
+        ],
+        "Quantity": 2
+      },
+      "Items": [
+        "HEAD",
+        "GET"
+      ],
+      "Quantity": 2
+    },
+    "CachePolicyId": "8ce898f3-e013-42bb-b7ae-5239de8a1ecb",
+    "Compress": false,
+    "FieldLevelEncryptionId": "",
+    "FunctionAssociations": {
+      "Quantity": 0
+    },
+    "LambdaFunctionAssociations": {
+      "Quantity": 0
+    },
+    "SmoothStreaming": false,
+    "TargetOriginId": "Client-Static-Assets",
+    "TrustedKeyGroups": {
+      "Enabled": false,
+      "Quantity": 0
+    },
+    "TrustedSigners": {
+      "Enabled": false,
+      "Quantity": 0
+    },
+    "ViewerProtocolPolicy": "redirect-to-https"
+  },
+  "DefaultRootObject": "upskilling.html",
+  "Enabled": true,
+  "HttpVersion": "http2",
+  "IsIPV6Enabled": true,
+  "Logging": {
+    "Bucket": "",
+    "Enabled": false,
+    "IncludeCookies": false,
+    "Prefix": ""
+  },
+  "OriginGroups": {
+    "Items": [
+      {
+        "FailoverCriteria": {
+          "StatusCodes": {
+            "Items": [
+              500,
+              502,
+              503
+            ],
+            "Quantity": 3
+          }
+        },
+        "Id": "Client-Static-Assets",
+        "Members": {
+          "Items": [
+            {
+              "OriginId": "PE Static Assets on OVH"
+            },
+            {
+              "OriginId": "S3-bob-emploi-client/fr"
+            }
+          ],
+          "Quantity": 2
+        }
+      }
+    ],
+    "Quantity": 1
+  },
+  "Origins": {
+    "Items": [
+      {
+        "ConnectionAttempts": 3,
+        "ConnectionTimeout": 10,
+        "CustomHeaders": {
+          "Quantity": 0
+        },
+        "CustomOriginConfig": {
+          "HTTPPort": 80,
+          "HTTPSPort": 443,
+          "OriginKeepaliveTimeout": 5,
+          "OriginProtocolPolicy": "https-only",
+          "OriginReadTimeout": 30,
+          "OriginSslProtocols": {
+            "Items": [
+              "TLSv1.2"
+            ],
+            "Quantity": 1
+          }
+        },
+        "DomainName": "stack-flask.eu-west-3.aws.bob.bayes.org",
+        "Id": "ELB-flask",
+        "OriginPath": "",
+        "OriginShield": {
+          "Enabled": false
+        }
+      },
+      {
+        "ConnectionAttempts": 3,
+        "ConnectionTimeout": 10,
+        "CustomHeaders": {
+          "Quantity": 0
+        },
+        "CustomOriginConfig": {
+          "HTTPPort": 80,
+          "HTTPSPort": 443,
+          "OriginKeepaliveTimeout": 5,
+          "OriginProtocolPolicy": "http-only",
+          "OriginReadTimeout": 30,
+          "OriginSslProtocols": {
+            "Items": [
+              "TLSv1",
+              "TLSv1.1",
+              "TLSv1.2"
+            ],
+            "Quantity": 3
+          }
+        },
+        "DomainName": "storage.gra.cloud.ovh.net",
+        "Id": "OVH Jobflix assets",
+        "OriginPath": "/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/PE%20Static%20Assets/fr/jobflix",
+        "OriginShield": {
+          "Enabled": false
+        }
+      },
+      {
+        "ConnectionAttempts": 3,
+        "ConnectionTimeout": 10,
+        "CustomHeaders": {
+          "Quantity": 0
+        },
+        "CustomOriginConfig": {
+          "HTTPPort": 80,
+          "HTTPSPort": 443,
+          "OriginKeepaliveTimeout": 5,
+          "OriginProtocolPolicy": "https-only",
+          "OriginReadTimeout": 30,
+          "OriginSslProtocols": {
+            "Items": [
+              "TLSv1",
+              "TLSv1.1",
+              "TLSv1.2"
+            ],
+            "Quantity": 3
+          }
+        },
+        "DomainName": "storage.gra.cloud.ovh.net",
+        "Id": "PE Static Assets on OVH",
+        "OriginPath": "/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/PE%20Static%20Assets/fr",
+        "OriginShield": {
+          "Enabled": false
+        }
+      },
+      {
+        "ConnectionAttempts": 3,
+        "ConnectionTimeout": 10,
+        "CustomHeaders": {
+          "Quantity": 0
+        },
+        "DomainName": "bob-emploi-client.s3.amazonaws.com",
+        "Id": "S3-bob-emploi-client/fr",
+        "OriginPath": "/fr",
+        "OriginShield": {
+          "Enabled": false
+        },
+        "S3OriginConfig": {
+          "OriginAccessIdentity": "origin-access-identity/cloudfront/E1839FOY5ZPLQK"
+        }
+      }
+    ],
+    "Quantity": 4
+  },
+  "PriceClass": "PriceClass_All",
+  "Restrictions": {
+    "GeoRestriction": {
+      "Quantity": 0,
+      "RestrictionType": "none"
+    }
+  },
+  "ViewerCertificate": {
+    "ACMCertificateArn": "arn:aws:acm:us-east-1:951168128976:certificate/8f2344f6-4223-4a1b-8cc6-002d177b7fa2",
+    "Certificate": "arn:aws:acm:us-east-1:951168128976:certificate/8f2344f6-4223-4a1b-8cc6-002d177b7fa2",
+    "CertificateSource": "acm",
+    "MinimumProtocolVersion": "TLSv1.2_2019",
+    "SSLSupportMethod": "sni-only"
+  },
+  "WebACLId": ""
+}

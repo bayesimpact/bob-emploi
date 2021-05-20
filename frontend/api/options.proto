@@ -3,6 +3,7 @@ syntax = "proto3";
 import "google/protobuf/descriptor.proto";
 
 package bayes;
+option go_package="bayes.org/bob_emploi/frontend/api/options";
 
 extend google.protobuf.FieldOptions {
   // Give a bit more semantics to a field so that we can programatically
@@ -64,6 +65,16 @@ enum StringFormat {
   // A field whose value is going to be used as an option in a list, therefore it should start with
   // an uppercase letter and not end with a punctuation mark.
   LIST_OPTION = 6;
+
+  // A field using Markup language that should be rendered with ReactMarkdown or equivalent.
+  MARKUP_LANGUAGE = 7;
+
+  // A field whose value is a mailjet template ID. See the list of available templates in
+  // frontend.server.mail.templates.mailjet_templates.
+  MAILING_CAMPAIGN = 8;
+
+  // A field whose value must stay on one line.
+  SINGLE_LINER = 9;
 }
 
 enum ListFormat {

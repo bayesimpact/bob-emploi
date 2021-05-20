@@ -1,10 +1,12 @@
 """Tests for the bob_emploi.importer.airtable_to_protos module."""
 
+import os
 import typing
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Mapping, Optional, Sequence
 import unittest
 from unittest import mock
 
+from airtable import airtable
 import airtablemock
 
 from bob_emploi.data_analysis.importer import airtable_to_protos
@@ -18,7 +20,8 @@ from bob_emploi.frontend.api import network_pb2
 class BrokenConverter(airtable_to_protos.ProtoAirtableConverter):
     """A converter with broken function, for testing purposes."""
 
-    def _record2dict(self, unused_airtable_record: Dict[str, Any]) -> Dict[str, Any]:
+    def _record2dict(
+            self, unused_airtable_record: airtable.Record[Mapping[str, Any]]) -> Dict[str, Any]:
         return {'_id': '', 'missing_field': ''}
 
 
@@ -66,11 +69,17 @@ class _ConverterTestCase(airtablemock.TestCase):
 
         self._translation_base.create('tblQL7A5EgRJWhQFo', dict(translations, string=string))
 
-    @mock.patch(airtable_to_protos.__name__ + '._AIRTABLE_API_KEY', new='apikey42')
-    def airtable2dicts(self, should_drop_id_and_order: bool = True) -> List[Dict[str, Any]]:
+    @mock.patch.dict(os.environ, {'AIRTABLE_API_KEY': 'apikey42'})
+    def airtable2dicts(
+            self, *, should_drop_id_and_order: bool = True,
+            table: Optional[str] = None, alt_table: Optional[str] = None,
+            collection_name: str = 'my_collection') -> List[Dict[str, Any]]:
         """Converts records from the table to dicts."""
 
-        raw = airtable_to_protos.airtable2dicts(self._base_name, self._table, self.converter_id)
+        raw = airtable_to_protos.airtable2dicts(
+            collection_name=collection_name, base_id=self._base_name,
+            table=table or self._table, proto=self.converter_id,
+            alt_table=alt_table)
         if should_drop_id_and_order:
             for imported in raw:
                 del imported['_id']
@@ -240,7 +249,7 @@ class ActionTemplateConverterTestCase(_ConverterTestCase):
         with self.assertRaises(ValueError):
             self.airtable2dicts()
 
-    @mock.patch(airtable_to_protos.logging.__name__ + '.error')
+    @mock.patch('logging.error')
     def test_several_errors(self, mock_logging: mock.MagicMock) -> None:
         """Test that an import error is issued for each incorrect record."""
 
@@ -264,6 +273,13 @@ class ActionTemplateConverterTestCase(_ConverterTestCase):
         """Test that the converter breaks when a link is not correct."""
 
         self.add_record({'link': 'www.pole-emploi.fr'})
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+
+    def test_raises_on_invalid_link_spaces(self) -> None:
+        """Test that the converter breaks when a link has spaces."""
+
+        self.add_record({'link': 'https://www.pole-emploi.fr (French PES)'})
         with self.assertRaises(ValueError):
             self.airtable2dicts()
 
@@ -364,6 +380,23 @@ class JobBoardConverterTestCase(_ConverterTestCase):
             'filters': ['for-departement(49)', 'for-job-group(A12,B)'],
         }], self.airtable2dicts())
 
+    @mock.patch.dict(os.environ, {'BOB_DEPLOYMENT': 'usa'})
+    def test_usa_job_board_filters(self) -> None:
+        """Convert a job board and add filters."""
+
+        self.add_record({
+            'title': 'Pôle emploi',
+            'link': 'https://candidat.pole-emploi.fr/offres/recherche',
+            'usa:for-departement': '4003',
+            'for-job-group': 'A12,B',
+            'usa:for-job-group': '11,12',
+        })
+        self.assertEqual([{
+            'title': 'Pôle emploi',
+            'link': 'https://candidat.pole-emploi.fr/offres/recherche',
+            'filters': ['for-departement(4003)', 'for-job-group(11,12)'],
+        }], self.airtable2dicts())
+
     def test_job_board_encoded_url(self) -> None:
         """Make sure encoded special chars are not taken for missing template vars."""
 
@@ -386,7 +419,20 @@ class JobBoardConverterTestCase(_ConverterTestCase):
         with self.assertRaises(ValueError):
             self.airtable2dicts()
 
+    def test_multiple_filters(self) -> None:
+        """Do not accept redundant filters."""
 
+        self.add_record({
+            'title': 'Pôle emploi',
+            'link': 'https://candidat.pole-emploi.fr/offres/recherche',
+            'for-departement': '49',
+            'filters': ['for-departement(49)'],
+        })
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+
+
+@mock.patch(translation.__name__ + '.LOCALES_TO_CHECK', frozenset({'fr@tu', 'en'}))
 class TranslatableContactLeadConverterTestCase(_ConverterTestCase):
     """Tests for the contact leads converter translations."""
 
@@ -402,7 +448,7 @@ class TranslatableContactLeadConverterTestCase(_ConverterTestCase):
             'email_template': '',
             'name': 'Name',
         })
-        self.add_translation('Name', {'fr@tu': 'Nom'})
+        self.add_translation('Name', {'fr@tu': 'Nom', 'en': 'Name'})
         self.airtable2dicts()
         self.assertTrue(
             any('import translations' in call[0][0] for call in mock_logging.call_args_list),
@@ -424,9 +470,11 @@ class TranslatableContactLeadConverterTestCase(_ConverterTestCase):
             'email_template': 'Hé, tu te souviens de moi\u00a0?',
             'name': 'English name',
         })
-        self.add_translation('English name', {'fr@tu': 'Nom anglais'})
-        self.add_translation(
-            'Hé, tu te souviens de moi\u00a0?', {'fr@tu': 'Hé, tu te souviens de moi\u00a0?'})
+        self.add_translation('English name', {'fr@tu': 'Nom anglais', 'en': 'English name'})
+        self.add_translation('Hé, tu te souviens de moi\u00a0?', {
+            'fr@tu': 'Hé, tu te souviens de moi\u00a0?',
+            'en': 'Hey, do you remember me?',
+        })
         contact_leads = self.airtable2dicts()
         self.assertEqual(1, len(contact_leads))
         contact_lead = contact_leads[0]
@@ -443,9 +491,27 @@ class TranslatableContactLeadConverterTestCase(_ConverterTestCase):
             'email_template': 'Hé, tu te souviens de moi\u00a0?',
             'name': 'English name',
         })
-        self.add_translation('English name', {'fr@tu': 'Nom anglais'})
-        self.add_translation(
-            'Hé, tu te souviens de moi\u00a0?', {'fr@tu': 'Hé, tu te %souviens de moi\u00a0?'})
+        self.add_translation('English name', {'fr@tu': 'Nom anglais', 'en': 'English name'})
+        self.add_translation('Hé, tu te souviens de moi\u00a0?', {
+            # %souviens is not a valid template var.
+            'fr@tu': 'Hé, tu te %souviens de moi\u00a0?',
+            'en': 'Hey, do you remember me?',
+        })
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+
+    def test_en_translation_checks(self) -> None:
+        """Test that the converter fails if English version does not satisfy some en checks."""
+
+        self.add_record({
+            'email_template': 'Hé, tu te souviens de moi\u00a0?',
+            'name': 'English name',
+        })
+        self.add_translation('English name', {'fr@tu': 'Nom anglais', 'en': 'English name'})
+        self.add_translation('Hé, tu te souviens de moi\u00a0?', {
+            'fr@tu': 'Hé, tu te souviens de moi\u00a0?',
+            'en': 'Hey, do you remember me\u00A0?',
+        })
         with self.assertRaises(ValueError):
             self.airtable2dicts()
 
@@ -504,17 +570,19 @@ class DynamicAdviceConverterTestCase(_ConverterTestCase):
         """Convert a dynamic advice config."""
 
         self.add_record({
+            'id': 'baker',
             'title': 'Présentez-vous au chef boulanger',
             'short_title': 'Astuces de boulangers',
             'goal': 'être malin-e',
             'diagnostic_topics': ['MARKET_DIAGNOSTIC'],
-            'for-job-group': 'D1102',
+            'fr:for-job-group': 'D1102',
             'filters': ['not-for-job(12006)'],
             'card_text': 'Allez à la boulangerie la veille',
             'expanded_card_items': 'Il *faut*\n* Se présenter\n* Très tôt',
             'expanded_card_items_feminine': '* Se représenter\n* Très tôt',
         })
         self.assertEqual([{
+            'id': 'baker',
             'title': 'Présentez-vous au chef boulanger',
             'shortTitle': 'Astuces de boulangers',
             'diagnosticTopics': ['MARKET_DIAGNOSTIC'],
@@ -530,11 +598,12 @@ class DynamicAdviceConverterTestCase(_ConverterTestCase):
         """Convert a dynamic advice config with wrong items list format."""
 
         self.add_record({
+            'id': 'baker',
             'title': 'Présentez-vous au chef boulanger',
             'short_title': 'Astuces de boulangers',
             'diagnostic_topics': ['MARKET_DIAGNOSTIC'],
             'goal': 'être malin-e',
-            'for-job-group': 'D1102',
+            'fr:for-job-group': 'D1102',
             'card_text': 'Allez à la boulangerie la veille',
             'expanded_card_items': '* Se présenter\ntrès tôt',
         })
@@ -545,11 +614,12 @@ class DynamicAdviceConverterTestCase(_ConverterTestCase):
         """Convert a dynamic advice config with goal sentence with wrong format."""
 
         self.add_record({
+            'id': 'baker',
             'title': 'Présentez-vous au chef boulanger',
             'short_title': 'Astuces de boulangers',
             'goal': 'être malin-e.',
             'diagnostic_topics': ['MARKET_DIAGNOSTIC'],
-            'for-job-group': 'D1102',
+            'fr:for-job-group': 'D1102',
             'filters': ['not-for-job(12006)'],
             'card_text': 'Allez à la boulangerie la veille',
             'expanded_card_items': 'Il *faut*\n* Se présenter\n* Très tôt',
@@ -562,11 +632,12 @@ class DynamicAdviceConverterTestCase(_ConverterTestCase):
         """Convert a dynamic advice config with goal sentence with wrong format two."""
 
         self.add_record({
+            'id': 'baker',
             'title': 'Présentez-vous au chef boulanger',
             'short_title': 'Astuces de boulangers',
             'goal': 'Manger du pain',
             'diagnostic_topics': ['MARKET_DIAGNOSTIC'],
-            'for-job-group': 'D1102',
+            'fr:for-job-group': 'D1102',
             'filters': ['not-for-job(12006)'],
             'card_text': 'Allez à la boulangerie la veille',
             'expanded_card_items': 'Il *faut*\n* Se présenter\n* Très tôt',
@@ -580,11 +651,12 @@ class DynamicAdviceConverterTestCase(_ConverterTestCase):
         """Convert a dynamic advice config with errors on several card items."""
 
         self.add_record({
+            'id': 'baker',
             'title': 'Présentez-vous au chef boulanger',
             'short_title': 'Astuces de boulangers',
             'goal': 'manger du pain',
             'diagnostic_topics': ['MARKET_DIAGNOSTIC'],
-            'for-job-group': 'D1102',
+            'fr:for-job-group': 'D1102',
             'filters': ['not-for-job(12006)'],
             'card_text': 'Allez à la boulangerie la veille',
             'expanded_card_items': 'Il *faut*\n* Se présenter :\n* Très tôt !',
@@ -596,96 +668,6 @@ class DynamicAdviceConverterTestCase(_ConverterTestCase):
         error_message = mock_logging.call_args[0][0] % mock_logging.call_args[0][1:]
         self.assertIn('expanded_card_items.0', error_message)
         self.assertIn('expanded_card_items.1', error_message)
-
-
-class DiagnosticSentenceTemplateConverterTestCase(_ConverterTestCase):
-    """Tests for the diagnosic sentence template converter."""
-
-    converter_id = 'DiagnosticSentenceTemplate'
-
-    def test_diagnostic_sentence_missing_template_var(self) -> None:
-        """Convert a diagnostic sentence with a missing template var."""
-
-        self.add_record({
-            'sentence_template': 'I have an %unknownVar',
-            'filters': ['for-job-group(A12)'],
-            'order': 2,
-        })
-        with self.assertRaises(ValueError):
-            self.airtable2dicts()
-
-    def test_airtable2dicts_sorted_diagnostic_sentence(self) -> None:
-        """Use of airtable2dicts when records need to be sorted."""
-
-        self.add_record({
-            'sentence_template': 'first %inCity',
-            'order': 1,
-        })
-        self.add_record({
-            'sentence_template': 'fifth',
-            'order': 2,
-        })
-        self.add_record({
-            'sentence_template': 'second',
-            'order': 1,
-        })
-        self.add_record({
-            'sentence_template': 'fourth',
-            'filters': ['for-job-group(A12)'],
-            'order': 2,
-            'priority': 2,
-        })
-        self.add_record({
-            'sentence_template': 'third',
-            'filters': ['for-job-group(A12)'],
-            'order': 2,
-            'priority': 4,
-        })
-
-        with self.assertRaises(ValueError):
-            self.airtable2dicts()
-
-
-class DiagnosticSubmetricScorerConverterTestCase(_ConverterTestCase):
-    """Tests for the diagnosic scorer sentence template converter."""
-
-    converter_id = 'DiagnosticSubmetricScorer'
-
-    def test_diagnostic_submetric_sentence(self) -> None:
-        """Convert a diagnostic submetric sentence."""
-
-        self.add_record({
-            'name': 'Too few Applications',
-            'submetric': 'JOB_SEARCH_DIAGNOSTIC',
-            'weight': .2,
-            'trigger_scoring_model': 'constant(3)',
-        })
-        self.airtable2dicts()
-
-    def test_airtable2dicts_sorted_diagnostic_submetrics_sentence(self) -> None:
-        """Use of airtable2dicts when records need to be sorted."""
-
-        self.add_record({
-            'submetric': 'JOB_SEARCH_DIAGNOSTIC',
-            'name': 'foo',
-            'weight': 1,
-            'trigger_scoring_model': 'constant(2)',
-        })
-        self.add_record({
-            'submetric': 'MARKET_DIAGNOSTIC',
-            'name': 'foo',
-            'weight': 1,
-            'trigger_scoring_model': 'constant(2)',
-        })
-        self.add_record({
-            'submetric': 'JOB_SEARCH_DIAGNOSTIC',
-            'name': 'foo',
-            'weight': 1,
-            'trigger_scoring_model': 'constant(2)',
-        })
-
-        with self.assertRaises(ValueError):
-            self.airtable2dicts()
 
 
 class TestimonialConverterTestCase(_ConverterTestCase):
@@ -716,93 +698,34 @@ class TestimonialConverterTestCase(_ConverterTestCase):
         }], self.airtable2dicts())
 
 
-class DiagnosticSubmetricSentenceConverterTestCase(_ConverterTestCase):
-    """Tests for the diagnostic submetric sentence converter."""
+class DiagnosticResponsesConverterTestCase(_ConverterTestCase):
+    """Tests for the diagnostic responses converter."""
 
-    converter_id = 'DiagnosticSubmetricSentenceTemplate'
+    converter_id = 'DiagnosticResponse'
 
-    def test_airtable2dicts_unsorted_diagnostic_submetric_sentences(self) -> None:
-        """Use of airtable2dicts for diagnostic submetric sentences which need to be sorted."""
+    def test_correct_record(self) -> None:
+        """A diagnostic response is correctly converted."""
 
         self.add_record({
-            'sentence_template': 'fourth',
-            'topic': 'MARKET_DIAGNOSTIC',
-            'priority': 1,
+            'response_id': 'bravo:enhance-methods-to-interview',
+            'bob_main_challenge_id': 'bravo',
+            'self_main_challenge_id': 'enhance-methods-to-interview',
+            'text': 'My response is that everything is cool.',
         })
+
+        self.assertEqual(1, len(self.airtable2dicts()))
+
+    def test_missing_field(self) -> None:
+        """A diagnostic response needs all the fields."""
+
         self.add_record({
-            'sentence_template': 'third',
-            'topic': 'MARKET_DIAGNOSTIC',
-            'priority': 2,
-        })
-        self.add_record({
-            'sentence_template': 'second',
-            'filters': ['constant(3)'],
-            'topic': 'MARKET_DIAGNOSTIC',
-            'priority': 2,
-        })
-        self.add_record({
-            'sentence_template': 'first',
-            'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-            'priority': 1,
+            'response_id': 'bravo:enhance-methods-to-interview',
+            'bob_main_challenge_id': 'bravo',
+            'self_main_challenge_id': 'enhance-methods-to-interview',
         })
 
         with self.assertRaises(ValueError):
             self.airtable2dicts()
-
-    def test_filters_unsorted(self) -> None:
-        """A record with less filters shouldn't be before one with more filters, even with a lesser
-        priority."""
-
-        self.add_record({
-            'sentence_template': 'second',
-            'topic': 'MARKET_DIAGNOSTIC',
-            'priority': 3,
-        })
-        self.add_record({
-            'sentence_template': 'first',
-            'filters': ['constant(3)'],
-            'topic': 'MARKET_DIAGNOSTIC',
-            'priority': 2,
-        })
-
-        with self.assertRaises(ValueError):
-            self.airtable2dicts()
-
-    def test_airtable2dicts_sorted_diagnostic_submetric_sentences(self) -> None:
-        """Use of airtable2dicts for diagnostic submetric sentences which are already sorted."""
-
-        self.add_record({
-            'sentence_template': 'first',
-            'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-            'priority': 1,
-        })
-        self.add_record({
-            'sentence_template': 'second',
-            'filters': ['constant(3)', 'for-active-search'],
-            'topic': 'MARKET_DIAGNOSTIC',
-            'priority': 1,
-        })
-        self.add_record({
-            'sentence_template': 'third',
-            'filters': ['constant(3)'],
-            'topic': 'MARKET_DIAGNOSTIC',
-            'priority': 2,
-        })
-        self.add_record({
-            'filters': ['constant(2)'],
-            'sentence_template': 'fourth',
-            'topic': 'MARKET_DIAGNOSTIC',
-            'priority': 1,
-        })
-        self.add_record({
-            'sentence_template': 'fifth',
-            'topic': 'MARKET_DIAGNOSTIC',
-            'priority': 1,
-        })
-
-        dicts = self.airtable2dicts()
-        self.assertEqual(
-            ['first', 'second', 'third', 'fourth', 'fifth'], [r['sentenceTemplate'] for r in dicts])
 
 
 class DiagnosticOverallConverterTestCase(_ConverterTestCase):
@@ -814,10 +737,11 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
         """A diagnostic overall is correctly converted."""
 
         self.add_record({
+            'category_id': ['bravo'],
             'order': 0,
             'sentence_template': 'Hello world',
             'score': 50,
-            'text_template': 'This is why you got this score.',
+            'text_template': 'This is **why** you got this score.',
         })
 
         self.assertEqual(1, len(self.airtable2dicts()))
@@ -826,6 +750,7 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
         """A diagnostic overall needs a score."""
 
         self.add_record({
+            'category_id': ['bravo'],
             'order': 0,
             'sentence_template': 'Hello world',
             'text_template': 'This is why you got this score.',
@@ -838,6 +763,7 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
         """A diagnostic overall needs an order."""
 
         self.add_record({
+            'category_id': ['bravo'],
             'text_template': 'This is why you got this score.',
             'score': 50,
             'sentence_template': 'Hello world',
@@ -850,6 +776,7 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
         """A diagnostic overall needs a sentence."""
 
         self.add_record({
+            'category_id': ['bravo'],
             'text_template': 'This is why you got this score.',
             'order': 0,
             'score': 50,
@@ -862,9 +789,38 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
         """A diagnostic overall needs a description."""
 
         self.add_record({
+            'category_id': ['bravo'],
             'order': 0,
             'score': 50,
             'sentence_template': 'Hello world',
+        })
+
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+
+    def test_bad_markup_language(self) -> None:
+        """A diagnostic overall text needs proper markup language."""
+
+        self.add_record({
+            'category_id': ['bravo'],
+            'order': 0,
+            'sentence_template': 'Hello world',
+            'score': 50,
+            'text_template': 'This is **why you got this score.',
+        })
+
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+
+    def test_bad_unicode_linebreak(self) -> None:
+        """A diagnostic overall text cannot have a unicode linebreak char."""
+
+        self.add_record({
+            'category_id': ['bravo'],
+            'order': 0,
+            'sentence_template': 'Hello world',
+            'score': 50,
+            'text_template': 'This is \u2028why you got this score.',
         })
 
         with self.assertRaises(ValueError):
@@ -874,12 +830,14 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
         """Diagnostic overalls need to be sorted by order."""
 
         self.add_record({
+            'category_id': ['bravo'],
             'order': 1,
             'score': 50,
             'sentence_template': 'Less important hello world',
             'text_template': 'This is why you got this score.',
         })
         self.add_record({
+            'category_id': ['bravo'],
             'order': 0,
             'score': 50,
             'sentence_template': 'Hello world',
@@ -893,6 +851,7 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
         """More precise filters shouldn't be found just after more general ones."""
 
         self.add_record({
+            'category_id': ['bravo'],
             'filters': ['for-active-search'],
             'order': 1,
             'score': 50,
@@ -900,6 +859,7 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
             'text_template': 'This is why you got this score.',
         })
         self.add_record({
+            'category_id': ['bravo'],
             'filters': ['for-active-search', 'for-long-term-mom'],
             'order': 2,
             'score': 50,
@@ -914,6 +874,7 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
         """It's useless to have the same filters twice."""
 
         self.add_record({
+            'category_id': ['bravo'],
             'filters': ['for-active-search'],
             'order': 1,
             'score': 50,
@@ -921,6 +882,7 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
             'text_template': 'This is why you got this score.',
         })
         self.add_record({
+            'category_id': ['bravo'],
             'filters': ['for-active-search'],
             'order': 2,
             'score': 50,
@@ -935,6 +897,7 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
         """It's useless to have the same filters twice, even non-consecutive."""
 
         self.add_record({
+            'category_id': ['bravo'],
             'filters': ['for-active-search'],
             'order': 1,
             'score': 50,
@@ -942,6 +905,7 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
             'text_template': 'This is why you got this score.',
         })
         self.add_record({
+            'category_id': ['bravo'],
             'filters': ['constant(3)'],
             'order': 2,
             'score': 50,
@@ -949,6 +913,7 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
             'text_template': 'This is why you got this score.',
         })
         self.add_record({
+            'category_id': ['bravo'],
             'filters': ['for-active-search'],
             'order': 2,
             'score': 50,
@@ -963,6 +928,7 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
         """More precise filters shouldn't be found after more general ones."""
 
         self.add_record({
+            'category_id': ['bravo'],
             'text_template': 'This is why you got this score.',
             'filters': ['for-active-search'],
             'order': 1,
@@ -970,6 +936,7 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
             'sentence_template': 'Will catch all active search',
         })
         self.add_record({
+            'category_id': ['bravo'],
             'text_template': 'This is why you got this score.',
             'filters': ['for-employed'],
             'order': 2,
@@ -977,6 +944,7 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
             'sentence_template': 'Will catch all employed people',
         })
         self.add_record({
+            'category_id': ['bravo'],
             'text_template': 'This is why you got this score.',
             'filters': ['for-active-search', 'for-long-term-mom'],
             'order': 3,
@@ -996,6 +964,7 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
             'order': 1,
             'score': 50,
             'sentence_template': 'Will catch all active search',
+            'category_id': ['bravo'],
         })
         self.add_record({
             'text_template': 'This is why you got this score.',
@@ -1003,6 +972,7 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
             'order': 2,
             'score': 50,
             'sentence_template': 'Will catch all employed people',
+            'category_id': ['bravo'],
         })
         self.add_record({
             'text_template': 'This is why you got this score.',
@@ -1034,6 +1004,7 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
         """A diagnostic overall using a job group template."""
 
         self.add_record({
+            'category_id': ['bravo'],
             'order': 0,
             'sentence_template': 'Hello world %inDomain',
             'score': 50,
@@ -1042,96 +1013,106 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
 
         self.assertEqual(1, len(self.airtable2dicts()))
 
-
-class DiagnosticObservationConverterTestCase(_ConverterTestCase):
-    """Tests for the diagnostic observation converter."""
-
-    converter_id = 'DiagnosticObservation'
-
-    def test_missing_topic(self) -> None:
-        """A diagnostic observation needs a submetric topic."""
+    def test_paragraph(self) -> None:
+        """A diagnostic supports paragraphs in text_template."""
 
         self.add_record({
+            'category_id': ['bravo'],
             'order': 0,
             'sentence_template': 'Hello world',
+            'score': 50,
+            'text_template': 'This is **why** you got this score.\n\nAnd you should be happy.',
+        })
+
+        self.assertEqual(1, len(self.airtable2dicts()))
+
+    @mock.patch('logging.error')
+    def test_fake_paragraph(self, mock_logging: mock.MagicMock) -> None:
+        """A diagnostic enforces real paragraphs in text_template, not simple line breaks."""
+
+        self.add_record({
+            'category_id': ['bravo'],
+            'order': 0,
+            'sentence_template': 'Hello world',
+            'score': 50,
+            'text_template': 'This is **why** you got this score.\nAnd you should be happy.',
         })
 
         with self.assertRaises(ValueError):
             self.airtable2dicts()
 
-    def test_missing_order(self) -> None:
-        """A diagnostic observation needs an order."""
+        mock_logging.assert_called_once()
+        error_message = mock_logging.call_args[0][0] % mock_logging.call_args[0][1:]
+        self.assertIn('line break', error_message)
+        self.assertIn('you got this score.\nAnd you should ', error_message)
+
+    @mock.patch('logging.error')
+    def test_blank_error_message(self, mock_logging: mock.MagicMock) -> None:
+        """A diagnostic overall with a trailing blank at the end of an internal line."""
 
         self.add_record({
-            'sentence_template': 'Hello world',
-            'topic': 'PROFILE_DIAGNOSTIC',
-        })
-
-        with self.assertRaises((KeyError, ValueError)):
-            self.airtable2dicts()
-
-    def test_missing_sentence(self) -> None:
-        """A diagnostic observation needs a sentence."""
-
-        self.add_record({
+            'category_id': ['bravo'],
             'order': 0,
-            'topic': 'PROFILE_DIAGNOSTIC',
+            'sentence_template': 'Hello world',
+            'score': 50,
+            'text_template': 'This is why \n\nyou got this score.',
         })
 
         with self.assertRaises(ValueError):
             self.airtable2dicts()
 
-    def test_wrong_order(self) -> None:
-        """Diagnostic observations need to be sorted by order in a given topic."""
+        mock_logging.assert_called_once()
+        error_message = mock_logging.call_args[0][0] % mock_logging.call_args[0][1:]
+        self.assertIn(
+            'Extra spaces at the beginning or end in the field "text_template"', error_message)
+        self.assertIn('This is why** **\\n\\nyou got this score.', error_message)
+
+    @mock.patch('logging.error')
+    def test_nbsp_error_message(self, mock_logging: mock.MagicMock) -> None:
+        """A diagnostic overall using &nbsp;."""
 
         self.add_record({
-            'order': 1,
-            'sentence_template': 'Less important hello world',
-            'topic': 'PROFILE_DIAGNOSTIC',
-        })
-        self.add_record({
+            'category_id': ['bravo'],
             'order': 0,
             'sentence_template': 'Hello world',
-            'topic': 'PROFILE_DIAGNOSTIC',
+            'score': 50,
+            'text_template': 'This is&nbsp;why you got this score.',
         })
 
         with self.assertRaises(ValueError):
             self.airtable2dicts()
 
-    def test_order_between_topics(self) -> None:
-        """Diagnostic observations order does not matter between topics."""
+        mock_logging.assert_called_once()
+        error_message = mock_logging.call_args[0][0] % mock_logging.call_args[0][1:]
+        self.assertIn(
+            '&nbsp; are not allowed in the field "text_template"', error_message)
+        self.assertIn('This is**&nbsp;**why you got this score.', error_message)
+
+    @mock.patch('logging.error')
+    def test_single_liner_error_message(self, mock_logging: mock.MagicMock) -> None:
+        """A diagnostic overall with a line break in the sentence template."""
 
         self.add_record({
-            'order': 1,
-            'sentence_template': 'Less important hello world',
-            'topic': 'PROFILE_DIAGNOSTIC',
-        })
-        self.add_record({
+            'category_id': ['bravo'],
             'order': 0,
-            'sentence_template': 'Hello world',
-            'topic': 'PROJECT_DIAGNOSTIC',
+            'sentence_template': 'Hello\n\nworld',
+            'score': 50,
+            'text_template': 'This is why you got this score.',
         })
 
-        self.assertEqual(2, len(self.airtable2dicts()))
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
 
-    def test_import_attention(self) -> None:
-        """Diagnostic observations can have an 'isAttentionNeeded' flag."""
-
-        self.add_record({
-            'is_attention_needed': True,
-            'order': 1,
-            'sentence_template': 'Less important hello world',
-            'topic': 'PROFILE_DIAGNOSTIC',
-        })
-
-        converted_record = self.airtable2dicts()[0]
-        self.assertTrue(converted_record.get('isAttentionNeeded'))
+        mock_logging.assert_called_once()
+        error_message = mock_logging.call_args[0][0] % mock_logging.call_args[0][1:]
+        self.assertIn('a single line', error_message)
+        self.assertIn('Hello\n\nworld', error_message)
 
 
-class DiagnosticCategoryConverterTestCase(_ConverterTestCase):
-    """Tests for the DiagnosticCategory converter."""
+class DiagnosticMainChallengeConverterTestCase(_ConverterTestCase):
+    """Tests for the DiagnosticMainChallenge converter."""
 
-    converter_id = 'DiagnosticCategory'
+    converter_id = 'DiagnosticMainChallenge'
 
     def test_order_needed(self) -> None:
         """Cannot import a category without an order."""
@@ -1254,6 +1235,28 @@ class DiagnosticCategoryConverterTestCase(_ConverterTestCase):
         with self.assertRaises(ValueError):
             self.airtable2dicts()
 
+    def test_achievement_should_not_be_punctuated(self) -> None:
+        """Stop import if an achievement ends with a dot."""
+
+        self.add_record({
+            'category_id': 'missing-diploma',
+            'achievement_text': 'Good diploma.',
+            'order': 1,
+        })
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+
+    def test_achievement_should_have_uppercase(self) -> None:
+        """Stop import if an achievement text does not start with an uppercase letter."""
+
+        self.add_record({
+            'category_id': 'stuck-market',
+            'achievement_text': 'bad market',
+            'order': 1,
+        })
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+
 
 class StrategyAdviceTemplateConverterTestCase(_ConverterTestCase):
     """Test for the strategy advice templates, which convert an array to a single element."""
@@ -1274,7 +1277,7 @@ class StrategyAdviceTemplateConverterTestCase(_ConverterTestCase):
             'strategyId': 'rec0123456789',
         }], self.airtable2dicts())
 
-    @mock.patch(airtable_to_protos.logging.__name__ + '.error')
+    @mock.patch('logging.error')
     def test_dupes(self, mock_logging: mock.MagicMock) -> None:
         """Should warn when two records have the same strategy/advice."""
 
@@ -1295,17 +1298,103 @@ class StrategyAdviceTemplateConverterTestCase(_ConverterTestCase):
         self.assertIn('There are duplicate records', error_message)
 
 
+class MailingCampaignConverterTestCase(_ConverterTestCase):
+    """Tests for the campaign converter."""
+
+    converter_id = 'Campaign'
+
+    must_check_translations = True
+
+    def test_missing_campaign(self) -> None:
+        """A missing campaign should not be importable."""
+
+        self.add_record({
+            'campaign_id': 'unknown-campaign',
+        })
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+
+    @mock.patch(airtable_to_protos.checker.mailjet_templates.__name__ + '.MAP', new={
+        'french-campaign': {'mailjetTemplate': 279688, 'name': 'french-campaign'},
+    })
+    def test_fr_campaign(self) -> None:
+        """An existing campaign can be imported in French."""
+
+        self.add_record({
+            'campaign_id': 'french-campaign',
+        })
+        self.assertEqual(1, len(self.airtable2dicts()))
+
+    @mock.patch(airtable_to_protos.checker.mailjet_templates.__name__ + '.MAP', new={
+        'french-campaign': {'mailjetTemplate': 279688, 'name': 'french-campaign'},
+    })
+    @mock.patch(
+        airtable_to_protos.checker.translation.__name__ + '.LOCALES_TO_CHECK',
+        new=frozenset(['en']))
+    def test_missing_english_campaign(self) -> None:
+        """A campaign without relevant translation should not be importable."""
+
+        self.add_record({
+            'campaign_id': 'french-campaign',
+        })
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+
+    @mock.patch(airtable_to_protos.checker.mailjet_templates.__name__ + '.MAP', new={
+        'my-campaign': {'mailjetTemplate': 279688, 'name': 'my-campaign', 'i18n': {'en': 1234}},
+    })
+    @mock.patch(
+        airtable_to_protos.checker.translation.__name__ + '.LOCALES_TO_CHECK',
+        new=frozenset(['en']))
+    def test_en_campaign(self) -> None:
+        """A translated campaign can be imported."""
+
+        self.add_record({
+            'campaign_id': 'my-campaign',
+        })
+        self.assertEqual(1, len(self.airtable2dicts()))
+
+    @mock.patch(airtable_to_protos.checker.mailjet_templates.__name__ + '.MAP', new={
+        'french-campaign': {'mailjetTemplate': 279688, 'name': 'french-campaign'},
+    })
+    def test_favor_strategy_scoring_model(self) -> None:
+        """The favor-strategy scoring model is used."""
+
+        self.add_record({
+            'campaign_id': 'french-campaign',
+            'favor-strategy': ['other-leads', 'other-leads-covid'],
+        })
+        dicts = self.airtable2dicts()
+        self.assertEqual(1, len(dicts))
+        self.assertIn('scoringModel', dicts[0])
+        self.assertEqual('favor-strategy(other-leads,other-leads-covid)', dicts[0]['scoringModel'])
+
+    @mock.patch(airtable_to_protos.checker.mailjet_templates.__name__ + '.MAP', new={
+        'french-campaign': {'mailjetTemplate': 279688, 'name': 'french-campaign'},
+    })
+    def test_favor_strategy_conflicts(self) -> None:
+        """The favor-strategy conflicts with the scoring model."""
+
+        self.add_record({
+            'campaign_id': 'french-campaign',
+            'favor-strategy': ['other-leads', 'other-leads-covid'],
+            'scoring_model': 'constant(2)',
+        })
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+
+
 class _VariousUniqueKeysConverter(airtable_to_protos.ProtoAirtableConverter):
 
     def __init__(self) -> None:
         super().__init__(network_pb2.ContactLeadTemplate)
 
-    def unique_keys(self, record: Dict[str, Any]) -> Sequence[Any]:
+    def unique_keys(self, proto_record: Mapping[str, Any]) -> Sequence[Any]:
         """Function to return keys that should be unique among other records."""
 
         # Return each letter as a unique key. Note that it can only work if the record all have
         # names with the same number of letters.
-        return tuple((letter,) for letter in record.get('name', ''))
+        return tuple((letter,) for letter in proto_record.get('name', ''))
 
 
 @mock.patch.dict(
@@ -1315,7 +1404,7 @@ class VariousUniqueKeysConverterTest(_ConverterTestCase):
 
     converter_id = 'various_unique_keys'
 
-    @mock.patch(airtable_to_protos.logging.__name__ + '.error')
+    @mock.patch('logging.error')
     def test_various_unique_keys(self, mock_logging: mock.MagicMock) -> None:
         """Checks that if the converter changes the number of keys it returns, tests fail."""
 
@@ -1326,6 +1415,100 @@ class VariousUniqueKeysConverterTest(_ConverterTestCase):
         mock_logging.assert_called_once()
         error_message = mock_logging.call_args[0][0] % mock_logging.call_args[0][1:]
         self.assertIn('does not have the same number of unique keys', error_message)
+
+
+class AirtableToProtosTests(_ConverterTestCase):
+    """Test the main function of airtable_to_protos script."""
+
+    converter_id = 'AdviceModule'
+
+    must_check_translations = True
+
+    def setUp(self) -> None:
+        super().setUp()
+        airtable_id = self.add_record({
+            'advice_id': 'Foo',
+            'trigger_scoring_model': 'constant(2)',
+        })
+        self._expected_records = [{
+            'airtableId': airtable_id,
+            'adviceId': 'Foo',
+            'triggerScoringModel': 'constant(2)',
+        }]
+
+    def test_alt_table(self) -> None:
+        """Test that we fallback to the alt_table."""
+
+        self.assertEqual(
+            self._expected_records,
+            self.airtable2dicts(table='other-table-name', alt_table=self._table))
+
+    def test_alt_table_fails(self) -> None:
+        """Test that we properly fail if both talbe and alt_table are missing."""
+
+        with self.assertRaises(Exception):
+            self.airtable2dicts(table='other-table-name', alt_table='other-table-name')
+
+    def test_alt_table_only_as_fallback(self) -> None:
+        """Test that the main table has priority over the alt_table."""
+
+        self._base.create('alternative table', {
+            'advice_id': 'No show',
+            'trigger_scoring_model': 'constant(2)',
+        })
+
+        self.assertEqual(self._expected_records, self.airtable2dicts(alt_table='alternative table'))
+
+    def test_i18n_translate_key_is_missing(self) -> None:
+        """Test that the import fails if a required keyed translation is missing."""
+
+        self.add_record({
+            'advice_id': 'my-custom-advice',
+            'trigger_scoring_model': 'constant(2)',
+            'title': 'French version of the title',
+        })
+
+        self.add_translation('French version of the title', {
+            'en': 'English version of the title',
+            'fr@tu': 'Fr tutoiement version of the title',
+        })
+
+        self.add_translation('myCollection:my-custom-advice:title', {})
+
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+
+    def test_i18n_translate_with_key(self) -> None:
+        """Test that the import works if the key is translated."""
+
+        self.add_record({
+            'advice_id': 'my-custom-advice',
+            'trigger_scoring_model': 'constant(2)',
+            'title': 'French version of the title',
+        })
+
+        self.add_translation('myCollection:my-custom-advice:title', {
+            'en': 'English version of the title',
+            'fr@tu': 'Fr tutoiement version of the title\u00a0: cool',
+        })
+
+        self.airtable2dicts()
+
+    def test_i18n_translate_with_key_is_checked(self) -> None:
+        """Test that the import works if the key is translated."""
+
+        self.add_record({
+            'advice_id': 'my-custom-advice',
+            'trigger_scoring_model': 'constant(2)',
+            'title': 'French version of the title',
+        })
+
+        self.add_translation('myCollection:my-custom-advice:title', {
+            'en': 'English version of the title',
+            'fr@tu': 'Fr tutoiement version of the title : without the proper spacing before :',
+        })
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
 
 
 if __name__ == '__main__':

@@ -1,8 +1,17 @@
+import {TFunction} from 'i18next'
 import Storage from 'local-storage-fallback'
+import {useMemo} from 'react'
 import {useSelector} from 'react-redux'
+import {useTranslation} from 'react-i18next'
 
-import {ClientFilter} from './french'
-import {WithLocalizableName, prepareT} from './i18n'
+import {RootState} from 'store/actions'
+import {convertFromProtoPost} from 'store/api'
+import {parseQueryString} from 'store/parse'
+
+import {DEGREE_OPTIONS} from 'deployment/profile_options'
+import {sampleCities, sampleJobs} from 'deployment/user_examples'
+
+import {LocalizableString, WithLocalizableName, prepareT} from './i18n'
 import {PROJECT_EXPERIENCE_OPTIONS, PROJECT_LOCATION_AREA_TYPE_OPTIONS, PROJECT_PASSIONATE_OPTIONS,
   SENIORITY_OPTIONS, TRAINING_FULFILLMENT_ESTIMATE_OPTIONS} from './project'
 
@@ -33,32 +42,26 @@ function userAge(yearOfBirth: number): number {
 
 // Returns a list of all frustrations of a user, as tags.
 // TODO(guillaume): Pull directly from Airtable when we know for sure the shape.
-function getUserFrustrationTags(profile: bayes.bob.UserProfile): readonly string[] {
-  const maybeE = profile.gender === 'FEMININE' ? 'e' : ''
+function getUserFrustrationTags(profile: bayes.bob.UserProfile, t: TFunction): readonly string[] {
   const frustrationsToTag: {[f: string]: string} = {
-    AGE_DISCRIMINATION: 'Discriminations (âge)',
-    ATYPIC_PROFILE: 'Profil atypique',
-    EXPERIENCE: "L'expérience demandée",
-    HANDICAPED: 'Handicap non adapté',
-    INTERVIEW: "Entretiens d'embauche",
-    MOTIVATION: `Rester motivé${maybeE}`,
-    NO_OFFERS: "Pas assez d'offres",
-    NO_OFFER_ANSWERS: 'Pas assez de réponses',
-    RESUME: 'Rédaction CVs et lettres de motivation',
-    SEX_DISCRIMINATION: 'Discriminations (H/F)',
-    SINGLE_PARENT: 'Situation familiale compliquée',
-    TIME_MANAGEMENT: 'Gestion de mon temps',
-    TRAINING: 'Formations professionnelles',
+    AGE_DISCRIMINATION: t('Discriminations (âge)'),
+    ATYPIC_PROFILE: t('Profil atypique'),
+    EXPERIENCE: t("L'expérience demandée"),
+    HANDICAPED: t('Handicap non adapté'),
+    INTERVIEW: t("Entretiens d'embauche"),
+    MOTIVATION: t('Rester motivé·e', {context: profile.gender}),
+    NO_OFFERS: t("Pas assez d'offres"),
+    NO_OFFER_ANSWERS: t('Pas assez de réponses'),
+    RACE_DISCRIMINATION: t('Discriminations (ethnicité)'),
+    RESUME: t('Rédaction CVs et lettres de motivation'),
+    SEX_DISCRIMINATION: t('Discriminations (H/F)'),
+    SINGLE_PARENT: t('Situation familiale compliquée'),
+    TIME_MANAGEMENT: t('Gestion de mon temps'),
+    TRAINING: t('Formations professionnelles'),
   }
   return (profile.frustrations || []).
     map((f: bayes.bob.Frustration): string|undefined => frustrationsToTag[f]).
     filter((t: string|undefined): t is string => !!t)
-}
-
-
-interface SelectOption<T = string> {
-  readonly name: string
-  readonly value: T
 }
 
 
@@ -67,18 +70,13 @@ interface LocalizedSelectOption<T = string> extends WithLocalizableName {
 }
 
 
-const DEGREE_OPTIONS:
-readonly (SelectOption<bayes.bob.DegreeLevel> & {readonly equivalent?: string})[] = [
-  {name: '--', value: 'NO_DEGREE'},
-  {name: 'CAP - BEP', value: 'CAP_BEP'},
-  {name: 'Bac - Bac Pro', value: 'BAC_BACPRO'},
-  {equivalent: 'Bac+2', name: 'BTS - DUT - DEUG', value: 'BTS_DUT_DEUG'},
-  {equivalent: 'Bac+3', name: 'Licence - Maîtrise', value: 'LICENCE_MAITRISE'},
-  {equivalent: 'Bac+5 et plus', name: 'DEA - DESS - Master - PhD', value: 'DEA_DESS_MASTER_PHD'},
-]
+interface FrustrationOption extends LocalizedSelectOption<bayes.bob.Frustration> {
+  filter?: (profile: bayes.bob.UserProfile) => boolean
+  isCountryDependent?: true
+}
 
 
-const ORIGIN_OPTIONS: readonly LocalizedSelectOption<bayes.bob.UserOrigin>[] = [
+const ORIGIN_OPTIONS: readonly LocalizedSelectOption<bayes.bob.UserOrigin>[] = ([
   {name: prepareT('Recommandé par un ami'), value: 'FROM_A_FRIEND'},
   {name: prepareT("Par un groupe de recherche d'emploi"), value: 'FROM_JOBSEEKER_GROUP'},
   {
@@ -89,12 +87,102 @@ const ORIGIN_OPTIONS: readonly LocalizedSelectOption<bayes.bob.UserOrigin>[] = [
   {name: prepareT('Recommandé par un médiateur PIMMS'), value: 'FROM_PIMMS'},
   {name: prepareT('Recommandé par un autre site ou moteur de recherche'), value: 'FROM_WEBSITE'},
   {name: prepareT('Autre'), value: 'FROM_OTHER'},
-]
+] as const).filter(({value}) => !config.originOptionsExcluded.includes(value))
 
 const GENDER_OPTIONS: readonly LocalizedSelectOption<bayes.bob.Gender>[] = [
   {name: prepareT('une femme'), value: 'FEMININE'},
   {name: prepareT('un homme'), value: 'MASCULINE'},
 ] as const
+
+
+const parentSituation: Set<bayes.bob.FamilySituation> =
+  new Set(['SINGLE_PARENT_SITUATION', 'FAMILY_WITH_KIDS'])
+const isPotentialLongTermMom = ({familySituation, gender}: bayes.bob.UserProfile): boolean =>
+  gender === 'FEMININE' && !!familySituation && parentSituation.has(familySituation)
+
+const FRUSTRATION_OPTIONS: readonly FrustrationOption[] = ([
+  {
+    name: prepareT("Le **manque d'offres**, correspondant à mes critères"),
+    value: 'NO_OFFERS',
+  },
+  {
+    name: prepareT('Le **manque de réponses** des recruteurs, même négatives'),
+    value: 'NO_OFFER_ANSWERS',
+  },
+  {
+    name: prepareT(
+      'La rédaction des **CVs** et **lettres de motivation**',
+    ),
+    value: 'RESUME',
+  },
+  {
+    name: prepareT("Les **entretiens** d'embauche"),
+    value: 'INTERVIEW',
+  },
+  {
+    name: prepareT('Le système des **formations** professionnelles'),
+    value: 'TRAINING',
+  },
+  {
+    name: prepareT('La difficulté de **rester motivé·e** dans ma recherche'),
+    value: 'MOTIVATION',
+  },
+  {
+    name: prepareT('Le manque de **confiance en moi**'),
+    value: 'SELF_CONFIDENCE',
+  },
+  {
+    name: prepareT('La gestion de mon temps pour être **efficace**'),
+    value: 'TIME_MANAGEMENT',
+  },
+  {
+    name: prepareT("L'**expérience demandée** pour le poste"),
+    value: 'EXPERIENCE',
+  },
+  {
+    isCountryDependent: true,
+    // i18next-extract-mark-context-next-line ["fr", "uk", "us"]
+    name: prepareT('Mon niveau en **français**'),
+    value: 'LANGUAGE',
+  },
+  {
+    isCountryDependent: true,
+    // i18next-extract-mark-context-next-line ["fr", "uk", "us"]
+    name: prepareT('Mes qualifications ne sont **pas reconnues en France**'),
+    value: 'FOREIGN_QUALIFICATIONS',
+  },
+  {
+    name: prepareT('**Ne pas rentrer dans les cases** des recruteurs'),
+    value: 'ATYPIC_PROFILE',
+  },
+  {
+    name: prepareT('Des discriminations liées à mon **âge**'),
+    value: 'AGE_DISCRIMINATION',
+  },
+  {
+    // TODO(pascal): Reassess when we show this.
+    filter: ({gender}: bayes.bob.UserProfile): boolean => gender === 'FEMININE',
+    name: prepareT('Des discriminations liées à mon **sexe**'),
+    value: 'SEX_DISCRIMINATION',
+  },
+  {
+    name: prepareT('Des discriminations liées à mon **origine ethnique**'),
+    value: 'RACE_DISCRIMINATION',
+  },
+  {
+    // TODO(pascal): Reassess when we show this.
+    filter: isPotentialLongTermMom,
+    name: prepareT("L'interruption de ma carrière pour **élever mes enfants**"),
+    value: 'STAY_AT_HOME_PARENT',
+  },
+  {
+    filter: ({familySituation}: bayes.bob.UserProfile) =>
+      !!familySituation && parentSituation.has(familySituation),
+    name: prepareT("L'accès à un **mode de garde** pour mon ou mes enfants"),
+    value: 'CHILD_CARE',
+  },
+] as const).filter(({value}) => !config.frustrationOptionsExcluded.includes(value))
+
 
 export const personalizationsPredicates = {
   GRADUATE: ({highestDegree}: bayes.bob.UserProfile): boolean =>
@@ -113,7 +201,7 @@ type PersonalizationPredicate =
   (profile: bayes.bob.UserProfile, project: bayes.bob.Project) => boolean
 
 type ProjectPredicate = (project: bayes.bob.Project) => boolean
-export const filterPredicatesMatch: {[K in ClientFilter]: ProjectPredicate} = {
+export const filterPredicatesMatch: {[K in download.ClientFilter]: ProjectPredicate} = {
   'for-experienced(2)': ({seniority}: bayes.bob.Project): boolean => seniority === 'EXPERT' ||
     seniority === 'SENIOR' || seniority === 'INTERMEDIARY',
   'for-experienced(6)': ({seniority}: bayes.bob.Project): boolean =>
@@ -124,28 +212,29 @@ function isEmailTemplatePersonalized(
   personalisations: readonly string[],
   profile: bayes.bob.UserProfile, project: bayes.bob.Project): boolean {
   // Check that personalization is not directly a frustration.
-  const isFrustration = (profile.frustrations || []).find((frustration): boolean =>
-    !!personalisations.find((personalisation): boolean => personalisation === frustration))
+  const isFrustration = profile.frustrations?.some(
+    (frustration): boolean => personalisations.includes(frustration))
   if (isFrustration) {
     return true
   }
 
-  return !!personalisations.
+  return personalisations.
     map((p: string): PersonalizationPredicate|undefined =>
       personalizationsPredicates[p as Personalization]).
-    find((predicate: PersonalizationPredicate|undefined): boolean =>
-      !!predicate && predicate(profile, project))
+    some(predicate => predicate?.(profile, project))
 }
 
-function projectMatchAllFilters(project: bayes.bob.Project, filters?: readonly ClientFilter[]):
-boolean {
+function projectMatchAllFilters(
+  project: bayes.bob.Project, filters?: readonly download.ClientFilter[],
+): boolean {
   return !(filters || []).
-    some((filter: ClientFilter): boolean => !filterPredicatesMatch[filter](project))
+    some((filter: download.ClientFilter): boolean => !filterPredicatesMatch[filter](project))
 }
 
 // A function that returns a description for a degree.
 // If no degree, we do not return any a description.
-function getHighestDegreeDescription(userProfile: bayes.bob.UserProfile): string|undefined {
+function getHighestDegreeDescription(userProfile: bayes.bob.UserProfile):
+LocalizableString|undefined {
   if (userProfile.highestDegree === 'NO_DEGREE') {
     // Exception where we do not want to show the option's name.
     return
@@ -155,26 +244,33 @@ function getHighestDegreeDescription(userProfile: bayes.bob.UserProfile): string
 }
 
 
-// 2635200000 = 1000 * 60 * 60 * 24 * 30.5
-const MILLIS_IN_MONTH = 2635200000
+// 2,635,200,000 = 1000 * 60 * 60 * 24 * 30.5
+const MILLIS_IN_MONTH = 2_635_200_000
 
 
 // Returns user's job search length.
-// TODO(sil): Update this when we stop using jobSearchLengthMonths.
+// -1 means: not started yet
+// 0 means: unknown
+// positive number means the number of month
 function getJobSearchLengthMonths(project: bayes.bob.Project): number {
-  const {jobSearchHasNotStarted = false,
-    jobSearchLengthMonths = 0, jobSearchStartedAt = ''} = project
-  return jobSearchHasNotStarted ? -1 : jobSearchStartedAt ?
-    Math.round((Date.now() - new Date(jobSearchStartedAt).getTime()) / MILLIS_IN_MONTH) :
-    jobSearchLengthMonths
+  const {jobSearchHasNotStarted = false, jobSearchStartedAt = '', createdAt = Date.now()} = project
+  if (jobSearchHasNotStarted) {
+    return -1
+  }
+  if (!jobSearchStartedAt) {
+    return 0
+  }
+  const createdAtTime = createdAt ? new Date(createdAt).getTime() : Date.now()
+  const duration = createdAtTime - new Date(jobSearchStartedAt).getTime()
+  return Math.round(duration / MILLIS_IN_MONTH)
 }
 
 
 const FAMILY_SITUATION_OPTIONS: readonly LocalizedSelectOption<bayes.bob.FamilySituation>[] = [
-  {name: prepareT('Célibataire'), value: 'SINGLE'},
-  {name: prepareT('En couple'), value: 'IN_A_RELATIONSHIP'},
-  {name: prepareT('Famille avec enfants'), value: 'FAMILY_WITH_KIDS'},
-  {name: prepareT('Parent seul'), value: 'SINGLE_PARENT_SITUATION'},
+  {name: prepareT('Célibataire sans enfant'), value: 'SINGLE'},
+  {name: prepareT('En couple sans enfant'), value: 'IN_A_RELATIONSHIP'},
+  {name: prepareT('Parent en couple'), value: 'FAMILY_WITH_KIDS'},
+  {name: prepareT('Parent célibataire'), value: 'SINGLE_PARENT_SITUATION'},
 ]
 
 
@@ -198,7 +294,7 @@ bayes.bob.User {
 
 
 function getUserLocale(profile?: bayes.bob.UserProfile): string {
-  return profile?.locale || 'fr'
+  return profile?.locale || config.defaultLang
 }
 
 
@@ -215,84 +311,59 @@ function useGender(): bayes.bob.Gender|undefined {
 
 
 function pickRandom<T>(options: readonly T[]): T {
-  return options[Math.floor(Math.random() * options.length)]
+  return options[Math.floor(Math.random() * options.length)] as T
 }
 
 
-const sampleJobs: readonly bayes.bob.Job[] = [
-  // Keep this one first or update the reference below (sampleJobs[0]).
-  {
-    codeOgr: '19364',
-    feminineName: prepareT('Secrétaire'),
+function translateJob(translate: TFunction, job: typeof sampleJobs[number]): bayes.bob.Job {
+  const {
+    feminineName,
     jobGroup: {
-      name: prepareT('Secrétariat'),
-      romeId: 'M1607',
-    },
-    masculineName: prepareT('Secrétaire'),
-    name: prepareT('Secrétaire'),
-  },
-  {
-    codeOgr: '12688',
-    feminineName: prepareT('Coiffeuse'),
+      name: jobGroupName,
+      ...otherJobGroupProps
+    } = {},
+    masculineName,
+    name,
+    ...otherProps
+  } = job
+  return {
+    ...otherProps,
+    feminineName: feminineName && translate(...feminineName),
     jobGroup: {
-      name: prepareT('Coiffure'),
-      romeId: 'D1202',
+      ...otherJobGroupProps,
+      name: jobGroupName && translate(...jobGroupName),
     },
-    masculineName: prepareT('Coiffeur'),
-    name: 'Coiffeur / Coiffeuse',
-  },
-  {
-    codeOgr: '11573',
-    feminineName: prepareT('Boulangère'),
-    jobGroup: {
-      name: prepareT('Boulangerie - viennoiserie'),
-      romeId: 'D1102',
-    },
-    masculineName: prepareT('Boulanger'),
-    name: prepareT('Boulanger / Boulangère'),
-  },
-  {
-    codeOgr: '16067',
-    feminineName: prepareT('Jardinière'),
-    jobGroup: {
-      name: prepareT('Aménagement et entretien des espaces verts'),
-      romeId: 'A1203',
-    },
-    masculineName: prepareT('Jardinier'),
-    name: prepareT('Jardinier / Jardinière'),
-  },
-] as const
+    masculineName: masculineName && translate(...masculineName),
+    name: name && translate(...name),
+  }
+}
 
 
-const sampleCities: readonly bayes.bob.FrenchCity[] = [
-  // Keep this one first or update the reference below (sampleCities[0]).
-  {
-    cityId: '80021',
-    departementId: '80',
-    departementName: 'Somme',
-    departementPrefix: 'dans la ',
-    name: 'Amiens',
-    population: 133448,
-    postcodes: '80000-80080-80090',
-    publicTransportationScore: 5.26,
-    regionId: '32',
-    regionName: 'Hauts-de-France',
-    urbanScore: 6,
-  },
-  {
-    cityId: '32208',
-    departementId: '32',
-    departementName: 'Gers',
-    departementPrefix: 'dans le ',
-    name: 'Lectoure',
-    population: 3785,
-    postcodes: '32700',
-    publicTransportationScore: 5.26,
-    regionId: '76',
-    regionName: 'Occitanie',
-    urbanScore: 1,
-  },
-]
+const getUserFormUrl = ((): (() => bayes.bob.User) => {
+  let userFromURL: bayes.bob.User = {}
+  async function fetchUserFromUrl(search: string): Promise<void> {
+    if (!search) {
+      return
+    }
+    const {userExample: user = undefined} = parseQueryString(search)
+    if (!user) {
+      return
+    }
+    if (user.startsWith('{')) {
+      try {
+        userFromURL = JSON.parse(user) as bayes.bob.User
+      } catch {
+        return
+      }
+    }
+    const userParsed = await convertFromProtoPost('user', user)
+    if (userParsed) {
+      userFromURL = userParsed
+    }
+  }
+  fetchUserFromUrl(window.location.search)
+  return () => userFromURL
+})()
 
 
 type PropsRequired<T, K extends keyof T> = T & Required<Pick<T, K>>
@@ -302,9 +373,11 @@ type PopulatedUser = bayes.bob.User & {
   profile: PropsRequired<bayes.bob.UserProfile,
   | 'coachingEmailFrequency'
   | 'familySituation'
+  | 'frustrations'
   | 'gender'
   | 'hasCarDrivingLicense'
   | 'highestDegree'
+  | 'name'
   | 'origin'
   | 'yearOfBirth'>
   projects: [PropsRequired<bayes.bob.Project,
@@ -327,35 +400,40 @@ type PopulatedUser = bayes.bob.User & {
 }
 
 
-function getUserExample(isRandom: boolean): PopulatedUser {
+function getUserExample(isRandom: boolean, translate: TFunction): PopulatedUser {
+  const t = translate
+  const userFromURL = getUserFormUrl()
   return {
     profile: {
       coachingEmailFrequency: pickRandom(COACHING_EMAILS_OPTIONS).value,
       familySituation: pickRandom(FAMILY_SITUATION_OPTIONS).value,
-      // TODO(pascal): Add frustrations.
-      gender: pickRandom(['FEMININE', 'MASCULINE']),
+      frustrations: FRUSTRATION_OPTIONS.map(({value}) => value).filter(() => Math.random() > .5),
+      gender: isRandom ? pickRandom(['FEMININE', 'MASCULINE']) : 'FEMININE',
       hasCarDrivingLicense: pickRandom(['TRUE', 'FALSE']),
       highestDegree: isRandom ? pickRandom(DEGREE_OPTIONS).value : 'BAC_BACPRO',
+      name: t('Angèle'),
       origin: pickRandom(ORIGIN_OPTIONS).value,
       yearOfBirth: isRandom ? Math.round(1950 + 50 * Math.random()) : 1995,
+      ...userFromURL.profile,
     },
     projects: [{
       areaType: isRandom ? pickRandom(PROJECT_LOCATION_AREA_TYPE_OPTIONS).value : 'COUNTRY',
       city: isRandom ? pickRandom(sampleCities) : sampleCities[0],
       employmentTypes: ['CDI'],
-      jobSearchStartedAt: new Date(new Date().getTime() - MILLIS_IN_MONTH * 6).toISOString(),
+      jobSearchStartedAt: new Date(Date.now() - MILLIS_IN_MONTH * 6).toISOString(),
       kind: 'FIND_A_NEW_JOB',
-      minSalary: 21500,
+      minSalary: 21_500,
       networkEstimate: Math.floor(Math.random() * 3) + 1,
       passionateLevel: isRandom ? pickRandom(PROJECT_PASSIONATE_OPTIONS).value : 'PASSIONATING_JOB',
       previousJobSimilarity: pickRandom(PROJECT_EXPERIENCE_OPTIONS).value,
       seniority: pickRandom(SENIORITY_OPTIONS).value,
-      targetJob: isRandom ? pickRandom(sampleJobs) : sampleJobs[0],
+      targetJob: translateJob(translate, isRandom ? pickRandom(sampleJobs) : sampleJobs[0]),
       totalInterviewCount: isRandom ? (Math.floor(Math.random() * 22) || -1) : -1,
       trainingFulfillmentEstimate: pickRandom(TRAINING_FULFILLMENT_ESTIMATE_OPTIONS).value,
       weeklyApplicationsEstimate: 'SOME',
       weeklyOffersEstimate: 'DECENT_AMOUNT',
       workloads: ['FULL_TIME'],
+      ...userFromURL.projects?.[0],
     }],
   }
 }
@@ -370,11 +448,18 @@ if (isRandomFastForward) {
     'Random Fast-Forward is activated. ' +
     'To disable run: localStorage.removeItem("randomFastForward") and refresh.')
 }
-const userExample = getUserExample(isRandomFastForward)
+
+
+function useUserExample(): PopulatedUser {
+  const {t} = useTranslation()
+  return useMemo((): PopulatedUser => {
+    return getUserExample(isRandomFastForward, t)
+  }, [t])
+}
 
 
 function getUniqueExampleEmail(): string {
-  return 'test-' + (new Date().getTime()) + '@example.com'
+  return 'test-' + (Date.now()) + '@example.com'
 }
 
 
@@ -400,11 +485,51 @@ function addProjectIds(user: bayes.bob.User): bayes.bob.User {
 }
 
 
+// To setup the convince page demo:
+//    localStorage.setItem('convincePageDev', '1')
+// then refresh the page.
+const isConvincePageDevActivated = !!Storage.getItem('convincePageDev')
+if (isConvincePageDevActivated) {
+  // eslint-disable-next-line no-console
+  console.log(
+    'Convince Page Dev is activated. ' +
+    'To disable run: localStorage.removeItem("convincePageDev") and refresh.')
+}
+
+
+// Main feature flag for the Convince Page sprint.
+// TODO(émilie): Delete useAlwaysConvincePage when launched.
+function useAlwaysConvincePage(): boolean {
+  return true
+}
+
+// To setup the selfDiagnostic in intro demo:
+//    localStorage.setItem('selfDiagIntroDev', '1')
+// then refresh the page.
+const isSelfDiagnosticInIntro = !!Storage.getItem('selfDiagIntroDev')
+if (isSelfDiagnosticInIntro) {
+  // eslint-disable-next-line no-console
+  console.log(
+    'Self diagnostic in intro Dev is activated. ' +
+    'To disable run: localStorage.removeItem("selfDiagIntroDev") and refresh.')
+}
+
+// Main feature flag for self diagnostic moved into the intro.
+// TODO(émilie): Delete when released.
+function useSelfDiagnosticInIntro(): boolean {
+  const lateSelfDiagnostic = useSelector(
+    ({user: {featuresEnabled}}: {user: bayes.bob.User}) => featuresEnabled?.lateSelfDiagnostic)
+  return lateSelfDiagnostic !== 'ACTIVE'
+}
+
+const useEmailsInProfile = (): boolean =>
+  useSelector(({user: {featuresEnabled: {alpha} = {}}}: RootState) => !!alpha)
+
 export {
   getUserFrustrationTags, USER_PROFILE_FIELDS, increaseRevision,
-  userAge, getHighestDegreeDescription, keepMostRecentRevision,
+  userAge, getHighestDegreeDescription, keepMostRecentRevision, useEmailsInProfile,
   FAMILY_SITUATION_OPTIONS, DEGREE_OPTIONS, ORIGIN_OPTIONS, isEmailTemplatePersonalized,
-  projectMatchAllFilters, COACHING_EMAILS_OPTIONS, GENDER_OPTIONS, userExample,
+  projectMatchAllFilters, COACHING_EMAILS_OPTIONS, GENDER_OPTIONS, useUserExample,
   getUniqueExampleEmail, getJobSearchLengthMonths, getUserLocale, isAdvisorUser,
-  useGender, addProjectIds,
+  useGender, addProjectIds, FRUSTRATION_OPTIONS, useAlwaysConvincePage, useSelfDiagnosticInIntro,
 }

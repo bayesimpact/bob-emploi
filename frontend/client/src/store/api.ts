@@ -1,56 +1,50 @@
 import i18n from 'i18next'
 
-function cleanHtmlError(htmlErrorPage: string): string {
-  const page = document.createElement('html')
-  page.innerHTML = htmlErrorPage
-  const content = page.getElementsByTagName('P') as HTMLCollectionOf<HTMLElement>
-  return content.length && content[0].textContent || page.textContent || ''
-}
+import {forwardCancellation} from 'store/promise'
+import {HTTPRequest, HTTPResponse, cleanHtmlError, hasErrorStatus} from 'store/http'
 
-interface HTTPRequest {
-  body?: string
-  credentials?: 'omit'
-  headers?: {
-    [headerName: string]: string
-  }
-  method?: 'post' | 'get' | 'delete'
-}
-
-interface HTTPResponse {
-  json: <T>() => Promise<T>
-  status: number
-  text: () => Promise<string>
-}
-
-function handleJsonResponse<T>(response: HTTPResponse): Promise<T> {
+async function handleJsonResponse<T>(response: HTTPResponse): Promise<T> {
   // Errors are in HTML, not JSON.
-  if (response.status >= 400 || response.status < 200) {
-    return response.text().then((errorMessage): never => {
-      throw cleanHtmlError(errorMessage)
-    })
+  if (hasErrorStatus(response)) {
+    throw await cleanHtmlError(response)
   }
   return response.json()
 }
 
-const fetchWithoutCookies = (path: string, request: HTTPRequest): Promise<HTTPResponse> =>
-  fetch(path, {
-    credentials: 'omit',
-    ...request,
-    headers: {
-      ...request.headers,
-      ...(i18n.languages ? {'Accept-language': i18n.languages.join(',')} : undefined),
-    },
-  })
+const fetchWithoutCookies = (path: string, request: HTTPRequest, isCancelable = !!AbortController):
+Promise<HTTPResponse> => {
+  const controller = isCancelable ? new AbortController() : {abort: () => void 0, signal: undefined}
+  return forwardCancellation(
+    fetch(path, {
+      credentials: 'omit',
+      ...request,
+      headers: {
+        ...request.headers,
+        ...(i18n.languages ? {'Accept-language': i18n.languages.join(',')} : undefined),
+      },
+      signal: controller.signal,
+    }),
+    () => controller.abort(),
+  )
+}
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function postJson(path: string, data: any, isExpectingResponse: false, authToken?: string):
-Promise<HTTPResponse>
-function postJson<T>(path: string, data: any, isExpectingResponse: true, authToken?: string):
-Promise<T>
+
+interface PostOptions {
+  authToken?: string
+  isExpectingResponse?: boolean
+  isCancelable?: boolean
+}
+
+
 function postJson<T>(
-  path: string, data: any, isExpectingResponse: boolean, authToken?: string):
-  Promise<T | HTTPResponse> {
-/* eslint-enable @typescript-eslint/no-explicit-any */
+  path: string, data: unknown,
+  options: {isExpectingResponse: true} & PostOptions): Promise<T>
+function postJson(
+  path: string, data: unknown,
+  options?: {isExpectingResponse?: false} & PostOptions): Promise<HTTPResponse>
+async function postJson<T>(
+  path: string, data: unknown, options?: PostOptions): Promise<T | HTTPResponse> {
+  const {isExpectingResponse, authToken, isCancelable = !!AbortController} = options || {}
   const headers: {[key: string]: string} = {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
@@ -58,20 +52,18 @@ function postJson<T>(
   if (authToken) {
     headers['Authorization'] = 'Bearer ' + authToken
   }
-  const fetchPromise = fetchWithoutCookies(path, {
+  const response = await fetchWithoutCookies(path, {
     body: JSON.stringify(data),
     headers,
     method: 'post',
-  })
+  }, isCancelable)
   if (isExpectingResponse) {
-    return fetchPromise.
-      then((response: HTTPResponse): Promise<T> => handleJsonResponse<T>(response))
+    return handleJsonResponse<T>(response)
   }
-  return fetchPromise
+  return response
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function deleteJson<T>(path: string, data: any, authToken?: string): Promise<T> {
+async function deleteJson<T>(path: string, data: unknown, authToken?: string): Promise<T> {
   const headers: {[key: string]: string} = {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
@@ -79,85 +71,65 @@ function deleteJson<T>(path: string, data: any, authToken?: string): Promise<T> 
   if (authToken) {
     headers['Authorization'] = 'Bearer ' + authToken
   }
-  return fetchWithoutCookies(path, {
+  const response = await fetchWithoutCookies(path, {
     body: JSON.stringify(data),
     headers,
     method: 'delete',
-  }).then((response): Promise<T> => handleJsonResponse<T>(response))
+  })
+  return handleJsonResponse<T>(response)
 }
 
-function getJson<T>(path: string, authToken?: string): Promise<T> {
+async function getJson<T>(path: string, authToken?: string): Promise<T> {
   const headers: {[key: string]: string} = {
     Accept: 'application/json',
   }
   if (authToken) {
     headers['Authorization'] = 'Bearer ' + authToken
   }
-  return fetchWithoutCookies(path, {headers}).
-    then((response): Promise<T> => handleJsonResponse<T>(response))
+  const response = await fetchWithoutCookies(path, {headers})
+  return handleJsonResponse<T>(response)
 }
 
-function adviceTipsGet(
+async function adviceTipsGet(
   {userId}: bayes.bob.User, {projectId}: bayes.bob.Project, {adviceId}: bayes.bob.Advice,
   authToken: string): Promise<readonly bayes.bob.Action[]> {
-  return getJson<bayes.bob.AdviceTips>(
-    `/api/advice/tips/${adviceId}/${userId}/${projectId}`, authToken).
-    then((response): readonly bayes.bob.Action[] => response.tips || [])
+  const {tips} = await getJson<bayes.bob.AdviceTips>(
+    `/api/advice/tips/${adviceId}/${userId}/${projectId}`, authToken)
+  return tips || []
 }
 
-function convertUserWithAdviceSelectionFromProtoPost<T>(proto: string): Promise<T> {
-  return fetchWithoutCookies('/api/user/proto', {
+async function convertFromProtoPost<K extends keyof bayes.bob.Reflection>(key: K, proto: string):
+Promise<bayes.bob.Reflection[K]> {
+  const response = await fetchWithoutCookies('/api/proto', {
     body: proto,
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/x-protobuf-base64',
     },
     method: 'post',
-  }).then((response): Promise<T> => handleJsonResponse<T>(response))
+  })
+  const value = await handleJsonResponse<NonNullable<bayes.bob.Reflection>>(response)
+  return value[key]
 }
 
-function convertUserWithAdviceSelectionToProtoPost<T>(proto: T): Promise<string> {
-  return fetchWithoutCookies('/api/user/proto', {
-    body: JSON.stringify(proto),
+async function convertToProtoPost<K extends keyof bayes.bob.Reflection>(
+  key: K, proto: NonNullable<bayes.bob.Reflection[K]>): Promise<string> {
+  const reflectionProto: bayes.bob.Reflection = {[key]: proto}
+  const response = await fetchWithoutCookies('/api/proto', {
+    body: JSON.stringify(reflectionProto),
     headers: {
       'Accept': 'application/x-protobuf-base64',
       'Content-Type': 'application/json',
     },
     method: 'post',
-  }).then((response): Promise<string> => response.text()).
-    then((response: string): string => response.replace(/\n/g, ''))
+  })
+  const text = await response.text()
+  return text.replace(/\n/g, '')
 }
 
-function createEvalUseCasePost(request: bayes.bob.UseCaseCreateRequest, googleIdToken: string):
-Promise<bayes.bob.UseCase> {
-  return postJson('/api/eval/use-case/create', request, true, googleIdToken)
-}
-
-function diagnosticCategoriesPost(user: bayes.bob.User): Promise<bayes.bob.DiagnosticCategories> {
-  return postJson('/api/diagnostic/categories', user, true)
-}
-
-function evalUseCasePoolsGet(authToken: string): Promise<readonly bayes.bob.UseCasePool[]> {
-  return getJson<bayes.bob.UseCasePools>('/api/eval/use-case-pools', authToken).
-    then((response): readonly bayes.bob.UseCasePool[] => response.useCasePools || [])
-}
-
-function evalFiltersUseCasesPost(
-  filters: readonly string[], googleIdToken: string): Promise<readonly bayes.bob.UseCase[]> {
-  return postJson<bayes.bob.UseCases>('/api/eval/use-case/filters', {filters}, true, googleIdToken).
-    then((response): readonly bayes.bob.UseCase[] => response.useCases || [])
-}
-
-function evalUseCasesGet(poolName: string, authToken: string):
-Promise<readonly bayes.bob.UseCase[]> {
-  return getJson<bayes.bob.UseCases>(`/api/eval/use-cases/${poolName}`, authToken).
-    then((response): readonly bayes.bob.UseCase[] => response.useCases || [])
-}
-
-function useCaseDistributionPost(
-  categories: bayes.bob.UseCasesDistributionRequest, authToken: string):
-  Promise<bayes.bob.UseCaseDistribution> {
-  return postJson('/api/eval/category/distribution', categories, true, authToken)
+function diagnosticMainChallengesPost(user: bayes.bob.User):
+Promise<bayes.bob.DiagnosticMainChallenges> {
+  return postJson('/api/diagnostic/main-challenges', user, {isExpectingResponse: true})
 }
 
 function expandedCardContentGet<T>(
@@ -175,7 +147,7 @@ function expandedCardContentGet<T>(
       ...user,
       projects: (user.projects || []).filter((p): boolean => p.projectId === project.projectId),
     },
-    true)
+    {isExpectingResponse: true})
 }
 
 function jobRequirementsGet(romeId: string): Promise<bayes.bob.JobRequirements> {
@@ -194,13 +166,18 @@ function authTokensGet(userId: string, authToken: string): Promise<bayes.bob.Aut
   return getJson(`/api/user/${userId}/generate-auth-tokens`, authToken)
 }
 
+function userCountsGet(): Promise<bayes.bob.UsersCount> {
+  return getJson('/api/usage/stats')
+}
+
 function markUsedAndRetrievePost(userId: string, authToken: string): Promise<bayes.bob.User> {
-  return postJson(`/api/app/use/${userId}`, undefined, true, authToken)
+  return postJson(`/api/app/use/${userId}`, undefined, {authToken, isExpectingResponse: true})
 }
 
 function migrateUserToAdvisorPost({userId}: bayes.bob.User, authToken: string):
 Promise<bayes.bob.User> {
-  return postJson(`/api/user/${userId}/migrate-to-advisor`, undefined, true, authToken)
+  return postJson(
+    `/api/user/${userId}/migrate-to-advisor`, undefined, {authToken, isExpectingResponse: true})
 }
 
 function onboardingDiagnosePost(data: bayes.bob.QuickDiagnosticRequest, authToken: string):
@@ -208,55 +185,69 @@ Promise<bayes.bob.QuickDiagnostic> {
   const {userId, projects: [{projectId = ''} = {}] = []} = data.user || {}
   const path = projectId ? `/api/user/${userId}/update-and-quick-diagnostic/project/${projectId}` :
     `/api/user/${userId}/update-and-quick-diagnostic`
-  return postJson(path, data, true, authToken)
+  return postJson(path, data, {authToken, isExpectingResponse: true})
 }
 
 function projectComputeAdvicesPost(user: bayes.bob.User): Promise<bayes.bob.Advices> {
-  return postJson('/api/project/compute-advices', user, true)
+  return postJson('/api/project/compute-advices', user, {isExpectingResponse: true})
 }
 
 function projectDiagnosePost(user: bayes.bob.User): Promise<bayes.bob.Diagnostic> {
-  return postJson('/api/project/diagnose', user, true)
+  return postJson('/api/project/diagnose', user, {isExpectingResponse: true})
 }
 
 function projectStrategizePost(user: bayes.bob.User): Promise<bayes.bob.Strategies> {
-  return postJson('/api/project/strategize', user, true)
+  return postJson('/api/project/strategize', user, {isExpectingResponse: true})
 }
 
 function resetPasswordPost(email: string): Promise<string> {
-  return postJson('/api/user/reset-password', {email}, true)
+  return postJson('/api/user/reset-password', {email}, {isExpectingResponse: true})
 }
 
-function userPost(user: bayes.bob.User, token: string): Promise<bayes.bob.User> {
-  return postJson('/api/user', user, true, token)
+function userPost(user: bayes.bob.User, authToken: string): Promise<bayes.bob.User> {
+  return postJson('/api/user', user, {authToken, isCancelable: false, isExpectingResponse: true})
 }
 
 function projectPost(
   {userId}: bayes.bob.User, {projectId}: bayes.bob.Project, project: bayes.bob.Project,
   authToken: string): Promise<bayes.bob.Project> {
   return postJson(
-    `/api/user/${userId}/project/${projectId}`, project, true, authToken)
+    `/api/user/${userId}/project/${projectId}`, project, {authToken, isExpectingResponse: true})
 }
 
 function advicePost(
   {userId}: bayes.bob.User, {projectId}: bayes.bob.Project, {adviceId}: bayes.bob.Advice,
   advice: bayes.bob.Advice, authToken: string): Promise<bayes.bob.Advice> {
   return postJson(
-    `/api/user/${userId}/project/${projectId}/advice/${adviceId}`, advice, true, authToken)
+    `/api/user/${userId}/project/${projectId}/advice/${adviceId}`, advice,
+    {authToken, isExpectingResponse: true})
 }
 
-function simulateFocusEmailsPost(user: bayes.bob.User): Promise<bayes.bob.User> {
-  return postJson('/api/emails/simulate', user, true)
+function sendEmailPost(
+  user: bayes.bob.User, campaignId: string, googleIdToken: string): Promise<unknown> {
+  return postJson(
+    `/api/emails/send/${campaignId}`, user, {authToken: googleIdToken, isExpectingResponse: true})
 }
 
-function strategyDelete(
+function sendUserEmailPost(
+  {userId}: bayes.bob.User, campaignId: string, authToken: string): Promise<unknown> {
+  return postJson(
+    `/api/user/${userId}/emails/send/${campaignId}`, 0, {authToken, isExpectingResponse: true})
+}
+
+function simulateFocusEmailsPost(user: bayes.bob.User): Promise<bayes.bob.EmailHistory> {
+  return postJson('/api/emails/simulate', user, {isExpectingResponse: true})
+}
+
+async function strategyDelete(
   {userId}: bayes.bob.User, {projectId}: bayes.bob.Project, {strategyId}: bayes.bob.Strategy,
   authToken: string): Promise<string> {
   const path = `/api/user/${userId}/project/${projectId}/strategy/${strategyId}`
-  return fetchWithoutCookies(path, {
+  const response = await fetchWithoutCookies(path, {
     headers: {Authorization: `Bearer ${authToken}`},
     method: 'delete',
-  }).then((response): Promise<string> => response.text())
+  })
+  return response.text()
 }
 
 function strategyPost(
@@ -264,11 +255,12 @@ function strategyPost(
   authToken: string): Promise<bayes.bob.Strategy> {
   const {strategyId} = strategy
   return postJson(
-    `/api/user/${userId}/project/${projectId}/strategy/${strategyId}`, strategy, true, authToken)
+    `/api/user/${userId}/project/${projectId}/strategy/${strategyId}`, strategy,
+    {authToken, isExpectingResponse: true})
 }
 
-function supportTicketPost(userId: string, authToken: string, ticketId: string): Promise<{}> {
-  return postJson(`/api/support/${userId}/${ticketId}`, undefined, false, authToken)
+function supportTicketPost(userId: string, authToken: string, ticketId: string): Promise<unknown> {
+  return postJson(`/api/support/${userId}/${ticketId}`, undefined, {authToken})
 }
 
 function userDelete(user: bayes.bob.User, authToken: string): Promise<bayes.bob.User> {
@@ -279,42 +271,50 @@ function userDelete(user: bayes.bob.User, authToken: string): Promise<bayes.bob.
 // As opposed to other function in this module, this one differentiates client errors (bad auth
 // token) and server errors (HTTP 500 and such). In the latter case, it actually returns a
 // hand made custom response so that the callers can handle it differently.
-function userAuthenticate(authRequest: bayes.bob.AuthRequest): Promise<bayes.bob.AuthResponse> {
-  return postJson('/api/user/authenticate', authRequest, false).
-    then((response: HTTPResponse): Promise<bayes.bob.AuthResponse> => {
-      if (response.status >= 500) {
-        return response.text().then((errorMessage: string): bayes.bob.AuthResponse => {
-          return {
-            errorMessage: cleanHtmlError(errorMessage),
-            isServerError: true,
-          }
-        })
-      }
-      if (response.status === 498) {
-        return response.text().then((errorMessage: string): bayes.bob.AuthResponse => ({
-          errorMessage: cleanHtmlError(errorMessage),
-          hasTokenExpired: true,
-        }))
-      }
-      return handleJsonResponse<bayes.bob.AuthResponse>(response)
-    })
+async function userAuthenticate(authRequest: bayes.bob.AuthRequest):
+Promise<bayes.bob.AuthResponse> {
+  const response = await postJson('/api/user/authenticate', authRequest)
+  if (response.status >= 500) {
+    return {
+      errorMessage: await cleanHtmlError(response),
+      isServerError: true,
+    }
+  }
+  if (response.status === 498) {
+    return {
+      errorMessage: await cleanHtmlError(response),
+      hasTokenExpired: true,
+    }
+  }
+  return handleJsonResponse<bayes.bob.AuthResponse>(response)
 }
 
-function feedbackPost(feedback: bayes.bob.Feedback, authToken?: string): Promise<{}> {
-  return postJson('/api/feedback', feedback, false, authToken)
+function feedbackPost(feedback: bayes.bob.Feedback, authToken?: string): Promise<unknown> {
+  return postJson('/api/feedback', feedback, {authToken})
 }
 
 function projectLaborStatsPost(user: bayes.bob.User): Promise<bayes.bob.LaborStatsData> {
-  return postJson('/api/compute-labor-stats', user, true)
-}
-
-function getAllCategoriesPost(useCase: bayes.bob.UseCase, authToken: string):
-Promise<bayes.bob.DiagnosticCategories> {
-  return postJson('/api/eval/use-case/categories', useCase, true, authToken)
+  return postJson('/api/compute-labor-stats', user, {isExpectingResponse: true})
 }
 
 function aliUserDataPost(request: bayes.ali.User): Promise<bayes.ali.EmailStatuses> {
-  return postJson('/api/ali/user', request, true)
+  return postJson('/api/ali/user', request, {isExpectingResponse: true})
+}
+
+async function upskillingSectionsPost(user: bayes.bob.User):
+Promise<readonly bayes.upskilling.Section[]> {
+  const {sections} = await postJson<bayes.upskilling.Sections>(
+    '/api/upskilling/sections', user, {isExpectingResponse: true})
+  return sections || []
+}
+
+async function upskillingSectionsMoreJobPost(
+  user: bayes.bob.User, section: bayes.upskilling.Section,
+): Promise<readonly bayes.upskilling.Job[]> {
+  const {jobs} = await postJson<bayes.upskilling.Section>(
+    `/api/upskilling/sections/${section.id || ''}/jobs/${section.state || ''}`, user,
+    {isExpectingResponse: true})
+  return jobs || []
 }
 
 export {
@@ -323,33 +323,34 @@ export {
   aliUserDataPost,
   applicationModesGet,
   authTokensGet,
-  convertUserWithAdviceSelectionFromProtoPost,
-  convertUserWithAdviceSelectionToProtoPost,
-  createEvalUseCasePost,
-  diagnosticCategoriesPost,
-  evalFiltersUseCasesPost,
-  evalUseCasePoolsGet,
-  evalUseCasesGet,
+  convertFromProtoPost,
+  convertToProtoPost,
+  diagnosticMainChallengesPost,
   expandedCardContentGet,
   feedbackPost,
-  getAllCategoriesPost,
+  getJson,
   jobRequirementsGet,
   jobsGet,
   markUsedAndRetrievePost,
   migrateUserToAdvisorPost,
   onboardingDiagnosePost,
+  postJson,
   projectComputeAdvicesPost,
   projectDiagnosePost,
   projectLaborStatsPost,
   projectStrategizePost,
   projectPost,
   resetPasswordPost,
+  sendEmailPost,
+  sendUserEmailPost,
   simulateFocusEmailsPost,
   strategyDelete,
   strategyPost,
   supportTicketPost,
-  useCaseDistributionPost,
+  upskillingSectionsMoreJobPost,
+  upskillingSectionsPost,
   userAuthenticate,
+  userCountsGet,
   userDelete,
   userPost,
 }

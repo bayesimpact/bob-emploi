@@ -15,26 +15,30 @@ import typing
 from typing import Any, Callable, Dict, List, NoReturn, Optional, Tuple, TypedDict
 from urllib import parse
 
+import bson
 from bson import objectid
 import flask
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 from google.protobuf import json_format
 from google.protobuf import timestamp_pb2
-from oauth2client import client
-from oauth2client import crypt
-import pymongo
 import requests
+from requests import exceptions as request_exceptions
 from werkzeug import exceptions
 from werkzeug import http
 
 
+from bob_emploi.common.python import now
 from bob_emploi.frontend.server import french
 from bob_emploi.frontend.server import geo
+from bob_emploi.frontend.server import i18n
 from bob_emploi.frontend.server import jobs
-from bob_emploi.frontend.server import mail
-from bob_emploi.frontend.server import now
+from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import privacy
 from bob_emploi.frontend.server import proto
+from bob_emploi.frontend.server.mail import mail_send
 from bob_emploi.frontend.api import auth_pb2
+from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import user_pb2
 
 if typing.TYPE_CHECKING:
@@ -52,9 +56,6 @@ _LinkedInEmailResponse = TypedDict(
     '_LinkedInEmailResponse', {
         'handle~': Dict[str, str],
     }, total=False)
-
-_GOOGLE_SSO_ISSUERS = frozenset({
-    'accounts.google.com', 'https://accounts.google.com'})
 
 # https://console.cloud.google.com/apis/credentials/oauthclient/1052239456978-tgef7mpqd3qoq723hag0v45035nqnivt.apps.googleusercontent.com?project=bayesimpact-my-game-plan
 _GOOGLE_SSO_CLIENT_ID = os.getenv(
@@ -81,7 +82,7 @@ SECRET_SALT = os.getenv(
     'SECRET_SALT',
     FAKE_SECRET_SALT.decode('ascii')).encode('ascii', 'ignore')
 # Validity of generated salt tokens.
-_SALT_VALIDITY_SECONDS = datetime.timedelta(hours=2).total_seconds()
+_SALT_VALIDITY_SECONDS = datetime.timedelta(days=2).total_seconds()
 
 _ADMIN_AUTH_TOKEN = os.getenv('ADMIN_AUTH_TOKEN')
 
@@ -98,6 +99,24 @@ _AUTH_FIELDS = {
 }
 
 http.HTTP_STATUS_CODES[498] = 'Authentication token expired'
+
+_MA_VOIE_API_URL = os.getenv('MA_VOIE_API_URL')
+_MA_VOIE_AUTH = tuple(os.getenv('MA_VOIE_AUTH', ':').split(':', 1))
+
+
+def _register_to_ma_voie(ma_voie: user_pb2.MaVoieInfo) -> None:
+    if not _MA_VOIE_API_URL or not _MA_VOIE_AUTH[0] or not _MA_VOIE_AUTH[1]:
+        logging.warning(
+            'Ma Voie registration is not well configured:\nURL "%s"\nusername "%s"\npassword %s',
+            _MA_VOIE_API_URL, _MA_VOIE_AUTH[0], '"****"' if _MA_VOIE_AUTH[1] else 'not set')
+        return
+    response = requests.post(
+        f'{_MA_VOIE_API_URL}/user/{ma_voie.ma_voie_id}/register',
+        auth=_MA_VOIE_AUTH, json={'stepId': ma_voie.step_id})
+    try:
+        response.raise_for_status()
+    except request_exceptions.HTTPError:
+        logging.error("Couln't register user to Ma Voie.")
 
 
 class ExpiredTokenException(exceptions.HTTPException):
@@ -132,12 +151,14 @@ def require_user(get_user_id: Callable[..., str], role: str = 'auth') \
         def _decorated_fun(*args: Any, **kwargs: Any) -> Any:
             auth_token = flask.request.headers.get('Authorization', '').replace('Bearer ', '')
             if not auth_token:
-                flask.abort(401, 'Token manquant')
+                auth_token = flask.request.args.get('token', '')
+            if not auth_token:
+                flask.abort(401, i18n.flask_translate('Token manquant'))
             user_id = get_user_id(*args, **kwargs)
             try:
                 check_token(user_id, auth_token, role=role)
             except ValueError:
-                flask.abort(403, 'Unauthorized token')
+                flask.abort(403, i18n.flask_translate('Unauthorized token'))
             return func(*args, **kwargs)
         return functools.wraps(func)(_decorated_fun)
     return _decorator
@@ -151,11 +172,11 @@ def require_user_in_args(role: str = 'auth') -> Callable[[Callable[..., Any]], C
             auth_token = flask.request.args.get('token')
             user_id = flask.request.args.get('user')
             if not user_id or not auth_token:
-                flask.abort(422, 'Paramètres manquants.')
+                flask.abort(422, i18n.flask_translate('Paramètres manquants.'))
             try:
                 check_token(user_id, auth_token, role=role)
             except ValueError:
-                flask.abort(403, 'Accès non autorisé.')
+                flask.abort(403, i18n.flask_translate('Accès non autorisé.'))
             return func(*args, **dict(kwargs, user_id=user_id))
         return functools.wraps(func)(_decorated_fun)
     return _decorator
@@ -188,11 +209,14 @@ def require_google_user(
                     kwargs = dict(kwargs, **{email_kwarg: 'admin@bayesimpact.org'})
                 return wrapped(*args, **kwargs)
             if not authorization.startswith('Bearer '):
-                flask.abort(401, 'Token manquant')
+                flask.abort(401, i18n.flask_translate('Token manquant'))
             id_info = _decode_google_id_token(authorization.replace('Bearer ', ''))
             email = id_info['email']
             if not emails_regexp.search(email):
-                flask.abort(401, f'Adresse email "{email}" non autorisée')
+                flask.abort(
+                    401,
+                    i18n.flask_translate('Adresse email "{email}" non autorisée')
+                    .format(email=email))
             if email_kwarg:
                 kwargs = dict(kwargs, **{email_kwarg: email})
             return wrapped(*args, **kwargs)
@@ -206,15 +230,15 @@ def _decode_google_id_token(token_id: str) -> Dict[str, str]:
     check that ISS is valid, and return the token content.
     This function calls flask.abort if anything is wrong"""
 
+    request = google_requests.Request()
     try:
         id_info = typing.cast(
-            Dict[str, str], client.verify_id_token(token_id, _GOOGLE_SSO_CLIENT_ID))
-    except crypt.AppIdentityError as error:
-        flask.abort(401, f"Mauvais jeton d'authentification : {error}")
-    if id_info.get('iss') not in _GOOGLE_SSO_ISSUERS:
+            Dict[str, str], id_token.verify_oauth2_token(token_id, request, _GOOGLE_SSO_CLIENT_ID))
+    except ValueError as error:
         flask.abort(
             401,
-            f"Fournisseur d'authentification invalide : {id_info.get('iss', '<none>')}.")
+            i18n.flask_translate("Mauvais jeton d'authentification\xa0: {error}.")
+            .format(error=error))
     return id_info
 
 
@@ -227,7 +251,7 @@ def hash_user_email(email: str) -> str:
     return hashed_email.hexdigest()
 
 
-def delete_user(user_proto: user_pb2.User, user_database: pymongo.database.Database) -> bool:
+def delete_user(user_proto: user_pb2.User, user_database: mongo.UsersDatabase) -> bool:
     """Close a user's account.
 
     We assume the given user_proto is up-to-date, e.g. just being fetched from database.
@@ -235,7 +259,7 @@ def delete_user(user_proto: user_pb2.User, user_database: pymongo.database.Datab
 
     try:
         user_id = objectid.ObjectId(user_proto.user_id)
-    except objectid.InvalidId:
+    except bson.errors.InvalidId:
         logging.exception('Tried to delete a user with invalid ID "%s"', user_proto.user_id)
         return False
     filter_user = {'_id': user_id}
@@ -268,22 +292,24 @@ def _replace_arrondissement_insee_to_city(code_insee: str) -> str:
 
 def _parse_user_from_mongo(user_dict: Dict[str, Any], user: user_pb2.User) -> None:
     if not proto.parse_from_mongo(user_dict, user, 'user_id'):
-        flask.abort(500, 'Les données utilisateur sont corrompues dans la base de données.')
+        flask.abort(
+            500,
+            i18n.flask_translate(
+                'Les données utilisateur sont corrompues dans la base de données.'))
 
 
-class Authenticator(object):
+class Authenticator:
     """An object to authenticate requests."""
 
     def __init__(
-            self, user_db: pymongo.database.Database, db: Optional[pymongo.database.Database],
+            self, user_db: mongo.UsersDatabase, db: Optional[mongo.NoPiiMongoDatabase],
             save_new_user: Callable[[user_pb2.User], user_pb2.User],
-            update_returning_user: '_UpdateReturningUserFuncType',
-            user_collection: str = 'user') -> None:
+            update_returning_user: '_UpdateReturningUserFuncType') -> None:
         self._user_db = user_db
         self._db = db
         self._save_new_user = save_new_user
         self._update_returning_user = update_returning_user
-        self._user_collection = self._user_db.get_collection(user_collection)
+        self._user_collection = self._user_db.user
 
     def save_new_user(
             self, user: user_pb2.User, user_data: auth_pb2.AuthUserData) -> user_pb2.User:
@@ -291,6 +317,14 @@ class Authenticator(object):
 
         user.profile.locale = user_data.locale
         user.features_enabled.alpha = user_data.is_alpha
+        user.features_enabled.exclude_from_analytics = user_data.is_alpha
+        if user_data.HasField('ma_voie'):
+            user.ma_voie.CopyFrom(user_data.ma_voie)
+            _register_to_ma_voie(user_data.ma_voie)
+        if user_data.HasField('original_self_diagnostic'):
+            original_self_diagnostic = diagnostic_pb2.SelfDiagnostic()
+            original_self_diagnostic.CopyFrom(user_data.original_self_diagnostic)
+            user.projects.add(is_incomplete=True, original_self_diagnostic=original_self_diagnostic)
 
         return self._save_new_user(user)
 
@@ -315,7 +349,7 @@ class Authenticator(object):
             return self._create_guest_user(auth_request)
 
         logging.warning('No mean of authentication found:\n%s', auth_request)
-        flask.abort(422, "Aucun moyen d'authentification n'a été trouvé.")
+        flask.abort(422, i18n.flask_translate("Aucun moyen d'authentification n'a été trouvé."))
 
     def _google_authenticate(self, auth_request: auth_pb2.AuthRequest) -> auth_pb2.AuthResponse:
         id_info = _decode_google_id_token(auth_request.google_token_id)
@@ -382,7 +416,7 @@ class Authenticator(object):
         )
 
         if token_data.get('nonce') != auth_request.pe_connect_nonce:
-            flask.abort(403, 'Mauvais paramètre nonce')
+            flask.abort(403, i18n.flask_translate('Mauvais paramètre nonce'))
         bearer = token_data.get('token_type', 'Bearer')
         access_token = token_data.get('access_token', '')
         authorization_header = f'{bearer} {access_token}'
@@ -425,7 +459,7 @@ class Authenticator(object):
                 job_id, rome_id = next(
                     ((c.get('codeAppellation'), c.get('codeRome')) for c in competences),
                     (None, None))
-                if job_id and rome_id:
+                if job_id and rome_id and self._db:
                     job = jobs.get_job_proto(self._db, job_id, rome_id)
 
         response = auth_pb2.AuthResponse()
@@ -531,10 +565,12 @@ class Authenticator(object):
                 user_auth_name = auth_name
                 break
         else:
-            user_auth_name = 'Email/Mot de passe'
+            user_auth_name = i18n.flask_translate('Email/Mot de passe')
         flask.abort(
             403,
-            f"L'utilisateur existe mais utilise un autre moyen de connexion: {user_auth_name}.")
+            i18n.flask_translate(
+                "L'utilisateur existe mais utilise un autre moyen de connexion\xa0: "
+                '{user_auth_name}.').format(user_auth_name=user_auth_name))
 
     def _email_authenticate(self, auth_request: auth_pb2.AuthRequest) -> auth_pb2.AuthResponse:
         instant = int(time.time())
@@ -562,13 +598,15 @@ class Authenticator(object):
                 self.send_auth_token(user_dict)
                 flask.abort(
                     403,
-                    f'Nous avons envoyé un email à {auth_request.email} avec un lien pour se '
-                    'connecter',
+                    i18n.flask_translate(
+                        'Nous avons envoyé un email à {email} avec un lien pour se connecter',
+                    ).format(email=auth_request.email),
                 )
             try:
                 check_token(user_id, auth_request.auth_token, role='auth')
             except ValueError as error:
-                flask.abort(403, f'Token invalide : {error}.')
+                flask.abort(
+                    403, i18n.flask_translate('Token invalide : {error}.').format(error=error))
             # User that already uses an SSO account is now trying to add a password.
             _parse_user_from_mongo(user_dict, response.authenticated_user)
             self._user_db.user_auth.insert_one({
@@ -607,7 +645,9 @@ class Authenticator(object):
                 return response
         except ValueError as error:
             flask.abort(
-                403, f"Le sel n'a pas été généré par ce serveur : {error}.")
+                403,
+                i18n.flask_translate("Le sel n'a pas été généré par ce serveur\xa0: {error}.")
+                .format(error=error))
 
         stored_hashed_password = user_auth_dict.get('hashedPassword', '')
 
@@ -616,7 +656,7 @@ class Authenticator(object):
         hashed_password.update(stored_hashed_password.encode('ascii'))
         request_hashed_password = binascii.unhexlify(auth_request.hashed_password)
         if request_hashed_password != hashed_password.digest():
-            flask.abort(403, 'Mot de passe erroné.')
+            flask.abort(403, i18n.flask_translate('Mot de passe erroné.'))
 
         _parse_user_from_mongo(user_dict, response.authenticated_user)
         response.auth_token = create_token(user_id, 'auth')
@@ -642,8 +682,8 @@ class Authenticator(object):
         force_update = False
         had_email = bool(response.authenticated_user.profile.email)
         if not is_existing_user and auth_request.hashed_password:
-            if not (auth_request.first_name and auth_request.last_name):
-                flask.abort(422, 'Un champs requis est manquant (prénom ou nom)')
+            if not auth_request.first_name:
+                flask.abort(422, i18n.flask_translate('Le champ first_name est nécessaire'))
 
         should_create_account = not is_existing_user and auth_request.hashed_password
         if is_existing_user or should_create_account:
@@ -688,11 +728,14 @@ class Authenticator(object):
                 auth_request.email + user_id + user_auth_dict.get('hashedPassword', ''),
                 int(time.time()))
             if not is_token_valid:
-                raise ExpiredTokenException("Le jeton d'authentification est périmé.")
+                raise ExpiredTokenException(
+                    i18n.flask_translate("Le jeton d'authentification est périmé."))
         except ValueError as error:
             flask.abort(
                 401,
-                f"Le jeton d'authentification n'a pas été généré par ce serveur : {error}.")
+                i18n.flask_translate(
+                    "Le jeton d'authentification n'a pas été généré par ce serveur\xa0: {error}.")
+                .format(error=error))
         self._user_db.user_auth.replace_one(
             {'_id': objectid.ObjectId(user_id)},
             {'hashedPassword': auth_request.hashed_password})
@@ -703,7 +746,7 @@ class Authenticator(object):
         response.hash_salt = _timestamped_hash(instant, auth_request.email)
         self._load_user_with_token(auth_request, response.authenticated_user)
         if response.authenticated_user.HasField('deleted_at'):
-            flask.abort(404, 'Compte supprimé')
+            flask.abort(404, i18n.flask_translate('Compte supprimé'))
         response.auth_token = create_token(auth_request.user_id, 'auth')
         self._handle_returning_user(response)
 
@@ -716,22 +759,29 @@ class Authenticator(object):
             return False
         try:
             user_id = objectid.ObjectId(auth_request.user_id)
-        except objectid.InvalidId:
+        except bson.errors.InvalidId:
             flask.abort(
-                400, f'L\'identifiant utilisateur "{auth_request.user_id}" n\'a pas le bon format.')
+                400,
+                i18n.flask_translate(
+                    'L\'identifiant utilisateur "{user_id}" n\'a pas le bon format.',
+                ).format(user_id=auth_request.user_id))
         try:
             if not _assert_valid_salt(
                     auth_request.auth_token, str(user_id), int(time.time()),
-                    validity_seconds=datetime.timedelta(days=5).total_seconds()) \
+                    validity_seconds=datetime.timedelta(days=5).total_seconds(),
+                    optional_role='auth') \
                     and is_timestamp_required:
-                raise ExpiredTokenException("Token d'authentification périmé")
+                raise ExpiredTokenException(i18n.flask_translate("Token d'authentification périmé"))
         except ValueError as error:
-            flask.abort(403, f"Le sel n'a pas été généré par ce serveur : {error}.")
+            flask.abort(
+                403,
+                i18n.flask_translate("Le sel n'a pas été généré par ce serveur\xa0: {error}.")
+                .format(error=error))
 
         user_dict = self._user_collection.find_one({'_id': user_id})
 
         if not user_dict:
-            flask.abort(404, 'Utilisateur inconnu.')
+            flask.abort(404, i18n.flask_translate('Utilisateur inconnu.'))
 
         _parse_user_from_mongo(user_dict, out_user)
 
@@ -761,6 +811,8 @@ class Authenticator(object):
         """Create a token to reset the user's password."""
 
         user_dict = self._user_collection.find_one({'_id': user_id})
+        if not user_dict:
+            return None, ''
         return self._create_reset_token_from_user(user_dict)
 
     def _create_reset_token_from_user(self, user_dict: Dict[str, Any]) -> Tuple[Optional[str], str]:
@@ -782,16 +834,17 @@ class Authenticator(object):
 
         user_dict = self._user_collection.find_one({'hashedEmail': hash_user_email(email)})
         if not user_dict:
-            flask.abort(403, f"Nous n'avons pas d'utilisateur avec cet email : {email}")
+            flask.abort(
+                403,
+                i18n.flask_translate("Nous n'avons pas d'utilisateur avec cet email\xa0: {email}")
+                .format(email=email))
 
         auth_token, unused_email = self._create_reset_token_from_user(user_dict)
         if not auth_token:
-            flask.abort(
-                403, 'Utilisez Facebook ou Google pour vous connecter, comme la première fois.')
+            self.send_auth_token(user_dict)
+            return
 
-        user_profile = typing.cast(
-            user_pb2.UserProfile,
-            proto.create_from_mongo(user_dict.get('profile'), user_pb2.UserProfile))
+        user_profile = proto.create_from_mongo(user_dict.get('profile'), user_pb2.UserProfile)
 
         reset_link = parse.urljoin(flask.request.url, '/?' + parse.urlencode({
             'email': email,
@@ -800,7 +853,7 @@ class Authenticator(object):
             'resetLink': reset_link,
             'firstName': user_profile.name,
         }
-        result = mail.send_template('71254', user_profile, template_vars)
+        result = mail_send.send_template('reset-password', user_profile, template_vars)
         if result.status_code != 200:
             logging.error('Failed to send an email with MailJet:\n %s', result.text)
             flask.abort(result.status_code)
@@ -808,9 +861,7 @@ class Authenticator(object):
     def send_auth_token(self, user_dict: Dict[str, Any]) -> None:
         """Sends an email to the user with an auth token so that they can log in."""
 
-        user_profile = typing.cast(
-            user_pb2.UserProfile,
-            proto.create_from_mongo(user_dict.get('profile'), user_pb2.UserProfile))
+        user_profile = proto.create_from_mongo(user_dict.get('profile'), user_pb2.UserProfile)
 
         user_id = str(user_dict['_id'])
         auth_token = create_token(user_id, is_using_timestamp=True)
@@ -822,7 +873,7 @@ class Authenticator(object):
             'authLink': auth_link,
             'firstName': user_profile.name,
         }
-        result = mail.send_template('1140080', user_profile, template_vars)
+        result = mail_send.send_template('send-auth-token', user_profile, template_vars)
         if result.status_code != 200:
             logging.error('Failed to send an email with MailJet:\n %s', result.text)
             flask.abort(result.status_code)
@@ -888,7 +939,7 @@ def check_token(email: str, token: str, role: str = '') -> bool:
 
 def _assert_valid_salt(
         salt: str, email: str, instant: Optional[int] = None,
-        validity_seconds: float = _SALT_VALIDITY_SECONDS) \
+        validity_seconds: float = _SALT_VALIDITY_SECONDS, *, optional_role: str = '') \
         -> bool:
     """Asserts a salt is valid.
 
@@ -908,7 +959,8 @@ def _assert_valid_salt(
             # Salt is too old, let's hope the client will try again with the
             # new salt.
             return False
-    if salt_check != _unique_salt_check(timestamp, email):
+    if salt_check != _unique_salt_check(timestamp, email + optional_role) and (
+            not optional_role or salt_check != _unique_salt_check(timestamp, email)):
         raise ValueError("Salt's signature is invalid")
     return True
 
@@ -922,12 +974,12 @@ def _timestamped_hash(timestamp: int, value: str) -> str:
     return f'{timestamp:d}.{_unique_salt_check(timestamp, value)}'
 
 
-def _unique_salt_check(timestamp: int, email: str) -> str:
+def _unique_salt_check(timestamp: int, email: str, role: str = '') -> str:
     """Hash a timestamp and email to make a salt unique to our server."""
 
     salter = hashlib.sha1()
     salter.update(str(timestamp).encode('ascii'))
-    salter.update(str(email).encode('utf-8'))
+    salter.update(str(email + role).encode('utf-8'))
     salter.update(SECRET_SALT)
     return binascii.hexlify(salter.digest()).decode('ascii')
 

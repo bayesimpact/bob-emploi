@@ -10,13 +10,14 @@ import {Link, Redirect} from 'react-router-dom'
 import VisibilitySensor from 'react-visibility-sensor'
 
 import {DispatchAllActions, RootState, staticAdvicePageIsShown} from 'store/actions'
+import {LocalizableString} from 'store/i18n'
 
-import {CardCarousel} from 'components/card_carousel'
+import CardCarousel from 'components/card_carousel'
 import {CookieMessageOverlay} from 'components/cookie_message'
-import {Trans} from 'components/i18n'
+import Trans from 'components/i18n_trans'
 import {LoginButton} from 'components/login'
 import {useModal} from 'components/modal'
-import {isMobileVersion} from 'components/mobile'
+import isMobileVersion from 'store/mobile'
 import {ShareModal} from 'components/share'
 import {StaticPage, TitleSection} from 'components/static'
 import {MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING, Styles} from 'components/theme'
@@ -37,7 +38,7 @@ import Skills from './skills'
 
 interface AdviceModule {
   adviceId: string
-  name: string
+  name: LocalizableString
   StaticAdviceCard: React.ComponentType<CardProps>
   Page: React.ComponentType<AdvicePageProps>
 }
@@ -133,7 +134,7 @@ export interface CardProps {
 
 interface AdviceCardProps extends CardProps {
   children: React.ReactNode
-  name: string
+  name: LocalizableString
   picto: string
 }
 
@@ -142,7 +143,7 @@ const imageCardStyle = {height: 80, marginTop: 30, width: 80}
 const childrenCardStyle = {padding: 40}
 
 const StaticAdviceCard = (props: AdviceCardProps): React.ReactElement => {
-  const {children, name, picto, style, t: omittedT, ...otherProps} = props
+  const {children, name, picto, style, t: translate, ...otherProps} = props
   const containerStyle = useMemo((): React.CSSProperties => ({
     backgroundColor: '#fff',
     color: '#000',
@@ -152,13 +153,13 @@ const StaticAdviceCard = (props: AdviceCardProps): React.ReactElement => {
   }), [style])
 
   return <div style={containerStyle} {...otherProps}>
-    <img style={imageCardStyle} src={picto} alt={name} />
+    <img style={imageCardStyle} src={picto} alt={translate(...name)} />
     <div style={childrenCardStyle}>{children}</div>
   </div>
 }
 StaticAdviceCard.ropTypes = {
   children: PropTypes.node,
-  name: PropTypes.string,
+  name: PropTypes.arrayOf(PropTypes.string),
   picto: PropTypes.string,
   style: PropTypes.object,
 }
@@ -254,7 +255,7 @@ const StaticAdvicePageBase = (props: StaticAdvicePageProps): React.ReactElement 
   useEffect((): (() => void) => {
     if (shouldShowShareBob) {
       const timeout = window.setTimeout(showShareBob, 5000)
-      return (): void => clearTimeout(timeout)
+      return (): void => window.clearTimeout(timeout)
     }
     return (): void => void 0
   }, [shouldShowShareBob, showShareBob])
@@ -268,11 +269,11 @@ const StaticAdvicePageBase = (props: StaticAdvicePageProps): React.ReactElement 
   const url = getAbsoluteUrl(Routes.STATIC_ADVICE_PAGE + `/${adviceId}${TRACK_HASH}`)
   if (hash === TRACK_HASH) {
     const newSearch = `${search}${search ? '&' : '?'}${stringify({
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       utm_campaign: hash.slice(1),
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       utm_medium: 'link',
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       utm_source: 'bob-emploi',
     })}`
     return <Redirect to={`${pathname}${newSearch}`} />

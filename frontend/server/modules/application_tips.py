@@ -74,13 +74,13 @@ class _AdviceFreshResume(scoring_base.ModelBase):
         """Compute a score for the given ScoringProject."""
 
         if project.details.weekly_applications_estimate <= project_pb2.LESS_THAN_2 or \
-                project.details.job_search_length_months < 2:
-            return scoring_base.ExplainedScore(3, [project.translate_string(
+                project.get_search_length_at_creation() < 2:
+            return scoring_base.ExplainedScore(3, [project.translate_static_string(
                 'vous nous avez dit que vous en êtes au début de '
                 'vos candidatures')])
         if project.details.diagnostic.category_id == 'bravo' and \
                 user_pb2.RESUME in project.user_profile.frustrations:
-            return scoring_base.ExplainedScore(1, [project.translate_string(
+            return scoring_base.ExplainedScore(1, [project.translate_static_string(
                 'vous nous avez dit avoir du mal à rédiger votre CV')])
 
         return scoring_base.NULL_EXPLAINED_SCORE
@@ -122,13 +122,13 @@ class _AdviceImproveResume(scoring_base.ModelBase):
         """Compute a score for the given ScoringProject."""
 
         if (self._num_interviews_increase(project) >= 2 and
-                project.details.job_search_length_months <= 6):
-            return scoring_base.ExplainedScore(3, [project.translate_string(
+                project.get_search_length_at_creation() <= 6):
+            return scoring_base.ExplainedScore(3, [project.translate_static_string(
                 "nous pensons qu'avec votre profil vous pourriez "
                 "décrocher plus d'entretiens")])
         if project.details.diagnostic.category_id == 'bravo' and \
                 user_pb2.RESUME in project.user_profile.frustrations:
-            return scoring_base.ExplainedScore(1, [project.translate_string(
+            return scoring_base.ExplainedScore(1, [project.translate_static_string(
                 'vous nous avez dit avoir du mal à rédiger votre CV')])
         return scoring_base.NULL_EXPLAINED_SCORE
 
@@ -146,7 +146,7 @@ class _AdviceImproveInterview(scoring_base.ModelBase):
             -> scoring_base.ExplainedScore:
         if project.details.diagnostic.category_id == 'enhance-methods-to-interview':
             return scoring_base.ExplainedScore(3, [])
-        reasons = [project.translate_string(
+        reasons = [project.translate_static_string(
             "vous nous avez dit avoir passé beaucoup d'entretiens sans succès")]
         if project.details.total_interview_count < 0:
             num_interviews = 0
@@ -154,7 +154,10 @@ class _AdviceImproveInterview(scoring_base.ModelBase):
             num_interviews = project.details.total_interview_count
         else:
             num_interviews = _NUM_INTERVIEWS.get(project.details.total_interviews_estimate, 0)
-        num_monthly_interviews = num_interviews / (project.details.job_search_length_months or 1)
+        job_search_length_months = project.get_search_length_at_creation()
+        if job_search_length_months < 1:
+            job_search_length_months = 1
+        num_monthly_interviews = num_interviews / job_search_length_months
         if num_monthly_interviews > _max_monthly_interviews(project):
             return scoring_base.ExplainedScore(3, reasons)
         # Whatever the number of month of search, trigger 3 if the user did more than 5 interviews:
@@ -219,7 +222,7 @@ class _MethodsToInterviewRelevance(scoring_base.RelevanceModelBase):
     """A scoring model for the relevance of the category enhance-method-to-interview."""
 
     def score_relevance(self, project: scoring_base.ScoringProject) \
-            -> diagnostic_pb2.CategoryRelevance:
+            -> 'diagnostic_pb2.MainChallengeRelevance.V':
         try:
             project.score('category-enhance-methods-to-interview')
         except scoring_base.NotEnoughDataException:

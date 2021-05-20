@@ -89,8 +89,13 @@ data/rome/csv/unix_%_utf8.csv: data/rome/RefRomeCsv.%.zip
 	grep -q -r "2 D" data/rome/csv
 	# Check that the "3 D" bug is still there.
 	grep -q -r "3 D" data/rome/csv
+	# Check that the "Administratreur" bug is still there.
+	grep -q -r "Administratreur" data/rome/csv
+	# Check that the "en ind" bug is still there.
+	grep -q -r " en ind\"" data/rome/csv
 	# TODO: Get rid of this once the ROME has been cleaned up.
-	sed -i -e 's/2 D/2D/g;s/3 D/3D/g' data/rome/csv/*.csv
+	sed -i -e 's/2 D/2D/g;s/3 D/3D/g;s/Administratreur/Administrateur/g;s/ en ind"/ en industrie"/g' data/rome/csv/*.csv
+
 
 data/dares/caracteristiques_des_personnes_en_emploi_2014.xls:
 	mkdir -p $(@D)
@@ -117,6 +122,10 @@ data/crosswalks/Correspondance_Rome_Formacode.csv: data/crosswalks/Correspondanc
 	# TODO: Investigate why this line appeared and fix the parser.
 	sed -i '/Montage de produits électriques et électroniques H2604/d' $^
 	python bob_emploi/data_analysis/parsers/formacode_parser.py $^ > $@
+
+data/crosswalks/Correspondance_ROME_ISCO08.xlsx:
+	mkdir -p $(dir $@)
+	wget -O $@ http://www.pole-emploi.org/files/live/sites/peorg/files/documents/Statistiques-et-analyses/Open-data/ROME/Correspondance_ROME_ISCO08.xlsx
 
 bmo: data/bmo/bmo_2015.csv data/bmo/bmo_2014.csv data/bmo/bmo_2016.csv data/bmo/bmo_2017.csv data/bmo/bmo_2018.csv
 
@@ -168,28 +177,32 @@ data/tous_benevoles.xml:
 data/workup.json:
 	wget https://www.workuper.com/events/index_json.json -O $@
 
-data/imt/application_modes.csv:
+define get_imt_file
 	mkdir -p $(@D)/$$(date +%Y-%m-%d)
-	python bob_emploi/data_analysis/emploi_store_api/emploi_store_downloader.py imt "Canaux de reprise*" "$(@D)/$$(date +%Y-%m-%d)/$(@F)"
+	# Use s3 as a daily cache.
+	if aws s3 ls rome-pole-emploi/imt/$$(date +%Y-%m-%d)/$(@F); then \
+		aws s3 cp s3://rome-pole-emploi/imt/$$(date +%Y-%m-%d)/$(@F) "$(@D)/$$(date +%Y-%m-%d)/$(@F)"; \
+	else \
+		python bob_emploi/data_analysis/emploi_store_api/emploi_store_downloader.py imt $1 "$(@D)/$$(date +%Y-%m-%d)/$(@F)"; \
+		aws s3 cp "$(@D)/$$(date +%Y-%m-%d)/$(@F)" s3://rome-pole-emploi/imt/$$(date +%Y-%m-%d)/$(@F); \
+	fi
 	ln -s $$(date +%Y-%m-%d)/$(@F) $@
+endef
+
+data/imt/application_modes.csv:
+	$(call get_imt_file,"Canaux de reprise*")
 
 # This may take several minutes.
 data/imt/market_score.csv:
-	mkdir -p $(@D)/$$(date +%Y-%m-%d)
-	python bob_emploi/data_analysis/emploi_store_api/emploi_store_downloader.py imt "Statistiques offres et demandes" "$(@D)/$$(date +%Y-%m-%d)/$(@F)"
-	ln -s $$(date +%Y-%m-%d)/$(@F) $@
+	$(call get_imt_file,"Statistiques offres et demandes")
 
 # This may take several minutes.
 data/imt/employment_type.csv:
-	mkdir -p $(@D)/$$(date +%Y-%m-%d)
-	python bob_emploi/data_analysis/emploi_store_api/emploi_store_downloader.py imt "Types de contrats*" "$(@D)/$$(date +%Y-%m-%d)/$(@F)"
-	ln -s $$(date +%Y-%m-%d)/$(@F) $@
+	$(call get_imt_file,"Types de contrats*")
 
 # This may take several minutes.
 data/imt/salaries.csv:
-	mkdir -p $(@D)/$$(date +%Y-%m-%d)
-	python bob_emploi/data_analysis/emploi_store_api/emploi_store_downloader.py imt "Salaires*" "$(@D)/$$(date +%Y-%m-%d)/$(@F)"
-	ln -s $$(date +%Y-%m-%d)/$(@F) $@
+	$(call get_imt_file,"Salaires*")
 
 data/crosswalks/passage_pcs_romev3.csv:
 	mkdir -p $(dir $@)
@@ -223,16 +236,32 @@ data/pole_emploi/online-salons%.json:
 	mkdir -p "$(@D)"
 	python bob_emploi/data_analysis/emploi_store_api/online_events.py "$(@D)/online-salons-$$(date +%Y-%m-%d).json"
 
+data/vae-2018.xls:
+	mkdir -p $(@D)
+	wget -O "$@" https://cache.media.education.gouv.fr/file/2018/37/8/depp-ni-2018-18.30-donnees_1039378.xls
+
+data/esco:
+	echo "- Go on https://ec.europa.eu/esco/portal/download
+	echo "- Select Occupation and ISCO groups in Fr and En, as well as the "Broader relations" in CSV format
+	echo "- download and unzip it and save the CSV in data-analytics/data/esco"
+	exit 1
+
 # Bob-US datasets
 # The O*net database contains a rich set of variables that describe work and worker characteristics,
 # including skill requirements.
 # Note that this rule creates 35 files.
-data/usa/onet_v22_3/Occupation_Data.txt:
+data/usa/onet_22_3 data/usa/onet_22_3/Occupation_Data.txt data/usa/onet_22_3/Career_Changers_Matrix.txt data/usa/onet_22_3/Education_Training_and_Experience.txt:
 	mkdir -p "$(@D)"
 	wget -O "$@.zip" "https://www.onetcenter.org/dl_files/database/db_22_3_text.zip"
 	unzip "$@.zip" -d $(@D)
-	cd $(@D)/db_22_3_text ; for file in * ; do mv "$$file" $$(echo ../$$file | tr ' ' '_') ; done
+	cd $(@D)/db_22_3_text ; for file in * ; do mv "$$file" $$(echo ../$$file | tr ' ' '_' | tr ',' '') ; done
 	rm -rf "$@.zip" "$(@D)/db_22_3_text"
+
+# A list of US States with their name, USPS codes (NV, TX, CA, ...),
+# and their FIPS codes (01, 02, 03, ...).
+data/usa/states.txt:
+	mkdir -p "$(@D)"
+	wget -O "$@" "http://www2.census.gov/geo/docs/reference/state.txt?#"
 
 # The Bureau of Labor Statistics (BLS) of the U.S. Department of Labor is the principal federal
 # agency responsible for measuring labor market activity, working conditions,
@@ -241,6 +270,156 @@ data/usa/national_occupational_projections.xls:
 	mkdir -p "$(@D)"
 	wget -O "$@" "https://www.bls.gov/emp/ind-occ-matrix/occupation.xlsx"
 
-data/vae-2018.xls:
-	mkdir -p $(@D)
-	wget -O "$@" https://cache.media.education.gouv.fr/file/2018/37/8/depp-ni-2018-18.30-donnees_1039378.xls
+# The BLS of the U.S. provides unemployment info at the state level.
+data/usa/state_unemployment.xlsx:
+	mkdir -p "$(@D)"
+	wget -O "$@.zip" https://www.bls.gov/web/laus/ststdsadata.zip"
+	unzip "$@.zip" -d $(@D)
+	mv "$(@D)/ststdsadata.xlsx" "$@"
+	rm "$@.zip"
+
+# The U.S. Department of Labor’s Employment and Training Administration funded Projections Central,
+# a platform that provides long-term and short-term state occupational projections.
+# The platform is only available within the U.S. so make sure you are located there to run this.
+data/usa/employment_projections_short_term.xlsx:
+	mkdir -p "$(@D)"
+	wget -O "$@" "http://projectionscentral.com/download/stprojections.xlsx"
+
+# The BLS provides occupational data at the state level.
+data/usa/occupational_employment_state_statistics.xlsx:
+	mkdir -p "$(@D)"
+	wget -O "$@.zip" https://www.bls.gov/oes/special.requests/oesm19st.zip
+	unzip "$@.zip" -d $(@D)
+	mv "$(@D)/oesm19st/state_M2019_dl.xlsx" "$@"
+	rm "$@.zip"
+
+# The BLS also provides occupational data at the national level.
+data/usa/occupational_employment_national_statistics.xlsx:
+	mkdir -p "$(@D)"
+	wget -O "$@.zip" https://www.bls.gov/oes/special.requests/oesm19nat.zip
+	unzip "$@.zip" -d $(@D)
+	mv "$(@D)/oesm19nat/national_M2019_dl.xlsx" "$@"
+	rm "$@.zip"
+
+# The Unemployment Insurance is a joint state-federal program that provides cash benefits to
+# eligible workers. They provide information on job seekers claiming for insurance.
+data/usa/unemployment_insurance_claimants.csv:
+	wget -O "$@" https://oui.doleta.gov/unemploy/csv/ar203.csv
+
+# SOC (Standard Occupational Classification), the base for O*net
+# DMTF (Direct Match Title File), a link from job titles to SOC classification
+data/usa/soc/DMTF_2010.xlsx:
+	mkdir -p "$(@D)"
+	wget -O "$@" https://www.bls.gov/soc/2018/soc_2018_direct_match_title_file.xlsx
+
+data/usa/soc/DMTF_2010.xls:
+	mkdir -p "$(@D)"
+	wget -O "$@" https://www.bls.gov/soc/soc_2010_direct_match_title_file.xls
+
+# SOC (Standard Occupational Classification), the base for O*net
+# Structure, the hierarchy of 2018 SOC job groups.
+data/usa/soc/soc_2018_structure.csv:
+	mkdir -p "$(@D)"
+	wget -O "$@" https://www.onetcenter.org/taxonomy/2019/structure/SOC_Structure.csv?fmt=csv
+
+# US SOC (Standard Occupational Classification) 2010 definitions and structures.
+data/usa/soc/soc_%2010.xls data/usa/soc/soc_2010%.xls:
+	mkdir -p "$(@D)"
+	wget -O "$@" "https://www.bls.gov/soc/$(@F)"
+
+define get_geonames_ppl
+	mkdir -p "$(@D)"
+	wget -O "$@.zip" "https://download.geonames.org/export/dump/$1.zip"
+	unzip "$@.zip" $1.txt -d $(@D)
+	rm "$@.zip"
+	grep -P '\tP\tPPL' "$(@D)/$1.txt" > "$@"
+	grep -P '\tA\tADM[1-$2]\t$1\t' "$(@D)/$1.txt" > "$(@D)/geonames_admin.txt"
+	rm "$(@D)/$1.txt"
+endef
+
+data/usa/geonames.txt, data/usa/geonames_admin.txt:
+	$(call get_geonames_ppl,US,2)
+
+# O*NET-SOC2019/SOC 2018 (Standard Occupational Classification) job groups definitions.
+data/usa/soc/soc2018_definition.csv:
+	mkdir -p "$(@D)"
+	wget -O "$@" https://www.onetcenter.org/taxonomy/2019/data_coll/Data_Collection_Plan.csv?fmt=csv
+
+# SOC 2010 to SOC 2018/O*NET-SOC2019 crosswalk.
+data/usa/soc/2010_to_2018_SOC_Crosswalk.csv:
+	mkdir -p "$(@D)"
+	wget -O "$@" https://www.onetcenter.org/taxonomy/2010/soc2018/2010_to_2018_SOC_Crosswalk.csv?fmt=csv
+
+# SOC 2010 to ISCO-08 crosswalk.
+data/crosswalks/isco_us_soc2010_crosswalk.xls:
+	mkdir -p "$(@D)"
+	wget -O "$@" https://www.bls.gov/soc/isco_soc_crosswalk.xls
+
+# O*NET job zones (group of occupations similar in education, experience, on-the-job training for these jobs) definitions.
+data/usa/onet_22_3/job_zones.tsv:
+	mkdir -p "$(@D)"
+	wget -O "$@" https://www.onetcenter.org/dl_files/database/db_25_0_text/Job%20Zones.txt
+
+# Automation risk, based on SOC 2010. This is the data used by Will Robots Take My Job wesite.
+data/usa/future-of-employment.pdf:
+	mkdir -p "$(@D)"
+	wget -O "$@" https://www.oxfordmartin.ox.ac.uk/downloads/academic/future-of-employment.pdf
+
+data/usa/future-of-employment.txt: data/usa/future-of-employment.pdf
+	pdf2txt.py -n -o $@ $^
+
+data/usa/future-of-employment.csv: data/usa/future-of-employment.txt
+	sed -E -e 's/([0-9]+)\.(0\.0*[0-9]?[1-9])([0-1]?)([0-9]{2}-[0-9]{4})/\n\1\t\2\t\3\t\4\t/g' "$^" | sed -e 's/^.*The Future of Employment.*/Rank\tProbability\tLabel\tsoccode\tOccupation/' | sed -e 's/77.*Oxford Martin Programme on Technology.*$$//' > "$@"
+
+# Automation data from https://www.brookings.edu/research/automation-and-artificial-intelligence-how-machines-affect-people-and-places/
+data/usa/automation-risk.json:
+	mkdir -p "$(@D)"
+	wget -O "$@.js" https://c24215cec6c97b637db6-9c0895f07c3474f6636f95b6bf3db172.ssl.cf1.rackcdn.com/interactives/2019/metro-automation/app.js
+	awk 'flag; /var occs =/{flag=1; next} /\]/{flag=0}' "$@.js" > "$@"
+	rm "$@.js"
+
+# Bob-UK datasets
+data/uk/geonames.txt, data/uk/geonames_admin.txt:
+	$(call get_geonames_ppl,GB,3)
+
+data/uk/local_authorities_2020.csv:
+	wget -O "$@" https://opendata.arcgis.com/datasets/fe6bcee87d95476abc84e194fe088abb_0.csv
+
+# A lookup between wards, local authority districts (LAD), counties, regions and countries as at 31 December 2016 in the UK.
+# A more recent version exists (as of December 2018) but the market info we have is based on this one.
+data/uk/wards_counties_regions_local_authorities_2016.csv:
+	https://opendata.arcgis.com/datasets/e80726453fce4c4daee6d01646c5c039_0.csv
+
+# UK SOC job titles and job group classification (SOC2010 version).
+data/uk/soc/soc2010.xls:
+	mkdir -p "$(@D)"
+	wget -O "$@" https://www.ons.gov.uk/file?uri=/methodology/classificationsandstandards/standardoccupationalclassificationsoc/soc2010/soc2010volume2thestructureandcodingindex/soc2010indexversion705june2018.xls
+
+# UK SOC career changers matrix (based on the US O*NET one).
+data/uk/soc/career_changers_matrix.csv:
+	mkdir -p "$(@D)"
+	python bob_emploi/data_analysis/importer/deployments/uk/career_changers.py --output-csv "$@"
+
+# UK employment by occupation.
+data/uk/employment_by_occupation_sept_2018.xls:
+	mkdir -p "$(@D)"
+	wget -O "$@" https://www.ons.gov.uk/file?uri=%2femploymentandlabourmarket%2fpeopleinwork%2femploymentandemployeetypes%2fdatasets%2femploymentbyoccupationemp04%2fapriltojune2018/emp04sep2018.xls
+
+# UK Probability of automation by occupation.
+data/uk/automation_probability.xls:
+	wget -O "$@" https://www.ons.gov.uk/file?uri=%2femploymentandlabourmarket%2fpeopleinwork%2femploymentandemployeetypes%2fdatasets%2fprobabilityofautomationinengland%2f2011and2017/automationreferencetables.xls
+
+data/crosswalks/uk_SOC_2010_to_ISCO-08_mapping.xls:
+	mkdir -p "$(@D)"
+	wget -O "$@" https://www.ons.gov.uk/file?uri=/methodology/classificationsandstandards/standardoccupationalclassificationsoc/soc2010/ug201002soc2010toisco08v2_tcm77-283163.xls
+
+# TODO(cyrille): Rename to frontend_monitoring.zip.
+data/monitoring.zip: needs-aws-default
+	mkdir -p "$(@D)"
+	$(eval TMPDIR := $(shell mktemp -d))
+	pip install --target "$(TMPDIR)" -r bob_emploi/data_analysis/monitoring/requirements.txt
+	cd "$(TMPDIR)" && zip -r "$(abspath $@)" ./*
+	rm -r "$(TMPDIR)"
+	cd bob_emploi/data_analysis/monitoring && zip -g "$(abspath $@)" ./*
+	# Push HTML file to s3.
+	aws s3 cp --acl public-read bob_emploi/data_analysis/monitoring/monitoring.html s3://bob-monitoring/index.html

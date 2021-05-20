@@ -1,0 +1,377 @@
+{
+  "attributes": {
+    "owa": "desktop",
+    "version": "4.3.0"
+  },
+  "children": [
+    {
+      "attributes": {
+        "background-color": "#ffffff",
+        "color": "#2C3449",
+        "font-family": "Arial, sans-serif",
+        "font-size": "13px",
+        "passport": {
+          "id": "T-5UJQ8C4Z"
+        }
+      },
+      "children": [
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "background-size": "auto",
+            "padding": "20px 0px 20px 0px",
+            "passport": {
+              "header": true,
+              "hidden": true,
+              "id": "AFkbgqklWPtsa"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "AwntuXtWJQ"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#2C3449",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "11px",
+                    "line-height": "22px",
+                    "padding": "0px 0px 0px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "CVkZy2eTRCFxb"
+                    }
+                  },
+                  "content": "<p style=\"margin: 10px 0;\">[[HEADLINE]]</p>",
+                  "id": "8c_kAkpgCaMFp",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "-AJhQQ1f_7XQ9",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "JF7VFRiJ6HZW9",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-color": "#ffffff",
+            "background-repeat": "repeat",
+            "background-size": "auto",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "hidden": false,
+              "id": "CffO8yTFWF_Uv",
+              "name": "New section"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "p65Na7fcoq"
+                },
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "center",
+                    "alt": "Bob",
+                    "border": "none",
+                    "height": "auto",
+                    "href": "",
+                    "padding": "10px 25px 0px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "25px",
+                    "padding-right": "25px",
+                    "padding-top": "10px",
+                    "passport": {
+                      "id": "fPUXOei8tzvL0",
+                      "size": {
+                        "height": 150,
+                        "width": 600
+                      }
+                    },
+                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/p43g/2vro0.png",
+                    "target": "_blank",
+                    "title": "",
+                    "width": "177px"
+                  },
+                  "id": "VIfIEY1ve1Fwz",
+                  "tagName": "mj-image"
+                },
+                {
+                  "attributes": {
+                    "border-color": "#E9EBF0",
+                    "border-style": "solid",
+                    "border-width": "1px",
+                    "container-background-color": "transparent",
+                    "padding": "10px 25px",
+                    "padding-bottom": "20px",
+                    "padding-top": "20px",
+                    "passport": {
+                      "id": "soOgS8j2Ib"
+                    },
+                    "width": "100%"
+                  },
+                  "id": "0jpBUYQMVSgur",
+                  "tagName": "mj-divider"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#2C3449",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "20px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "Puvu7GSuqX"
+                    },
+                    "vertical-align": "top",
+                    "word-wrap": "break-word"
+                  },
+                  "content": "<p style=\"margin: 10px 0;color:#000000;font-family:Arial; font-size:14.6667px\">Bonjour {{var:firstname}},</p><p style=\"margin: 10px 0;color:#000000;font-family:Arial; font-size:14.6667px\">Vous avez demandé à changer votre mot de passe, vous pouvez maintenant le modifier en cliquant sur le bouton suivant.</p>",
+                  "id": "P5kjfyxYtNTa2",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "center",
+                    "background-color": "#58BBFB",
+                    "border": "none",
+                    "border-radius": "100px",
+                    "color": "#ffffff",
+                    "container-background-color": "transparent",
+                    "font-family": "Ubuntu, Helvetica, Arial, sans-serif",
+                    "font-size": "13px",
+                    "font-weight": "normal",
+                    "href": "{{var:resetLink}}",
+                    "inner-padding": "10px 25px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "20px",
+                    "padding-left": "25px",
+                    "padding-right": "25px",
+                    "padding-top": "20px",
+                    "passport": {
+                      "id": "rbRbV_L3OI"
+                    },
+                    "text-decoration": "none",
+                    "text-transform": "none",
+                    "vertical-align": "middle"
+                  },
+                  "content": "Modifier le mot de passe",
+                  "id": "-6_dLUfP1bYhA",
+                  "tagName": "mj-button"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#2C3449",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "20px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "YruPIthW_l"
+                    },
+                    "vertical-align": "top",
+                    "word-wrap": "break-word"
+                  },
+                  "content": "<p style=\"margin: 10px 0;color:#000000;font-size:14.6667px\">Bob</p>",
+                  "id": "qx88J7hLPT4lt",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "border-color": "#E9EBF0",
+                    "border-style": "solid",
+                    "border-width": "1px",
+                    "container-background-color": "transparent",
+                    "padding": "10px 25px",
+                    "padding-bottom": "20px",
+                    "padding-top": "20px",
+                    "passport": {
+                      "id": "WNkhPrkTAb"
+                    },
+                    "width": "100%"
+                  },
+                  "id": "HnfagKlGn2H7k",
+                  "tagName": "mj-divider"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#2C3449",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "AQU7PmoXWM"
+                    }
+                  },
+                  "content": "<p style=\"margin: 10px 0;\"><i><span style=\"color:#9596a0\">Ce message vous a été envoyé à la suite du recueil de vos données sur BOB EMPLOI. La fréquence des envois est limitée, mais peut être plus importante en fonction de l'action de l'association. Vous avez la possibilité d'exercer vos droits d'accès, de rectification et de suppression en écrivant à l'adresse suivante : donnees@bobemploi.fr.</span></i></p>",
+                  "id": "iwVQN5dbo8J08",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "border-color": "#E9EBF0",
+                    "border-style": "solid",
+                    "border-width": "1px",
+                    "container-background-color": "transparent",
+                    "padding": "10px 25px",
+                    "padding-bottom": "20px",
+                    "padding-top": "20px",
+                    "passport": {
+                      "id": "5l6r33jfwx"
+                    },
+                    "width": "100%"
+                  },
+                  "id": "V98uefr-1XEgFK",
+                  "tagName": "mj-divider"
+                },
+                {
+                  "attributes": {
+                    "align": "right",
+                    "base-url": "https://www.mailjet.com/images/theme/v1/icons/ico-social/",
+                    "color": "#2C3449",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "google-href": "[[SHORT_PERMALINK]]",
+                    "google-icon-color": "#dc4e41",
+                    "google-sharer": false,
+                    "icon-size": "20px",
+                    "instagram-href": "[[SHORT_PERMALINK]]",
+                    "instagram-icon-color": "#3f729b",
+                    "instagram-sharer": false,
+                    "line-height": "22px",
+                    "linkedin-href": "[[SHORT_PERMALINK]]",
+                    "linkedin-icon-color": "#0077b5",
+                    "linkedin-sharer": false,
+                    "mode": "horizontal",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "E7pFF1WKhf"
+                    },
+                    "pinterest-href": "[[SHORT_PERMALINK]]",
+                    "pinterest-icon-color": "#bd081c",
+                    "pinterest-sharer": false,
+                    "text-decoration": "none",
+                    "text-mode": false
+                  },
+                  "children": [
+                    {
+                      "attributes": {
+                        "background-color": "#3b5998",
+                        "href": "https://www.facebook.com/bobemploi/?fref=ts",
+                        "icon-color": "#3b5998",
+                        "name": "facebook-noshare",
+                        "passport": {
+                          "content": "Partager",
+                          "duplicated-background-color": "#3b5998",
+                          "id": "vC3y7UQartCE7n",
+                          "shareLink": false,
+                          "socialId": "facebook-id"
+                        },
+                        "sharer": false,
+                        "src": "https://www.mailjet.com/images/theme/v1/icons/ico-social/facebook.png"
+                      },
+                      "content": "",
+                      "id": "0MrkTlrGbVQN2c",
+                      "tagName": "mj-social-element"
+                    },
+                    {
+                      "attributes": {
+                        "background-color": "#55acee",
+                        "href": "https://twitter.com/bobemploi",
+                        "icon-color": "#55acee",
+                        "name": "twitter-noshare",
+                        "passport": {
+                          "content": "Tweet",
+                          "duplicated-background-color": "#55acee",
+                          "id": "yEx8Rl3Za3Ke5A",
+                          "shareLink": false,
+                          "socialId": "twitter-id"
+                        },
+                        "sharer": false,
+                        "src": "https://www.mailjet.com/images/theme/v1/icons/ico-social/twitter.png"
+                      },
+                      "content": "",
+                      "id": "auGxoVVHg9_4uN",
+                      "tagName": "mj-social-element"
+                    }
+                  ],
+                  "id": "CDjZmCKPDOy0fa",
+                  "tagName": "mj-social"
+                }
+              ],
+              "id": "tIvFMr4hP6PGi",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "Z5pI_4E0BzDoU",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-color": "#ffffff",
+            "background-repeat": "repeat",
+            "background-size": "auto",
+            "padding": "20px 0",
+            "padding-top": "0px",
+            "passport": {
+              "hidden": false,
+              "id": "pRavVMZsV-8lSI",
+              "name": "New section"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "7JS4E8stnfJ"
+                },
+                "vertical-align": "top"
+              },
+              "children": [],
+              "id": "NLcfjwSdYvfIrj",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "dS14-TUq0AR4t6",
+          "tagName": "mj-section"
+        }
+      ],
+      "id": "gjk_TvA24j0Ph",
+      "tagName": "mj-body"
+    }
+  ],
+  "id": "GdJ5klBV2347d",
+  "tagName": "mjml"
+}

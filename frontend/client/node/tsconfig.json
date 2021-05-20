@@ -1,0 +1,5 @@
+{
+  "compileOptions": {
+    "lib": ["es2020"],
+  }
+}

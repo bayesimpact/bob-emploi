@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<!--
+   This file is the HTML template to show data computed for monitoring.
+   Data is updated and pushed to s3 every day.
+
+   The source of this file is in bob-emploi-internal git repo:
+   data_analysis/monitoring/monitoring.html
+   and should be deployed to s3 with the following command
+   docker-compose run --rm data-analysis-prepare make data/monitoring.py
+-->
+<html>
+   <head>
+      <title>Monitoring</title>
+      <style>
+         #monitoring-table {
+            border-collapse: collapse;
+         }
+         #monitoring-table th,
+         #monitoring-table td {
+            border-top: 1px solid #dee2e6;
+            padding: .75rem;
+         }
+         #monitoring-table td {
+            text-align: center;
+         }
+         #monitoring-table tr:nth-of-type(odd) {
+            background-color: rgba(0,0,0,.05);
+         }
+      </style>
+   </head>
+   <body>
+      <div id="monitoring">
+      </div>
+      <script type="text/javascript">
+         async function getData() {
+            const url = "https://bob-monitoring.s3.eu-west-3.amazonaws.com/data.json";
+            let response
+            try {
+               response = await fetch(url)
+            } catch(error) {
+               console.log(`Can't access ${url} response. Blocked by browser?`, e)
+            }
+            if (!response) {
+               return
+            }
+
+            const data = await response.json()
+            window.rawMonitoringData = data
+            const sites = Object.keys(data)
+            const monitored_keys = Object.keys(data[sites[0]])
+
+            let html = '<table id="monitoring-table">'
+
+            html += '<tr>'
+               html += '<th></th>'
+            sites.forEach(site => {
+               html += '<th>' + site + '</th>'
+            })
+            html += '</tr>'
+
+            monitored_keys.forEach(monitored_key => {
+               html += '<tr>'
+                  html += '<th>' + monitored_key + '</th>'
+                  sites.forEach(site => {
+                     html += '<td>' + data[site][monitored_key] + '</td>'
+                  })
+               html += '</tr>'
+            })
+
+            html += '</table>'
+
+            document.getElementById('monitoring').innerHTML = html
+         }
+         getData()
+      </script>
+   </body>
+</html>

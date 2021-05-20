@@ -1,0 +1,8 @@
+{
+  'mini-onboarding': {
+    entry: './src/entry',
+    htmlFilename: 'mini-onboarding.html',
+    prefixes: ['/mini', '/unml/a-li'],
+    usesHotLoader: true,
+  },
+}

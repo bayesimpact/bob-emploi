@@ -3,8 +3,9 @@ import React, {useMemo} from 'react'
 
 import {closeToCity} from 'store/french'
 
-import {Trans} from 'components/i18n'
-import {ExternalLink, GrowingNumber} from 'components/theme'
+import ExternalLink from 'components/external_link'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import Picto from 'images/advices/picto-civic-service.svg'
 import logoServiceCivique from 'images/logo-service-civique.png'
 
@@ -18,7 +19,7 @@ const linkStyle = {
 
 const CivicService = (props: CardProps): React.ReactElement => {
   const {handleExplore, project: {city}, t} = props
-  const {missions = []} = useAdviceData<bayes.bob.VolunteeringMissions>(props)
+  const {data: {missions = []}, loading} = useAdviceData<bayes.bob.VolunteeringMissions>(props)
   const missionCount = missions.length
   const title = useMemo((): React.ReactNode => <Trans parent={null} t={t} count={missionCount}>
     <GrowingNumber number={missionCount} isSteady={true} /> mission cherche des jeunes comme vous
@@ -35,6 +36,10 @@ const CivicService = (props: CardProps): React.ReactElement => {
       service-civique.gouv.fr
     </ExternalLink>
   </Trans>, [handleExplore, t])
+
+  if (loading) {
+    return loading
+  }
 
   return <MethodSuggestionList title={title} footer={footer} subtitle={subtitle}>
     {missions.map((mission, index): ReactStylableElement => <Mission

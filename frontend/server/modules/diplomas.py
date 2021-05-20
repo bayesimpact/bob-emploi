@@ -1,6 +1,7 @@
 """Module to score a user project in relation with diplomas."""
 
 from bob_emploi.frontend.api import job_pb2
+from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import scoring_base
 
 _DIPLOMA_REQUIREMENTS = {
@@ -39,3 +40,5 @@ class _RequiredDiplomasScoringModel(scoring_base.ModelBase):
 
 
 scoring_base.register_model('missing-required-diploma', _RequiredDiplomasScoringModel())
+scoring_base.register_model('for-foreign-diploma', scoring_base.BaseFilter(
+    lambda project: user_pb2.FOREIGN_QUALIFICATIONS in project.user_profile.frustrations))

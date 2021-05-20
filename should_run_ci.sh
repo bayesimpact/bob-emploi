@@ -5,15 +5,14 @@ readonly TAG=$2
 set -x
 
 
-# For Data release tags.
-if [ -n "$TAG" ] && [[ "$TAG" =~ .*_DATA_.* ]]; then
-  touch skip-frontend skip-analytics publish-on-aws
-  exit
-fi
-
 if [ "$BRANCH" == "master" ] || [ -n "$TAG" ]; then
   # Run all tests on master and frontend tags.
   exit
+fi
+
+if [[ "$BRANCH" == *-fix-persist ]]; then
+  # Testing if everything works fine when skipping frontend.
+  touch skip-frontend
 fi
 
 readonly SKIP_ALL="skip-data-analysis skip-frontend skip-analytics"

@@ -10,19 +10,17 @@ This module make the assumptions that old emails have less chance to be updated
 import argparse
 import datetime
 import logging
-import os
-import typing
 from typing import Any, Dict, List, Optional
 
 from google.protobuf import json_format
 import requests
 
-from bob_emploi.frontend.server import mail
+from bob_emploi.common.python import now
 from bob_emploi.frontend.server import mongo
-from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.asynchronous import report
-from bob_emploi.frontend.server.asynchronous.mail import mail_blast
+from bob_emploi.frontend.server.mail import mail_blast
+from bob_emploi.frontend.server.mail import mail_send
 from bob_emploi.frontend.api import user_pb2
 
 _, _DB, _ = mongo.get_connections_from_env()
@@ -31,7 +29,7 @@ _, _DB, _ = mongo.get_connections_from_env()
 def _find_message(email_sent: user_pb2.EmailSent) -> Optional[Dict[str, Any]]:
     if email_sent.mailjet_message_id:
         try:
-            return mail.get_message(email_sent.mailjet_message_id)
+            return mail_send.get_message(email_sent.mailjet_message_id)
         except requests.exceptions.HTTPError as error:
             if error.response.status_code == 404:
                 return None
@@ -43,8 +41,7 @@ def _find_message(email_sent: user_pb2.EmailSent) -> Optional[Dict[str, Any]]:
 def _update_email_sent_status(
         email_sent_dict: Dict[str, Any], yesterday: str,
         campaign_ids: Optional[List[str]] = None) -> Dict[str, Any]:
-    email_sent = typing.cast(
-        user_pb2.EmailSent, proto.create_from_mongo(email_sent_dict, user_pb2.EmailSent))
+    email_sent = proto.create_from_mongo(email_sent_dict, user_pb2.EmailSent)
     if campaign_ids and email_sent.campaign_id not in campaign_ids:
         # Email is not from a campaign we wish to update, skipping.
         return email_sent_dict
@@ -80,6 +77,7 @@ def main(string_args: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(
         description='Update email status on sent emails.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    report.add_report_arguments(parser)
 
     parser.add_argument(
         '--campaigns', choices=mail_blast.campaign.list_all_campaigns(), nargs='*',
@@ -88,18 +86,10 @@ def main(string_args: Optional[List[str]] = None) -> None:
     parser.add_argument(
         '--mongo-collection', default='user', help='Name of the mongo collection to update.')
 
-    parser.add_argument(
-        '--disable-sentry', action='store_true', help='Disable logging to Sentry.')
-
     args = parser.parse_args(string_args)
 
-    if not args.disable_sentry:
-        try:
-            report.setup_sentry_logging(os.getenv('SENTRY_DSN'))
-        except ValueError:
-            logging.error(
-                'Please set SENTRY_DSN to enable logging to Sentry, or use --disable-sentry option')
-            return
+    if not report.setup_sentry_logging(args):
+        return
 
     email_mongo_filter = {
         'mailjetMessageId': {'$exists': True},
@@ -141,6 +131,8 @@ def main(string_args: Optional[List[str]] = None) -> None:
     mongo_collection = _DB.get_collection(args.mongo_collection)
     selected_users = mongo_collection.find(mongo_filter, {'emailsSent': 1})
     treated_users = 0
+    # TODO(cyrille): Make sure errors are logged to sentry.
+    # TODO(cyrille): If it fails on a specific user, keep going.
     for user in selected_users:
         emails_sent = user.get('emailsSent', [])
         updated_emails_sent = [

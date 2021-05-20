@@ -20,12 +20,12 @@ import codecs
 import collections
 from os import path
 import re
-from typing import Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 import pandas
 from scrapy import selector
 
-_ROME_VERSION = 'v342'
+_ROME_VERSION = 'v346'
 
 # Denominator to compute Market Score because the number of yearly average
 # offers are given for 10 candidates.
@@ -127,7 +127,7 @@ def rome_to_skills(
     rome_to_item = pandas.read_csv(filename_items, dtype=str)
     skills = pandas.read_csv(filename_skills, dtype=str)
     merged = pandas.merge(rome_to_item, skills, on='code_ogr')
-    merged['skill_name'] = merged.libelle_competence.str.replace("''", "'")\
+    merged['skill_name'] = merged.libelle_competence.str.replace("''", "'", regex=False)\
         .apply(maybe_add_accents)
     merged['skill_is_practical'] = merged.code_type_competence == '2'
     return merged[['code_rome', 'code_ogr', 'skill_name', 'skill_is_practical']]
@@ -147,7 +147,7 @@ def rome_job_groups(data_folder: str = 'data', filename: Optional[str] = None) -
     job_groups = pandas.read_csv(filename)
 
     # Fix names that contain double '.
-    job_groups['name'] = job_groups['libelle_rome'].str.replace("''", "'")\
+    job_groups['name'] = job_groups['libelle_rome'].str.replace("''", "'", regex=False)\
         .apply(maybe_add_accents)
 
     job_groups.set_index('code_rome', inplace=True)
@@ -215,7 +215,7 @@ def rome_work_environments(
     links = pandas.read_csv(links_filename)
     ref = pandas.read_csv(ref_filename)
     environments = pandas.merge(links, ref, on='code_ogr', how='inner')
-    environments['name'] = environments.libelle_env_travail.str.replace("''", "'")\
+    environments['name'] = environments.libelle_env_travail.str.replace("''", "'", regex=False)\
         .apply(maybe_add_accents)
     return environments.rename(columns={
         'libelle_type_section_env_trav': 'section',
@@ -236,7 +236,7 @@ def rome_jobs(data_folder: str = 'data', filename: Optional[str] = None) -> pand
     jobs = pandas.read_csv(filename, dtype=str)
 
     # Fix names that contain double '.
-    jobs['name'] = jobs['libelle_appellation_court'].str.replace("''", "'")\
+    jobs['name'] = jobs['libelle_appellation_court'].str.replace("''", "'", regex=False)\
         .apply(maybe_add_accents)
 
     jobs.set_index('code_ogr', inplace=True)
@@ -318,6 +318,23 @@ def rome_fap_mapping(data_folder: str = 'data', filename: Optional[str] = None) 
     return pandas.Series(mapping, name='fap_codes').to_frame()
 
 
+def rome_isco08_mapping(
+        data_folder: str = 'data', filename: Optional[str] = None) -> pandas.DataFrame:
+    """Mapping from ROME ID to ISCO 08 codes.
+
+    The index are the ROME IDs and the only column "isco08_code" is the corresponding ISCO code.
+    """
+
+    if not filename:
+        filename = path.join(data_folder, 'crosswalks/Correspondance_ROME_ISCO08.xlsx')
+    rome_to_isco_file = pandas.ExcelFile(filename, engine='openpyxl')
+    mapping = rome_to_isco_file.parse('ROME to ISCO-08', dtype='str')
+    mapping.rename(
+        {'Code ISCO08': 'isco08_code', 'Code ROME': 'rome_id'}, axis='columns', inplace=True)
+    mapping.dropna(subset=['rome_id'], inplace=True)
+    return mapping.set_index('rome_id')[['isco08_code']]
+
+
 def naf_subclasses(data_folder: str = 'data', filename: Optional[str] = None) -> pandas.DataFrame:
     """NAF Sub classes.
 
@@ -330,7 +347,7 @@ def naf_subclasses(data_folder: str = 'data', filename: Optional[str] = None) ->
     naf_2008 = pandas.read_excel(filename)
     naf_2008 = naf_2008.iloc[2:, :]
     naf_2008.columns = ['code', 'name']
-    naf_2008['code'] = naf_2008.code.str.replace('.', '')
+    naf_2008['code'] = naf_2008.code.str.replace('.', '', regex=False)
     return naf_2008.set_index('code')
 
 
@@ -617,9 +634,9 @@ def job_offers_skills(
 
     # Fix skill names that contain double '.
     unwind_offers_skills['skill_name'] = unwind_offers_skills.code_ogr\
-        .map(skills.libelle_competence.str.replace("''", "'"))
+        .map(skills.libelle_competence.str.replace("''", "'", regex=False))
     unwind_offers_skills['activity_name'] = unwind_offers_skills.code_ogr\
-        .map(activities.libelle_activite.str.replace("''", "'"))
+        .map(activities.libelle_activite.str.replace("''", "'", regex=False))
     unwind_offers_skills['skill_activity_name'] = unwind_offers_skills.skill_name\
         .combine_first(unwind_offers_skills.activity_name)
     return unwind_offers_skills
@@ -650,3 +667,100 @@ def market_scores(data_folder: str = 'data', filename: Optional[str] = None) -> 
         'market_score', 'yearly_avg_offers_per_10_candidates',
         'yearly_avg_offers_denominator', 'AREA_TYPE_CODE'
     ]]
+
+
+def imt_salaries(
+        data_folder: str = 'data', filename: Optional[str] = None,
+        pcs_crosswalk_filename: Optional[str] = None) -> pandas.DataFrame:
+    """Salary information from French IMT.
+
+    Each row is for a market (département x job group) and contains four columns: junior_min_salary
+    up to senior_max_salary. Those salaries are gross salary in € per month.
+    """
+
+    if not filename:
+        filename = path.join(data_folder, 'imt/salaries.csv')
+    if not pcs_crosswalk_filename:
+        pcs_crosswalk_filename = path.join(data_folder, 'crosswalks/passage_pcs_romev3.csv')
+
+    pcs_rome = pandas.read_csv(pcs_crosswalk_filename)
+    salaries = pandas.read_csv(filename, dtype={'AREA_CODE': 'str'})
+    salaries_dept = salaries[
+        (salaries.AREA_TYPE_CODE == 'D') & (salaries.MINIMUM_SALARY > 0)]
+    salaries_dept = salaries_dept\
+        .merge(pcs_rome, how='inner', left_on='PCS_PROFESSION_CODE', right_on='PCS')\
+        .rename({'ROME': 'rome_id', 'AREA_CODE': 'departement_id'}, axis='columns')
+
+    def _group_salary_per_seniority(salaries: pandas.DataFrame) -> Any:
+        junior_salaries = salaries[salaries.AGE_GROUP_CODE == 1]
+        senior_salaries = salaries[salaries.AGE_GROUP_CODE == 2]
+        return pandas.Series({
+            'junior_min_salary': junior_salaries.MINIMUM_SALARY.min(),
+            'junior_max_salary': junior_salaries.MAXIMUM_SALARY.max(),
+            'senior_min_salary': senior_salaries.MINIMUM_SALARY.min(),
+            'senior_max_salary': senior_salaries.MAXIMUM_SALARY.max(),
+        })
+
+    return salaries_dept.groupby(['departement_id', 'rome_id'])\
+        .apply(_group_salary_per_seniority)
+
+
+def jobs_without_qualifications(data_folder: str = 'data', filename: Optional[str] = None) \
+        -> pandas.DataFrame:
+    """Job groups that don't require any qualifications to get hired (training nor experience).
+
+    The indices are the ROME job group IDs.
+
+    Each row is for a ROME job group that does not require any qualifications to get hired and
+    contains one column "no_requirements" which value is always True.
+    """
+
+    # The strategy for filtering jobs without qualification is described here:
+    # https://github.com/bayesimpact/bob-emploi-internal/blob/master/data_analysis/notebooks/research/jobbing/jobs_without_qualifications.ipynb
+
+    if not filename:
+        filename = path.join(
+            data_folder, f'rome/csv/unix_item_arborescence_{_ROME_VERSION}_utf8.csv')
+
+    rome_item_arborescence_data = pandas.read_csv(filename)
+    unqualification_jobs_index = '017'
+    first_level = rome_item_arborescence_data[
+        rome_item_arborescence_data.code_pere == unqualification_jobs_index]
+    second_level = rome_item_arborescence_data[
+        rome_item_arborescence_data.code_pere.isin(first_level.code_noeud.str[:3])]
+
+    return second_level.set_index('code_noeud')\
+        .rename_axis('rome_id').code_pere.rename('no_requirements')\
+        .apply(lambda unused: True).to_frame()
+
+
+_APPLICATION_MODE_PROTO_FIELDS = {
+    'R1': 'PLACEMENT_AGENCY',
+    'R2': 'PERSONAL_OR_PROFESSIONAL_CONTACTS',
+    'R3': 'SPONTANEOUS_APPLICATION',
+    'R4': 'OTHER_CHANNELS',
+}
+
+
+def _get_app_modes_perc(fap_modes: pandas.DataFrame) -> Dict[str, Any]:
+    return {
+        'modes': [
+            {'mode': _APPLICATION_MODE_PROTO_FIELDS[row.APPLICATION_TYPE_CODE],
+             'percentage': row.RECRUT_PERCENT}
+            for row in fap_modes.itertuples()]}
+
+
+def fap_application_modes(data_folder: str = 'data', filename: Optional[str] = None) \
+        -> pandas.DataFrame:
+    """Application modes per FAP.
+
+    Series indexed by FAP codes (e.g. A0Z00, W0Z91), the content is the Dict version of a
+    RecruitingModesDistribution proto.
+    """
+
+    if not filename:
+        filename = path.join(data_folder, 'imt/application_modes.csv')
+
+    modes = pandas.read_csv(filename)
+    return modes.sort_values('RECRUT_PERCENT', ascending=False).\
+        groupby('FAP_CODE').apply(_get_app_modes_perc)

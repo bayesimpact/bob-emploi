@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package bayes.bob;
+option go_package="bayes.org/bob_emploi/frontend/api/skill";
 
 message Skill {
   // French name of the skill.

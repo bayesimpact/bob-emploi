@@ -25,6 +25,7 @@ import itertools
 import locale
 import logging
 from os import path
+import typing
 from typing import AbstractSet, Any, Dict, Iterable, Iterator, List, Optional, Tuple
 
 import numpy as np
@@ -100,7 +101,8 @@ def _namedtuple_to_json_dict(
 def csv2dicts(
         bmo_csv: str, fap_rome_crosswalk: str, pcs_rome_crosswalk: str, salaries_csv: str,
         unemployment_duration_csv: str, job_offers_changes_json: str, imt_folder: str,
-        mobility_csv: str, data_folder: str = 'data') \
+        mobility_csv: str, *, trainings_csv: str,
+        data_folder: str = 'data') \
         -> List[Dict[str, Any]]:
     """Import departement level diagnosis data in MongoDB.
 
@@ -130,8 +132,8 @@ def csv2dicts(
                 'numJobOffersLastYear': int,
                 'numJobOffersPreviousYear': int,
             })
-    except ValueError:
-        raise ValueError(f'Could not open the file "{job_offers_changes_json}"')
+    except ValueError as err:
+        raise ValueError(f'Could not open the file "{job_offers_changes_json}"') from err
     job_offers_changes.rename(columns={'_id': 'local_id'}, inplace=True)
 
     unemployment_durations = _get_unemployment_durations(unemployment_duration_csv)
@@ -154,6 +156,7 @@ def csv2dicts(
     less_stressful = _get_less_stressful_job_groups(data_folder, mobility_csv, market_score_csv)
     num_less_stressful_departements = _get_less_stressful_departements_count(market_score_csv)
     perc_more_stressed_jobseekers = _get_more_stressed_jobseekers(salaries_csv, market_score)
+    training_count = _get_training_count(trainings_csv)
 
     logging.info('Merge all the info we have collected…')
     local_diagnosis = pandas.merge(
@@ -166,8 +169,11 @@ def csv2dicts(
         local_diagnosis, imt, on='local_id', how='outer')
     local_diagnosis = pandas.merge(
         local_diagnosis, less_stressful, on='local_id', how='outer')
+    local_diagnosis = pandas.merge(
+        local_diagnosis, training_count, on='local_id', how='outer')
     int_columns = (
-        set(job_offers_changes.columns) | set(num_less_stressful_departements) - set(['local_id']))
+        set(job_offers_changes.columns) | set(num_less_stressful_departements) | {'trainingCount'} -
+        {'local_id'})
     local_diagnosis = pandas.merge(
         local_diagnosis, num_less_stressful_departements, on='local_id', how='outer')
     local_diagnosis['moreStressedJobseekersPercentage'] = \
@@ -181,7 +187,7 @@ def csv2dicts(
             'unemploymentDuration',
             'jobOffersChange', 'numJobOffersLastYear',
             'numJobOffersPreviousYear', 'numLessStressfulDepartements',
-            'moreStressedJobseekersPercentage'], int_columns))
+            'moreStressedJobseekersPercentage', 'trainingCount'], int_columns))
         for item in local_diagnosis.itertuples()]
 
 
@@ -290,7 +296,7 @@ def _get_bmo_rome_data(bmo_csv: str, fap_rome_crosswalk: str) -> pandas.DataFram
     nb_columns = ['hiring_planned', 'seasonal_hiring_planned', 'difficult_hiring_planned']
     bmo.loc[:, nb_columns] = bmo.loc[:, nb_columns].replace('*', '0')
     for column in nb_columns:
-        bmo[column] = bmo[column].str.replace(' ', '').astype(float)
+        bmo[column] = bmo[column].str.replace(' ', '', regex=False).astype(float)
     bmo['rome_id'] = bmo.fap.map(fap_to_rome)
     bmo = bmo[bmo.hiring_planned > 0]
     bmo['departement_id'] = bmo['departement_id'].map(
@@ -448,14 +454,12 @@ def _get_less_stressful_departements_count(market_score_csv: str) -> pandas.Data
     market_stats_dept['local_id'] = market_stats_dept.departement_id + ':' \
         + market_stats_dept.rome_id
 
-    compare_in_job_group = market_stats_dept.merge(
-        market_stats_dept, how='outer', on='rome_id', suffixes=('', '_dest'))
-    num_better_departements = compare_in_job_group[
-        (compare_in_job_group.market_score < compare_in_job_group.market_score_dest)]\
-        .groupby(['local_id'])\
-        .size()\
+    return market_stats_dept\
+        .set_index(['local_id'])\
+        .sort_values(['market_score'], ascending=False)\
+        .groupby(['rome_id'])\
+        .cumcount()\
         .to_frame('numLessStressfulDepartements')
-    return num_better_departements
 
 
 def _get_market_score(market_score_csv: str) -> pandas.DataFrame:
@@ -499,9 +503,10 @@ def _get_active_months(seasonal_stats: pandas.Series) -> pandas.Series:
     months = seasonal_stats.index
     is_active = [month == 'O' for month in seasonal_stats]
     active_months = list(itertools.compress(months, is_active))
-    seasonal_stats['seasonality'] = [
+    result = pandas.Series(seasonal_stats)
+    result['seasonality'] = [
         job_pb2.Month.Name(_ACTIVE_MONTHS_PROTO_FIELDS[month]) for month in active_months]
-    return seasonal_stats
+    return result
 
 
 def _get_employment_type_imt(employment_type_csv: str) -> pandas.DataFrame:
@@ -525,7 +530,7 @@ def _get_employment_type_perc(market: pandas.DataFrame) \
             _EMPLOYMENT_TYPE_PROTO_FIELDS[row.CONTRACT_TYPE_CODE]),
         'percentage': row.OFFERS_PERCENT,
     } for row in market.itertuples()]
-    return sorted(percentages, key=lambda p: p['percentage'], reverse=True)
+    return sorted(percentages, key=lambda p: typing.cast(float, p['percentage']), reverse=True)
 
 
 def _get_salaries_imt(pcs_rome_crosswalk: str, imt_salaries_csv: str) -> pandas.DataFrame:
@@ -540,39 +545,18 @@ def _get_salaries_imt(pcs_rome_crosswalk: str, imt_salaries_csv: str) -> pandas.
         A dataframe with IMT salaries data.
     """
 
-    pcs_rome = pandas.read_csv(pcs_rome_crosswalk)
-    salaries = pandas.read_csv(imt_salaries_csv, dtype={'AREA_CODE': 'str'})
-    salaries_dept = salaries[
-        (salaries.AREA_TYPE_CODE == 'D') & (salaries.MINIMUM_SALARY > 0)]
-    salaries_dept = salaries_dept.merge(
-        pcs_rome, how='inner', left_on='PCS_PROFESSION_CODE', right_on='PCS')
-    salaries_dept['local_id'] = salaries_dept.AREA_CODE + ':' + salaries_dept.ROME
+    salaries_dept = cleaned_data.imt_salaries(
+        filename=imt_salaries_csv, pcs_crosswalk_filename=pcs_rome_crosswalk)
+    salaries_dept['local_id'] = salaries_dept.index.get_level_values('departement_id') + ':' + \
+        salaries_dept.index.get_level_values('rome_id')
 
-    minimum_salary = salaries_dept.groupby(['local_id', 'AGE_GROUP_CODE']).MINIMUM_SALARY.min()
-    maximum_salary = salaries_dept.groupby(['local_id', 'AGE_GROUP_CODE']).MAXIMUM_SALARY.max()
-
-    salary_indexed = salaries_dept.set_index(['local_id', 'AGE_GROUP_CODE'])
-    salary_indexed['pcs_min_salary'] = minimum_salary
-    salary_indexed['pcs_max_salary'] = maximum_salary
-    salaries_updated = salary_indexed.reset_index().set_index('local_id')
-    salaries_updated = salaries_updated.drop_duplicates(['AGE_GROUP_CODE', 'ROME', 'AREA_CODE'])
-    salaries_updated['seniority'] = salaries_updated.AGE_GROUP_CODE.map({1: 'junior', 2: 'senior'})
-
-    pivot = salaries_updated.reset_index().pivot(index='local_id', columns='seniority')
-
-    salaries_updated[[
-        'junior_min_salaries', 'senior_min_salaries',
-        'junior_max_salaries', 'senior_max_salaries']] = pivot[['pcs_min_salary', 'pcs_max_salary']]
-
-    salaries_updated['juniorSalary'] = salaries_updated.apply(
+    salaries_dept['juniorSalary'] = salaries_dept.apply(
         lambda x: _get_single_salary_detail(
-            x.loc['junior_min_salaries'], x.loc['junior_max_salaries']), axis='columns')
-    salaries_updated['seniorSalary'] = salaries_updated.apply(
+            x.loc['junior_min_salary'], x.loc['junior_max_salary']), axis='columns')
+    salaries_dept['seniorSalary'] = salaries_dept.apply(
         lambda x: _get_single_salary_detail(
-            x.loc['senior_min_salaries'], x.loc['senior_max_salaries']), axis='columns')
-    # Because of multiple PCS can map to the same ROME, we may have duplicated rows.
-    # Here we will keep only the first one.
-    return salaries_updated.reset_index()[[
+            x.loc['senior_min_salary'], x.loc['senior_max_salary']), axis='columns')
+    return salaries_dept[[
         'juniorSalary', 'seniorSalary', 'local_id']].drop_duplicates('local_id')
 
 
@@ -580,8 +564,8 @@ def _get_single_salary_detail(min_salary: float, max_salary: float) -> Dict[str,
     if _isnan(min_salary) and _isnan(max_salary):
         return {}
     salary_unit = job_pb2.SalaryUnit.Name(_SALARY_UNIT_PROTO_FIELDS[1])
-    from_salary = locale.format('%d', min_salary, grouping=True).replace(' ', '\xa0')
-    to_salary = locale.format('%d', max_salary, grouping=True).replace(' ', '\xa0')
+    from_salary = locale.format_string('%d', min_salary, grouping=True)
+    to_salary = locale.format_string('%d', max_salary, grouping=True)
     short_text = f'De {from_salary}\xa0€ à {to_salary}\xa0€'
     return {
         'unit': salary_unit,
@@ -603,11 +587,29 @@ def finalize_salary_estimation(estimation: Dict[str, Any]) \
         The input dict with additional fields to be displayed.
     """
 
-    from_salary = locale.format('%d', estimation['minSalary'], grouping=True)
-    to_salary = locale.format('%d', estimation['maxSalary'], grouping=True)
+    from_salary = locale.format_string('%d', estimation['minSalary'], grouping=True)
+    to_salary = locale.format_string('%d', estimation['maxSalary'], grouping=True)
     estimation['shortText'] = f'{from_salary} - {to_salary}'
     estimation['unit'] = 'ANNUAL_GROSS_SALARY'
     return estimation
+
+
+def _get_training_count(trainings_csv: str) -> pandas.Series:
+    trainings = pandas.read_csv(trainings_csv, dtype={'address.postalCode': str})
+    # Fix short postal codes.
+    short_postal_codes = trainings['address.postalCode'].str.len() == 4
+    trainings.loc[short_postal_codes, 'address.postalCode'] = \
+        '0' + trainings.loc[short_postal_codes, 'address.postalCode']
+    # Extract deparatement ID
+    trainings['departement_id'] = trainings['address.postalCode'].str[:2]
+    oversee_departement = trainings.departement_id == '97'
+    trainings.loc[oversee_departement, 'departement_id'] = \
+        trainings.loc[oversee_departement, 'address.postalCode'].str[:3]
+    # Create local_id.
+    trainings['local_id'] = trainings['departement_id'] + ':' +\
+        trainings['formation.proximiteRomes.code']
+    return trainings.dropna(subset=['local_id']).groupby('local_id').size()\
+        .rename('trainingCount').reset_index()
 
 
 if __name__ == '__main__':

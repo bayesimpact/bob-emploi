@@ -103,10 +103,10 @@ def job_seeker_rows(
     else:
         raise ValueError(f'Unknown categories type: "{categories}"')
 
-    category_periods.exclude_after(now, lambda m: dict(
-        m, MOTANN=fhs.CancellationReason.NOW))
+    category_periods.exclude_after(now, lambda m: typing.cast('fhs._UnemploymentPeriodData', dict(
+        m, MOTANN=fhs.CancellationReason.NOW)))
 
-    periods: Iterable[fhs.Period]
+    periods: Iterable[fhs.Period['fhs._UnemploymentPeriodData']]
 
     if only_one == 'last':
         last_period = category_periods.last_contiguous_period()

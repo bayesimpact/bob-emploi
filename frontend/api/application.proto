@@ -3,6 +3,7 @@ syntax = "proto3";
 import "bob_emploi/frontend/api/options.proto";
 
 package bayes.bob;
+option go_package="bayes.org/bob_emploi/frontend/api/application";
 
 message ApplicationTip {
   // Content of the tip. Using markup language for formatting.

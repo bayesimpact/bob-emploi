@@ -19,9 +19,9 @@ You can try it out on a local instance:
         python bob_emploi/data_analysis/importer/reorient_jobbing.py \
         --market_score_csv data/imt/market_score.csv \
         --offers_csv reorient_jobbing_offers_2015_2017.csv \
-        --rome_item_arborescence data/rome/csv/unix_item_arborescence_v342_utf8.csv \
-        --referentiel_code_rome_csv data/rome/csv/unix_referentiel_code_rome_v342_utf8.csv \
-        --referentiel_apellation_rome_csv data/rome/csv/unix_referentiel_appellation_v342_utf8.csv
+        --rome_item_arborescence data/rome/csv/unix_item_arborescence_v343_utf8.csv \
+        --referentiel_code_rome_csv data/rome/csv/unix_referentiel_code_rome_v343_utf8.csv \
+        --referentiel_apellation_rome_csv data/rome/csv/unix_referentiel_appellation_v343_utf8.csv
 """
 
 import typing
@@ -39,7 +39,7 @@ _MIN_JOB_OFFERS = 50
 
 
 def csv2dicts(
-        market_score_csv: str, offers_csv: str, referentiel_code_rome_csv: str,
+        *, market_score_csv: str, offers_csv: str,
         rome_item_arborescence: str, referentiel_apellation_rome_csv: str) -> List[Dict[str, Any]]:
     """Import reorient jobbing data per month per departement in MongoDB.
 
@@ -47,7 +47,6 @@ def csv2dicts(
         market_score_csv: path to a CSV file containing the market stress data.
         offers_csv: path to a CSV file containing the job offer data.
         rome_item_arborescence: path to a CSV file containing ROME item arborescence.
-        referentiel_code_rome_csv: path to a CSV file containing job groups.
     """
 
     # Get number of job offers in the last 2 years.
@@ -98,19 +97,8 @@ def csv2dicts(
     market_score_filtered = market_score[market_score.TENSION_RATIO >= 4]
 
     # Compute jobs without qualification.
-    job_groups = pd.read_csv(referentiel_code_rome_csv)
-    rome_item_arborescence_data = pd.read_csv(rome_item_arborescence)
-    # The strrategy for filtering jobs without qualification is described here:
-    # https://github.com/bayesimpact/bob-emploi-internal/blob/master/data_analysis/notebooks/research/jobbing/seasonal_offers.ipynb
-    unqualification_jobs_index = '017'
-    first_level = rome_item_arborescence_data[
-        rome_item_arborescence_data.code_pere == unqualification_jobs_index]
-    second_level = rome_item_arborescence_data[
-        rome_item_arborescence_data.code_pere.isin(first_level.code_noeud)]
-    job_groups_arborescence = pd.merge(
-        second_level, job_groups, left_on=['code_item_arbo_associe'], right_on=['code_ogr'])
-    job_groups_arborescence.rename(columns={'code_rome': 'rome_id'}, inplace=True)
-    no_qualification_jobs = job_groups_arborescence[['rome_id', 'libelle_rome']]
+    no_qualification_jobs = \
+        cleaned_data.jobs_without_qualifications(filename=rome_item_arborescence).reset_index()
     no_qualification_jobs_market = pd.merge(
         no_qualification_jobs, market_score_filtered, on='rome_id')
 

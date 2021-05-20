@@ -2,6 +2,7 @@
 
 import datetime
 import json
+import os
 import time
 import typing
 from typing import Any, Callable, Dict
@@ -10,8 +11,9 @@ from unittest import mock
 
 from bson import objectid
 import mongomock
+import requests_mock
 
-from bob_emploi.frontend.server import now
+from bob_emploi.common.python import now
 from bob_emploi.frontend.server import server
 from bob_emploi.frontend.server.test import base_test
 
@@ -80,6 +82,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         auth_object = self._user_db.user_auth.find_one({'_id': mongomock.ObjectId(user_id)})
         self.assertFalse(auth_object)
         user_data = self._user_db.user.find_one({'_id': mongomock.ObjectId(user_id)})
+        assert user_data
         self.assertEqual('REDACTED', user_data['profile']['email'])
         self.assertEqual('REDACTED', user_data['profile']['name'])
         self.assertEqual(1973, user_data['profile']['yearOfBirth'])
@@ -111,6 +114,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(403, response.status_code)
         self.assertIn('seulement pour le super-admin', response.get_data(as_text=True))
         user_data = self._user_db.user.find_one({'_id': mongomock.ObjectId(user_id)})
+        assert user_data
         self.assertEqual('foo@bar.fr', user_data['profile']['email'])
 
     @mock.patch(server.auth.__name__ + '._ADMIN_AUTH_TOKEN', new='custom-auth-token')
@@ -127,6 +131,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             headers={'Authorization': 'Bearer custom-auth-token'})
         self.assertEqual(200, response.status_code)
         user_data = self._user_db.user.find_one({'_id': mongomock.ObjectId(user_id)})
+        assert user_data
         self.assertEqual('REDACTED', user_data['profile']['email'])
 
     def test_try_login_in_after_deletion(self) -> None:
@@ -155,9 +160,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
     def test_get_user(self) -> None:
         """Basic Usage of retrieving a user from DB."""
 
-        user_info = {'profile': {'gender': 'FEMININE'}, 'projects': [{
-            'jobSearchLengthMonths': 6,
-        }]}
+        user_info = {'profile': {'gender': 'FEMININE'}, 'projects': [{}]}
         user_id, auth_token = self.create_user_with_token(data=user_info)
         user_info['userId'] = user_id
 
@@ -180,21 +183,11 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(user_info, user_info2)
 
         self.assertEqual(1, len(projects), projects)
-        project = projects[0]
-        self.assertFalse(project.get('jobSearchHasNotStarted'))
-        job_search_started_at = datetime.datetime.strptime(
-            project.get('jobSearchStartedAt'), '%Y-%m-%dT%H:%M:%SZ')
-        self.assertLess(
-            job_search_started_at, datetime.datetime.now() - datetime.timedelta(days=180))
-        self.assertGreater(
-            job_search_started_at, datetime.datetime.now() - datetime.timedelta(days=200))
 
     def test_get_user_unauthorized(self) -> None:
         """When calling get user with unauthorized_token, endpoint should return error."""
 
-        user_info = {'profile': {'gender': 'FEMININE'}, 'projects': [{
-            'jobSearchLengthMonths': 6,
-        }]}
+        user_info = {'profile': {'gender': 'FEMININE'}, 'projects': [{}]}
         user_id, auth_token = self.create_user_with_token(data=user_info)
         unauthorized_token = 'Bearer 1509481.11027aabc4833f0177a06a7948ec78f220a00c78'
         response = self.app.get(
@@ -207,6 +200,19 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             '/api/user/' + user_id2,
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(403, response2.status_code)
+
+    @mock.patch.dict(os.environ, {'BOB_DEPLOYMENT': 'uk'})
+    def test_create_uk_disable_job_unknown(self) -> None:
+        """Creating a user within UK deployment disables job unknown."""
+
+        user_id, auth_token = self.create_user_with_token(email='foo@bar.fr')
+
+        response = self.app.get(
+            f'/api/user/{user_id}',
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + auth_token})
+        user_info = self.json_from_response(response)
+        self.assertTrue(user_info.get('featuresEnabled', {}).get('jobUnknownDisabled'))
 
     def test_user(self) -> None:
         """Basic usage."""
@@ -345,6 +351,20 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         mock_warning.side_effect = _log_call('warning')
         mock_info.side_effect = _log_call('info')
 
+        self._db.diagnostic_main_challenges.insert_many([
+            {
+                'categoryId': 'bravo',
+                'strategiesIntroduction': 'Voici vos stratégies',
+                'order': 2,
+            },
+        ])
+        self._db.diagnostic_overall.insert_one({
+            'categoryId': 'bravo',
+            'score': 50,
+            'sentenceTemplate': 'Manque de précision dans votre recherche',
+            'textTemplate': 'Vous devriez réfléchir à vos méthodes',
+        })
+
         self.create_user([base_test.add_project], advisor=False)
         mock_warning.assert_called_once()
         # Checking the last log call is with `warning` level.
@@ -389,6 +409,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
                     'isIncomplete': True,
                     'projectId': '0',
                     'title': 'Awesome Title',
+                    'upskillingSelectedJobs': [{'shownMetric': 'old metric'}]
                 }],
             }),
             content_type='application/json',
@@ -398,6 +419,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             data=json.dumps({
                 'projectId': '0',
                 'totalInterviewCount': 5,
+                'upskillingSelectedJobs': [{'shownMetric': 'new metric'}]
             }),
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
@@ -405,10 +427,43 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertTrue(project_info.get('projectId'))
         self.assertTrue(project_info.get('isIncomplete'))
         self.assertEqual(5, project_info.get('totalInterviewCount'))
+        self.assertEqual(
+            [{'shownMetric': 'new metric'}], project_info.get('upskillingSelectedJobs'))
 
         user_info = self.get_user_info(user_id, auth_token)
         self.assertEqual(1, len(user_info.get('projects', [])))
         self.assertEqual(project_info, user_info['projects'].pop())
+
+    def test_delete_project_repeated_field(self) -> None:
+        """User project is updated by clearing a repeated replaceable field."""
+
+        user_id, auth_token = self.authenticate_new_user_token(email='foo@bar.fr')
+        # Populate user.
+        self.app.post(
+            '/api/user',
+            data=json.dumps({
+                'userId': user_id,
+                'profile': {'email': 'foo@bar.fr'},
+                'projects': [{
+                    'isIncomplete': True,
+                    'projectId': '0',
+                    'title': 'Awesome Title',
+                    'upskillingSelectedJobs': [{'shownMetric': 'old metric'}]
+                }],
+            }),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + auth_token})
+        response = self.app.post(
+            f'/api/user/{user_id}/project/0',
+            data=json.dumps({
+                'projectId': '0',
+                'totalInterviewCount': 5,
+                'upskillingSelectedJobs': [{}]
+            }),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + auth_token})
+        project_info = self.json_from_response(response)
+        self.assertFalse(project_info.get('upskillingSelectedJobs'))
 
     def test_update_advice_module(self) -> None:
         """User advice_module is updated."""
@@ -507,7 +562,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'targetJob': {'jobGroup': {'romeId': 'M1403'}},
         }
         user_id, auth_token = self.authenticate_new_user_token(email='foo@bayes.org')
-        self._db.diagnostic_category.insert_many([
+        self._db.diagnostic_main_challenges.insert_many([
             {
                 'categoryId': 'bravo',
                 'strategiesIntroduction': 'Voici vos stratégies',
@@ -532,10 +587,6 @@ class UserEndpointTestCase(base_test.ServerTestCase):
                 'triggerScoringModel': 'constant(2)',
             },
         ])
-        self._db.diagnostic_sentences.insert_one({
-            'order': 1,
-            'sentenceTemplate': 'You are a star.',
-        })
         self.app.get('/api/cache/clear')
         response = self.app.post(
             '/api/user',
@@ -1021,20 +1072,128 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         updated_user = self.get_user_info(user_id, auth_token)
         self.assertFalse(updated_user['projects'][0].get('openedStrategies'))
 
-    @mock.patch(now.__name__ + '.get')
-    def test_returning_can_tutoie(self, mock_now: mock.MagicMock) -> None:
-        """User returning with a canTutoie field set."""
+    def test_create_ma_voie_user(self) -> None:
+        """Ma Voie information is saved."""
 
-        mock_now.return_value = datetime.datetime(2019, 3, 6)
-        user_info = {'profile': {'canTutoie': True}}
-        user_id, auth_token = self.create_user_with_token(data=user_info)
+        ma_voie_info = {'maVoieId': 'some-random-id', 'stepId': 'interview'}
+        user_id, auth_token = self.create_guest_user(auth_data={'maVoie': ma_voie_info})
+        saved_user = self.get_user_info(user_id, auth_token)
+        self.assertEqual(ma_voie_info, saved_user.get('maVoie'))
 
-        mock_now.return_value = datetime.datetime(2020, 3, 6)
+    def test_update_ma_voie_user(self) -> None:
+        """Ma Voie information cannot be updated."""
+
+        ma_voie_info = {'maVoieId': 'some-random-id', 'stepId': 'interview'}
+        user_id, auth_token = self.create_guest_user(auth_data={'maVoie': ma_voie_info})
+        user = self.get_user_info(user_id, auth_token)
+        user['maVoie'] = {'maVoieId': 'other-random-id', 'stepId': 'definition'}
         response = self.app.post(
-            f'/api/app/use/{user_id}', headers={'Authorization': f'Bearer {auth_token}'})
-        user = self.json_from_response(response)
-        self.assertFalse(user.get('profile', {}).get('canTutoie'))
-        self.assertEqual('fr@tu', user.get('profile', {}).get('locale'))
+            '/api/user', data=json.dumps(user),
+            headers={'Authorization': f'Bearer {auth_token}'})
+        updated_user = self.json_from_response(response)
+        self.assertEqual(ma_voie_info, updated_user.get('maVoie'))
+
+    def test_delete_ma_voie_user(self) -> None:
+        """Ma Voie information cannot be deleted."""
+
+        ma_voie_info = {'maVoieId': 'some-random-id', 'stepId': 'interview'}
+        user_id, auth_token = self.create_guest_user(auth_data={'maVoie': ma_voie_info})
+        user = self.get_user_info(user_id, auth_token)
+        del user['maVoie']
+        response = self.app.post(
+            '/api/user', data=json.dumps(user),
+            headers={'Authorization': f'Bearer {auth_token}'})
+        updated_user = self.json_from_response(response)
+        self.assertEqual(ma_voie_info, updated_user.get('maVoie'))
+
+    @mock.patch(server.auth.__name__ + '._MA_VOIE_API_URL', 'https://api.ma-voie.org')
+    @mock.patch(server.auth.__name__ + '._MA_VOIE_AUTH', ('bob', 'password'))
+    @requests_mock.Mocker()
+    def test_ma_voie_register(self, mock_requests: requests_mock.Mocker) -> None:
+        """Creating user with Ma Voie infos."""
+
+        mock_requests.post(
+            'https://api.ma-voie.org/user/myId/register',
+            status_code=204, request_headers={
+                'Content-Type': 'application/json',
+                # Ym9iOnBhc3N3b3Jk = base64encode('bob:password')
+                'Authorization': 'Basic Ym9iOnBhc3N3b3Jk',
+            })
+
+        self.create_guest_user(auth_data={'maVoie': {'maVoieId': 'myID', 'stepId': 'interview'}})
+        self.assertTrue(mock_requests.called)
+
+    @mock.patch(server.user.__name__ + '._SLACK_WEBHOOK_URL', 'slack://bob-bots')
+    @requests_mock.mock()
+    def test_send_user_agreement_feedback(self, mock_requests: requests_mock.Mocker) -> None:
+        """Test sending user agreement score and feedback."""
+
+        user_id, auth_token = self.create_guest_user(
+            auth_data={'maVoie': {'maVoieId': 'myID', 'stepId': 'interview'}},
+            modifiers=[base_test.add_project])
+        user = self.get_user_info(user_id, auth_token)
+        project = user['projects'][0]
+        project['originalSelfDiagnostic'] = {
+            'categoryId': 'bravo',
+            'status': 'KNOWN_SELF_DIAGNOSTIC',
+        }
+        project['diagnostic'] = {'categoryId': 'stuck-market'}
+        project['feedback'] = {'challengeAgreementScore': 2}
+        response = self.app.post(
+            f'/api/user/{user_id}/project/{project["projectId"]}', data=json.dumps(project),
+            headers={'Authorization': f'Bearer {auth_token}'})
+        project = self.json_from_response(response)
+
+        mock_requests.post('slack://bob-bots')
+
+        project['feedback']['text'] = 'Actually I agree'
+        response = self.app.post(
+            f'/api/user/{user_id}/project/{project["projectId"]}', data=json.dumps(project),
+            headers={'Authorization': f'Bearer {auth_token}'})
+        self.json_from_response(response)
+
+        self.assertEqual(1, mock_requests.call_count)
+        json_sent = mock_requests.request_history[0].json()
+        self.assertIn('text', json_sent)
+        self.assertIn('Agree with stuck-market: 1/4', json_sent['text'])
+        self.assertIn('bravo', json_sent['text'])
+        self.assertIn('Actually I agree', json_sent['text'])
+
+    @mock.patch(server.user.__name__ + '._SLACK_WEBHOOK_URL', 'slack://bob-bots')
+    @requests_mock.mock()
+    def test_send_user_agreement_feedback_other(self, mock_requests: requests_mock.Mocker) -> None:
+        """Test sending user agreement score and feedback when the user self diagnosed to other."""
+
+        user_id, auth_token = self.create_guest_user(
+            auth_data={'maVoie': {'maVoieId': 'myID', 'stepId': 'interview'}},
+            modifiers=[base_test.add_project])
+        user = self.get_user_info(user_id, auth_token)
+        project = user['projects'][0]
+        project['originalSelfDiagnostic'] = {
+            'categoryDetails': "I just don't want to get a job",
+            'status': 'OTHER_SELF_DIAGNOSTIC',
+        }
+        project['diagnostic'] = {'categoryId': 'stuck-market'}
+        project['feedback'] = {'challengeAgreementScore': 2}
+        response = self.app.post(
+            f'/api/user/{user_id}/project/{project["projectId"]}', data=json.dumps(project),
+            headers={'Authorization': f'Bearer {auth_token}'})
+        project = self.json_from_response(response)
+
+        mock_requests.post('slack://bob-bots')
+
+        project['feedback']['text'] = 'Actually I agree'
+        response = self.app.post(
+            f'/api/user/{user_id}/project/{project["projectId"]}', data=json.dumps(project),
+            headers={'Authorization': f'Bearer {auth_token}'})
+        self.json_from_response(response)
+
+        self.assertEqual(1, mock_requests.call_count)
+        json_sent = mock_requests.request_history[0].json()
+        self.assertIn('text', json_sent)
+        self.assertIn('Agree with stuck-market: 1/4', json_sent['text'])
+        self.assertIn("I just don't want to get a job", json_sent['text'])
+        self.assertIn('Actually I agree', json_sent['text'])
 
 
 if __name__ == '__main__':

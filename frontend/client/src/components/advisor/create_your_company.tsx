@@ -6,10 +6,13 @@ import {inCityPrefix} from 'store/french'
 
 import adieLogo from 'images/adie-logo.svg'
 
-import {Trans} from 'components/i18n'
+import ExternalLink from 'components/external_link'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
+import Markdown from 'components/markdown'
 import {RadiumDiv} from 'components/radium'
 import {TestimonialCard} from 'components/testimonials'
-import {ExternalLink, GrowingNumber, Markdown, UpDownIcon} from 'components/theme'
+import UpDownIcon from 'components/up_down_icon'
 import Picto from 'images/advices/picto-create-your-company.svg'
 
 import {CardProps, MethodSection, MethodSuggestionList, useAdviceData} from './base'
@@ -120,8 +123,11 @@ const Events = React.memo(EventsBase)
 
 
 const CreateYourCompany: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
-  const adviceData = useAdviceData<bayes.bob.CreateCompanyExpandedData>(props)
+  const {data: adviceData, loading} = useAdviceData<bayes.bob.CreateCompanyExpandedData>(props)
   const {relatedTestimonials: {testimonials = emptyArray} = {}} = adviceData
+  if (loading) {
+    return loading
+  }
   return <div>
     <Testimonials {...props} testimonials={testimonials} />
     <Events
@@ -179,7 +185,6 @@ const EventBase: React.FC<EventProps> = (props: EventProps): React.ReactElement 
       <Markdown content={description} />
     </div> : null}
   </RadiumDiv>
-
 }
 EventBase.propTypes = {
   cityName: PropTypes.string,

@@ -5,9 +5,9 @@ import json
 from typing import Any, Dict
 import unittest
 
+from bob_emploi.common.python import now
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
-from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
@@ -257,10 +257,15 @@ class ReorientCloseEndpointTestCase(base_test.ServerTestCase):
             'city': {'departementId': '45'},
         }]
 
+    def _set_english_locale(self, user: Dict[str, Any]) -> None:
+        """Modifier to set english user locale."""
+
+        user['profile']['locale'] = 'en'
+
     def _reset_project(self, rome_id: str, departement_id: str) -> None:
         """Recompute the whole project, to avoid cached local_stats."""
 
-        proto.clear_mongo_fetcher_cache()
+        proto.cache.clear()
         user_info = self.get_user_info(self.user_id, self.auth_token)
         user_info['projects'][0] = {
             'targetJob': {'jobGroup': {'romeId': rome_id}},
@@ -349,6 +354,138 @@ class ReorientCloseEndpointTestCase(base_test.ServerTestCase):
                 }
             ],
             jobs['evolutionJobs'])
+
+    def test_jobs_translation(self) -> None:
+        """Basic test with English translations."""
+
+        self._db.translations.insert_one({
+            'string': 'Superhéros',
+            'en': 'Superhero',
+        })
+        self._db.local_diagnosis.drop()
+        self._db.local_diagnosis.insert_one({
+            '_id': '45:A1234',
+            'imt':
+                {
+                    'yearlyAvgOffersPer10Candidates': 4,
+                },
+            'lessStressfulJobGroups': [
+                {
+                    'localStats': {'imt': {'yearlyAvgOffersPer10Candidates': 12}},
+                    'jobGroup': {'romeId': 'A1413', 'name': 'Superhéros'},
+                    'mobilityType': job_pb2.CLOSE,
+                }],
+        })
+        self._db.job_group_info.insert_one({
+            '_id': 'A1413',
+            'is_diploma_strictly_required': True
+        })
+        self._reset_project(rome_id='A1234', departement_id='45')
+
+        user_id, auth_token = self.create_user_with_token(
+            modifiers=[self._add_project_modifier, self._set_english_locale], advisor=True)
+        user_info = self.get_user_info(self.user_id, self.auth_token)
+        project_id = user_info['projects'][0]['projectId']
+
+        response = self.app.get(
+            f'/api/advice/reorient-to-close-job/{user_id}/{project_id}',
+            headers={'Authorization': 'Bearer ' + auth_token})
+
+        jobs = self.json_from_response(response)
+        self.assertEqual(
+            [
+                {
+                    'isDiplomaStrictlyRequired': True,
+                    'name': 'Superhero',
+                    'offersPercentGain': 200.0,
+                }],
+            jobs['closeJobs'])
+
+    def test_missing_job_name(self) -> None:
+        """Job name should be fetched from the job_group_info."""
+
+        self._db.local_diagnosis.drop()
+        self._db.local_diagnosis.insert_one({
+            '_id': '45:A1234',
+            'imt':
+                {
+                    'yearlyAvgOffersPer10Candidates': 4,
+                },
+            'lessStressfulJobGroups': [
+                {
+                    'localStats': {'imt': {'yearlyAvgOffersPer10Candidates': 12}},
+                    'jobGroup': {'romeId': 'A1413'},
+                    'mobilityType': job_pb2.CLOSE,
+                }],
+        })
+        self._db.job_group_info.insert_one({
+            '_id': 'en:A1413',
+            'is_diploma_strictly_required': True,
+            'name': 'Superhero',
+        })
+        self._reset_project(rome_id='A1234', departement_id='45')
+
+        user_id, auth_token = self.create_user_with_token(
+            modifiers=[self._add_project_modifier, self._set_english_locale], advisor=True)
+        user_info = self.get_user_info(self.user_id, self.auth_token)
+        project_id = user_info['projects'][0]['projectId']
+
+        response = self.app.get(
+            f'/api/advice/reorient-to-close-job/{user_id}/{project_id}',
+            headers={'Authorization': 'Bearer ' + auth_token})
+
+        jobs = self.json_from_response(response)
+        self.assertEqual(
+            [
+                {
+                    'isDiplomaStrictlyRequired': True,
+                    'name': 'Superhero',
+                    'offersPercentGain': 200.0,
+                }],
+            jobs['closeJobs'])
+
+    def test_job_name_from_group(self) -> None:
+        """Job name should be fetched from the job_group_info rather than from local_stats."""
+
+        self._db.local_diagnosis.drop()
+        self._db.local_diagnosis.insert_one({
+            '_id': '45:A1234',
+            'imt':
+                {
+                    'yearlyAvgOffersPer10Candidates': 4,
+                },
+            'lessStressfulJobGroups': [
+                {
+                    'localStats': {'imt': {'yearlyAvgOffersPer10Candidates': 12}},
+                    'jobGroup': {'romeId': 'A1413', 'name': 'Superhéros'},
+                    'mobilityType': job_pb2.CLOSE,
+                }],
+        })
+        self._db.job_group_info.insert_one({
+            '_id': 'en:A1413',
+            'is_diploma_strictly_required': True,
+            'name': 'Superhero',
+        })
+        self._reset_project(rome_id='A1234', departement_id='45')
+
+        user_id, auth_token = self.create_user_with_token(
+            modifiers=[self._add_project_modifier, self._set_english_locale], advisor=True)
+        user_info = self.get_user_info(self.user_id, self.auth_token)
+        project_id = user_info['projects'][0]['projectId']
+
+        response = self.app.get(
+            f'/api/advice/reorient-to-close-job/{user_id}/{project_id}',
+            headers={'Authorization': 'Bearer ' + auth_token})
+
+        jobs = self.json_from_response(response)
+        self.assertEqual(
+            [
+                {
+                    'isDiplomaStrictlyRequired': True,
+                    'name': 'Superhero',
+                    'offersPercentGain': 200.0,
+                }],
+            jobs['closeJobs'])
 
 
 if __name__ == '__main__':

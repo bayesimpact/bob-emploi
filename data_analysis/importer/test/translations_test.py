@@ -15,6 +15,12 @@ from bob_emploi.data_analysis.importer import translations
 class ImporterTestCase(unittest.TestCase):
     """Tests for the importer."""
 
+    @mock.patch.dict(os.environ, {'AIRTABLE_API_KEY': ''})
+    def test_missing_key(self) -> None:
+        """No import possible without an API key."""
+
+        self.assertRaises(ValueError, translations.airtable2dicts)
+
     def test_airtable2dicts(self) -> None:
         """Basic usage of the translations importer."""
 

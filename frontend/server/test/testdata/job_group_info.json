@@ -105,6 +105,7 @@
       "structures": ["Marché, foire exposition", "Boucherie", "Boucherie-charcuteri"]
     },
     "nationalMarketScore": 0.7,
+    "covidRisk": "COVID_RISKY",
     "preferredApplicationMedium": "APPLY_IN_PERSON"
   },
   {
@@ -131,6 +132,7 @@
             ]
         }
     },
+    "covidRisk": "COVID_SAFE",
     "name": "K 1903",
     "romeId": "K1903",
     "growth20122022": -0.1,

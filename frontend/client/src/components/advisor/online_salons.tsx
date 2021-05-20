@@ -3,10 +3,13 @@ import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
 import {getDateString, inCityPrefix} from 'store/french'
+import {prepareT} from 'store/i18n'
 
-import {Trans} from 'components/i18n'
+import ExternalLink from 'components/external_link'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import {RadiumExternalLink} from 'components/radium'
-import {ExternalLink, GrowingNumber, StringJoiner} from 'components/theme'
+import StringJoiner from 'components/string_joiner'
 import Picto from 'images/advices/picto-online-salons.svg'
 import poleEmploiLogo from 'images/ple-emploi-ico.png'
 
@@ -14,7 +17,7 @@ import {CardProps, ExpandableAction, MethodSuggestionList, useAdviceData} from '
 
 
 const daysBetween = (date1: Date, date2: Date): number =>
-  (date2.getTime() - date1.getTime()) / 86400000
+  (date2.getTime() - date1.getTime()) / 86_400_000
 
 
 interface LocationProps {
@@ -25,7 +28,7 @@ interface LocationProps {
 
 const LocationBase: React.FC<LocationProps> = (props: LocationProps): React.ReactElement => {
   const {departementId, name, prefix} = props
-  return <React.Fragment key="location">
+  return <React.Fragment>
     {prefix}<strong>{name}</strong>{departementId ? ` (${departementId})` : ''}
   </React.Fragment>
 }
@@ -37,32 +40,6 @@ LocationBase.propTypes = {
 const Location = React.memo(LocationBase)
 
 
-type HTMLAnchorElementProps = React.HTMLProps<HTMLAnchorElement>
-
-
-interface NewWindowLinkProps
-  extends Pick<HTMLAnchorElementProps, Exclude<keyof HTMLAnchorElementProps, 'ref'>> {
-  isStandardStyle?: boolean
-}
-
-// TODO(cyrille): See if it's relevant to keep this one now we use ExternalLink.
-const NewWindowLinkBase: React.FC<NewWindowLinkProps> =
-  (props: NewWindowLinkProps): React.ReactElement => {
-    const {isStandardStyle, style, ...otherProps} = props
-    const linkStyle = {
-      color: 'inherit',
-      textDecoration: 'initial',
-      ...style,
-    }
-    return <RadiumExternalLink style={isStandardStyle ? style : linkStyle} {...otherProps} />
-  }
-NewWindowLinkBase.propTypes = {
-  isStandardStyle: PropTypes.bool,
-  style: PropTypes.object,
-}
-const NewWindowLink = React.memo(NewWindowLinkBase)
-
-
 const OnlineSalonsMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement|null => {
   const {
     handleExplore,
@@ -70,7 +47,10 @@ const OnlineSalonsMethod: React.FC<CardProps> = (props: CardProps): React.ReactE
     project: {city: {cityId: userCityId = '', regionId: userRegionId = ''} = {}},
     t,
   } = props
-  const {salons = []} = useAdviceData<bayes.bob.OnlineSalons>(props)
+  const {data: {salons = []}, loading} = useAdviceData<bayes.bob.OnlineSalons>(props)
+  if (loading) {
+    return loading
+  }
 
   if (!salons.length) {
     return null
@@ -190,16 +170,16 @@ LocationProps|null => {
 }
 
 
-type TagProps = GetProps<typeof ExpandableAction>['tag']
+type TagProps = React.ComponentProps<typeof ExpandableAction>['tag']
 
 
 const makeTimeTagProps = (applicationEndDate: Date, startDate: Date): TagProps|undefined => {
   const now = new Date()
   if (daysBetween(now, applicationEndDate) < 15) {
-    return {color: colors.SQUASH, value: 'Ferme bientôt'}
+    return {color: colors.SQUASH, value: prepareT('Ferme bientôt')}
   }
   if (now > startDate) {
-    return {color: colors.GREENISH_TEAL, value: 'En ce moment'}
+    return {color: colors.GREENISH_TEAL, value: prepareT('En ce moment')}
   }
   return undefined
 }
@@ -241,7 +221,7 @@ const SalonBase: React.FC<SalonProps> = (props: SalonProps): React.ReactElement|
   if (cityId) {
     const locationProps = getLocationProps(t, areaType, city)
     if (locationProps) {
-      moreInfos.push(<Location {...locationProps} />)
+      moreInfos.push(<Location key={url} {...locationProps} />)
     }
   }
   const interests =
@@ -255,30 +235,32 @@ const SalonBase: React.FC<SalonProps> = (props: SalonProps): React.ReactElement|
   const endDate = new Date(applicationEndDate)
   endDate.setDate(endDate.getDate() - 1)
   return <ExpandableAction
-    whyForYou={interests.some(({personal}): boolean => !!personal) ? 'personnel' : ''}
+    isForYou={interests.some(({personal}): boolean => !!personal)}
     tag={makeTimeTagProps(startDate, endDate)}
-    isMethodSuggestion={true} {...{style, title}}
+    {...{style, title}}
     onContentShown={handleExplore('salon info')}>
     <div>
       <Interests {...{interests, t}} />
-      <Trans t={t}>
-        Candidatures du {{startDate: getDateString(startDate, t)}} au
-        {' '}{{endDate: getDateString(endDate, t)}}
+      <div>
+        {t(
+          'Candidatures du {{startDate}} au {{endDate}}',
+          {endDate: getDateString(endDate, t), startDate: getDateString(startDate, t)},
+        )}
         {moreInfos.length ? <React.Fragment><br />
           <StringJoiner separator=" - " lastSeparator=" - ">{moreInfos}</StringJoiner>
-        </React.Fragment> : null}
-      </Trans>
+        </React.Fragment> : undefined}
+      </div>
       <div style={{display: 'flex', fontWeight: 'bold', margin: '12px 0'}}>
-        <NewWindowLink href={url} isStandardStyle={true} onClick={handleExplore('salon')}>
+        <RadiumExternalLink href={url} onClick={handleExplore('salon')}>
           {t('En savoir plus sur le salon')}
-        </NewWindowLink>
+        </RadiumExternalLink>
         {(cityId && cityId !== userCityId && areaType === 'CITY') ?
-          <NewWindowLink
-            href={`/api/redirect/eterritoire/${cityId}`} isStandardStyle={true}
+          <RadiumExternalLink
+            href={`/api/redirect/eterritoire/${cityId}`}
             onClick={handleExplore('city')}
             style={{marginLeft: 10}}>
-            Découvrir {cityName}
-          </NewWindowLink> : null}
+            {t('Découvrir {{cityName}}', {cityName})}
+          </RadiumExternalLink> : null}
       </div>
     </div>
   </ExpandableAction>

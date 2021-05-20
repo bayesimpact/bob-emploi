@@ -3,12 +3,14 @@ import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
-import {LocalizableString, prepareT} from 'store/i18n'
+import {LocalizableString, combineTOptions, prepareT} from 'store/i18n'
 
-import {Trans} from 'components/i18n'
+import ExternalLink from 'components/external_link'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import {RadiumExternalLink} from 'components/radium'
-import {ExternalLink, GrowingNumber, Tag, VideoFrame} from 'components/theme'
-import immersionVideoPoster from 'images/advices/immersion_video_poster.png'
+import Tag from 'components/tag'
+import VideoFrame from 'components/video_frame'
 import Picto from 'images/advices/picto-immersion.svg'
 
 import {CardProps, EmailTemplate, MethodSuggestionList} from './base'
@@ -125,7 +127,7 @@ const ImmersionLinkBase: React.FC<ImmersionLinkProps> =
           {title}<span style={{fontStyle: 'italic'}}>{isFree ? null : ` (${t('payant')})`}</span>
           {isForYou ? <Tag style={tagStyle}>{t('Pour vous')}</Tag> : null}
         </span>
-        <span style={subtitleStyle}>{translate(subtitle)}</span>
+        <span style={subtitleStyle}>{translate(...subtitle)}</span>
       </div>
       <ChevronRightIcon size={16} style={{flex: 'none'}} />
     </RadiumExternalLink>
@@ -156,6 +158,13 @@ const linkStyle = {
   color: colors.BOB_BLUE,
   textDecoration: 'none',
 }
+const coverallStyle: React.CSSProperties = {
+  bottom: 0,
+  left: 0,
+  position: 'absolute',
+  right: 0,
+  top: 0,
+}
 
 const ProgramBase: React.FC<ProgramProps> = (props: ProgramProps): React.ReactElement => {
   const {handleExplore, profile: {gender, name = ''}, t, t: translate} = props
@@ -168,11 +177,14 @@ const ProgramBase: React.FC<ProgramProps> = (props: ProgramProps): React.ReactEl
       {context: gender},
     )}
     headerContent={<React.Fragment>
-      <VideoFrame style={{marginTop: 15}}><video poster={immersionVideoPoster} controls={true}>
-        <source
-          src="https://cdn2.webtv-solution.com/pole-emploi/mp4/dossier-immersion-pro-st-0o1avome_38_3574_850.mp4"
-          type="video/mp4" />
-      </video></VideoFrame>
+      <VideoFrame style={{marginTop: 15}}>
+        <iframe
+          // TODO(cyrille): Handle explore 'video' when clicking in the iframe.
+          src="https://www.youtube.com/embed/XWkDvcRc0gU"
+          width="100%" height="100%" style={coverallStyle}
+          frameBorder={0} scrolling="no" allowFullScreen={true}
+          title={t("L'immersion professionnelle en vidéo")} />
+      </VideoFrame>
       <Trans t={t} style={linkSentenceStyle}>
         Me renseigner sur ce programme de stages
         sur <ExternalLink href={url} onClick={handleExplore('link')} style={linkStyle}>
@@ -181,10 +193,9 @@ const ProgramBase: React.FC<ProgramProps> = (props: ProgramProps): React.ReactEl
       </Trans>
     </React.Fragment>}>
     <EmailTemplate
-      isMethodSuggestion={true}
       title={t('Comment en parler avec mon conseiller\u00A0?')}
       onContentShown={handleExplore('email')}
-      content={translate(pmsmpEmailContent, {context: gender, name})} />
+      content={translate(...combineTOptions(pmsmpEmailContent, {context: gender, name}))} />
     {/* TODO(cyrille): Add a direct action to show an email template for pe counselor asking for
     a PMSMP.*/}
   </MethodSuggestionList>
@@ -193,6 +204,7 @@ ProgramBase.propTypes = {
   handleExplore: PropTypes.func.isRequired,
   profile: PropTypes.shape({
     gender: PropTypes.string,
+    name: PropTypes.string,
   }).isRequired,
   t: PropTypes.func.isRequired,
 }

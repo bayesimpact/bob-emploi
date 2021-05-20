@@ -12,7 +12,7 @@ import datetime
 import os
 import sys
 import typing
-from typing import Any, Callable, Dict, Iterable, List, Optional, TextIO, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Set, TextIO, Tuple
 
 import requests
 
@@ -86,6 +86,7 @@ def _compute_nps_report(users: Iterable[user_pb2.User], from_date: str, to_date:
         f'*{score}*: {score_distribution[score]} user{_plural_s(score_distribution[score])}'
         for score in sorted(score_distribution.keys(), reverse=True))
 
+    # TODO(emilie): Use "(out of n, xx% answer rate)" instead of "(out of n - xx% answer rate)"
     return f'{num_users} user{_plural_s(num_users)} answered the NPS survey ' \
         f'(out of {total_num_users} - {answer_rate}% answer rate) ' \
         f'for a global NPS of *{nps}%*\n' \
@@ -137,10 +138,47 @@ def _compute_stars_report(users: Iterable[user_pb2.User], from_date: str, to_dat
         f'{score_distributions}\n{comments}'
 
 
+def _compute_agreement_report(users: Iterable[user_pb2.User], from_date: str, to_date: str) -> str:
+    score_distribution: Dict[int, int] = collections.defaultdict(int)
+    agreement_total = 0
+    num_projects = 0
+    for user in users:
+        for project in user.projects:
+            feedback = project.feedback
+            if not feedback.challenge_agreement_score:
+                continue
+            num_projects += 1
+            agreement_total += feedback.challenge_agreement_score - 1
+            score_distribution[feedback.challenge_agreement_score - 1] += 1
+
+    # Total number of finished projects during that time.
+    total_num_projects = _USER_DB.user.count_documents({
+        'featuresEnabled.excludeFromAnalytics': {'$ne': True},
+        'projects.diagnostic': {'$exists': True},
+        'projects.createdAt': {
+            '$gt': from_date,
+            '$lt': to_date,
+        }
+    })
+
+    answer_rate = round(num_projects * 100 / total_num_projects) if total_num_projects else 0
+    average_agreement = round(agreement_total * 10 / num_projects) / 10 if num_projects else 0
+    score_distributions = '\n'.join(
+        f'{score}/4: {score_distribution[score]} '
+        f'project{_plural_s(score_distribution[score])}'
+        for score in sorted(score_distribution.keys(), reverse=True))
+
+    return f'{num_projects} project challenge{_plural_s(num_projects)} ' \
+        f'{"was" if num_projects == 1 else "were"} evaluated in the app ' \
+        f'(out of {total_num_projects} - {answer_rate}% answer rate) ' \
+        f'for a global average agreement of *{average_agreement}/4*\n' \
+        f'{score_distributions}'
+
+
 def _compute_rer_report(users: Iterable[user_pb2.User], from_date: str, to_date: str) -> str:
-    seeking_distribution: Dict['user_pb2.SeekingStatus', int] = collections.defaultdict(int)
-    bob_has_helped: Dict['user_pb2.SeekingStatus', int] = collections.defaultdict(int)
-    answered_bob_helped: Dict['user_pb2.SeekingStatus', int] = collections.defaultdict(int)
+    seeking_distribution: Dict['user_pb2.SeekingStatus.V', int] = collections.defaultdict(int)
+    bob_has_helped: Dict['user_pb2.SeekingStatus.V', int] = collections.defaultdict(int)
+    answered_bob_helped: Dict['user_pb2.SeekingStatus.V', int] = collections.defaultdict(int)
     num_users = 0
     for user in users:
         # Find the first status that is in the date range.
@@ -186,8 +224,20 @@ def _compute_rer_report(users: Iterable[user_pb2.User], from_date: str, to_date:
         f'{maybe_unknown_seeking}{seeking_distributions}'
 
 
-_ReportDefinition = collections.namedtuple('Report', (
-    'color', 'compute_report', 'mongo_filters', 'required_fields', 'timestamp_field', 'title'))
+class _ReportComputFunc(typing.Protocol):
+
+    def __call__(self, users: Iterable[user_pb2.User], from_date: str, to_date: str) -> str:
+        ...
+
+
+class _ReportDefinition(typing.NamedTuple):
+    color: str
+    compute_report: _ReportComputFunc
+    mongo_filters: Mapping[str, Any]
+    required_fields: Set[str]
+    timestamp_field: str
+    title: str
+
 
 _REPORTS = {
     'nps': _ReportDefinition(
@@ -219,6 +269,16 @@ _REPORTS = {
         required_fields={'projects'},
         timestamp_field='projects.createdAt',
         title=':star: Stars Report',
+    ),
+    'agreement': _ReportDefinition(
+        color='#ffba30',
+        compute_report=_compute_agreement_report,
+        mongo_filters={
+            'projects.feedback.challengeAgreementScore': {'$gt': 0},
+        },
+        required_fields={'projects'},
+        timestamp_field='projects.createdAt',
+        title=':ok_hand: Agreement Report',
     ),
 }
 
@@ -265,9 +325,6 @@ def main(string_args: Optional[List[str]] = None, out: TextIO = sys.stdout) -> N
 
     parser = argparse.ArgumentParser(
         description='Compute a report of user feedbacks and send it through Slack or email')
-    parser.add_argument(
-        '--no-dry-run', dest='dry_run', action='store_false',
-        help='No dry run really send reports.')
     parser.add_argument('report', choices=_REPORTS.keys(), help='Report type to send.')
 
     from_group = parser.add_mutually_exclusive_group(required=True)
@@ -278,10 +335,11 @@ def main(string_args: Optional[List[str]] = None, out: TextIO = sys.stdout) -> N
 
     parser.add_argument(
         '--to', dest='to_date', help='Only consider feedback sent before this date.')
+    report_helper.add_report_arguments(parser)
     args = parser.parse_args(string_args)
 
-    if not args.dry_run:
-        report_helper.setup_sentry_logging(os.getenv('SENTRY_DSN'))
+    if not report_helper.setup_sentry_logging(args):
+        return
 
     if args.from_date:
         from_date = args.from_date

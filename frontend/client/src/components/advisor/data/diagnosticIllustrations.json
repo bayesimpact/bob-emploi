@@ -1,0 +1,80 @@
+{
+  "bravo": [
+    {
+      "highlight": "top-10:highlight",
+      "text": "top-10:text"
+    },
+    {
+      "highlight": "regular-interviews:highlight",
+      "text": "regular-interviews:text"
+    },
+    {
+      "highlight": "using-network:highlight",
+      "text": "using-network:text"
+    }
+  ],
+  "enhance-methods-to-interview": [
+    {
+      "highlight": "top-20:highlight",
+      "text": "top-20:text"
+    },
+    {
+      "highlight": "network-hire:highlight",
+      "text": "network-hire:text"
+    }
+  ],
+  "find-what-you-like": [
+    {
+      "highlight": "competition:highlight",
+      "text": "competition:text"
+    },
+    {
+      "highlight": "motivation-first:highlight",
+      "text": "motivation-first:text"
+    }
+  ],
+  "missing-diploma": [
+    {
+      "highlight": "diploma-hires-up:highlight",
+      "text": "diploma-hires-up:text"
+    },
+    {
+      "highlight": "diploma-second-filter:highlight",
+      "text": "diploma-second-filter:text"
+    },
+    {
+      "highlight": "diploma-required:highlight",
+      "text": "diploma-required:text"
+    }
+  ],
+  "start-your-search": [
+    {
+      "highlight": "top-30:highlight",
+      "text": "top-30:text"
+    },
+    {
+      "highlight": "time-to-hire:highlight",
+      "text": "time-to-hire:text"
+    }
+  ],
+  "stuck-market": [
+    {
+      "highlight": "competition:highlight",
+      "text": "competition:text"
+    },
+    {
+      "highlight": "long-unemployment:highlight",
+      "text": "long-unemployment:text"
+    }
+  ],
+  "undefined-project": [
+    {
+      "highlight": "targeting-speeds-up:highlight",
+      "text": "targeting-speeds-up:text"
+    },
+    {
+      "highlight": "targeting-pays-up:highlight",
+      "text": "targeting-pays-up:text"
+    }
+  ]
+}

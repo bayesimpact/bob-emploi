@@ -2,7 +2,7 @@ import {expect} from 'chai'
 import {onboardingComplete} from 'store/main_selectors'
 
 type CompleteUser = bayes.bob.User & {
-  profile: {}
+  profile: bayes.bob.UserProfile
   projects: [{projectId: string}]
 }
 
@@ -32,7 +32,7 @@ describe('Onboarding complete', (): void => {
   })
 
   const requiredFields = [
-    'gender', 'highestDegree', 'name', 'yearOfBirth',
+    'highestDegree', 'name', 'yearOfBirth',
   ] as const
   for (const field of requiredFields) {
     it(`should return false for the required field "${field}" missing`, (): void => {
@@ -68,8 +68,8 @@ describe('Onboarding complete', (): void => {
     const completeUser = getCompleteUser()
     const user = {
       ...completeUser,
-      projects: completeUser.projects.map((project, index): bayes.bob.Project =>
-        index ? project : {...project, isIncomplete: true}).concat([{projectId: '1'}]),
+      projects: [...completeUser.projects.map((project, index): bayes.bob.Project =>
+        index ? project : {...project, isIncomplete: true}), {projectId: '1'}],
     }
     const result = onboardingComplete(user)
     expect(result).to.equal(false)

@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package bayes.bob;
+option go_package="bayes.org/bob_emploi/frontend/api/feedback";
 
 message Feedback {
   // ID of the user that sent the feedback.
@@ -20,6 +21,9 @@ message Feedback {
 
   // Numerical score (usually between 1 and 5 but may vary depending on the source).
   int32 score = 6;
+
+  // ID of the upskilling section for which the feedback was sent.
+  string section_id = 7;
 }
 
 enum FeedbackSource {
@@ -35,11 +39,14 @@ enum FeedbackSource {
   PROJECT_FEEDBACK = 3;
 
   // Feedback given in the Changelog modals (on specific questions).
-  CHANGELOG_FEEDBACK = 4;
+  CHANGELOG_FEEDBACK = 4 [deprecated = true];
 
   // Suggest a new advice.
   NEW_ADVICE_FEEDBACK = 5;
 
   // General comment on the product.
   PRODUCT_FEEDBACK = 6;
+
+  // Feedback about the upskilling sub-product.
+  UPSKILLING_FEEDBACK = 7;
 }

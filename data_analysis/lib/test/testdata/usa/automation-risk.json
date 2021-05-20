@@ -1,0 +1,147 @@
+[
+  {
+    "occ": "Advertising and Promotions Managers",
+    "occ2": "11-0000",
+    "auto": 0.13391
+  },
+  {
+    "occ": "Marketing Managers",
+    "occ2": "11-0000",
+    "auto": 0.13316
+  },
+  {
+    "occ": "Sales Managers",
+    "occ2": "11-0000",
+    "auto": 0.07384
+  },
+  {
+    "occ": "Business Operations Specialists, All Other",
+    "occ2": "13-0000",
+    "auto": 0.17541
+  },
+  {
+    "occ": "Substance Abuse and Behavioral Disorder Counselors",
+    "occ2": "21-0000",
+    "auto": 0.25013
+  },
+  {
+    "occ": "Postsecondary Teachers",
+    "occ2": "25-0000",
+    "auto": 0.22134
+  },
+  {
+    "occ": "Preschool Teachers, Except Special Education",
+    "occ2": "25-0000",
+    "auto": 0.08271
+  },
+  {
+    "occ": "Kindergarten Teachers, Except Special Education",
+    "occ2": "25-0000",
+    "auto": 0.10028
+  },
+  {
+    "occ": "Substitute Teachers",
+    "occ2": "25-0000",
+    "auto": 0.19786
+  },
+  {
+    "occ": "Teachers and Instructors, All Other",
+    "occ2": "25-0000",
+    "auto": 0.18542
+  },
+  {
+    "occ": "Archivists",
+    "occ2": "25-0000",
+    "auto": 0.0724
+  },
+  {
+    "occ": "Protective Service Workers, All Other",
+    "occ2": "33-0000",
+    "auto": 0.58277
+  },
+  {
+    "occ": "Chefs and Head Cooks",
+    "occ2": "35-0000",
+    "auto": 0.53683
+  },
+  {
+    "occ": "Fitness Trainers and Aerobics Instructors",
+    "occ2": "39-0000",
+    "auto": 0.11316
+  },
+  {
+    "occ": "Recreation Workers",
+    "occ2": "39-0000",
+    "auto": 0.30583
+  },
+  {
+    "occ": "Cashiers",
+    "occ2": "41-0000",
+    "auto": 0.48551
+  },
+  {
+    "occ": "Gaming Change Persons and Booth Cashiers",
+    "occ2": "41-0000",
+    "auto": 0.50185
+  },
+  {
+    "occ": "Real Estate Brokers",
+    "occ2": "41-0000",
+    "auto": 0.51224
+  },
+  {
+    "occ": "Real Estate Sales Agents",
+    "occ2": "41-0000",
+    "auto": 0.27033
+  },
+  {
+    "occ": "Sales Engineers",
+    "occ2": "41-0000",
+    "auto": 0.33091
+  },
+  {
+    "occ": "Telemarketers",
+    "occ2": "41-0000",
+    "auto": 0.49114
+  },
+  {
+    "occ": "Door-to-Door Sales Workers, News and Street Vendors, and Related Workers",
+    "occ2": "41-0000",
+    "auto": 0.39524
+  },
+  {
+    "occ": "Sewers, Hand",
+    "occ2": "51-0000",
+    "auto": 0.92994
+  },
+  {
+    "occ": "Tailors, Dressmakers, and Custom Sewers",
+    "occ2": "51-0000",
+    "auto": 0.96393
+  },
+  {
+    "occ": "Textile Bleaching and Dyeing Machine Operators and Tenders",
+    "occ2": "51-0000",
+    "auto": 0.86651
+  },
+  {
+    "occ": "Sailors and Marine Oilers",
+    "occ2": "53-0000",
+    "auto": 0.8903
+  },
+  {
+    "occ": "Captains, Mates, and Pilots of Water Vessels",
+    "occ2": "53-0000",
+    "auto": 0.76467
+  },
+  {
+    "occ": "Models",
+    "occ2": "41-0000",
+    "auto": 0
+  },
+  {
+    "occ": "Material Moving Workers, All Other",
+    "occ2": "53-0000",
+    "auto": 0.38527
+  }
+]

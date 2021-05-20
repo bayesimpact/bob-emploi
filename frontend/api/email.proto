@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package bayes.bob;
+option go_package="bayes.org/bob_emploi/frontend/api/email";
+
+import "bob_emploi/frontend/api/options.proto";
+
+message Campaign {
+  // An internal ID used to identify campaigns, e.g. "no-network".
+  string campaign_id = 1 [(string_format) = MAILING_CAMPAIGN];
+
+  // A scoring model to determine the priority of an email campaign compared to
+  // others. The default priority is 2.
+  string scoring_model = 2 [(string_format) = SCORING_MODEL_ID];
+}

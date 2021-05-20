@@ -8,8 +8,75 @@
 //  - unset ':active' state in some cases (e.g. when the callback of onClick changes the focus).
 import _memoize from 'lodash/memoize'
 import PropTypes from 'prop-types'
-import React, {useCallback, useMemo, useRef, useState} from 'react'
+import React, {useCallback, useDebugValue, useMemo, useRef, useState} from 'react'
 import {Link, LinkProps} from 'react-router-dom'
+
+
+interface HoverProps<HTMLElement> {
+  isHovered?: boolean
+  onMouseEnter?: (event: React.MouseEvent<HTMLElement>) => void
+  onMouseLeave?: (event: React.MouseEvent<HTMLElement>) => void
+}
+
+
+const useHover = <T extends Element>(props?: HoverProps<T>): Required<HoverProps<T>> => {
+  const {isHovered: isParentHovered, onMouseEnter, onMouseLeave} = props || {}
+  const [isHovered, setIsHovered] = useState(false)
+  useDebugValue(isHovered ? ':hover' : 'not :hover')
+  const wrappedOnMouseEnter = useCallback((event: React.MouseEvent<T>): void => {
+    setIsHovered(true)
+    onMouseEnter?.(event)
+  }, [onMouseEnter])
+  const wrappedOnMouseLeave = useCallback((event: React.MouseEvent<T>): void => {
+    setIsHovered(false)
+    onMouseLeave?.(event)
+  }, [onMouseLeave])
+  return {
+    isHovered: isHovered || !!isParentHovered,
+    onMouseEnter: wrappedOnMouseEnter,
+    onMouseLeave: wrappedOnMouseLeave,
+  }
+}
+
+
+interface FocusProps<HTMLElement> {
+  isFocused?: boolean
+  onBlur?: (event: React.FocusEvent<HTMLElement>) => void
+  onFocus?: (event: React.FocusEvent<HTMLElement>) => void
+}
+
+
+const useFocus = <T extends Element>(props?: FocusProps<T>): Required<FocusProps<T>> => {
+  const {isFocused: isParentFocused, onBlur, onFocus} = props || {}
+  const [isFocused, setIsFocused] = useState(false)
+  useDebugValue(isFocused ? ':focus' : 'not :focus')
+  const wrappedOnBlur = useCallback((event: React.FocusEvent<T>): void => {
+    setIsFocused(false)
+    onBlur?.(event)
+  }, [onBlur])
+  const wrappedOnFocus = useCallback((event: React.FocusEvent<T>): void => {
+    setIsFocused(true)
+    onFocus?.(event)
+  }, [onFocus])
+  return {
+    isFocused: isFocused || !!isParentFocused,
+    onBlur: wrappedOnBlur,
+    onFocus: wrappedOnFocus,
+  }
+}
+
+
+export type HoverAndFocusProps<T> = HoverProps<T> & FocusProps<T>
+
+
+const useHoverAndFocus = <T extends Element>(props?: HoverAndFocusProps<T>):
+Required<HoverAndFocusProps<T>> => {
+  const {isFocused, isHovered, onBlur, onFocus, onMouseEnter, onMouseLeave} = props || {}
+  return {
+    ...useFocus({isFocused, onBlur, onFocus}),
+    ...useHover({isHovered, onMouseEnter, onMouseLeave}),
+  }
+}
 
 
 interface RadiumConfig<HTMLElement> {
@@ -43,17 +110,23 @@ type RadiumState = {
 }
 
 
-function useRadium<T, P extends RadiumConfig<T> = RadiumProps<T>>(props: P): [
-  Omit<P, keyof RadiumConfig<T>> & Omit<RadiumConfig<T>, 'style'> & {style?: SimpleCSSProperties},
+function useRadium<T extends Element, P extends RadiumConfig<T> = RadiumProps<T>>(props: P): [
+  Omit<P, 'style'|'onKeyDown'|'onKeyUp'|'onMouseDown'> &
+  Required<Pick<RadiumConfig<T>, 'onKeyDown'|'onKeyUp'|'onMouseDown'>> &
+  Required<Omit<HoverAndFocusProps<T>, 'isFocused'|'isHovered'>> &
+  {style?: SimpleCSSProperties},
   RadiumState
 ] {
   const {
-    onBlur, onFocus,
     onKeyDown, onKeyUp,
-    onMouseDown, onMouseEnter, onMouseLeave,
+    onMouseDown,
     style,
     ...otherProps
   } = props
+  const {
+    isFocused, isHovered,
+    ...handlers
+  } = useHoverAndFocus<T>(otherProps)
   const styleProvider = useMemo((): ((
     isFocused: boolean, isHovered: boolean, isActive: boolean,
   ) => SimpleCSSProperties|undefined) => _memoize(
@@ -83,9 +156,8 @@ function useRadium<T, P extends RadiumConfig<T> = RadiumProps<T>>(props: P): [
     (isFocused: boolean, isHovered: boolean, isActive: boolean): string =>
       `${isFocused}-${isHovered}-${isActive}`,
   ), [style])
-  const [isFocused, setIsFocused] = useState(false)
-  const [isHovered, setIsHovered] = useState(false)
   const [isActive, setIsActive] = useState(false)
+  useDebugValue(isActive ? ':active' : 'not :active')
   const listener = useRef<(ev: MouseEvent) => void|undefined>()
   const setInactive = useCallback((): void => {
     setIsActive(false)
@@ -95,14 +167,6 @@ function useRadium<T, P extends RadiumConfig<T> = RadiumProps<T>>(props: P): [
   }, [])
   listener.current = setInactive
   const finalStyle = styleProvider(isFocused, isHovered, isActive)
-  const wrappedOnBlur = useCallback((event: React.FocusEvent<T>): void => {
-    setIsFocused(false)
-    onBlur?.(event)
-  }, [onBlur])
-  const wrappedOnFocus = useCallback((event: React.FocusEvent<T>): void => {
-    setIsFocused(true)
-    onFocus?.(event)
-  }, [onFocus])
   const wrappedOnKeyDown = useCallback((event: React.KeyboardEvent<T>): void => {
     if (event.key === ' ' || event.key === 'Enter') {
       setIsActive(true)
@@ -120,24 +184,13 @@ function useRadium<T, P extends RadiumConfig<T> = RadiumProps<T>>(props: P): [
     onMouseDown?.(event)
     window.addEventListener('mouseup', setInactive)
   }, [onMouseDown, setInactive])
-  const wrappedOnMouseEnter = useCallback((event: React.MouseEvent<T>): void => {
-    setIsHovered(true)
-    onMouseEnter?.(event)
-  }, [onMouseEnter])
-  const wrappedOnMouseLeave = useCallback((event: React.MouseEvent<T>): void => {
-    setIsHovered(false)
-    onMouseLeave?.(event)
-  }, [onMouseLeave])
   return [{
-    onBlur: wrappedOnBlur,
-    onFocus: wrappedOnFocus,
+    ...otherProps,
     onKeyDown: wrappedOnKeyDown,
     onKeyUp: wrappedOnKeyUp,
     onMouseDown: wrappedOnMouseDown,
-    onMouseEnter: wrappedOnMouseEnter,
-    onMouseLeave: wrappedOnMouseLeave,
+    ...handlers,
     style: finalStyle,
-    ...otherProps,
   }, {isActive, isFocused, isHovered}]
 }
 
@@ -157,6 +210,7 @@ const RadiumLink = React.memo(RadiumLinkBase)
 const RadiumExternalLinkBase = (props: RadiumProps<HTMLAnchorElement>):
 React.ReactElement => {
   const [radiumProps] = useRadium<HTMLAnchorElement>(props)
+  // eslint-disable-next-line jsx-a11y/anchor-has-content
   return <a {...radiumProps} rel="noopener noreferrer" target="_blank" />
 }
 const RadiumExternalLink = React.memo(RadiumExternalLinkBase)
@@ -192,9 +246,12 @@ const SmartLinkBase: React.FC<SmartLinkProps> =
   }
   const {href, ...otherAnchorProps} = props as RadiumProps<HTMLAnchorElement>
   if (href) {
+    // eslint-disable-next-line jsx-a11y/anchor-has-content
     return <RadiumExternalLink href={href} {...otherAnchorProps} style={linkStyle} />
   }
-  return <RadiumSpan {...props} style={linkStyle} />
+  return <RadiumSpan
+    {...props} style={linkStyle} role={props.onClick && 'button'}
+    tabIndex={props.onClick ? 0 : -1} />
 }
 SmartLinkBase.propTypes = {
   href: PropTypes.string,
@@ -204,4 +261,5 @@ SmartLinkBase.propTypes = {
 const SmartLink = React.memo(SmartLinkBase)
 
 
-export {SmartLink, RadiumDiv, RadiumExternalLink, RadiumLink, RadiumSpan, useRadium}
+export {SmartLink, RadiumDiv, RadiumExternalLink, RadiumLink, RadiumSpan, useHover,
+  useHoverAndFocus, useRadium}

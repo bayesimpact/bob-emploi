@@ -3,6 +3,7 @@ syntax = "proto3";
 import "google/protobuf/timestamp.proto";
 
 import "bob_emploi/frontend/api/action.proto";
+import "bob_emploi/frontend/api/boolean.proto";
 import "bob_emploi/frontend/api/company.proto";
 import "bob_emploi/frontend/api/diagnostic.proto";
 import "bob_emploi/frontend/api/geo.proto";
@@ -12,10 +13,12 @@ import "bob_emploi/frontend/api/options.proto";
 import "bob_emploi/frontend/api/seasonal_jobbing.proto";
 import "bob_emploi/frontend/api/strategy.proto";
 import "bob_emploi/frontend/api/training.proto";
+import "bob_emploi/frontend/api/upskilling.proto";
 
 package bayes.bob;
+option go_package="bayes.org/bob_emploi/frontend/api/project";
 
-// Next available tag: 50.
+// Next available tag: 52.
 message Project {
   // A unique identifier for this project.
   string project_id = 1 [(field_usage) = PERSONAL_IDENTIFIER];
@@ -105,14 +108,6 @@ message Project {
   // super strong, -1 = unknown.
   int32 network_estimate = 22;
 
-  // How long the user searches in this field in months. -1 means not started yet.
-  // 19 means more than 18 months.
-  // DEPRECATED: Do not rely on this value but instead always check the two
-  // fields below.
-  // TODO(pascal): Switch all usage to the new fields, convert all old users
-  // and remove the field.
-  int32 job_search_length_months = 31 [deprecated = true];
-
   oneof job_search_length {
     // Whether the user has started searching in this field.
     bool job_search_has_not_started = 24;
@@ -191,6 +186,25 @@ message Project {
   // The self-diagnostic provided by the user before using Bob. If unknown the user didn't
   // answer the question.
   SelfDiagnostic original_self_diagnostic = 49;
+
+  // The jobs selected by the user in Upskilling.
+  repeated upskilling.Job upskilling_selected_jobs = 50 [(list_format) = REPLACEABLE];
+
+  // Whether the user has reviewed information linked to this project.
+  ProjectReview user_has_reviewed = 51 [(field_usage) = APP_ONLY];
+}
+
+// Features of the project review and whether the user has reviewed them.
+message ProjectReview {
+  // A page showing the achievements done by the user: the challenges more important than the main
+  // blocking challenge that the user has alreay validated. If none we still show a "congrats" page.
+  bool achievements = 1;
+
+  // A page presenting the main challenge.
+  bool main_challenge = 2;
+
+  // A page showing a preview of the strategies.
+  bool strategies_preview = 3;
 }
 
 message WorkingStrategy {
@@ -216,6 +230,10 @@ message ProjectFeedback {
 
   // For each advice module whether the user found it useful/interesting.
   map<string, bool> useful_advice_modules = 3;
+
+  // How much does the user agrees that Bob's idea of the main challenge is correct. 0 means unknown
+  // then from 1 to 5 (users actually rates from 0 to 4, but we shift it when we store it).
+  int32 challenge_agreement_score = 4;
 }
 
 // Next ID: 36.
@@ -342,14 +360,6 @@ message Advice {
 
   // Whether this advice has a good chance to give a positive outcome to the job search.
   bool is_for_success = 35;
-}
-
-message AdviceCategory {
-  // ID of the category, e.g. "less-than-10-min", "very-important".
-  string category_id = 1;
-
-  // Sorted list of advice in this category.
-  repeated string advice_ids = 2;
 }
 
 message Advices {
@@ -536,8 +546,8 @@ enum PreviousJobSimilarity {
 enum ProjectKind {
   option allow_alias = true;
   UNKNOWN_PROJECT_KIND = 0;
-  CREATE_COMPANY = 2 [deprecated = true];
   CREATE_OR_TAKE_OVER_COMPANY = 2;
+  CREATE_COMPANY = 2 [deprecated = true];
   TAKE_OVER_COMPANY = 3 [deprecated = true];
   REORIENTATION = 4;
   FIND_A_FIRST_JOB = 5;
@@ -607,10 +617,4 @@ enum PassionateLevel {
   LIKEABLE_JOB = 2;
   PASSIONATING_JOB = 3;
   LIFE_GOAL_JOB = 4;
-}
-
-enum OptionalBool {
-  UNKNOWN_BOOL = 0;
-  FALSE = 1;
-  TRUE = 2;
 }

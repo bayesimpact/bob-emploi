@@ -1,206 +1,18 @@
 """Unit tests for the bob_emploi.frontend.proto module."""
 
 import datetime
+import time
+import threading
+from typing import Dict
 import unittest
 from unittest import mock
-from urllib import parse
 
-import flask
 from google.protobuf import json_format
 import mongomock
-import werkzeug
 
+from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.test.testdata import test_pb2
-
-app = flask.Flask(__name__)
-
-# TODO(pascal): Remove the type ignore once flask has proper typing for decorators.
-
-
-class DecoratorTestCase(unittest.TestCase):
-    """Unit tests for the server's decorator."""
-
-    def test_proto_api(self) -> None:
-        """Basic usage of @flask_api."""
-
-        @proto.flask_api(test_pb2.Simple)
-        def _func() -> test_pb2.Simple:
-            message = test_pb2.Simple()
-            message.name = 'A1234'
-            return message
-
-        with app.test_request_context(method='POST',
-                                      data='{"name": "A1234"}',
-                                      content_type='application/json'):
-            self.assertEqual('{\n  "name": "A1234"\n}', _func())
-
-    def test_proto_api_wrong_return(self) -> None:
-        """Check that @flask_api enforces the type of the return value."""
-
-        @proto.flask_api(test_pb2.Different)
-        def _func() -> test_pb2.Simple:
-            message = test_pb2.Simple()
-            message.name = 'A1234'
-            return message
-
-        self.assertRaises(TypeError, _func)
-
-    def test_proto_api_in_type_post(self) -> None:
-        """Check that @flask_api parses the input in a proto."""
-
-        calls = []
-
-        @proto.flask_api(in_type=test_pb2.Simple, out_type=test_pb2.Simple)
-        def _func(message: test_pb2.Simple) -> test_pb2.Simple:
-            calls.append(message)
-            return message
-
-        with app.test_request_context(method='POST',
-                                      data='{"multipleWords": "A1234"}',
-                                      content_type='application/json'):
-            _func()  # pylint: disable=no-value-for-parameter
-
-        self.assertEqual(['A1234'], [message.multiple_words for message in calls])
-
-    def test_proto_api_in_type_get(self) -> None:
-        """Check that @flask_api parses the input in a proto."""
-
-        calls = []
-
-        @proto.flask_api(in_type=test_pb2.Simple, out_type=test_pb2.Simple)
-        def _func(message: test_pb2.Simple) -> test_pb2.Simple:
-            calls.append(message)
-            return message
-
-        query_string = 'data=' + parse.quote('{"multipleWords": "A1234"}')
-        with app.test_request_context(method='GET', query_string=query_string,
-                                      content_type='application/json'):
-            _func()  # pylint: disable=no-value-for-parameter
-
-        self.assertEqual(['A1234'], [message.multiple_words for message in calls])
-
-    def test_proto_api_wrong_field_in_type(self) -> None:
-        """Check that a wrong field in proto raises a 422 error (not a 5xx)."""
-
-        test_app = app.test_client()
-        calls = []
-
-        @app.route('/wrong_field', methods=['POST'])
-        @proto.flask_api(in_type=test_pb2.Simple, out_type=test_pb2.Simple)
-        def _f(message: test_pb2.Simple) -> test_pb2.Simple:  # pylint: disable=unused-variable
-            calls.append(message)
-            return message
-
-        response = test_app.post(
-            '/wrong_field', data='{"nonExistentField": "A1234"}',
-            content_type='application/json')
-
-        self.assertEqual(422, response.status_code)
-        self.assertIn(
-            '&quot;bayes.bob.test.Simple&quot; has no field named '
-            '&quot;nonExistentField&quot;',
-            response.get_data(as_text=True))
-        self.assertFalse(calls)
-
-    def test_proto_api_no_out_type(self) -> None:
-        """Check that @flask_api can work without an out_type."""
-
-        calls = []
-
-        @proto.flask_api(in_type=test_pb2.Simple)
-        def _func(message: test_pb2.Simple) -> str:
-            calls.append(message)
-            return message.name + r' \o/'
-
-        with app.test_request_context(method='POST',
-                                      data='{"name": "A1234"}',
-                                      content_type='application/json'):
-            result = _func()  # pylint: disable=no-value-for-parameter
-
-        self.assertEqual(['A1234'], [message.name for message in calls])
-        self.assertEqual(r'A1234 \o/', result)
-
-    def test_proto_api_unicode_error(self) -> None:
-        """Check that @flask_api does not choke too hard on a unicode error."""
-
-        test_app = app.test_client()
-        calls = []
-
-        @app.route('/wrong_encoding', methods=['POST'])
-        @proto.flask_api(in_type=test_pb2.Simple, out_type=test_pb2.Simple)
-        def _unused_pass_through(message: test_pb2.Simple) -> test_pb2.Simple:
-            calls.append(message)
-            return message
-
-        response = test_app.post(
-            '/wrong_encoding', data=b'{"name" : "Fer \xe0 repasser"}',
-            content_type='application/json')
-
-        self.assertEqual(422, response.status_code)
-        self.assertFalse(calls)
-
-    def test_proto_api_wire_format_output(self) -> None:
-        """Wire format for output of @flask_api."""
-
-        @proto.flask_api(in_type=test_pb2.Simple, out_type=test_pb2.Simple)
-        def _func(message: test_pb2.Simple) -> test_pb2.Simple:
-            return message
-
-        with app.test_request_context(method='POST',
-                                      data='{"name": "A1234"}',
-                                      headers=[('Accept', 'application/x-protobuf-base64')],
-                                      content_type='application/json'):
-            response = _func()  # pylint: disable=no-value-for-parameter
-            self.assertEqual('CgVBMTIzNA==', response.get_data(as_text=True).strip())
-
-    def test_proto_api_wire_format_input(self) -> None:
-        """Wire format for output of @flask_api."""
-
-        @proto.flask_api(in_type=test_pb2.Simple, out_type=test_pb2.Simple)
-        def _func(message: test_pb2.Simple) -> test_pb2.Simple:
-            return message
-
-        with app.test_request_context(method='POST',
-                                      data='CgVBMTIzNA==',
-                                      content_type='application/x-protobuf-base64'):
-            self.assertEqual(
-                '{\n  "name": "A1234"\n}', _func())  # pylint: disable=no-value-for-parameter
-
-    def test_proto_api_wire_format_input_errors(self) -> None:
-        """Errors with wire format for input of @flask_api."""
-
-        @proto.flask_api(in_type=test_pb2.Simple, out_type=test_pb2.Simple)
-        def _func(message: test_pb2.Simple) -> test_pb2.Simple:
-            return message
-
-        with app.test_request_context(method='POST',
-                                      # Broken base64 string.
-                                      data='gVBMTIzNA==',
-                                      content_type='application/x-protobuf-base64'):
-            with self.assertRaises(werkzeug.exceptions.UnprocessableEntity):
-                _func()  # pylint: disable=no-value-for-parameter
-
-        with app.test_request_context(method='POST',
-                                      # 'abcd' encoded in base64.
-                                      data='YWJjZA==',
-                                      content_type='application/x-protobuf-base64'):
-            with self.assertRaises(werkzeug.exceptions.UnprocessableEntity):
-                _func()  # pylint: disable=no-value-for-parameter
-
-    def test_proto_api_default_format_output(self) -> None:
-        """The default format for output of @flask_api json."""
-
-        @proto.flask_api(in_type=test_pb2.Simple, out_type=test_pb2.Simple)
-        def _func(message: test_pb2.Simple) -> test_pb2.Simple:
-            return message
-
-        with app.test_request_context(method='POST',
-                                      data='{"name": "A1234"}',
-                                      headers=[('Accept', '*/*')],
-                                      content_type='application/json'):
-            self.assertEqual(
-                '{\n  "name": "A1234"\n}', _func())  # pylint: disable=no-value-for-parameter
 
 
 class CacheMongoTestCase(unittest.TestCase):
@@ -210,7 +22,8 @@ class CacheMongoTestCase(unittest.TestCase):
         """Set up mock environment."""
 
         super().setUp()
-        self._db = mongomock.MongoClient().get_database('test')
+        self._db = mongo.NoPiiMongoDatabase(
+            mongomock.MongoClient().get_database('test'))
         self._collection: proto.MongoCachedCollection[test_pb2.Simple] = \
             proto.MongoCachedCollection(test_pb2.Simple, 'basic')
 
@@ -300,6 +113,28 @@ class CacheMongoTestCase(unittest.TestCase):
         assert cache_a124
         self.assertEqual('Original content, hopefully cached', cache_a124.name)
 
+    def test_db_change(self) -> None:
+        """Test that collection cache is busted when the database is changed."""
+
+        first_db = mongo.NoPiiMongoDatabase(
+            mongomock.MongoClient('localhost').get_database('test'))
+        first_db.basic.insert_one(
+            {'_id': 'A124', 'multipleWords': 'A124', 'name': 'Original content, hopefully cached'},
+        )
+
+        self._collection.get_collection(first_db)
+
+        second_db = mongo.NoPiiMongoDatabase(
+            mongomock.MongoClient('localhost').get_database('test'))
+        second_db.basic.insert_one(
+            {'_id': 'A124', 'multipleWords': 'A124', 'name': 'New content in the DB'},
+        )
+        second_collection = self._collection.get_collection(second_db)
+
+        cache_busted_a124 = second_collection.get('A124')
+        assert cache_busted_a124
+        self.assertEqual('New content in the DB', cache_busted_a124.name)
+
     @mock.patch(proto.now.__name__ + '.get')
     def test_time_deprecates_cache(self, mock_now: mock.MagicMock) -> None:
         """Test that after some time, cache is deprecated"""
@@ -350,6 +185,54 @@ class CacheMongoTestCase(unittest.TestCase):
         cache_a124 = collection.get('A124')
         assert cache_a124
         self.assertEqual('New content in the DB', cache_a124.name)
+
+    def test_cache_resists_long_get_values(self) -> None:
+        """CachedCollection does not crash on concurrent access."""
+
+        # This test is a bit complex: we want to see what happens when a thread accesses
+        # a CachedCollection while another one is already trying to get values.
+        #
+        # Our _get_values function is blocking for the first thread, but very quick for the second
+        # one. Here is the timing:
+        #
+        # STARTING
+        # - start a thread
+        #   the thread tries to access the collection and call _get_values
+        #   the thread warns the event bus that it's WAITING
+        # - meanwhile the main thread waits for the thread above to be waiting
+        #   it then tries to access the collection and call _get_values
+        #   it should successfully get an answer (before this test it choked on None)
+        #   it then warn the thread that it's done using UNBLOCK
+        #   it waits for the thread to join (finish its own execution)
+        # - the thread is unblocked and finishes quickly.
+
+        events = ['STARTING']
+
+        def _get_values() -> Dict[str, int]:
+            is_first_thread = len(events) <= 1
+            if is_first_thread:
+                events.append('WAITING')
+                while len(events) < 3:
+                    time.sleep(0.001)
+            return {'a': 1}
+
+        def _access_collection(collection: proto.CachedCollection[int]) -> None:
+            assert collection['a'] == 1
+
+        collection = proto.CachedCollection[int](_get_values)
+
+        self.addCleanup(lambda: events.append('CLEAN UP'))
+
+        thread = threading.Thread(target=_access_collection, args=(collection,))
+        thread.start()
+
+        while len(events) < 2:
+            time.sleep(0.001)
+
+        self.assertEqual(1, collection['a'])
+
+        events.append('UNBLOCK')
+        thread.join(timeout=1)
 
 
 @mock.patch(proto.__name__ + '._IS_TEST_ENV', new=False)
@@ -417,8 +300,8 @@ class FetchFromMongoTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self._db = mongomock.MongoClient().test
-        proto.clear_mongo_fetcher_cache()
+        self._db = mongo.NoPiiMongoDatabase(mongomock.MongoClient().test)
+        proto.cache.clear()
 
     def test_missing_doc(self) -> None:
         """Does not fetch anything if document does not exist."""
@@ -467,7 +350,7 @@ class FetchFromMongoTestCase(unittest.TestCase):
         assert refetched
         self.assertEqual('updated document', refetched.name)
 
-    def cache_can_be_cleared(self) -> None:
+    def test_cache_can_be_cleared(self) -> None:
         """Cache can be cleared."""
 
         self._db.collection.insert_one({
@@ -477,12 +360,12 @@ class FetchFromMongoTestCase(unittest.TestCase):
         fetched = proto.fetch_from_mongo(self._db, test_pb2.Simple, 'collection', 'id')
         assert fetched
         self._db.collection.replace_one({}, {'name': 'updated document'})
-        proto.clear_mongo_fetcher_cache()
+        proto.cache.clear()
         refetched = proto.fetch_from_mongo(self._db, test_pb2.Simple, 'collection', 'id')
         assert refetched
         self.assertEqual('updated document', refetched.name)
 
-    def cache_is_finite(self) -> None:
+    def test_cache_is_finite(self) -> None:
         """Only the last cached values are kept."""
 
         self._db.collection.insert_many([{
@@ -492,10 +375,10 @@ class FetchFromMongoTestCase(unittest.TestCase):
         for i in range(1000):
             proto.fetch_from_mongo(self._db, test_pb2.Simple, 'collection', str(i))
         self._db.collection.drop()
-        self._db.insert_one({'_id': '0', 'name': 'updated 0th document'})
+        self._db.collection.insert_one({'_id': '0', 'name': 'updated 0th document'})
         refetched = proto.fetch_from_mongo(self._db, test_pb2.Simple, 'collection', '0')
         assert refetched
-        self.assertEqual('updated, 0th document', refetched.name)
+        self.assertEqual('updated 0th document', refetched.name)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,746 @@
+{
+  "attributes": {
+    "owa": "desktop",
+    "passport": {
+      "ck-version": "5",
+      "id": "swe9qS0b1g-",
+      "revertLostLink": true
+    },
+    "version": "4.6.3"
+  },
+  "children": [
+    {
+      "attributes": {
+        "background-color": "#ffffff",
+        "color": "#55575d",
+        "font-family": "Arial, sans-serif",
+        "passport": {
+          "id": "iTrVogUPY"
+        }
+      },
+      "children": [
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "background-size": "auto",
+            "padding": "20px 0px 20px 0px",
+            "passport": {
+              "header": true,
+              "hidden": true,
+              "id": "8D-zFUTFGNbpZ"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "hidden": true,
+                  "id": "XcmwAGZrNvQt1"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "0px 0px 0px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "hidden": true,
+                      "id": "2La3TWuM4szPW",
+                      "oldContentEditor": "<p style=\"margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\">Donnez un résumé de cet email à vos destinataires</p>",
+                      "oldMjAttributes": "{\"line-height\":\"22px\",\"font-family\":\"Arial, sans-serif\",\"color\":\"#55575d\",\"align\":\"left\",\"padding-bottom\":\"0px\",\"padding\":\"0px 0px 0px 25px\",\"padding-top\":\"0px\",\"font-size\":\"11px\"}"
+                    }
+                  },
+                  "content": "<p style=\"text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px\"><span style=\"font-size:16px;text-align:left;color:#55575d;font-family:Arial;line-height:22px;\">Donnez un résumé de cet email à vos destinataires</span></p>",
+                  "id": "2UfwNQGGY6b7",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "19NTQmI5tF71",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "dCFveSgnn6Bu",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-color": "transparent",
+            "background-repeat": "repeat",
+            "full-width": "full-width",
+            "padding": "20px 0px 20px 0px",
+            "padding-bottom": "0px",
+            "padding-top": "12px",
+            "passport": {
+              "id": "DLDlclVm0n"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "8haFu3ctji"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "0px 25px 0px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "9Y6QRu4Tyc",
+                      "oldContentEditor": "<p style=\"line-height: 1.38; margin: 10px 0; margin-top: 10px;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Bonjour {{var:firstName:\"Marie\"}},</span>&nbsp;</span></p><p style=\"margin: 10px 0;\">&nbsp;</p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\"><span style=\"font-family:Arial,sans-serif\">Je voulais partager avec vous mon article préféré sur la recherche d'emploi.</span></span></span></p><p style=\"line-height: 19px; margin: 10px 0; margin-bottom: 10px;\"><span style=\"color:#000000\"><span style=\"font-size:14px\"><span style=\"font-family:Arial,sans-serif\">Dans cet article, Nicolas Galita du blog Dessine-toi un emploi, répond avec bon sens et pragmatisme à une question que je me suis beaucoup posée <b>quand et comment relancer les recruteurs</b> pour enfin obtenir des réponses ! </span></span></span></p>",
+                      "oldMjAttributes": "{\"line-height\":\"22px\",\"padding-right\":\"0px\",\"font-family\":\"Arial, sans-serif\",\"padding-left\":\"0px\",\"color\":\"#55575d\",\"align\":\"left\",\"padding-bottom\":\"0px\",\"padding\":\"0px 25px 0px 25px\",\"padding-top\":\"0px\",\"font-size\":\"13px\"}"
+                    }
+                  },
+                  "content": "<p class=\"text-build-content\" data-testid=\"9Y6QRu4Tyc\" style=\"line-height: 24px; margin: 10px 0;; margin-top: 10px; color:#000000;font-family:Arial;font-size:14px;line-height:24px;\">Bonjour {{var:firstName:\"Marie\"}},</p><p class=\"text-build-content\" data-testid=\"9Y6QRu4Tyc\" style=\"line-height: 24px; margin: 10px 0; color:#000000;font-family:Arial;font-size:14px;line-height:24px;\">Je voulais partager avec vous mon article préféré sur la recherche d'emploi.</p><p class=\"text-build-content\" data-testid=\"9Y6QRu4Tyc\" style=\"line-height: 24px; margin: 10px 0;; margin-bottom: 10px; color:#000000;font-family:Arial;font-size:14px;line-height:24px;\">Dans cet article, Nicolas Galita du blog Dessine-toi un emploi, répond avec bon sens et pragmatisme à une question que je me suis beaucoup posée <b>quand et comment relancer les recruteurs</b> pour enfin obtenir des réponses !</p>",
+                  "id": "M76-SUjVGeMA",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "6D7_bApllv",
+                      "oldContentEditor": "<p style=\"line-height: 19px; margin: 10px 0; margin-top: 10px;\"><span style=\"color:#000000\"><span style=\"font-size:14px\"><span style=\"font-family:Arial,sans-serif\">J'espère qu'il vous éclairera aussi 🔦</span></span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\"><span style=\"font-family:Arial,sans-serif\">A très vite,</span></span></span></p><p style=\"line-height: 1.38; margin: 10px 0; margin-bottom: 10px;\"><span style=\"color:#6b6b68\"><span style=\"font-size:14.6667px\">Joanna et l'équipe de&nbsp;Bob&nbsp;</span></span></p>",
+                      "oldMjAttributes": "{\"line-height\":\"22px\",\"padding-right\":\"0px\",\"font-family\":\"Arial, sans-serif\",\"padding-left\":\"0px\",\"color\":\"#55575d\",\"align\":\"left\",\"padding-bottom\":\"0px\",\"padding\":\"10px 25px\",\"padding-top\":\"0px\",\"font-size\":\"13px\"}"
+                    }
+                  },
+                  "content": "<p style=\"text-align: left; margin: 10px 0;; margin-top: 10px; font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">J'espère qu'il vous éclairera aussi 🔦</p><p style=\"text-align: left; margin: 10px 0; font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">À très vite,</p><p style=\"text-align: left; margin: 10px 0;; margin-bottom: 10px; font-size:14.6667px;text-align:left;color:#6b6b68;font-family:Arial;line-height:1.38;\">Joanna et l'équipe de Bob</p>",
+                  "id": "rzoGXYABEtkY",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "gi4zeuZswtJH",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "wvCetbp_a2mo",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "4OuGi-HwMZ0kB",
+              "savedSectionID": 408382
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "X3XDrFvC05"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "alt": "",
+                    "border": "none",
+                    "height": "auto",
+                    "href": "",
+                    "padding": "10px 25px",
+                    "padding-left": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "Ok7Pn1vrhvCBv",
+                      "image-id": 6036334
+                    },
+                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
+                    "target": "_blank",
+                    "title": "",
+                    "width": "102px"
+                  },
+                  "id": "7xkilmjjJ2Af",
+                  "tagName": "mj-image"
+                }
+              ],
+              "id": "XA_vKLwJ8lzZ",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "wOHT-Pl51DOH",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "passport": {
+              "conditions": [
+                {
+                  "operator": "!=",
+                  "varName": "deepLinkToAdvice",
+                  "varValue": " "
+                }
+              ],
+              "id": "TzqRI3BWyMuLb"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "1U2zYAch1Z"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "etrWNBtqot",
+                      "oldContentEditor": "<p style=\"line-height: 19px; margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"color:#000000\"><span style=\"font-family:Arial,sans-serif\"><span style=\"font-size:14px\">Ps : si vous avez besoin d'inspiration pour vos mails de relance, on a un <a target=\"_blank\" href=\"{{var:deepLinkToAdvice}}\">conseil sur le sujet ici</a>.</span></span></span></p>",
+                      "oldMjAttributes": "{\"line-height\":\"24px\",\"padding-right\":\"0px\",\"font-family\":\"Arial, sans-serif\",\"padding-left\":\"0px\",\"color\":\"#55575d\",\"align\":\"left\",\"padding-bottom\":\"0px\",\"padding\":\"10px 25px\",\"padding-top\":\"0px\",\"font-size\":\"13px\"}"
+                    }
+                  },
+                  "content": "<p style=\"text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Ps : si vous avez besoin d'inspiration pour vos mails de relance, on a un </span><a href=\"{{var:deepLinkToAdvice}}\" target=\"_blank\"><span style=\"font-size:14px;text-align:left;color:#0000EE;font-family:Arial;line-height:19px;\"><u>conseil sur le sujet ici</u></span></a><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">.</span></p>",
+                  "id": "J7WwowcwEsfR7",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "XmB-R-4F9MAY",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "J2eFYERsKxbY",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "oCEaUafUqEt",
+              "savedSectionID": 408701,
+              "version": "3.3.5"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "PtLAFvvOsfP"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "Peft_xIxQ46",
+                      "oldContentEditor": "<p style=\"margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"font-size:11px\">Vous recevez cet email car vous êtes inscrit{% if var:gender:\"\" == \"FEMININE\" %}e{% endif %}</span><span style=\"font-size:11px\">&nbsp;sur <a target=\"_blank\" href=\"https://www.bob-emploi.fr?utm_source=bob-emploi&amp;utm_medium=email\">Bob</a>&nbsp;et avez demandé des emails de coaching. <a target=\"_blank\" href=\"{{var:changeEmailSettingsUrl}}\"><u>Cliquez ici</u></a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte Bob en veille ? <a target=\"_blank\" href=\"{{var:statusUpdateUrl}}\">cliquez ici</a>.</span></p>",
+                      "oldMjAttributes": "{\"line-height\":\"22px\",\"padding-right\":\"0px\",\"font-family\":\"Arial, sans-serif\",\"padding-left\":\"0px\",\"color\":\"#55575d\",\"align\":\"left\",\"padding-bottom\":\"0px\",\"padding\":\"10px 25px\",\"padding-top\":\"0px\",\"font-size\":\"13px\"}"
+                    }
+                  },
+                  "content": "<p style=\"text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px\"><span style=\"line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#55575d;font-family:Arial;\">Vous recevez cet email car vous êtes inscrit{%if var:gender:\"\"==\"FEMININE\"%}e{%else%}{%if var:gender:\"\"==\"MASCULINE\"%}{%else%}·e{%endif%}{% endif %} sur </span><a href=\"https://www.bob-emploi.fr?utm_source=bob-emploi&utm_medium=email\" target=\"_blank\"><span><u><span style=\"line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#0000EE;font-family:Arial;\"><u>Bob</u></span></u></span></a><span style=\"line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#55575d;font-family:Arial;\"> et avez demandé des emails de coaching. </span><a href=\"{{var:changeEmailSettingsUrl}}\" target=\"_blank\"><span><u><span style=\"line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#0000EE;font-family:Arial;\"><u>Cliquez ici</u></span></u></span></a><span style=\"line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#55575d;font-family:Arial;\"> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte Bob en veille ? </span><a href=\"{{var:statusUpdateUrl}}\" target=\"_blank\"><span><u><span style=\"line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#0000EE;font-family:Arial;\"><u>cliquez ici</u></span></u></span></a><span style=\"line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#55575d;font-family:Arial;\">.</span></p>",
+                  "id": "OA-6C5GPO_iW2",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "pzsbZceERKgHr",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "zETZwf0Wv-EtM",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-color": "#ffffff",
+            "background-repeat": "repeat",
+            "background-size": "auto",
+            "full-width": "full-width",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "passport": {
+              "id": "nfpVXyQXiM9"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "_yO1NqXfs3z"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "border-color": "#000000",
+                    "border-style": "solid",
+                    "border-width": "2px",
+                    "padding": "10px 25px",
+                    "passport": {
+                      "id": "pSvEc9bAweU"
+                    },
+                    "width": "100%"
+                  },
+                  "id": "97nkW-ZL3s2ot",
+                  "tagName": "mj-divider"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "pA849xZNeQN",
+                      "oldContentEditor": "<p style=\"line-height: 19px; margin: 10px 0; margin-top: 10px;\"><span style=\"color:#000000\"><span style=\"font-size:14px\"><b>Quand et comment relancer le recruteur ?</b></span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">C'est une des questions qui me revient le plus souvent. Le problème : je fais ça de manière tellement intuitive que j'ai eu beaucoup de mal à admettre que ce puisse être une question légitime. Mais à force de voir certains et certaines d'entre vous se prendre la tête sur cette question, je me suis dit qu'il était temps d'en faire un article.</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Avant de commencer je tiens à vous avertir : si vous faites partie des gens qui ne se posent pas ce type de question vous n'allez rien apprendre dans cet article.</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">D'autre part, si vous n'avez pas le temps de lire l'article et ce qui vous intéresse c'est la réponse à quand, la voici : <span style=\"background-color:#faff00\">quand c'est votre tout premier contact attendez 3 jours ouvrés la première fois. Puis 7 jours ouvrés la seconde.</span> <span style=\"background-color:#faff00\">Quand vous avez rencontré le recruteur attendez 5 jours ouvrés puis encore 5 jours ouvrés.</span> Ces chiffres sont évidemment purement indicatif : il n'y a aucune vraie bonne réponse à la question.</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><b><span style=\"color:#000000\"><span style=\"font-size:14px\">À quel jeu joue-t-on ?</span></span></b></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Ce qui m'étonne le plus souvent c'est de voir à quel point on peut se méprendre sur le jeu en lui-même. Or, si on ne sait pas à quel jeu on joue, on ne peut pas en connaître les règles.</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Vous avez donc le recruteur. Le recruteur joue un jeu simple : il veut éviter de faire une erreur en embauchant quelqu'un. En effet, le plus souvent, le recruteur cherche à minimiser son erreur, pas forcément à trouver la personne avec le plus de potentiel. La plupart du temps, il reçoit plusieurs candidatures. Il a donc une problématique très pesante : il doit arbitrer entre attendre pour recevoir plus de candidatures et boucler les candidatures déjà reçues.</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Par exemple, un recruteur pourra vous « garder au chaud ». C'est-à-dire qu'il sait qu'il ne vous prendra pas, mais il ne vous dira non uniquement quand il sera sûr que son choix n°1 aura dit oui. Dans ce cas là, il n'a pas foncièrement envie d'être relancé.</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Inversement, vous avez beaucoup de recruteurs qui n'arrivent pas à gérer le flux de candidatures et qui, par conséquent, ne traitent que les candidats qui les relancent. Dans ce cas là, il a clairement envie d'être relancé par quelques candidats qui se démarqueront ainsi.</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">De l'autre côté il y a vous. En tant que chercheur vous n'avez à peu près aucun arbitrage à faire. J'insiste. Beaucoup de chercheurs font comme s'ils devaient arbitrer entre relancer trop vite au risque d'énerver le recruteur et ne pas relancer assez au risque de perdre l'attention du recruteur. En fait vous n'avez absolument rien à perdre. Si un recruteur s'énerve parce que vous le relancez, il y a fort à parier qu'il ne comptait pas vous recruter. Or, <span style=\"background-color:#faff00\">il y a trop à gagner en relançant pour prendre en compte les quelques désagréments possibles quand on relance trop.</span></span></span></p><p style=\"line-height: 19px; margin: 10px 0; margin-bottom: 10px;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">En outre, en admettant qu'il y ait un tel arbitrage, voilà ce que ça donnerait sur un graphique.</span></span></p>",
+                      "oldMjAttributes": "{\"line-height\":\"22px\",\"font-family\":\"Arial, sans-serif\",\"color\":\"#55575d\",\"align\":\"left\",\"padding-bottom\":\"0px\",\"padding\":\"10px 25px\",\"padding-top\":\"0px\",\"font-size\":\"13px\"}"
+                    }
+                  },
+                  "content": "<p style=\"text-align: left; margin: 10px 0;; margin-top: 10px\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\"><b>Quand et comment relancer le recruteur ?</b></span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">C'est une des questions qui me revient le plus souvent. Le problème : je fais ça de manière tellement intuitive que j'ai eu beaucoup de mal à admettre que ce puisse être une question légitime. Mais à force de voir certains et certaines d'entre vous se prendre la tête sur cette question, je me suis dit qu'il était temps d'en faire un article.</span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Avant de commencer je tiens à vous avertir : si vous faites partie des gens qui ne se posent pas ce type de question vous n'allez rien apprendre dans cet article.</span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">D'autre part, si vous n'avez pas le temps de lire l'article et ce qui vous intéresse c'est la réponse à quand, la voici : </span><span style=\"background-color:#faff00;font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">quand c'est votre tout premier contact attendez 3 jours ouvrés la première fois. Puis 7 jours ouvrés la seconde.</span><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\"> </span><span style=\"background-color:#faff00;font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Quand vous avez rencontré le recruteur attendez 5 jours ouvrés puis encore 5 jours ouvrés.</span><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\"> Ces chiffres sont évidemment purement indicatif : il n'y a aucune vraie bonne réponse à la question.</span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\"><b>À quel jeu joue-t-on ?</b></span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Ce qui m'étonne le plus souvent c'est de voir à quel point on peut se méprendre sur le jeu en lui-même. Or, si on ne sait pas à quel jeu on joue, on ne peut pas en connaître les règles.</span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Vous avez donc le recruteur. Le recruteur joue un jeu simple : il veut éviter de faire une erreur en embauchant quelqu'un. En effet, le plus souvent, le recruteur cherche à minimiser son erreur, pas forcément à trouver la personne avec le plus de potentiel. La plupart du temps, il reçoit plusieurs candidatures. Il a donc une problématique très pesante : il doit arbitrer entre attendre pour recevoir plus de candidatures et boucler les candidatures déjà reçues.</span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Par exemple, un recruteur pourra vous « garder au chaud ». C'est-à-dire qu'il sait qu'il ne vous prendra pas, mais il ne vous dira non uniquement quand il sera sûr que son choix n°1 aura dit oui. Dans ce cas là, il n'a pas foncièrement envie d'être relancé.</span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Inversement, vous avez beaucoup de recruteurs qui n'arrivent pas à gérer le flux de candidatures et qui, par conséquent, ne traitent que les candidats qui les relancent. Dans ce cas là, il a clairement envie d'être relancé par quelques candidats qui se démarqueront ainsi.</span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">De l'autre côté il y a vous. En tant que chercheur vous n'avez à peu près aucun arbitrage à faire. J'insiste. Beaucoup de chercheurs font comme s'ils devaient arbitrer entre relancer trop vite au risque d'énerver le recruteur et ne pas relancer assez au risque de perdre l'attention du recruteur. En fait vous n'avez absolument rien à perdre. Si un recruteur s'énerve parce que vous le relancez, il y a fort à parier qu'il ne comptait pas vous recruter. Or, </span><span style=\"background-color:#faff00;font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">il y a trop à gagner en relançant pour prendre en compte les quelques désagréments possibles quand on relance trop.</span></p><p style=\"text-align: left; margin: 10px 0;; margin-bottom: 10px\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">En outre, en admettant qu'il y ait un tel arbitrage, voilà ce que ça donnerait sur un graphique.</span></p>",
+                  "id": "Py7RY3RvMtfL_",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "5_5ijzEsLwFif",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "GqDbbwy-W6-dX",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "passport": {
+              "id": "FritNaS6Lkx"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "MFRMz7ZaWnF"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "center",
+                    "alt": "",
+                    "border": "none",
+                    "height": "auto",
+                    "href": "",
+                    "padding": "10px 25px",
+                    "passport": {
+                      "id": "3upeqbapICXXUA",
+                      "image-id": 6054879
+                    },
+                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/gqqw/2z2h3.png",
+                    "target": "_blank",
+                    "title": "",
+                    "width": "1180px"
+                  },
+                  "id": "_njhDSypm-zkt",
+                  "tagName": "mj-image"
+                }
+              ],
+              "id": "_J-0bXZT8slIF",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "elhcZE81C7Mdx",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "passport": {
+              "id": "NCWjwZHq9lN"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "dbrZIwcfZYv"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "25px",
+                    "padding-right": "25px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "iarUO8-XQQP",
+                      "oldContentEditor": "<p style=\"line-height: 19px; margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Le problème c'est que la seule manière de découvrir quelle est la meilleure fréquence est de relancer un peu trop ! En effet, si vous ne relancez pas assez vous êtes ici.</span></span></p>",
+                      "oldMjAttributes": "{\"line-height\":\"24px\",\"padding-right\":\"25px\",\"font-family\":\"Arial, sans-serif\",\"padding-left\":\"25px\",\"color\":\"#55575d\",\"align\":\"left\",\"padding-bottom\":\"0px\",\"padding\":\"10px 25px\",\"padding-top\":\"0px\",\"font-size\":\"13px\"}"
+                    }
+                  },
+                  "content": "<p style=\"text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Le problème c'est que la seule manière de découvrir quelle est la meilleure fréquence est de relancer un peu trop ! En effet, si vous ne relancez pas assez vous êtes ici.</span></p>",
+                  "id": "QXctLJM5kVFAj",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "o6YvyrqvIJJgy",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "aQ6CW8mfGO7Qh",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "passport": {
+              "id": "gun6T-P366e"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "d9V-En3w0Vw"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "center",
+                    "alt": "",
+                    "border": "none",
+                    "height": "auto",
+                    "href": "",
+                    "padding": "10px 25px",
+                    "passport": {
+                      "id": "-Ffc0M6s0XHrTx",
+                      "image-id": 6054882
+                    },
+                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/gqqw/2z2h5.png",
+                    "target": "_blank",
+                    "title": "",
+                    "width": "1200px"
+                  },
+                  "id": "3wqVCVP1-6KiN",
+                  "tagName": "mj-image"
+                }
+              ],
+              "id": "Jn5GGkzcwBbwj",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "reHD6BNNZveqt",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "passport": {
+              "id": "K8KcgKLb2oj"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "vqwSmH5IJQ1"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "aNuP7YkOCQj",
+                      "oldContentEditor": "<p style=\"line-height: 19px; margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Personne ne vous le fera jamais savoir et vous n'avez aucun moyen de savoir à quel point vous êtes loin de la meilleure fréquence. Sauf si vous essayez d'augmenter votre fréquence.</span></span></p>",
+                      "oldMjAttributes": "{\"line-height\":\"24px\",\"font-family\":\"Arial, sans-serif\",\"color\":\"#55575d\",\"align\":\"left\",\"padding-bottom\":\"0px\",\"padding\":\"10px 25px\",\"padding-top\":\"0px\",\"font-size\":\"13px\"}"
+                    }
+                  },
+                  "content": "<p style=\"text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Personne ne vous le fera jamais savoir et vous n'avez aucun moyen de savoir à quel point vous êtes loin de la meilleure fréquence. Sauf si vous essayez d'augmenter votre fréquence.</span></p>",
+                  "id": "-jryUPFNVRvg9",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "jALFv74icucC1",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "TbSbGgugw1jX3",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "passport": {
+              "id": "tFanEqtpNdy"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "Xp0wuOlxa6G"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "center",
+                    "alt": "",
+                    "border": "none",
+                    "height": "auto",
+                    "href": "",
+                    "padding": "10px 25px",
+                    "passport": {
+                      "id": "11sMJ3YUoMFyZ4",
+                      "image-id": 6054884
+                    },
+                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/gqqw/2z2hz.png",
+                    "target": "_blank",
+                    "title": "",
+                    "width": "1200px"
+                  },
+                  "id": "aU9mqbWOZqK1x",
+                  "tagName": "mj-image"
+                }
+              ],
+              "id": "qb7hPkvFtOeh9",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "u5_FqMbBkOOY3",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "passport": {
+              "id": "K0n_27fFmcs"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "XoYQpnZkqJ1"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "kmNaGrya0KR",
+                      "oldContentEditor": "<p style=\"line-height: 19px; margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"color:#000000\"><span style=\"font-size:14px\"><span style=\"background-color:#faff00\">Et dès que vous commencez à relancer un peu trop, ne vous inquiétez pas : vos interlocuteurs vous le feront savoir !</span> Donc si on ne vous a jamais dit que vous relanciez trop c'est que vous relancez probablement bien trop peu.</span></span></p>",
+                      "oldMjAttributes": "{\"line-height\":\"24px\",\"font-family\":\"Arial, sans-serif\",\"color\":\"#55575d\",\"align\":\"left\",\"padding-bottom\":\"0px\",\"padding\":\"10px 25px\",\"padding-top\":\"0px\",\"font-size\":\"13px\"}"
+                    }
+                  },
+                  "content": "<p style=\"text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px\"><span style=\"background-color:#faff00;font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Et dès que vous commencez à relancer un peu trop, ne vous inquiétez pas : vos interlocuteurs vous le feront savoir !</span><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\"> Donc si on ne vous a jamais dit que vous relanciez trop c'est que vous relancez probablement bien trop peu.</span></p>",
+                  "id": "5WXU3D6cBEzPw",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "lv5c5m0iTGQax",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "QR0B-izj52Ghq",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "passport": {
+              "id": "YLlcf05Buyr"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "bz9G1FrBcPe"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "center",
+                    "alt": "",
+                    "border": "none",
+                    "height": "auto",
+                    "href": "",
+                    "padding": "10px 25px",
+                    "passport": {
+                      "id": "OTyu8fg81ksQUB",
+                      "image-id": 6054885
+                    },
+                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/gqqw/2z2ht.png",
+                    "target": "_blank",
+                    "title": "",
+                    "width": "1200px"
+                  },
+                  "id": "v_4TrBx9XNrDl",
+                  "tagName": "mj-image"
+                }
+              ],
+              "id": "rM_EIe3TdGNAc",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "s5VsvSGe3uITa",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "passport": {
+              "id": "Mdye0i37vyI"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "OIRWwTzOkLW"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "zdzyM3xTk0H",
+                      "oldContentEditor": "<p style=\"line-height: 19px; margin: 10px 0; margin-top: 10px;\"><span style=\"font-size:14px\"><span style=\"color:#000000\"><b>L'effet positif de la relance</b></span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000\">Relancer un recruteur a plusieurs effets positifs. Le premier c'est que <span style=\"background-color:#faff00\">c'est un moyen irréfutable de démontrer votre envie</span>. Le recruteur se dit que si vous le relancez c'est que vous n'avez pas postulé au hasard partout.</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000\">Ensuite, vous obtiendrez plus rapidement des réponses négatives. En quoi est-ce une bonne nouvelle ? Parce que<span style=\"background-color:#faff00\"> ça vous permet de fermer le dossier dans votre tête. </span>Surtout si le recruteur est en train de vous garder au chaud.</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000\">Enfin, vous gardez votre destinée en main. Ne remettez jamais votre destinée dans les mains d'un recruteur qui vous dit « je vous rappelle lundi ». Prenez les devants.</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><b><span style=\"font-size:14px\"><span style=\"color:#000000\">Quand relancer ?</span></span></b></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000\">On arrive au coeur du sujet. Encore une fois : il n'existe aucune réponse absolue et précise à cette question. Je vais vous donner des chiffres uniquement pour vous faire une idée approximative et vous garantir un point d'appui dans votre décisision. Et ce sont plutôt des minimums que des maximums. <span style=\"background-color:#faff00\">Gardez en tête que l'important c'est de relancer.</span></span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000\">Si vous êtes dans le cas de figure où vous n'avez jamais rencontré votre interlocuteur (vous lui avez par exemple proposé un café), vous pouvez vous dire que vous allez relancer dans 3 jours ouvrés pour la première relance, et 7 jours ouvrés pour la seconde relance. Pourquoi ces chiffres ? Pour aucune raison. Je les ai trouvé dans un livre qui s'appelle 2-hour job search et je n'ai rien à y redire. La seule chose que je sais c'est qu'il ne faut pas attendre qu'une semaine ouvrée entière ne s'écoule car sinon on vous oublie.</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000\">Si vous êtes dans le cas de figure où vous avez déjà rencontré votre interlocuteur, la bonne date de relance est celle qui a été convenue. Si aucune date n'a été décidée (ce qui est une erreur que vous ne devriez jamais laisser arriver) alors vous pouvez relancer après 5 jours ouvrés la première fois, puis 5 jours ouvrés la seconde fois.</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><b><span style=\"font-size:14px\"><span style=\"color:#000000\">Comment relancer ?</span></span></b></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000\">Ma tactique préférée est de <span style=\"background-color:#faff00\">changer à chaque fois de canal de communication</span>. Par exemple si ma première relance était par téléphone, ma seconde sera un email. Si ma première relance était un mail, ma seconde pourra être un message LinkedIn, etc.</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000\">L'avantage c'est que ça permet, d'une part, de ne pas donner l'impression de mettre la pression sur votre interlocuteur. Alors que quand deux emails se suivent sans réponse on se sent tout de suite en faute. D'autre part, ça permet de découvrir le canal préférentiel de l'interlocuteur. Certaines personnes sont plus réactives par email que téléphone, alors que pour d'autres c'est l'inverse. Par exemple, si vous voulez me joindre, me laisser un message vocal est une très mauvaise idée : je ne les écoute qu'une fois tous les trois mois. D'ailleurs, ceux et celles qui sont abonnés à ce blog s'en sont rendu compte : je réponds parfois à mes mails en 15 jours voire plus. Alors que sur Facebook je réponds toujours dans la journée, maximum. Chacun à des canaux préférentiels.</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000\">L'autre tactique consiste à <span style=\"background-color:#faff00\">apporter quelque chose de nouveau à dire</span>. Par exemple vous pouvez dire quelque chose comme « j'ai continué mes démarches et, par transparence, je voulais vous dire que j'ai reçu une proposition. Mais je préfèrerais vraiment travailler avec vous. Où en sommes-nous ? ». Ou encore « je viens prendre des nouvelles et redire mon envie de travailler avec vous. Où en sommes-nous ? ». Etc.</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000\">En outre, n'oubliez pas de réduire un maximum l'inconfort de l'interlocuteur.<span style=\"background-color:#faff00\"> Le but de la relance n'est pas de le gronder. N'hésitez pas à dédramatiser la situation.</span> Exemple si le recruteur s'excuse : « Oh non y'a pas de quoi, j'aime juste prendre les devants pour qu'on soit tous certains d'être alignés ».</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000\">Enfin, je ne sais pas pourquoi mais j'aime beaucoup utiliser le « nous » quand je relance. J'ai l'impression que c'est moins pesant et que cela dilue la culpabilité car on se met dans le même camp. Exemple « Je voulais savoir où nous en étions ? », « J'espère que nous pourrons prendre bientôt une décision ensemble », etc.</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><b><span style=\"font-size:14px\"><span style=\"color:#000000\">Conclusion</span></span></b></p><p style=\"line-height: 19px; margin: 10px 0; margin-bottom: 10px;\"><span style=\"font-size:14px\"><span style=\"color:#000000\">Il n'y a qu'une seule règle valable : il faut relancer. Arrêtez de vous poser trop de questions. Ne vous laissez surtout pas paralyser. <span style=\"background-color:#faff00\">Le plus important ce n'est pas de relancer exactement à la bonne seconde, c'est de relancer tout court. </span>Retenez surtout qu'il ne faut simplement pas attendre trop longtemps (une semaine) pour ne pas être oublié.</span></span></p>",
+                      "oldMjAttributes": "{\"line-height\":\"24px\",\"font-family\":\"Arial, sans-serif\",\"color\":\"#55575d\",\"align\":\"left\",\"padding-bottom\":\"0px\",\"padding\":\"10px 25px\",\"padding-top\":\"0px\",\"font-size\":\"13px\"}"
+                    }
+                  },
+                  "content": "<p style=\"text-align: left; margin: 10px 0;; margin-top: 10px\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\"><b>L'effet positif de la relance</b></span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Relancer un recruteur a plusieurs effets positifs. Le premier c'est que </span><span style=\"background-color:#faff00;font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">c'est un moyen irréfutable de démontrer votre envie</span><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">. Le recruteur se dit que si vous le relancez c'est que vous n'avez pas postulé au hasard partout.</span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Ensuite, vous obtiendrez plus rapidement des réponses négatives. En quoi est-ce une bonne nouvelle ? Parce que</span><span style=\"background-color:#faff00;font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\"> ça vous permet de fermer le dossier dans votre tête. </span><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Surtout si le recruteur est en train de vous garder au chaud.</span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Enfin, vous gardez votre destinée en main. Ne remettez jamais votre destinée dans les mains d'un recruteur qui vous dit « je vous rappelle lundi ». Prenez les devants.</span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\"><b>Quand relancer ?</b></span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">On arrive au coeur du sujet. Encore une fois : il n'existe aucune réponse absolue et précise à cette question. Je vais vous donner des chiffres uniquement pour vous faire une idée approximative et vous garantir un point d'appui dans votre décisision. Et ce sont plutôt des minimums que des maximums. </span><span style=\"background-color:#faff00;font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Gardez en tête que l'important c'est de relancer.</span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Si vous êtes dans le cas de figure où vous n'avez jamais rencontré votre interlocuteur (vous lui avez par exemple proposé un café), vous pouvez vous dire que vous allez relancer dans 3 jours ouvrés pour la première relance, et 7 jours ouvrés pour la seconde relance. Pourquoi ces chiffres ? Pour aucune raison. Je les ai trouvé dans un livre qui s'appelle 2-hour job search et je n'ai rien à y redire. La seule chose que je sais c'est qu'il ne faut pas attendre qu'une semaine ouvrée entière ne s'écoule car sinon on vous oublie.</span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Si vous êtes dans le cas de figure où vous avez déjà rencontré votre interlocuteur, la bonne date de relance est celle qui a été convenue. Si aucune date n'a été décidée (ce qui est une erreur que vous ne devriez jamais laisser arriver) alors vous pouvez relancer après 5 jours ouvrés la première fois, puis 5 jours ouvrés la seconde fois.</span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\"><b>Comment relancer ?</b></span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Ma tactique préférée est de </span><span style=\"background-color:#faff00;font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">changer à chaque fois de canal de communication</span><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">. Par exemple si ma première relance était par téléphone, ma seconde sera un email. Si ma première relance était un mail, ma seconde pourra être un message LinkedIn, etc.</span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">L'avantage c'est que ça permet, d'une part, de ne pas donner l'impression de mettre la pression sur votre interlocuteur. Alors que quand deux emails se suivent sans réponse on se sent tout de suite en faute. D'autre part, ça permet de découvrir le canal préférentiel de l'interlocuteur. Certaines personnes sont plus réactives par email que téléphone, alors que pour d'autres c'est l'inverse. Par exemple, si vous voulez me joindre, me laisser un message vocal est une très mauvaise idée : je ne les écoute qu'une fois tous les trois mois. D'ailleurs, ceux et celles qui sont abonnés à ce blog s'en sont rendu compte : je réponds parfois à mes mails en 15 jours voire plus. Alors que sur Facebook je réponds toujours dans la journée, maximum. Chacun à des canaux préférentiels.</span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">L'autre tactique consiste à </span><span style=\"background-color:#faff00;font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">apporter quelque chose de nouveau à dire</span><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">. Par exemple vous pouvez dire quelque chose comme « j'ai continué mes démarches et, par transparence, je voulais vous dire que j'ai reçu une proposition. Mais je préfèrerais vraiment travailler avec vous. Où en sommes-nous ? ». Ou encore « je viens prendre des nouvelles et redire mon envie de travailler avec vous. Où en sommes-nous ? ». Etc.</span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">En outre, n'oubliez pas de réduire un maximum l'inconfort de l'interlocuteur.</span><span style=\"background-color:#faff00;font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\"> Le but de la relance n'est pas de le gronder. N'hésitez pas à dédramatiser la situation.</span><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\"> Exemple si le recruteur s'excuse : « Oh non y'a pas de quoi, j'aime juste prendre les devants pour qu'on soit tous certains d'être alignés ».</span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Enfin, je ne sais pas pourquoi mais j'aime beaucoup utiliser le « nous » quand je relance. J'ai l'impression que c'est moins pesant et que cela dilue la culpabilité car on se met dans le même camp. Exemple « Je voulais savoir où nous en étions ? », « J'espère que nous pourrons prendre bientôt une décision ensemble », etc.</span></p><p style=\"text-align: left; margin: 10px 0;\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\"><b>Conclusion</b></span></p><p style=\"text-align: left; margin: 10px 0;; margin-bottom: 10px\"><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Il n'y a qu'une seule règle valable : il faut relancer. Arrêtez de vous poser trop de questions. Ne vous laissez surtout pas paralyser. </span><span style=\"background-color:#faff00;font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Le plus important ce n'est pas de relancer exactement à la bonne seconde, c'est de relancer tout court. </span><span style=\"font-size:14px;text-align:left;color:#000000;font-family:Arial;line-height:19px;\">Retenez surtout qu'il ne faut simplement pas attendre trop longtemps (une semaine) pour ne pas être oublié.</span></p>",
+                  "id": "anMubxu6WZ1bw",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "VUJ_2fA2MHKzh",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "VBZB51Dvc2bmv",
+          "tagName": "mj-section"
+        }
+      ],
+      "id": "-VP1wSkJ1Zlq",
+      "tagName": "mj-body"
+    }
+  ],
+  "id": "cNitPGrfDV3O",
+  "tagName": "mjml"
+}

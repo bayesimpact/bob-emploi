@@ -1,0 +1,33 @@
+{
+  "Targets": [
+    {
+      "Arn": "arn:aws:ecs:us-east-1:951168128976:cluster/bob-us-ECSCluster-Edamal28jXOS",
+      "EcsParameters": {
+        "TaskCount": 1,
+        "TaskDefinitionArn": "arn:aws:ecs:us-east-1:951168128976:task-definition/bob-frontend-server"
+      },
+      "Id": "count-users",
+      "Input": {
+        "containerOverrides": [
+          {
+            "command": [
+              "python bob_emploi/frontend/server/asynchronous/count_users.py"
+            ],
+            "environment": [
+              {
+                "name": "MONGO_URL",
+                "value": "REDACTED"
+              },
+              {
+                "name": "USERS_MONGO_URL",
+                "value": "REDACTED"
+              }
+            ],
+            "name": "flask"
+          }
+        ]
+      },
+      "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
+    }
+  ]
+}

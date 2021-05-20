@@ -6,12 +6,13 @@ import {useDispatch} from 'react-redux'
 
 import {DispatchAllActions, readTip, openTipExternalLink} from 'store/actions'
 
-import {Trans} from 'components/i18n'
-import {isMobileVersion} from 'components/mobile'
+import Trans from 'components/i18n_trans'
+import isMobileVersion from 'store/mobile'
 import {RadiumDiv} from 'components/radium'
 
+import ExternalLink from 'components/external_link'
+import Markdown from 'components/markdown'
 import {Modal, ModalHeader} from './modal'
-import {ExternalLink, Markdown} from './theme'
 
 
 export type ActionPropWithId = bayes.bob.Action & {actionId: string}
@@ -97,9 +98,7 @@ const ActionModalHeader = React.memo(ActionModalHeaderBase)
 
 interface ActionProps {
   action?: bayes.bob.Action
-  context?: '' | 'project'
   onOpen: (action?: bayes.bob.Action) => void
-  project: bayes.bob.Project
   style?: React.CSSProperties
 }
 
@@ -152,7 +151,7 @@ const getBulletStyle = (status?: bayes.bob.ActionStatus): React.CSSProperties =>
 const ActionBase: React.FC<ActionProps> = (props: ActionProps): React.ReactElement => {
   const {
     action, action: {status = undefined, title = undefined} = {},
-    context, onOpen, project, style: propsStyle,
+    onOpen, style: propsStyle,
   } = props
   const onClick = useCallback((): void => onOpen(action), [action, onOpen])
   const isRead = status === 'ACTION_UNREAD'
@@ -172,6 +171,7 @@ const ActionBase: React.FC<ActionProps> = (props: ActionProps): React.ReactEleme
     fontSize: 14,
     height: 55,
     padding: '0 20px',
+    width: '100%',
   }
   const titleStyle: React.CSSProperties = {
     flex: 1,
@@ -182,23 +182,12 @@ const ActionBase: React.FC<ActionProps> = (props: ActionProps): React.ReactEleme
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   }
-  const contextStyle: React.CSSProperties = {
-    color: colors.COOL_GREY,
-    fontSize: 13,
-    fontStyle: 'italic',
-    fontWeight: 'normal',
-  }
-  const contextText = context === 'project' ? project.title : ''
   return <RadiumDiv style={style}>
-    <div style={contentStyle} onClick={onClick}>
-      <div style={getBulletStyle(status)} />
-      <div style={titleStyle}>
-        {title} {contextText ? <span style={contextStyle}>
-          - {contextText}
-        </span> : null}
-      </div>
+    <button style={contentStyle} onClick={onClick}>
+      <span style={getBulletStyle(status)} />
+      <span style={titleStyle}>{title}</span>
       <RightButton isDone={status === 'ACTION_DONE'} />
-    </div>
+    </button>
   </RadiumDiv>
 }
 ActionBase.propTypes = {
@@ -207,9 +196,7 @@ ActionBase.propTypes = {
     status: PropTypes.string,
     title: PropTypes.string,
   }),
-  context: PropTypes.oneOf(['', 'project']),
   onOpen: PropTypes.func.isRequired,
-  project: PropTypes.object,
   style: PropTypes.object,
 }
 const Action = React.memo(ActionBase)

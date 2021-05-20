@@ -24,7 +24,7 @@ _APPS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 _KEPT_PLUGINS = {plugin for plugin in os.getenv('BOB_PLUGINS', '').split(',') if plugin}
 
 
-class AppModule(object):
+class AppModule:
     """
     A plugin for the main app.
 

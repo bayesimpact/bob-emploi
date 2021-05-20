@@ -1,10 +1,15 @@
 """Unit tests for the frontend.network module."""
 
 import json
+import os
 import unittest
+from unittest import mock
 
 from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
+
+
+_FAKE_TRANSLATIONS_FILE = os.path.join(os.path.dirname(__file__), 'testdata/translations.json')
 
 
 class ImproveYourNetworkScoringModelTestCase(scoring_test.ScoringModelTestBase):
@@ -148,6 +153,7 @@ class ImproveYourNetworkScoringModelTestCase(scoring_test.ScoringModelTestBase):
         self.assertEqual(score, 2, msg=f'Fail for "{self.persona.name}"')
 
 
+@mock.patch.dict(os.environ, {'I18N_TRANSLATIONS_FILE': _FAKE_TRANSLATIONS_FILE})
 class EndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the project/.../network-* endpoints."""
 
@@ -191,6 +197,54 @@ class EndpointTestCase(base_test.ServerTestCase):
                 'name': 'Le maire de Sartrouville',
                 'emailExample': 'Bonjour, je cherche un emploi de facteur.',
                 'contactTip': 'Après le conseil municipal',
+            }]},
+            leads)
+
+    # TODO(sil): Make sure %ofCity is translated to.
+    def test_translations(self) -> None:
+        """Get expanded card data translations."""
+
+        self._db.contact_lead.insert_many([
+            {
+                'name': 'Le maire %ofCity',
+                'emailTemplate': 'Bonjour, je cherche un emploi %ofJobName.',
+                'contactTip': 'Après le conseil municipal',
+            },
+        ])
+        self._db.translations.insert_many([
+            {
+                'string': 'Bonjour, je cherche un emploi %ofJobName.',
+                'en': "Hi, I'm looking for a job %ofJobName.",
+            },
+            {
+                'string': 'Après le conseil municipal',
+                'en': 'After the city council',
+            },
+            {
+                'string': 'Le maire %ofCity',
+                'en': 'The mayor %ofCity',
+            },
+        ])
+        user_info = self.get_user_info(self.user_id, self.auth_token)
+        user_info['profile']['locale'] = 'en'
+        user_info['projects'][0]['targetJob'] = {'name': 'postman'}
+        user_info['projects'][0]['city'] = {'name': 'Sartrouville'}
+        self.app.post(
+            '/api/user',
+            data=json.dumps(user_info),
+            content_type='application/json',
+            headers={'Authorization': f'Bearer {self.auth_token}'})
+
+        response = self.app.get(
+            f'/api/advice/network-advice-id/{self.user_id}/{self.project_id}',
+            headers={'Authorization': f'Bearer {self.auth_token}'})
+
+        leads = self.json_from_response(response)
+        self.assertEqual(
+            {'leads': [{
+                'name': 'The mayor of Sartrouville',
+                'emailExample': "Hi, I'm looking for a job of postman.",
+                'contactTip': 'After the city council',
             }]},
             leads)
 

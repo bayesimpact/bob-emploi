@@ -6,20 +6,26 @@ import {EmailShareButton, FacebookIcon, FacebookShareButton, LinkedinIcon, Linke
   TwitterIcon, TwitterShareButton, WhatsappIcon, WhatsappShareButton} from 'react-share'
 
 import {DispatchAllActions, shareProductModalIsShown, shareProductToNetwork} from 'store/actions'
+import isMobileVersion from 'store/mobile'
+import {isPromise} from 'store/promise'
 
-import {Trans} from 'components/i18n'
-import {isMobileVersion} from 'components/mobile'
-import {Modal, ModalCloseButton, ModalConfig, useModal} from 'components/modal'
-import {Button, Inputable, SmoothTransitions, Textarea} from 'components/theme'
+import Button from 'components/button'
+import Trans from 'components/i18n_trans'
+import ModalCloseButton from 'components/modal_close_button'
+import {Modal, ModalConfig, useModal} from 'components/modal'
+import {Inputable} from 'components/input'
+import Textarea from 'components/textarea'
+import {SmoothTransitions} from 'components/theme'
 import {getAbsoluteUrl, Routes} from 'components/url'
 import emailIcon from 'images/email-icon.png'
 import facebookMessengerIcon from 'images/fb-messenger-logo.svg'
 import smsIcon from 'images/sms-icon.png'
 
 
+// TODO(pascal): Remove once we upgrade TypeScript to v3.9+
 declare global {
   interface Navigator {
-    share?: (options: {title?: string; url: string}) => void
+    share(data?: {text?: string; title?: string; url?: string}): Promise<void>
   }
 }
 
@@ -32,18 +38,19 @@ interface ButtonProps {
 
 
 function useOpenUrl(url: string, beforeOnClick?: () => void | Promise<void>): (() => void) {
-  return useCallback((): void => {
+  return useCallback(async (): Promise<void> => {
     const promise = beforeOnClick && beforeOnClick()
-    if (promise && promise.then) {
-      promise.then((): void => {
-        window.open(url, '_blank')
-      })
-      return
+    if (promise && isPromise(promise)) {
+      await promise
     }
     window.open(url, '_blank')
   }, [beforeOnClick, url])
 }
 
+const buttonStyle: React.CSSProperties = {
+  background: 'none',
+  padding: 0,
+}
 
 const SmsShareButtonBase: React.FC<ButtonProps> = (props: ButtonProps): React.ReactElement => {
   const {beforeOnClick, children, url} = props
@@ -64,9 +71,9 @@ const SmsShareButtonBase: React.FC<ButtonProps> = (props: ButtonProps): React.Re
   const onClick = useOpenUrl(smsLink, beforeOnClick)
 
   // TODO(cyrille): Try not to render anything if protocol is not understood by browser.
-  return <div onClick={onClick}>
+  return <button style={buttonStyle} onClick={onClick}>
     {children}
-  </div>
+  </button>
 }
 SmsShareButtonBase.propTypes = {
   beforeOnClick: PropTypes.func,
@@ -88,9 +95,9 @@ const FbMessengerButtonBase: React.FC<ButtonProps> = (props: ButtonProps): React
   const onClick = useOpenUrl(link, beforeOnClick)
 
   // TODO(cyrille): Try not to render anything if protocol is not understood by browser.
-  return <div onClick={onClick}>
+  return <button style={buttonStyle} onClick={onClick}>
     {children}
-  </div>
+  </button>
 }
 FbMessengerButtonBase.propTypes = {
   beforeOnClick: PropTypes.func,
@@ -121,7 +128,6 @@ const textStyle: React.CSSProperties = {
   marginRight: isMobileVersion ? 'initial' : 100,
   padding: isMobileVersion ? '0 20px' : 'initial',
 }
-// TODO(sil): Make sure the button is below the "See my advice" button in mobile.
 const shareButtonStyle: React.CSSProperties = {
   alignSelf: isMobileVersion ? 'center' : 'flex-end',
   flexShrink: 0,
@@ -319,7 +325,7 @@ const ShareButtonsBase = (props: ButtonsProps): React.ReactElement => {
     }
     const timeout = window.setTimeout((): void => setIsShareLinkJustCopied(false), 4000)
     return (): void => {
-      clearTimeout(timeout)
+      window.clearTimeout(timeout)
     }
   }, [isShareLinkJustCopied])
 
@@ -414,11 +420,11 @@ const ShareButtonsBase = (props: ButtonsProps): React.ReactElement => {
           <img src={smsIcon} alt="sms" style={iconStyle} />
         </SmsShareButton>
       </React.Fragment> : null}
-      <EmailShareButton url={link} beforeOnClick={dispatchShared} openWindow={true}>
+      <EmailShareButton url={link} beforeOnClick={dispatchShared} openShareDialogOnClick={true}>
         <img src={emailIcon} alt="email" style={iconStyle} />
       </EmailShareButton>
       {/* Filler for regular space-between on different rows from flex-wrap. */}
-      {new Array(3).fill(0).map((unused, index): React.ReactNode =>
+      {Array.from({length: 3}, (unused, index): React.ReactNode =>
         <div style={{height: 0, width: iconProps.size}} key={`filler-${index}`} />)}
     </div>
     {isMobileVersion ? null : shareLink}
@@ -428,7 +434,6 @@ ShareButtonsBase.propTypes = {
   // The IDs are referenced at https://airtable.com/tblpbiUqtvn3poeXd.
   campaign: PropTypes.string,
   dispatch: PropTypes.func,
-  t: PropTypes.func.isRequired,
   url: PropTypes.string,
   // The visual element reference that explains the context in which this
   // modal is shown. This is only to differentiate in logs.

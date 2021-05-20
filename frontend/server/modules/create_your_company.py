@@ -66,13 +66,13 @@ class _AdviceCreateYourCompany(scoring_base.ModelBase):
 
     def _get_frustrations_reasons(self, project: scoring_base.ScoringProject) \
             -> Set[str]:
-        discrimination_reason = project.translate_string(
+        discrimination_reason = project.translate_static_string(
             'vous nous avez dit que les employeurs ne '
             'vous donnent pas votre chance')
         relevant_frustrations = {
             user_pb2.AGE_DISCRIMINATION: discrimination_reason,
             user_pb2.ATYPIC_PROFILE: discrimination_reason,
-            user_pb2.NO_OFFERS: project.translate_string(
+            user_pb2.NO_OFFERS: project.translate_static_string(
                 "vous nous avez dit ne pas trouver d'offres correspondant "
                 'à vos critères'),
             user_pb2.SEX_DISCRIMINATION: discrimination_reason,
@@ -87,8 +87,7 @@ class _AdviceCreateYourCompany(scoring_base.ModelBase):
         """Compute a score for the given ScoringProject."""
 
         frustration_reasons = list(self._get_frustrations_reasons(project))
-        its_easy = project.translate_string(
-            "c'est plus facile à faire qu'on peut le croire")
+        its_easy = project.translate_static_string("c'est plus facile à faire qu'on peut le croire")
 
         if frustration_reasons or project.get_search_length_now() > 3:
             return scoring_base.ExplainedScore(2, frustration_reasons or [its_easy])

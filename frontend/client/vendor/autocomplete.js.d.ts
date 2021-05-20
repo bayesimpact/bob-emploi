@@ -1,4 +1,4 @@
-import {Index, QueryParameters} from 'algoliasearch'
+import {Hit, SearchIndex, SearchOptions} from '@algolia/client-search'
 
 
 declare namespace autocomplete {
@@ -51,38 +51,28 @@ declare namespace autocomplete {
   }
 
 
-  type Highlighted<T> = T & {_highlightResult: {
-    [K in keyof T]: {
-      fullyHighlighted: boolean
-      matchLevel: 'none' | 'partial' | 'full'
-      matchedWords: readonly string[]
-      value: string
-    }
-  }}
-
-
-  type DatasetSource<T> = (query: string, cb: (suggestions: readonly Highlighted<T>[]) => void) => void
+  type DatasetSource<T> = (query: string, cb: (suggestions: readonly Hit<T>[]) => void) => void
 
 
   interface Dataset<T> {
     readonly cache?: boolean
     readonly debounce?: number
-    readonly display?: string|((suggestion: Highlighted<T>) => string)
-    readonly displayKey?: string|((suggestion: Highlighted<T>) => string)
+    readonly display?: string|((suggestion: Hit<T>) => string)
+    readonly displayKey?: string|((suggestion: Hit<T>) => string)
     readonly name?: string
     readonly source: DatasetSource<T>
     readonly templates?: {
       readonly header?: Template
       readonly footer?: Template
       readonly empty?: Template
-      readonly suggestion?: string|((suggestion: Highlighted<T>) => string)
+      readonly suggestion?: string|((suggestion: Hit<T>) => string)
     }
   }
 
 
   interface PopularInDetails<T> {
     readonly source: string|((hit: T) => string)
-    readonly index: Index
+    readonly index: SearchIndex
   }
 
 
@@ -107,11 +97,6 @@ declare namespace autocomplete {
   interface AutocompleteStatic {
     <T=any>(selector: string|HTMLElement, options: Options, datasets: readonly Dataset<T>[]): Autocompleted
     <T1=any, T2=any, T3=any>(selector: string|HTMLElement, options: Options, dataset1: Dataset<T1>, dataset2?: Dataset<T2>, dataset3?: Dataset<T3>): Autocompleted
-
-    readonly sources: {
-      hits<T=any>(index: Index, params?: QueryParameters): DatasetSource<T>
-      popularIn<T=any>(index: Index, params: QueryParameters|undefined, details: PopularInDetails<T>, options?: PopularInOptions): DatasetSource<T>
-    }
   }
 
 }

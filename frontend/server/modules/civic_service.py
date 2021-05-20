@@ -52,9 +52,9 @@ class _AdviceCivicService(scoring_base.ModelBase):
         if age < 16 or seniority > project_pb2.INTERN:
             return scoring_base.NULL_EXPLAINED_SCORE
         if project.user_profile.has_handicap and age <= 30:
-            reasons = [project.translate_string('vous avez entre 16 et 30 ans')]
+            reasons = [project.translate_static_string('vous avez entre 16 et 30 ans')]
         if age <= 25:
-            reasons = [project.translate_string('vous avez entre 16 et 25 ans')]
+            reasons = [project.translate_static_string('vous avez entre 16 et 25 ans')]
         if not reasons:
             return scoring_base.NULL_EXPLAINED_SCORE
         return scoring_base.ExplainedScore(2, reasons)

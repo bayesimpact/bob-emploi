@@ -49,6 +49,7 @@ class MainTestCase(unittest.TestCase):
         update_email_sent_status.main(['--disable-sentry'])
 
         updated_data = self.database.user.find_one()
+        assert updated_data
         self.assertEqual('field', updated_data.get('other'))
         self.assertEqual(
             message_id, int(updated_data.get('emailsSent')[0].get('mailjetMessageId')))
@@ -80,6 +81,7 @@ class MainTestCase(unittest.TestCase):
         update_email_sent_status.main(['--disable-sentry'])
 
         updated_data = self.database.user.find_one()
+        assert updated_data
         self.assertEqual(
             'EMAIL_SENT_CLICKED',
             updated_data.get('emailsSent')[0].get('status'))
@@ -119,15 +121,17 @@ class MainTestCase(unittest.TestCase):
         ])
         update_email_sent_status.main(['--campaigns', 'this-campaign', '--disable-sentry'])
         updated_user = self.database.user.find_one({'profile.email': 'pascal@example.com'})
+        assert updated_user
         self.assertEqual(
             'EMAIL_SENT_OPENED',
             updated_user.get('emailsSent')[0].get('status'))
         self.assertIsNone(updated_user.get('emailsSent')[1].get('status'))
         not_updated_user = self.database.user.find_one({'profile.email': 'cyrille@example.com'})
+        assert not_updated_user
         self.assertIsNone(not_updated_user.get('emailsSent')[0].get('status'))
 
     @mock.patch(update_email_sent_status.__name__ + '.now')
-    @mock.patch(update_email_sent_status.__name__ + '.mail')
+    @mock.patch(update_email_sent_status.__name__ + '.mail_send')
     def test_multiple_checks(self, mock_mail: mock.MagicMock, mock_now: mock.MagicMock) -> None:
         """Test checking the status of an email several times."""
 
@@ -186,12 +190,12 @@ class MainTestCase(unittest.TestCase):
         mock_mail.get_message.assert_not_called()
 
     def test_update_helper(self) -> None:
-        """Test updating the sent emails for the helper collection."""
+        """Test updating the sent emails for another collection."""
 
         message_id = self._send_email('pascal@example.com')
         mailjetmock.get_message(message_id).open()
 
-        self.database.helper.insert_one({
+        self.database.other_users.insert_one({
             'other': 'field',
             'profile': {'email': 'pascal@example.com'},
             'emailsSent': [{
@@ -199,8 +203,9 @@ class MainTestCase(unittest.TestCase):
                 'mailjetMessageId': message_id,
             }],
         })
-        update_email_sent_status.main(['--mongo-collection', 'helper', '--disable-sentry'])
-        updated_data = self.database.helper.find_one()
+        update_email_sent_status.main(['--mongo-collection', 'other_users', '--disable-sentry'])
+        updated_data = self.database.other_users.find_one()
+        assert updated_data
         self.assertEqual('field', updated_data.get('other'))
         self.assertEqual(
             message_id, int(updated_data.get('emailsSent')[0].get('mailjetMessageId')))
@@ -223,6 +228,7 @@ class MainTestCase(unittest.TestCase):
         update_email_sent_status.main(['--disable-sentry'])
 
         updated_data = self.database.user.find_one()
+        assert updated_data
         self.assertEqual('field', updated_data.get('other'))
         self.assertEqual(
             9876554, int(updated_data.get('emailsSent')[0].get('mailjetMessageId')))

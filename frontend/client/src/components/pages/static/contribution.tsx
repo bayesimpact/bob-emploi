@@ -4,12 +4,13 @@ import {useDispatch} from 'react-redux'
 import {Link} from 'react-router-dom'
 
 import {DispatchAllActions} from 'store/actions'
+import isMobileVersion from 'store/mobile'
 
-import {Trans} from 'components/i18n'
-import {isMobileVersion} from 'components/mobile'
+import Button from 'components/button'
+import ExternalLink from 'components/external_link'
+import Trans from 'components/i18n_trans'
 import {ShareButtons} from 'components/share'
 import {StaticPage, StrongTitle} from 'components/static'
-import {Button, ExternalLink} from 'components/theme'
 import {Routes} from 'components/url'
 
 

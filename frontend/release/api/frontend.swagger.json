@@ -1,0 +1,2771 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "contact": {
+      "name": "API support",
+      "url": "https://aide.bob-emploi.fr/hc/fr/requests/new",
+      "email": "hello@bayesimpact.org"
+    },
+    "description": "[Bob](https://us.hellobob.com) provides critical, life-changing advice to people who need it - quickly, easily, and for free.\n\nBob's AI diagnoses the main challenges that stand in the way of someone finding a job, and provides actionable advice and resources to overcome these challenges.\n\n## Main Challenge Methodology\n\n**The Problem**: Job seekers often have difficulty navigating the many career resources and training available to them. As a result, job seekers struggle to plan and execute the optimal job search activities, leading to frustration and burn-out.\n\n**Our Solution**: Working in collaboration with employment experts, we have developed a methodology to identify the specific challenges that are preventing a job seeker from securing a job. After identifying a job seeker's main challenges, Bob coaches them to spend their time and energy on targeted, high-impact actions that will help the job seeker overcome their challenges.\n\n**Our \"main challenge methodology\" is the driving force behind Bob's AI.**\n\n## Bob API\n\nBob can be delivered through a set of endpoints that can be used in combination:\n\n**(1) Diagnostic Engine:** Identify the main challenge\n\n  * **Overview:** Bob collects key information from the job seeker through a brief questionnaire, and processes that information along with labor market data to (1) identify the job seeker's main challenge, and (2) assess the job seeker's level of autonomy in overcoming their main challenge.\n\n  * **Use Case:** After the job seeker completes Bob's questionnaire and receives a diagnosis of their main challenge, the job center coach can view the job seeker's main challenge and autonomy assessment **on their case management system (via API).** The autonomy assessment indicates that this job seeker will require more high-touch  support, so the job coach follows up with the job seeker to schedule a meeting.\n\n**(2) Action Plan:** Create a personalized action plan\n\n  * **Overview:** Bob provides a personalized action plan with job search advice and resources to help the job seeker overcome their main challenges.\n\n  * **Use Case:** After diagnosing the main challenge, Bob's API provides an action plan that the job seeker can **access through the job center portal.** The job coach can also **access the action plan through their case management system**, and track the job seeker's progress on their plan.\n\n**(3) Ongoing Coaching:** Receive digital coaching\n\n  * **Overview:** Bob sends regular, personalized coaching messages, including motivational words, job search resources, and reminders to encourage the job seeker to make progress on their action plan.\n\n  * **Use Case:** Bob transforms the action plan into an engaging experience for job seekers by sending regular coaching messages through email, text, or a job center portal via API. Job coaches can view the history of Bob's coaching messages and send customized coaching messages through their case management system.",
+    "license": {
+      "name": "GPL v3",
+      "url": "https://github.com/bayesimpact/bob-emploi/blob/master/LICENSE"
+    },
+    "title": "Bob API",
+    "version": "2021-01-15_00",
+    "termsOfService": "https://us.hellobob.com/conditions-generales?hl=fr"
+  },
+  "tags": [
+    {
+      "name": "DiagnosticEngine",
+      "description":"Identify the main challenge."
+    },
+    {
+      "name": "ActionPlan",
+      "description":"Generate a personalized action plan."
+    },
+    {
+      "name": "OngoingCoaching",
+      "description":"Send digital coaching messages with job search advice and encouragement."
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/project/diagnose": {
+      "post": {
+        "summary": "Identify the user's main challenge.",
+        "operationId": "DiagnosticEngine_DiagnoseUser",
+        "responses": {
+          "200": {
+            "description": "A Diagnostic object.",
+            "schema": {
+              "$ref": "#/definitions/bayes.bob.Diagnostic"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/bayes.bob.InputUser"
+            }
+          }
+        ],
+        "tags": [
+          "DiagnosticEngine"
+        ]
+      }
+    },
+    "/api/project/compute-all": {
+      "post": {
+        "summary": "Diagnose and find relevant strategies and methods for the user's professional goals.",
+        "operationId": "ActionPlan_FullyDiagnoseUser",
+        "responses": {
+          "200": {
+            "description": "A User object.",
+            "schema": {
+              "$ref": "#/definitions/bayes.bob.User"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/bayes.bob.InputUser"
+            }
+          }
+        ],
+        "tags": [
+          "ActionPlan"
+        ]
+      }
+    },
+    "/api/emails/simulate": {
+      "post": {
+        "summary": "Compute the coaching emails schedule (without actually sending emails).",
+        "operationId": "OngoingCoaching_SimulateCoachingEmails",
+        "responses": {
+          "200": {
+            "description": "An EmailHistory object.",
+            "schema": {
+              "$ref": "#/definitions/bayes.bob.EmailHistory"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/bayes.bob.InputUser"
+            }
+          }
+        ],
+        "tags": [
+          "OngoingCoaching"
+        ]
+      }
+    },
+    "/api/emails/send/{campaign_id}": {
+      "post": {
+        "summary": "Send a coaching email to a user.",
+        "operationId": "OngoingCoaching_SendCoachingEmail",
+        "responses": {
+          "200": {
+            "description": "An EmailSent object.",
+            "schema": {
+              "$ref": "#/definitions/bayes.bob.EmailSent"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/bayes.bob.InputUser"
+            }
+          },
+          {
+            "description": "The ID of the campaign to send to the user",
+            "name": "campaign_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "OngoingCoaching"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "bayes.OptionalBool": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_BOOL",
+        "FALSE",
+        "TRUE"
+      ],
+      "default": "UNKNOWN_BOOL"
+    },
+    "bayes.bob.ActivitySector": {
+      "type": "object",
+      "properties": {
+        "naf": {
+          "type": "string",
+          "description": "Code NAF of this sector, e.g. \"3531Z\"."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of this sector as defined in the NAF, e.g. \"Distribution d'électricité\"."
+        }
+      }
+    },
+    "bayes.bob.Advice": {
+      "type": "object",
+      "properties": {
+        "adviceId": {
+          "type": "string",
+          "description": "Unique ID for the advice module: note that it can be the same for other\nusers or for other projects. e.g \"reorientation\", \"spontaneous-application\"."
+        },
+        "status": {
+          "$ref": "#/definitions/bayes.bob.AdviceStatus",
+          "description": "Status of this advice."
+        },
+        "declinedReason": {
+          "type": "string",
+          "description": "Feedback of the user when they decline an advice."
+        },
+        "numStars": {
+          "type": "number",
+          "format": "float",
+          "description": "Number of stars (1 to 3) assigned to this advice when first scored."
+        },
+        "otherWorkEnvAdviceData": {
+          "$ref": "#/definitions/bayes.bob.OtherWorkEnvAdviceData",
+          "description": "Extra data needed to recommend the \"Other work environments\" piece of\nadvice."
+        },
+        "improveSuccessRateData": {
+          "$ref": "#/definitions/bayes.bob.ImproveSuccessRateData",
+          "description": "Extra data needed to recommend the \"Improve success rate\" piece of advice."
+        },
+        "jobBoardsData": {
+          "$ref": "#/definitions/bayes.bob.JobBoards",
+          "description": "Extra data needed to recommend the \"find a job board\" piece of advice."
+        },
+        "spontaneousApplicationData": {
+          "$ref": "#/definitions/bayes.bob.SpontaneousApplicationData",
+          "description": "Extra data needed to recommend the \"spontaneous application\" piece of advice."
+        },
+        "betterJobInGroupData": {
+          "$ref": "#/definitions/bayes.bob.BetterJobInGroupData",
+          "description": "Extra data neded to recommend the \"better jobs in job group\" piece of advice."
+        },
+        "associationsData": {
+          "$ref": "#/definitions/bayes.bob.AssociationsData",
+          "description": "Extra data needed to recommend he \"find an association to help you\" advice."
+        },
+        "commuteData": {
+          "$ref": "#/definitions/bayes.bob.CommuteData",
+          "description": "Extra data needed for the \"commute\" advice."
+        },
+        "volunteerData": {
+          "$ref": "#/definitions/bayes.bob.VolunteerData",
+          "description": "Extra data needed for the \"volunteer\" advice."
+        },
+        "eventsData": {
+          "$ref": "#/definitions/bayes.bob.EventsData",
+          "description": "Extra data needed for the \"events\" advice."
+        },
+        "relocateData": {
+          "$ref": "#/definitions/bayes.bob.RelocateData",
+          "description": "Extra data needed for the \"relocate\" advice."
+        },
+        "trainingData": {
+          "$ref": "#/definitions/bayes.bob.Trainings",
+          "description": "Extra data needed for the \"training\" advice."
+        },
+        "seasonalData": {
+          "$ref": "#/definitions/bayes.bob.MonthlySeasonalJobbingStats",
+          "description": "Extra data needed for the \"seasonal_relocate\" advice."
+        },
+        "createYourCompanyData": {
+          "$ref": "#/definitions/bayes.bob.CreateYourCompanyData",
+          "description": "Extra data needed for the \"create your company\" advice."
+        },
+        "reorientData": {
+          "$ref": "#/definitions/bayes.bob.ReorientData",
+          "description": "Extra data needed for the \"reorient to close job\" advice."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the advice. Most of the time this is empty and is decided by the\nclient, but for some advice modules the server can decide what to display."
+        },
+        "shortTitle": {
+          "type": "string",
+          "description": "Short version of the title of the advice. Most of the time this is empty\nand is decided by the client, but for some advice modules the server can\ndecide what to display."
+        },
+        "goal": {
+          "type": "string",
+          "description": "Goal that can be reached when following the piece of advice.\nMost of the time it is decided at the advice module level but for some\nadvice it is overriden (and translated) by the server.\nIt starts with a lowercase and can finish the sentence \"5 more tips to ...\""
+        },
+        "cardText": {
+          "type": "string",
+          "description": "Content for the advice card. Most of the time this is empty and is decided\nby the client, but for some advice modules the server can decide what to\ndisplay. This is using Markdown."
+        },
+        "expandedCardHeader": {
+          "type": "string",
+          "description": "Header of the content for the expanded advice card. Most of the time this\nis empty and is decided by the client, but for some advice modules the\nserver can decide what to display directly. This is using Markdown."
+        },
+        "expandedCardItems": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Content for the expanded advice card. Most of the time this is empty and\nis decided by the client, but for some advice modules the server can\ndecide what to display directly. This is using Markdown."
+        },
+        "explanations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A set of explanations why this advice was picked for this particular\nproject. This is human readable text."
+        },
+        "numExplorations": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Number of explorations done inside the advice: opening an email template,\nclicking on an external link, playing a video, etc. Note that not all\nadvice modules implement that properly."
+        },
+        "isForAlphaOnly": {
+          "type": "boolean",
+          "description": "Whether this advice is given only because the user is using the Alpha\nversion of the advisor."
+        },
+        "diagnosticTopics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.DiagnosticTopic"
+          },
+          "description": "Diagnostic categories to which the advice belongs. Most of the time it is\ndecided at the advice module level but for some advice it is overriden by\nthe server."
+        },
+        "isForSuccess": {
+          "type": "boolean",
+          "description": "Whether this advice has a good chance to give a positive outcome to the job search."
+        }
+      }
+    },
+    "bayes.bob.AdviceEvaluation": {
+      "type": "object",
+      "properties": {
+        "shouldBeOptimized": {
+          "type": "boolean",
+          "description": "Whether the advice needs to be optimized with better data and content.\nTODO(pascal): Convert to snake case."
+        },
+        "comment": {
+          "type": "string",
+          "description": "Comment about the advice."
+        }
+      }
+    },
+    "bayes.bob.AdviceStatus": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_ADVICE_STATUS",
+        "ADVICE_RECOMMENDED",
+        "ADVICE_READ"
+      ],
+      "default": "UNKNOWN_ADVICE_STATUS",
+      "description": " - ADVICE_RECOMMENDED: The Advisor has recommended a piece of advice.\n - ADVICE_READ: The user has entered the Advice Page at least once."
+    },
+    "bayes.bob.ApplicationMedium": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_APPLICATION_MEDIUM",
+        "APPLY_IN_PERSON",
+        "APPLY_BY_EMAIL"
+      ],
+      "default": "UNKNOWN_APPLICATION_MEDIUM",
+      "description": "Medium one can use to apply to a job.\n\n - APPLY_IN_PERSON: In person: enter the shop or go meet a hiring manager and give them a CV.\n - APPLY_BY_EMAIL: By email: find the hiring manager's email and send them an email with your\nCV and a cover letter."
+    },
+    "bayes.bob.ApplicationMode": {
+      "type": "string",
+      "enum": [
+        "UNDEFINED_APPLICATION_MODE",
+        "SPONTANEOUS_APPLICATION",
+        "PLACEMENT_AGENCY",
+        "PERSONAL_OR_PROFESSIONAL_CONTACTS",
+        "OTHER_CHANNELS"
+      ],
+      "default": "UNDEFINED_APPLICATION_MODE"
+    },
+    "bayes.bob.ApplicationModesOrdering": {
+      "type": "object",
+      "properties": {
+        "first": {
+          "$ref": "#/definitions/bayes.bob.ApplicationMode"
+        },
+        "second": {
+          "$ref": "#/definitions/bayes.bob.ApplicationMode"
+        },
+        "third": {
+          "$ref": "#/definitions/bayes.bob.ApplicationMode"
+        }
+      }
+    },
+    "bayes.bob.ApplicationProcessComplexity": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_APPLICATION_COMPLEXITY",
+        "SIMPLE_APPLICATION_PROCESS",
+        "COMPLEX_APPLICATION_PROCESS",
+        "SPECIAL_APPLICATION_PROCESS"
+      ],
+      "default": "UNKNOWN_APPLICATION_COMPLEXITY",
+      "description": " - SIMPLE_APPLICATION_PROCESS: Application are usually pretty simple, and the hiring process does not\nlook down on applicants that apply quickly.\n - COMPLEX_APPLICATION_PROCESS: Application are usually prety complex, and the hiring process values\napplications of great quality and original ones.\n - SPECIAL_APPLICATION_PROCESS: The application process does not follow main guidelines (e.g. hiring\ntalent for cinema)."
+    },
+    "bayes.bob.ApplicationTip": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string",
+          "description": "Content of the tip. Using markup language for formatting."
+        },
+        "contentMasculine": {
+          "type": "string",
+          "description": "Same as content, but a particular version for masculine if it differs from\nthe feminine version."
+        },
+        "filters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A set of filter IDs: do not show the tip if one of these filters return\nfalse for the project."
+        },
+        "type": {
+          "$ref": "#/definitions/bayes.bob.ApplicationTipType",
+          "description": "Type of tip."
+        }
+      }
+    },
+    "bayes.bob.ApplicationTipType": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_APPLICATION_TIP_TYPE",
+        "QUALITY",
+        "CV_IMPROVEMENT",
+        "INTERVIEW_PREPARATION"
+      ],
+      "default": "UNKNOWN_APPLICATION_TIP_TYPE",
+      "description": " - QUALITY: The tip is a quality the user should mention in their resume or show\nduring an interview.\n - CV_IMPROVEMENT: The tip is an action to improve the user's resume.\n - INTERVIEW_PREPARATION: The tip is an action to prepare an interview."
+    },
+    "bayes.bob.AreaType": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_AREA_TYPE",
+        "CITY",
+        "DEPARTEMENT",
+        "REGION",
+        "COUNTRY",
+        "WORLD"
+      ],
+      "default": "UNKNOWN_AREA_TYPE",
+      "description": "Type of geographical area (order matters)."
+    },
+    "bayes.bob.AssociationsData": {
+      "type": "object",
+      "properties": {
+        "associationName": {
+          "type": "string",
+          "description": "Name of a specific association that could help the user."
+        }
+      }
+    },
+    "bayes.bob.BetterJobInGroupData": {
+      "type": "object",
+      "properties": {
+        "jobs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.WeightedJob"
+          },
+          "description": "Sorted list of jobs in the group. The weight is the percentage of job\noffers from the group that are for this job.\nTODO(pascal): Create an endpoint to get those jobs instead of storing them\nin the project's proto."
+        },
+        "betterJob": {
+          "$ref": "#/definitions/bayes.bob.Job",
+          "description": "One job that is better than the target one."
+        },
+        "numBetterJobs": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Number of jobs that are better than the target one."
+        }
+      }
+    },
+    "bayes.bob.MainChallengeRelevance": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_RELEVANCE",
+        "NOT_RELEVANT",
+        "NEUTRAL_RELEVANCE",
+        "NEEDS_ATTENTION",
+        "RELEVANT_AND_GOOD"
+      ],
+      "default": "UNKNOWN_RELEVANCE",
+      "description": " - NOT_RELEVANT: No need to bother the user with this main challenge.\n - NEUTRAL_RELEVANCE: User might be interested to know this challenge is relevant,\nbut we don't have much to say about it for them.\n - NEEDS_ATTENTION: This is relevant, and might be a blocking point.\n - RELEVANT_AND_GOOD: This is relevant, and everything is good on that front."
+    },
+    "bayes.bob.CommuteData": {
+      "type": "object",
+      "properties": {
+        "cities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Cities that the users could consider in their search. We only store the name of the city here."
+        }
+      }
+    },
+    "bayes.bob.Company": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Main name of the company."
+        },
+        "siret": {
+          "type": "string",
+          "description": "Unique identifier (SIRET) of the company."
+        },
+        "cityName": {
+          "type": "string",
+          "description": "Name of the city in which the company main site is."
+        },
+        "activitySectorName": {
+          "type": "string",
+          "description": "Sector of activity."
+        },
+        "headcountText": {
+          "type": "string",
+          "description": "Text showing how many employees work for the company."
+        },
+        "hiringPotential": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Hiring potential: 0 means unknown, then the scale is from 1 to 5."
+        }
+      }
+    },
+    "bayes.bob.CovidRisk": {
+      "type": "string",
+      "enum": [
+        "COVID_UNKNOWN_RISK",
+        "COVID_SAFE",
+        "COVID_RISKY"
+      ],
+      "default": "COVID_UNKNOWN_RISK",
+      "description": " - COVID_SAFE: The job group has not been affected, or is favored, by Covid-19 pandemic.\n - COVID_RISKY: The job group has been affected by Covid-19 pandemic and hiring will be tougher than usual\nuntil 2024."
+    },
+    "bayes.bob.CreateYourCompanyData": {
+      "type": "object",
+      "properties": {
+        "city": {
+          "type": "string",
+          "description": "Name of a city close to the user's project where events to learn how to\ncreate a company are taking place."
+        },
+        "period": {
+          "type": "string",
+          "description": "Time period on which events to learn how to create a company are taking\nplace, e.g. \"du 5 au 7 février\"."
+        }
+      }
+    },
+    "bayes.bob.DegreeCount": {
+      "type": "object",
+      "properties": {
+        "degree": {
+          "$ref": "#/definitions/bayes.bob.DegreeLevel",
+          "description": "The level of the diploma the users say they have."
+        },
+        "count": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The number of users who said they have this level of diploma."
+        }
+      }
+    },
+    "bayes.bob.DegreeLevel": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_DEGREE",
+        "NO_DEGREE",
+        "CAP_BEP",
+        "BAC_BACPRO",
+        "BTS_DUT_DEUG",
+        "LICENCE_MAITRISE",
+        "DEA_DESS_MASTER_PHD"
+      ],
+      "default": "UNKNOWN_DEGREE"
+    },
+    "bayes.bob.DepartementScore": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the departement."
+        },
+        "offerRatio": {
+          "type": "number",
+          "format": "float",
+          "description": "Increase in offers in that departement compared to a reference. 1 means 100% = no increase."
+        }
+      }
+    },
+    "bayes.bob.DepartementStats": {
+      "type": "object",
+      "properties": {
+        "areaId": {
+          "type": "string",
+          "description": "ID of the area (e.g. \"TX\" for US states Texas, \"31\" for the French département Haute-Garonne)."
+        },
+        "localStats": {
+          "$ref": "#/definitions/bayes.bob.LocalJobStats",
+          "description": "Shallow stats containing merely the important stats that defines the\nrelation with the job group, e.g. the IMT market stress."
+        }
+      }
+    },
+    "bayes.bob.Diagnostic": {
+      "type": "object",
+      "properties": {
+        "overallScore": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Overall score for a project, typically from 0 (worst) to 100 (best)."
+        },
+        "text": {
+          "type": "string",
+          "description": "A textual personalized diagnostic. This uses markup language."
+        },
+        "overallSentence": {
+          "type": "string",
+          "description": "Overall sentence for a project, to give the main point of this diagnostic.\nFor instance: \"Projet pas assez clair\"\nThis is in the user's locale and uses markup language."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "The category in which we consider the user to be."
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.DiagnosticMainChallenge"
+          },
+          "description": "A list of main challenges used in the diagnostic with their relevance for the project. The most\nimportant (the one that was evaluated first) first. Only one of these can be highlighted."
+        }
+      }
+    },
+    "bayes.bob.DiagnosticMainChallenge": {
+      "type": "object",
+      "properties": {
+        "categoryId": {
+          "type": "string",
+          "description": "An identifier for the category. It should be human readable, but not in natural language,\nfor instance \"stuck-market\"."
+        },
+        "filters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The filters defining whether a project could belong to the category."
+        },
+        "relevanceScoringModel": {
+          "type": "string",
+          "description": "A scoring model to evaluate the relevance of this category. It is only evaluated if the\nfilters above fail (i.e. the user is not in that category), and then:\n- A score of 0 means the category is not relevant (hide it from user)\n- A score of 1 means the category is neutral (not enough data, or just medium)\n- A score of 3 means the category is very relevant but the user nailed that particular point."
+        },
+        "order": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The order of priority for the category. It allows to choose a category when several apply for a\ngiven project. The category with smallest order is always preferred."
+        },
+        "strategiesIntroduction": {
+          "type": "string",
+          "description": "The text introducing the strategies proposed."
+        },
+        "areStrategiesForAlphaOnly": {
+          "type": "boolean",
+          "description": "Whether this category is shown only because the user is using the Alpha version of the advisor.\nNote that non-alpha user will not get this category and will skip to the next one that matches\ntheir project."
+        },
+        "relevance": {
+          "$ref": "#/definitions/bayes.bob.MainChallengeRelevance",
+          "description": "How much this main challenge is relevant to a given context."
+        },
+        "metricTitle": {
+          "type": "string",
+          "description": "Title for a metric corresponding to the category to be displayed in the categories train."
+        },
+        "metricDetails": {
+          "type": "string",
+          "description": "Static explanation of the metric."
+        },
+        "description": {
+          "type": "string",
+          "description": "Short description of the category. Contrary to the metric_details, it is worded as a short\nself-diagnostic (1st person) and should highlight (using markup) the important part. e.g.\nDefining my **project cleary** (**Définir clairement** mon projet); Getting the **diploma** I\nneed (Obtenir le **diplôme** qu'il me manque)."
+        },
+        "blockerSentence": {
+          "type": "string",
+          "description": "A short sentence describing user's challenge when this category is the user's main blocker."
+        },
+        "isHighlighted": {
+          "type": "boolean",
+          "description": "Whether this category should be highlighted in a list of categories."
+        },
+        "score": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Score for a project in this category. 0 is unknown, 1 is bad (the user will need a long time\nand effort before getting a job), 100 is good (the user is super close to getting a job)."
+        },
+        "isLastRelevant": {
+          "type": "boolean",
+          "description": "Whether this category is the last one that should be relevant. It should be done when the\ncategory is so important that the user should only focus on it."
+        }
+      }
+    },
+    "bayes.bob.DiagnosticTopic": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_DIAGNOSTIC_TOPIC",
+        "PROFILE_DIAGNOSTIC",
+        "PROJECT_DIAGNOSTIC",
+        "JOB_SEARCH_DIAGNOSTIC",
+        "MARKET_DIAGNOSTIC",
+        "JOB_OF_THE_FUTURE_DIAGNOSTIC"
+      ],
+      "default": "UNKNOWN_DIAGNOSTIC_TOPIC",
+      "description": " - PROFILE_DIAGNOSTIC: Diagnostic of the user's profile (skills, frustrations, age, motivation).\n - PROJECT_DIAGNOSTIC: Diagnostic of the user's project (TODO(pascal): define it more).\n - JOB_SEARCH_DIAGNOSTIC: Diagnostic on how the user is searching (CV, interviews, network).\n - MARKET_DIAGNOSTIC: Diagnostic of the micro-market itself.\n - JOB_OF_THE_FUTURE_DIAGNOSTIC: Whether the job is future proof."
+    },
+    "bayes.bob.Diploma": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "French name of the diploma."
+        },
+        "level": {
+          "$ref": "#/definitions/bayes.bob.DegreeLevel"
+        }
+      }
+    },
+    "bayes.bob.DrivingLicense": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_DRIVING_LICENSE",
+        "MOTORCYCLE",
+        "CAR",
+        "TRUCK"
+      ],
+      "default": "UNKNOWN_DRIVING_LICENSE"
+    },
+    "bayes.bob.DurationEstimation": {
+      "type": "object",
+      "properties": {
+        "days": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Estimated unemployment duration in days."
+        }
+      }
+    },
+    "bayes.bob.DynamicAdvice": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title of this advice."
+        },
+        "shortTitle": {
+          "type": "string",
+          "description": "A short version of the title."
+        },
+        "diagnosticTopics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.DiagnosticTopic"
+          },
+          "description": "A set of diagnostic topics that the dynamic advice belongs to."
+        },
+        "goal": {
+          "type": "string",
+          "description": "A goal that can be reached by applying this piece of advice.\nIt starts with a lowercase and can finish the sentence \"5 more tips to ...\""
+        },
+        "cardText": {
+          "type": "string",
+          "description": "Content for the advice card. This is using Markdown."
+        },
+        "expandedCardHeader": {
+          "type": "string",
+          "description": "Header content for the expanded advice card. This is using Mardown."
+        },
+        "expandedCardHeaderFeminine": {
+          "type": "string",
+          "description": "Header content for the expanded advice card, feminine version. This is\nusing Mardown."
+        },
+        "expandedCardItems": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Content for the expanded advice card. This is using Markdown."
+        },
+        "expandedCardItemsFeminine": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Content for the expanded advice card, feminine version. This is using\nMarkdown."
+        },
+        "filters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A set of filter IDs: do not show the advice card if one these filters\nreturns false for the project."
+        },
+        "strategyIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A set of strategy IDs, to show this advice as part of the strategy, if it is given to the user."
+        }
+      },
+      "description": "Definition of an advice which content is fully dynamic and determined by the\nserver, e.g. the \"Specific to Job\" advice."
+    },
+    "bayes.bob.EmailFrequency": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_EMAIL_FREQUENCY",
+        "EMAIL_NONE",
+        "EMAIL_ONCE_A_MONTH",
+        "EMAIL_MAXIMUM"
+      ],
+      "default": "UNKNOWN_EMAIL_FREQUENCY",
+      "description": "- EMAIL_NONE: Do not send any email.\n - EMAIL_ONCE_A_MONTH: Send email once a month.\n - EMAIL_MAXIMUM: Send all the email you can!"
+    },
+    "bayes.bob.EmailHistory": {
+      "type": "object",
+      "properties": {
+        "emailsSent": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.EmailSent"
+          },
+          "description": "The emails that were sent to the user."
+        }
+      }
+    },
+    "bayes.bob.EmailSent": {
+      "type": "object",
+      "properties": {
+        "sentAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the user was sent."
+        },
+        "mailjetTemplate": {
+          "type": "string",
+          "description": "ID of the MailJet template that was used."
+        },
+        "campaignId": {
+          "type": "string",
+          "description": "An internal ID used to identify campaigns, e.g. \"no-network\"."
+        },
+        "mailjetMessageId": {
+          "type": "string",
+          "format": "int64",
+          "description": "Message ID on MailJet."
+        },
+        "lastStatusCheckedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "$ref": "#/definitions/bayes.bob.EmailSentStatus"
+        },
+        "lastStatusCheckedAfterDays": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Number of days (truncated) between sent_at and last_status_checked_at."
+        },
+        "subject": {
+          "type": "string",
+          "description": "Subject of the email (actually of the template) that was sent."
+        }
+      },
+      "description": "Description of an email we sent to the user."
+    },
+    "bayes.bob.EmailSentStatus": {
+      "type": "string",
+      "enum": [
+        "EMAIL_SENT_UNKNOWN",
+        "EMAIL_SENT_QUEUED",
+        "EMAIL_SENT_SENT",
+        "EMAIL_SENT_OPENED",
+        "EMAIL_SENT_CLICKED",
+        "EMAIL_SENT_BOUNCE",
+        "EMAIL_SENT_SPAM",
+        "EMAIL_SENT_UNSUB",
+        "EMAIL_SENT_BLOCKED",
+        "EMAIL_SENT_HARDBOUNCED",
+        "EMAIL_SENT_SOFTBOUNCED",
+        "EMAIL_SENT_DEFERRED"
+      ],
+      "default": "EMAIL_SENT_UNKNOWN",
+      "description": "Status of email sent. This relies only on the mailjet API and is named\naccordingly. See Status in https://dev.mailjet.com/email-api/v3/message/."
+    },
+    "bayes.bob.EmploymentType": {
+      "type": "string",
+      "enum": [
+        "UNDEFINED_EMPLOYMENT_TYPE",
+        "INTERNSHIP",
+        "CDI",
+        "CDD_OVER_3_MONTHS",
+        "CDD_LESS_EQUAL_3_MONTHS",
+        "INTERIM",
+        "ANY_CONTRACT_LESS_THAN_A_MONTH",
+        "ALTERNANCE"
+      ],
+      "default": "UNDEFINED_EMPLOYMENT_TYPE",
+      "description": " - INTERNSHIP: User is doing an internship.\n - CDI: Temporary unlimited contract.\n - CDD_OVER_3_MONTHS: Contract limited in time, but over 3 months.\n - CDD_LESS_EQUAL_3_MONTHS: Contract limited in time to 3 months and less.\n - INTERIM: Interim position\n - ANY_CONTRACT_LESS_THAN_A_MONTH: Any contract that is less than 30 days.\n - ALTERNANCE: Alternance contract: part time working, part time studying."
+    },
+    "bayes.bob.EmploymentTypePercentage": {
+      "type": "object",
+      "properties": {
+        "employmentType": {
+          "$ref": "#/definitions/bayes.bob.EmploymentType",
+          "description": "The employment type."
+        },
+        "percentage": {
+          "type": "number",
+          "format": "float"
+        }
+      }
+    },
+    "bayes.bob.Event": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title of this event."
+        },
+        "link": {
+          "type": "string",
+          "description": "Link to the event's page."
+        },
+        "filters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A set of filter IDs: do not show the event if one these\nfilters returns false for the project."
+        },
+        "organiser": {
+          "type": "string",
+          "description": "Name of the organiser of the event."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "Start date of the event in international format, e.g. 2017-08-11."
+        },
+        "description": {
+          "type": "string",
+          "description": "Short description of the event. This may use markdown."
+        },
+        "timingText": {
+          "type": "string",
+          "description": "Short text describing the date and time of the event, e.g. \"mercredi 7\nfévrier de 14h à 16h\"."
+        },
+        "cityName": {
+          "type": "string",
+          "description": "Name of the city in which the event will take place."
+        },
+        "latitude": {
+          "type": "number",
+          "format": "float",
+          "description": "Latitude of the place in which the event will take place."
+        },
+        "longitude": {
+          "type": "number",
+          "format": "float",
+          "description": "Longitude of the place in which the event will take place."
+        }
+      }
+    },
+    "bayes.bob.Events": {
+      "type": "object",
+      "properties": {
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.Event"
+          }
+        }
+      }
+    },
+    "bayes.bob.EventsData": {
+      "type": "object",
+      "properties": {
+        "eventName": {
+          "type": "string",
+          "description": "Name of an event happening soon next to the user's target location that\nthe user could attend."
+        }
+      }
+    },
+    "bayes.bob.FamilySituation": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_FAMILY_SITUATION",
+        "SINGLE",
+        "IN_A_RELATIONSHIP",
+        "FAMILY_WITH_KIDS",
+        "SINGLE_PARENT_SITUATION"
+      ],
+      "default": "UNKNOWN_FAMILY_SITUATION",
+      "description": "Family situation of a user.\n\n - SINGLE_PARENT_SITUATION: The suffix below is needed because of a conflict with frustration."
+    },
+    "bayes.bob.FrenchCity": {
+      "type": "object",
+      "properties": {
+        "cityId": {
+          "type": "string",
+          "description": "ID of the city: \"Code Officiel Géographique\". E.g. \"31555\" for Toulouse."
+        },
+        "name": {
+          "type": "string",
+          "description": "French name of the city."
+        },
+        "departementId": {
+          "type": "string",
+          "description": "ID of the département in which the city is. E.g. \"69\" for Rhône, \"2A\" for\nCorse du Sud, or \"976\" for Mayotte."
+        },
+        "departementName": {
+          "type": "string",
+          "description": "French name of the département."
+        },
+        "departementPrefix": {
+          "type": "string",
+          "description": "Prefix to use with departement name.\nTODO(sil): Populate old users."
+        },
+        "regionId": {
+          "type": "string",
+          "description": "ID of the région in which the city is. E.g. \"84\" for Auvergne-Rhône-Alpes.\nThis is the \"new\" region, after January 2016."
+        },
+        "regionName": {
+          "type": "string",
+          "description": "Name of the region (on January 1st, 2016)."
+        },
+        "regionPrefix": {
+          "type": "string",
+          "description": "Prefix to use with region name."
+        },
+        "postcodes": {
+          "type": "string",
+          "description": "A string of dash separated postcodes associated with this city, as we also have them in the\nAlgolia `cities` index. As an example for Toulouse: `31000-31100-31200-31300-31400-31500`."
+        },
+        "latitude": {
+          "type": "number",
+          "format": "float",
+          "description": "Latitude of the center of the city (approx) in northing degrees."
+        },
+        "longitude": {
+          "type": "number",
+          "format": "float",
+          "description": "Longitude of the center of the city (approx) in easting degrees."
+        },
+        "population": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The population of the city as of the last known data."
+        },
+        "urbanScore": {
+          "type": "integer",
+          "format": "int32",
+          "description": "An \"urban\" score: -1 for rural cities, 0 for unknown, 1 for cities in\nurban areas between 2k and 5k, then bigger and bigger up to 8 for Paris\nonly.\n-1: < 2000\n1: >=   2000 <   5000\n2: >=   5000 <  10000\n3: >=  10000 <  20000\n4: >=  20000 <  50000\n5: >=  50000 < 100000\n6: >= 100000 < 200000\n7: >= 200000 < 2M\n8: Paris\nTODO(pascal): Populate old users so that we can use it more reliably."
+        },
+        "publicTransportationScore": {
+          "type": "number",
+          "format": "float",
+          "description": "A public transportation score: score given by people living in the city in\nhttps://www.ville-ideale.fr/classements.php. 0 means unknown, otherwise, value is between\n0.1 (worst) and 10 (greatest).\nAs of 2018-02-07, only 100 worst scores are kept.\nTODO(cyrille): Populate old users so that we can use it more reliably."
+        },
+        "urbanContext": {
+          "$ref": "#/definitions/bayes.bob.UrbanContext",
+          "description": "This specifies if the city is being part of a urban, periurban or rural area."
+        }
+      },
+      "description": "Description of a French city."
+    },
+    "bayes.bob.Frustration": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_JOB_SEARCH_FRUSTRATION",
+        "NO_OFFERS",
+        "NO_OFFER_ANSWERS",
+        "RESUME",
+        "INTERVIEW",
+        "TRAINING",
+        "MOTIVATION",
+        "TIME_MANAGEMENT",
+        "ATYPIC_PROFILE",
+        "AGE_DISCRIMINATION",
+        "SEX_DISCRIMINATION",
+        "EXPERIENCE",
+        "SELF_CONFIDENCE",
+        "STAY_AT_HOME_PARENT",
+        "RACE_DISCRIMINATION",
+        "LANGUAGE",
+        "FOREIGN_QUALIFICATIONS",
+        "CHILD_CARE"
+      ],
+      "default": "UNKNOWN_JOB_SEARCH_FRUSTRATION",
+      "description": "- NO_OFFERS: User cannot find enough offers that fit their criteria.\n - NO_OFFER_ANSWERS: User does not receive enough answers to their applications.\n - RESUME: User has trouble to come up with a decent CV.\n - INTERVIEW: User struggles in interview situations.\n - TRAINING: User struggles finding a training.\n - MOTIVATION: User has problems to stay motivated.\n - TIME_MANAGEMENT: User has problems with general time management.\n - ATYPIC_PROFILE: The users profile does not fit what recruiters have in mind.\n - AGE_DISCRIMINATION: The user feels discriminated against because of their age.\n - SEX_DISCRIMINATION: The user feels discriminated against because of their sex.\n - EXPERIENCE: The user experience does not fit what the recruiters expect.\nAdded on 09/07/2017.\n - SELF_CONFIDENCE: The user fell they lack self-confidence.\n - STAY_AT_HOME_PARENT: The user has difficulty to come back to work after a long absence as a stay-at-home parent.\nAdded on 2018-10-16.\n - RACE_DISCRIMINATION: The user feels discriminated against because of their race/ethnicity.\n - LANGUAGE: The user has difficulties speaking/writing/understing the country's main language(s).\nAdded on 2020-11-06.\n - FOREIGN_QUALIFICATIONS: The user has qualifications obtained in another country that are not recognized properly.\nAdded on 2020-11-06.\n - CHILD_CARE: The user has difficulties getting access to childcare."
+    },
+    "bayes.bob.Gender": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_GENDER",
+        "MASCULINE",
+        "FEMININE"
+      ],
+      "default": "UNKNOWN_GENDER"
+    },
+    "bayes.bob.GenericEvaluation": {
+      "type": "object",
+      "properties": {
+        "comment": {
+          "type": "string",
+          "description": "Free form comment about the part being evaluated."
+        }
+      }
+    },
+    "bayes.bob.HiringNeed": {
+      "type": "object",
+      "properties": {
+        "percentSeasonal": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Percentage of the planned hirings that are only seasonal."
+        },
+        "percentDifficult": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Percentage of the planned hirings that are planned to be difficult (for\nemployers)."
+        }
+      },
+      "description": "Information about hiring needs (or in French: Besoin en Main d'Œuvre aka\nBMO) http://bmo.pole-emploi.org/."
+    },
+    "bayes.bob.ImproveSuccessRateData": {
+      "type": "object",
+      "properties": {
+        "numInterviewsIncrease": {
+          "type": "number",
+          "format": "float",
+          "description": "Increase (in percent) of the number of interviews that one could hope for.\nFor instance: 1 is no increase in interviews, and 2 means interviews could be doubled."
+        },
+        "requirements": {
+          "$ref": "#/definitions/bayes.bob.JobRequirements",
+          "description": "Job requirements, or assets that we could recommend to the user to improve\ntheir success rate."
+        }
+      }
+    },
+    "bayes.bob.ImtLocalJobStats": {
+      "type": "object",
+      "properties": {
+        "city": {
+          "$ref": "#/definitions/bayes.bob.FrenchCity",
+          "description": "The city of the IMT data. Only departement will be set."
+        },
+        "job": {
+          "$ref": "#/definitions/bayes.bob.Job",
+          "description": "The job of the IMT data. Note that it is a job and not a job group!"
+        },
+        "lastWeekOffers": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The number of open offers in the last week. I (stephan) assume that this is\nnot a sliding window of the last 7 days but that the values change over the weekend.\nI once saw a change between the Friday and Monday values and did not see a change between\nMonday and Tuesday values. The data of scraping is recorded in `scraped_at`."
+        },
+        "lastWeekDemand": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The number of people looking for this job during the last week."
+        },
+        "yearlyAvgOffersPer10Candidates": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The average number of weekly open offers per 10 candidates. This value\ngives a ratio in combination with yearly_avg_offers_denominator. A 0 value means it is missing.\nA -1 value means 0 offers per 10 candidates."
+        },
+        "juniorSalary": {
+          "$ref": "#/definitions/bayes.bob.SalaryEstimation",
+          "description": "Estimated gross monthly salary for young employees (under 35 years)."
+        },
+        "seniorSalary": {
+          "$ref": "#/definitions/bayes.bob.SalaryEstimation",
+          "description": "Estimated gross monthly salary for more experienced employees (35 years and older)."
+        },
+        "seasonal": {
+          "type": "boolean",
+          "description": "Whether hiring for this job only happens during active_months."
+        },
+        "activeMonths": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.Month"
+          },
+          "description": "A list of months in which hiring in this job is stronger than in others."
+        },
+        "employmentTypePercentages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.EmploymentTypePercentage"
+          },
+          "description": "This list gives the percentages of each employment type. It is sorted with the most frequent\nfirst.\nWe wish we could create a map, but enums cannot be keys of a map in proto3."
+        },
+        "scrapedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date on which we scraped this entry from the IMT website."
+        },
+        "applicationModes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/bayes.bob.ApplicationModesOrdering"
+          },
+          "description": "The top three modes of application (e.g. spontaneous, placement agency),\nfor this job, ranked by number of successful applications.\nTODO(cyrille): Clear, if unused."
+        }
+      },
+      "description": "Message to hold data that we scraped from the IMT website or provided by the Emploi\nstore dev API (ApplicationModes, yearly_avg_offers_per_10_candidates, last_week_offers\nlast_week_demand). The granularity is on a Job level (in contrast to most other data\nthat we have on the JobGroup level). We have one entry for each Job and each departement.\nNext free Id: 15"
+    },
+    "bayes.bob.InputProject": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "A short descriptive title in the user's language."
+        },
+        "targetJob": {
+          "$ref": "#/definitions/bayes.bob.Job",
+          "description": "Job targeted by this project. It may be empty if the user does not know which job to target."
+        },
+        "activitySector": {
+          "$ref": "#/definitions/bayes.bob.ActivitySector",
+          "description": "Sector of activity targeted by this project."
+        },
+        "city": {
+          "$ref": "#/definitions/bayes.bob.FrenchCity",
+          "description": "The target city for this project, or one of the targeted area (see `area_type`)."
+        },
+        "areaType": {
+          "$ref": "#/definitions/bayes.bob.AreaType",
+          "description": "The type of geographic area for this project. If the field `city` is set\nand this is a type bigger than a city, then only the larger fields of the\nFrenchCity message are relevant."
+        },
+        "minSalary": {
+          "type": "number",
+          "format": "float",
+          "description": "Minimal salary requested by the user if any. The unit of this field is ANNUAL_GROSS_SALARY."
+        },
+        "employmentTypes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.EmploymentType"
+          },
+          "description": "A set of employment types requested by the user if any (e.g. CDI)."
+        },
+        "kind": {
+          "$ref": "#/definitions/bayes.bob.ProjectKind",
+          "description": "The kind of project (e.g. to find a job)."
+        },
+        "previousJobSimilarity": {
+          "$ref": "#/definitions/bayes.bob.PreviousJobSimilarity",
+          "description": "Whether the user worked in this job before."
+        },
+        "seniority": {
+          "$ref": "#/definitions/bayes.bob.ProjectSeniority",
+          "description": "The seniority of the user regarding the project profession.\nOnly set if experience != NEVER_DONE."
+        },
+        "trainingFulfillmentEstimate": {
+          "$ref": "#/definitions/bayes.bob.TrainingFulfillmentEstimate",
+          "description": "The user's estimate whether they have all the required diplomas,\ntogether with a list of the asked diplomas."
+        },
+        "workloads": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.ProjectWorkload"
+          },
+          "description": "A set of workload types that the user could accept (e.g. full time)."
+        },
+        "networkEstimate": {
+          "type": "integer",
+          "format": "int32",
+          "description": "How good is their network for this project from 1 to 3. 1 = weak, 3 =\nsuper strong, -1 = unknown."
+        },
+        "jobSearchHasNotStarted": {
+          "type": "boolean",
+          "description": "Whether the user has started searching in this field."
+        },
+        "jobSearchStartedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the user started searching in this field."
+        },
+        "weeklyOffersEstimate": {
+          "$ref": "#/definitions/bayes.bob.NumberOfferEstimateOption",
+          "description": "Users estimate of how many offers they usually have access to per week."
+        },
+        "weeklyApplicationsEstimate": {
+          "$ref": "#/definitions/bayes.bob.NumberOfferEstimateOption",
+          "description": "Users estimate of how many applications they usually send per week.\nWe are re-using the weekly_offers_estimate options here as they are roughly the same."
+        },
+        "totalInterviewsEstimate": {
+          "$ref": "#/definitions/bayes.bob.NumberOfferEstimateOption",
+          "description": "TODO: Create a new enum for interviews and propagate the changes through the whole app.\nUsers estimate of how many interviews they had in total.\nWe are re-using the weekly_offers_estimate options here as they are roughly the same."
+        },
+        "totalInterviewCount": {
+          "type": "integer",
+          "format": "int32",
+          "description": "User estimate of how many interviews they had in total. 0 actually means\nunknown, and the -1 means the user specified they never did any\ninterviews."
+        },
+        "passionateLevel": {
+          "$ref": "#/definitions/bayes.bob.PassionateLevel",
+          "description": "User level of involvement in this job."
+        },
+        "hasResume": {
+          "$ref": "#/definitions/bayes.OptionalBool",
+          "description": "Whether the user has a relevant resume for this project."
+        },
+        "hasClearProject": {
+          "$ref": "#/definitions/bayes.OptionalBool",
+          "description": "Whether the user target job is clear (declarative), i.e. this is really what they want to do.\nNote that this would be different than having a project defined that the user does not like\nvery much (category find-what-you-like), as this should reflect that we (Bob) are not sure\nwhether the user even chose that job to begin with.\nIf the target_job field is empty, then this flag indicates whether it's just because they\nhadn't had the chance to set it (UNKNOWN_BOOL) or because they chose not to specify one\n(FALSE).\nTODO(pascal): Rename to has_chosen_target_job"
+        },
+        "preferredApplicationMode": {
+          "$ref": "#/definitions/bayes.bob.ApplicationMode",
+          "description": "The user preferred way to apply for jobs."
+        },
+        "originalSelfDiagnostic": {
+          "$ref": "#/definitions/bayes.bob.SelfDiagnostic",
+          "description": "The self-diagnostic provided by the user before using Bob. If unknown the user didn't\nanswer the question."
+        }
+      },
+      "example": {
+        "targetJob": {
+          "jobGroup": {
+            "romeId": "37-2011"
+          },
+          "name": "Janitor"
+        },
+        "city": {
+          "departementId": "41051",
+          "departementName": "Multnomah County",
+          "name": "Portland",
+          "population": 632309,
+          "regionId": "OR",
+          "regionName": "Oregon"
+        }
+      },
+      "description": "A jobsearch project for a user."
+    },
+    "bayes.bob.InputUser": {
+      "type": "object",
+      "properties": {
+        "profile": {
+          "$ref": "#/definitions/bayes.bob.UserProfile",
+          "description": "Profile of the user."
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.InputProject"
+          },
+          "description": "List of current projects for this user even the ones on stand-by."
+        }
+      },
+      "description": "All data that may represent a user, i.e. a job seeker."
+    },
+    "bayes.bob.Job": {
+      "type": "object",
+      "properties": {
+        "jobGroup": {
+          "$ref": "#/definitions/bayes.bob.JobGroup",
+          "description": "The group this job is part of. Might be empty if this job is a sample in a\njob group."
+        },
+        "name": {
+          "type": "string",
+          "description": "Complete name of this job in user's language for both genders."
+        },
+        "masculineName": {
+          "type": "string",
+          "description": "Complete masculine name of this job in the user's language."
+        },
+        "feminineName": {
+          "type": "string",
+          "description": "Complete feminine name of this job in the user's language."
+        },
+        "codeOgr": {
+          "type": "string",
+          "description": "OGR code identifying the job more precisely."
+        }
+      },
+      "description": "Description of a job, like plumber or school teacher."
+    },
+    "bayes.bob.JobBoard": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title of this job board."
+        },
+        "link": {
+          "type": "string",
+          "description": "Link to the job board."
+        },
+        "filters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A set of filter IDs: do not show the job board if one these\nfilters returns false for the project."
+        },
+        "isWellKnown": {
+          "type": "boolean",
+          "description": "Whether this job board is well known."
+        }
+      }
+    },
+    "bayes.bob.JobBoards": {
+      "type": "object",
+      "properties": {
+        "jobBoards": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.JobBoard"
+          },
+          "description": "A sorted list of job boards. The ones that Bayes think are best suited are\nfirst."
+        }
+      }
+    },
+    "bayes.bob.JobDomain": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the domain."
+        },
+        "sectors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Set of sectors in this domain. Note that it can be only a subset of all\nsectors of this domain in the case the proto is used to define a\nsubdomain."
+        }
+      }
+    },
+    "bayes.bob.JobGroup": {
+      "type": "object",
+      "properties": {
+        "romeId": {
+          "type": "string",
+          "description": "Identifier of the group in the user locale index (ROME in France)."
+        },
+        "name": {
+          "type": "string",
+          "description": "Complete name of this group in user's language.\nThis data comes from Pôle emploi Référentiel Opérationnel des Métiers (ROME)."
+        },
+        "domain": {
+          "type": "string",
+          "description": "A natural language name for the general domain the job group is in,\ne.g. 'Banque, assurance, immobilier'.\nThis is to have a few comparable categories of jobs,\nso there should be less than 20 in a given market."
+        },
+        "inDomain": {
+          "type": "string",
+          "description": "How one would describe their area of work when talking to someone else:\n\"I'm working ...\" (in French \"Je travaille ...\"). E.g. \"dans la banque\",\n\"dans l'immobilier\".\nThis data was manually built by Bayes Impact's Content Team over the years."
+        },
+        "samples": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.Job"
+          },
+          "description": "Example of jobs in this group.\nThis data comes from Pôle emploi Référentiel Opérationnel des Métiers (ROME)."
+        },
+        "jobs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.Job"
+          },
+          "description": "All jobs in this group.\nThis data comes from Pôle emploi Référentiel Opérationnel des Métiers (ROME)."
+        },
+        "hollandCodeMajor": {
+          "type": "string",
+          "description": "Major and minor Holland Codes (e.g A (artistic) or R (realistic)).\nThis data comes from Pôle emploi Référentiel Opérationnel des Métiers (ROME)."
+        },
+        "hollandCodeMinor": {
+          "type": "string"
+        },
+        "workingEnvironment": {
+          "type": "string",
+          "description": "A description of the work environment as a short text (from ROME).\nThis data comes from Pôle emploi Référentiel Opérationnel des Métiers (ROME)."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the job group (from ROME).\nThis data comes from Pôle emploi Référentiel Opérationnel des Métiers (ROME)."
+        },
+        "requirements": {
+          "$ref": "#/definitions/bayes.bob.JobRequirements",
+          "description": "Requirements for this job group.\nThis data comes from parsing job offers."
+        },
+        "hasAnyRequirements": {
+          "$ref": "#/definitions/bayes.OptionalBool",
+          "description": "Whether this job group has any diplomas or experience requirements.\nThis is taken from the job referential and might not be consistant with requirements above."
+        },
+        "requirementsText": {
+          "type": "string",
+          "description": "A short text (but multiple lines) describing the requirements for this job\ngroup (from ROME).\nThis data comes from Pôle emploi Référentiel Opérationnel des Métiers (ROME)."
+        },
+        "workEnvironmentKeywords": {
+          "$ref": "#/definitions/bayes.bob.WorkEnvironment",
+          "description": "Work environment for this job group.\nThis data comes from Pôle emploi Référentiel Opérationnel des Métiers (ROME)."
+        },
+        "applicationComplexity": {
+          "$ref": "#/definitions/bayes.bob.ApplicationProcessComplexity",
+          "description": "How difficult it is for job seekers to apply to this kind of jobs.\nThis data was manually built by Bayes Impact's Content Team over the years."
+        },
+        "applicationModes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/bayes.bob.RecruitingModesDistribution"
+          },
+          "description": "What application modes have been used for a job type.\nThe dataset is based on an annual survey on recently re-employed people.\nThis data comes from Pôle emploi Information sur le Marché du Travail (IMT)."
+        },
+        "preferredApplicationMedium": {
+          "$ref": "#/definitions/bayes.bob.ApplicationMedium",
+          "description": "The best way to apply for this kind of jobs (especially spontaneously).\nThis data was manually built by Bayes Impact's Content Team over the years."
+        },
+        "hasFreelancers": {
+          "type": "boolean",
+          "description": "Whether there are people practicing one of these jobs as freelancers.\nThis data was manually built by Bayes Impact's Content Team over the years."
+        },
+        "inAWorkplace": {
+          "type": "string",
+          "description": "How one would describe their workplace to someone else:\n\"Come to see me in my… shop\" (in French \"Venez me voir…\").\n\"E.g. dans mon magasin\".\nThis data was manually built by Bayes Impact's Content Team over the years."
+        },
+        "likeYourWorkplace": {
+          "type": "string",
+          "description": "The possessive someone would use to speak about someone else's workplace:\n\"I would like to work in a shop… like yours\"\n(J'aimerais travailler dans un magasin… comme le vôtre\").\nThis data was manually built by Bayes Impact's Content Team over the years."
+        },
+        "placePlural": {
+          "type": "string",
+          "description": "The plural form of how one would describe a workplace:\n\"You need to visit… shops\" (in French \"Vous devez visiter…\").\n\"E.g. des magasins\".\nThis data was manually built by Bayes Impact's Content Team over the years."
+        },
+        "whatILoveAbout": {
+          "type": "string",
+          "description": "How one would talk about what they love about someone else's job topic:\n\"I am found of your pastries!\"\nThis data was manually built by Bayes Impact's Content Team over the years."
+        },
+        "growth20122022": {
+          "type": "number",
+          "format": "float",
+          "description": "Relative growth of this job group for the period 2012-2022. Just an\nestimate. Values are between -0.16 and +0.29. If the value is exactly 0,\nit means that the growth is unknown. For a null growth, use a very small\nbut non-null value.\nThis data comes from France Stratégie:\nhttp://www.strategie.gouv.fr/sites/strategie.gouv.fr/files/atoms/files/fs_rapport_metiers_en_2022_27042015_final.pdf"
+        },
+        "toTheWorkplace": {
+          "type": "string",
+          "description": "How one would saying bringing something to the workplace:\n\"The skills you brings to the workplace\"\nThis data was manually built by Bayes Impact's Content Team over the years."
+        },
+        "whySpecificCompany": {
+          "type": "string",
+          "description": "How one would justify why they candidate to a given company.\nIn French: \"vous vous reconnaissez dans leurs valeurs, leur équipe, ...\"\nThis data was manually built by Bayes Impact's Content Team over the years."
+        },
+        "atVariousCompanies": {
+          "type": "string",
+          "description": "How one would talk about various companies in this job group:\nIn French: \"chez Axa, Groupama ou ...\", \"à la BNP, au Crédit agricole\".\nThis data was manually built by Bayes Impact's Content Team over the years."
+        },
+        "whatILoveAboutFeminine": {
+          "type": "string",
+          "description": "Feminine version of what_i_love_about field.\nThis data was manually built by Bayes Impact's Content Team over the years."
+        },
+        "departementScores": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.DepartementStats"
+          },
+          "description": "The departements ordered by offer/demand ratio, in descending order.\nThis data comes from Pôle emploi Information sur le Marché du Travail (IMT)."
+        },
+        "admin1AreaScores": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.DepartementStats"
+          },
+          "description": "The list of all admin1 areas with the offer/demand ratio. In descending order."
+        },
+        "nationalMarketScore": {
+          "type": "number",
+          "format": "float",
+          "description": "The national market score (offer/demand ratio).\nThis data comes from Pôle emploi Information sur le Marché du Travail (IMT)."
+        },
+        "isDiplomaStrictlyRequired": {
+          "type": "boolean",
+          "description": "Whether the required diplomas are strictly needed, or only a strong wish from recruitors.\nThis data was manually built by Bayes Impact's Content Team over the years."
+        },
+        "jobBoards": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.JobBoard"
+          },
+          "description": "A list of job boards that have specific offers for this job group.\nThis data was manually built by Bayes Impact's Content Team over the years."
+        },
+        "skillsForFuture": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.Skill"
+          },
+          "description": "A list of soft skills related to this job group that will be useful for the future.\nThis data comes from 80,000 hours: https://80000hours.org/articles/skills-most-employable/."
+        },
+        "specificAdvice": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.DynamicAdvice"
+          },
+          "description": "A list of pieces of advice specific to this job.\nThis data was manually built by Bayes Impact's Content Team over the years."
+        },
+        "userDegrees": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.DegreeCount"
+          },
+          "description": "A list of diploma levels that Bob users say they have, when looking in this job group, in no\nspecific order."
+        },
+        "automationRisk": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Automation risk: 0 - unknown, 1 - no risk of automation in the next 10 to 20 years, 100 - it's\nalmost certain that this job's task will get automated in the near future."
+        },
+        "relatedJobGroups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.RelatedJobGroup"
+          },
+          "description": "A set of job groups that are related to this one."
+        },
+        "covidRisk": {
+          "$ref": "#/definitions/bayes.bob.CovidRisk",
+          "description": "Whether opportunities of empoyment in this job group have changed due to Covid-19 pandemic."
+        },
+        "trainingCount": {
+          "$ref": "#/definitions/bayes.bob.TrainingCount",
+          "description": "Count of existing trainings for this job group (in the entire country)."
+        }
+      },
+      "description": "Description of a job group.\nNext free ID: 41."
+    },
+    "bayes.bob.JobGroupStats": {
+      "type": "object",
+      "properties": {
+        "romeId": {
+          "type": "string",
+          "description": "The ROME ID of the job group."
+        },
+        "name": {
+          "type": "string",
+          "description": "The ROME name of the job group."
+        },
+        "offers": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The number of job offers over two years for this job group."
+        },
+        "marketScore": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The market score for this job group."
+        }
+      }
+    },
+    "bayes.bob.JobRequirement": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the requirement, in the user's language."
+        },
+        "percentSuggested": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The percentage of cases (for the job or job group) that this would be a suggestion.\n\nNote that for diplomas, you should consider this as \"suggesting to have at least this diploma\",\na higher one is usually preferred."
+        },
+        "percentRequired": {
+          "type": "integer",
+          "format": "int32",
+          "description": "How strong is this suggestion when it is suggested from 1 to 100: 1 - not\nreally required, no benefits; 50 - not absolutely required, but strongly\nsuggested; 100 absolutely required. 0 means unknown.\n\nFor diplomas, this is actually the percentage of cases that this diploma is the highest\nrequirement for."
+        },
+        "diploma": {
+          "$ref": "#/definitions/bayes.bob.Diploma",
+          "description": "Diploma information (the name may be omitted)."
+        },
+        "contractType": {
+          "$ref": "#/definitions/bayes.bob.EmploymentType",
+          "description": "Contract type."
+        },
+        "drivingLicense": {
+          "$ref": "#/definitions/bayes.bob.DrivingLicense",
+          "description": "Driving license type."
+        },
+        "officeSkillsLevel": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Level for office tools: 1 is the worst (not even a requirement), 3 is\nthe best. Keep in sync with scale for the\nUserProfile.office_skills_estimate."
+        },
+        "codeOgr": {
+          "type": "string",
+          "description": "OGR code identifying the job more precisely."
+        }
+      }
+    },
+    "bayes.bob.JobRequirements": {
+      "type": "object",
+      "properties": {
+        "diplomas": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.JobRequirement"
+          },
+          "description": "A set of required diplomas."
+        },
+        "extras": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.JobRequirement"
+          },
+          "description": "An additional set of requirements (e.g. English speaking)."
+        },
+        "contractTypes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.JobRequirement"
+          },
+          "description": "A set of contract type \"requirements\"."
+        },
+        "drivingLicenses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.JobRequirement"
+          },
+          "description": "A set of required driving licenses."
+        },
+        "officeSkills": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.JobRequirement"
+          },
+          "description": "A set of required level of office tools skills."
+        },
+        "skillsShortText": {
+          "type": "string",
+          "description": "A short text describing most important skills one should highlight when\napplying for this job. It uses markdown syntax."
+        },
+        "bonusSkillsShortText": {
+          "type": "string",
+          "description": "Extra skills to highlight when applying for this job. Uses markdown\nsyntax."
+        },
+        "trainingsShortText": {
+          "type": "string",
+          "description": "A short text describing most important diplomas or traninings to have done\nwhen applying for this job. It uses markdown syntax."
+        },
+        "specificJobs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.JobRequirement"
+          },
+          "description": "Sorted list of job with offers within this job group: the ones with more\noffers come first. This excludes the jobs that have less than 1% of the\njob offers of the job group."
+        }
+      }
+    },
+    "bayes.bob.LanguageKnowledge": {
+      "type": "object",
+      "properties": {
+        "locale": {
+          "type": "string",
+          "description": "Locale of the language (e.g. \"fr\", \"fr-BE\", \"en\", \"nl\")."
+        },
+        "hasWrittenKnowledge": {
+          "$ref": "#/definitions/bayes.OptionalBool",
+          "description": "Whether the user has a good read/write knowledge of the language\n(at least B CEFRL level https://europass.cedefop.europa.eu/resources/european-language-levels-cefr)."
+        },
+        "hasSpokenKnowledge": {
+          "$ref": "#/definitions/bayes.OptionalBool",
+          "description": "Whether the user has a good listen/speak knowledge of the language\n(at least B CEFRL level https://europass.cedefop.europa.eu/resources/european-language-levels-cefr)."
+        }
+      }
+    },
+    "bayes.bob.LocalJobStats": {
+      "type": "object",
+      "properties": {
+        "bmo": {
+          "$ref": "#/definitions/bayes.bob.HiringNeed",
+          "description": "Labor needed for the user's job in their latest job in their bassin\nd'emploi."
+        },
+        "salary": {
+          "$ref": "#/definitions/bayes.bob.SalaryEstimation",
+          "description": "Esimation of the salary the job seeker could get with this job."
+        },
+        "unemploymentDuration": {
+          "$ref": "#/definitions/bayes.bob.DurationEstimation",
+          "description": "Estimation of the total unemployment duration for this job."
+        },
+        "imt": {
+          "$ref": "#/definitions/bayes.bob.ImtLocalJobStats",
+          "description": "IMT stats (e.g. EmploymentType distribution)"
+        },
+        "bestCity": {
+          "$ref": "#/definitions/bayes.bob.FrenchCity",
+          "description": "The city where those stats can be found. In case where this LocalJobStats\nis used for a wider area than just a city, the stats are the best ones\nthat can be found in a city within this area. This is the city."
+        },
+        "jobOffersChange": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Evolution in percentage of the number of offers since last year (Year over\nYear growth)."
+        },
+        "numJobOffersLastYear": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Number of job offers by Pôle Emploi during the last year."
+        },
+        "numJobOffersPreviousYear": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Number of job offers by Pôle Emploi during the previous year."
+        },
+        "numAvailableJobOffers": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Number of job offers currently available on the Pôle Emploi website. This\nnumber might have some delay depending on when it was computed but the\ngoal is to have it updated daily."
+        },
+        "lessStressfulJobGroups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.RelatedJobGroup"
+          },
+          "description": "A sorted list of less stressful job groups, the less stressful first."
+        },
+        "numJobOffersPerYear": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "description": "Count of job offers by Pôle Emploi during each year."
+        },
+        "numLessStressfulDepartements": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Count of departements with a less stressful market for that job. When using this field, always\ncheck the imt.yearly_avg_offers_per_10_candidates is set before, to make sure this one has any\nmeaning.\nTODO(cyrille): Drop comment below.\nUntil this field is imported in database, value 0 can also mean we don't have the data yet."
+        },
+        "moreStressedJobseekersPercentage": {
+          "type": "number",
+          "format": "float",
+          "description": "Percentage of the jobseekers that are in a market as stressful or more stressful than this one.\n0 means unkown."
+        },
+        "leastStressfulJobGroups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.RelatedJobGroup"
+          },
+          "description": "A sorted list of the least stressful job groups, the least stressful first.\nUser jobgroup is absent of the list if part of the least stressful job groups."
+        },
+        "trainingCount": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Number of trainings available in this area for the job group."
+        }
+      }
+    },
+    "bayes.bob.MobilityType": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_MOBILITY_TYPE",
+        "CLOSE",
+        "EVOLUTION"
+      ],
+      "default": "UNKNOWN_MOBILITY_TYPE",
+      "description": " - CLOSE: The job groups is close to the user's job group.\n - EVOLUTION: The job group can be consider as an evolution from\nthe user's job group."
+    },
+    "bayes.bob.ModePercentage": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "$ref": "#/definitions/bayes.bob.ApplicationMode",
+          "description": "Application mode kind."
+        },
+        "percentage": {
+          "type": "number",
+          "format": "float",
+          "description": "Observed percentage from 0 to 100."
+        }
+      }
+    },
+    "bayes.bob.Month": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_MONTH",
+        "JANUARY",
+        "FEBRUARY",
+        "MARCH",
+        "APRIL",
+        "MAY",
+        "JUNE",
+        "JULY",
+        "AUGUST",
+        "SEPTEMBER",
+        "OCTOBER",
+        "NOVEMBER",
+        "DECEMBER"
+      ],
+      "default": "UNKNOWN_MONTH"
+    },
+    "bayes.bob.MonthlySeasonalDepartementStats": {
+      "type": "object",
+      "properties": {
+        "departementId": {
+          "type": "string",
+          "description": "The ID of the departement."
+        },
+        "departementSeasonalOffers": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The total number of seasonal offers in this departement for a given month."
+        },
+        "jobGroups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.JobGroupStats"
+          },
+          "description": "The 5 job groups which hire the most sorted by most to least."
+        },
+        "departementInName": {
+          "type": "string",
+          "description": "Departement with location formulation, e.g.: \"en Corrèze\"."
+        }
+      },
+      "description": "Data about a seasonal departement for a given month."
+    },
+    "bayes.bob.MonthlySeasonalJobbingStats": {
+      "type": "object",
+      "properties": {
+        "departementStats": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.MonthlySeasonalDepartementStats"
+          },
+          "description": "The departements in which there are seasonal jobs."
+        }
+      },
+      "description": "Data for seasonal jobbing for a given month."
+    },
+    "bayes.bob.NumberOfferEstimateOption": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_NUMBER_ESTIMATE_OPTION",
+        "LESS_THAN_2",
+        "SOME",
+        "DECENT_AMOUNT",
+        "A_LOT"
+      ],
+      "default": "UNKNOWN_NUMBER_ESTIMATE_OPTION",
+      "description": " - SOME: Between 2 and 5.\n - DECENT_AMOUNT: Between 6 and 15.\n - A_LOT: More than 15."
+    },
+    "bayes.bob.OtherWorkEnvAdviceData": {
+      "type": "object",
+      "properties": {
+        "workEnvironmentKeywords": {
+          "$ref": "#/definitions/bayes.bob.WorkEnvironment",
+          "description": "Work environment for the targeted job group."
+        }
+      }
+    },
+    "bayes.bob.PassionateLevel": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_PASSION_LEVEL",
+        "ALIMENTARY_JOB",
+        "LIKEABLE_JOB",
+        "PASSIONATING_JOB",
+        "LIFE_GOAL_JOB"
+      ],
+      "default": "UNKNOWN_PASSION_LEVEL"
+    },
+    "bayes.bob.PreviousJobSimilarity": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_PROJECT_EXPERIENCE",
+        "DONE_THIS",
+        "DONE_SIMILAR",
+        "NEVER_DONE"
+      ],
+      "default": "UNKNOWN_PROJECT_EXPERIENCE"
+    },
+    "bayes.bob.Project": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/bayes.bob.ProjectStatus",
+          "description": "Current status of this project for the user."
+        },
+        "targetJob": {
+          "$ref": "#/definitions/bayes.bob.Job",
+          "description": "Job targeted by this project. It may be empty if the user does not know which job to target."
+        },
+        "activitySector": {
+          "$ref": "#/definitions/bayes.bob.ActivitySector",
+          "description": "Sector of activity targeted by this project."
+        },
+        "city": {
+          "$ref": "#/definitions/bayes.bob.FrenchCity",
+          "description": "The target city for this project, or one of the targeted area (see `area_type`)."
+        },
+        "areaType": {
+          "$ref": "#/definitions/bayes.bob.AreaType",
+          "description": "The type of geographic area for this project. If the field `city` is set\nand this is a type bigger than a city, then only the larger fields of the\nFrenchCity message are relevant."
+        },
+        "minSalary": {
+          "type": "number",
+          "format": "float",
+          "description": "Minimal salary requested by the user if any. The unit of this field is ANNUAL_GROSS_SALARY."
+        },
+        "employmentTypes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.EmploymentType"
+          },
+          "description": "A set of employment types requested by the user if any (e.g. CDI)."
+        },
+        "kind": {
+          "$ref": "#/definitions/bayes.bob.ProjectKind",
+          "description": "The kind of project (e.g. to find a job)."
+        },
+        "previousJobSimilarity": {
+          "$ref": "#/definitions/bayes.bob.PreviousJobSimilarity",
+          "description": "Whether the user worked in this job before."
+        },
+        "seniority": {
+          "$ref": "#/definitions/bayes.bob.ProjectSeniority",
+          "description": "The seniority of the user regarding the project profession.\nOnly set if experience != NEVER_DONE."
+        },
+        "trainingFulfillmentEstimate": {
+          "$ref": "#/definitions/bayes.bob.TrainingFulfillmentEstimate",
+          "description": "The user's estimate whether they have all the required diplomas,\ntogether with a list of the asked diplomas."
+        },
+        "workloads": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.ProjectWorkload"
+          },
+          "description": "A set of workload types that the user could accept (e.g. full time)."
+        },
+        "networkEstimate": {
+          "type": "integer",
+          "format": "int32",
+          "description": "How good is their network for this project from 1 to 3. 1 = weak, 3 =\nsuper strong, -1 = unknown."
+        },
+        "jobSearchHasNotStarted": {
+          "type": "boolean",
+          "description": "Whether the user has started searching in this field."
+        },
+        "jobSearchStartedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the user started searching in this field."
+        },
+        "weeklyOffersEstimate": {
+          "$ref": "#/definitions/bayes.bob.NumberOfferEstimateOption",
+          "description": "Users estimate of how many offers they usually have access to per week."
+        },
+        "weeklyApplicationsEstimate": {
+          "$ref": "#/definitions/bayes.bob.NumberOfferEstimateOption",
+          "description": "Users estimate of how many applications they usually send per week.\nWe are re-using the weekly_offers_estimate options here as they are roughly the same."
+        },
+        "totalInterviewsEstimate": {
+          "$ref": "#/definitions/bayes.bob.NumberOfferEstimateOption",
+          "description": "TODO: Create a new enum for interviews and propagate the changes through the whole app.\nUsers estimate of how many interviews they had in total.\nWe are re-using the weekly_offers_estimate options here as they are roughly the same."
+        },
+        "totalInterviewCount": {
+          "type": "integer",
+          "format": "int32",
+          "description": "User estimate of how many interviews they had in total. 0 actually means\nunknown, and the -1 means the user specified they never did any\ninterviews."
+        },
+        "localStats": {
+          "$ref": "#/definitions/bayes.bob.LocalJobStats",
+          "description": "Job stats for this specific project."
+        },
+        "advices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.Advice"
+          },
+          "description": "Sorted list of advices that triggered for this user."
+        },
+        "diagnostic": {
+          "$ref": "#/definitions/bayes.bob.Diagnostic"
+        },
+        "passionateLevel": {
+          "$ref": "#/definitions/bayes.bob.PassionateLevel",
+          "description": "User level of involvement in this job."
+        },
+        "strategies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.Strategy"
+          },
+          "description": "Strategies we consider the user could follow. They are sorted by importance, so the first one\nis the most relevant to the user (relevance is computed using is_secondary and score)."
+        },
+        "hasResume": {
+          "$ref": "#/definitions/bayes.OptionalBool",
+          "description": "Whether the user has a relevant resume for this project."
+        },
+        "hasClearProject": {
+          "$ref": "#/definitions/bayes.OptionalBool",
+          "description": "Whether the user target job is clear (declarative), i.e. this is really what they want to do.\nNote that this would be different than having a project defined that the user does not like\nvery much (category find-what-you-like), as this should reflect that we (Bob) are not sure\nwhether the user even chose that job to begin with.\nIf the target_job field is empty, then this flag indicates whether it's just because they\nhadn't had the chance to set it (UNKNOWN_BOOL) or because they chose not to specify one\n(FALSE).\nTODO(pascal): Rename to has_chosen_target_job"
+        },
+        "preferredApplicationMode": {
+          "$ref": "#/definitions/bayes.bob.ApplicationMode",
+          "description": "The user preferred way to apply for jobs."
+        },
+        "originalSelfDiagnostic": {
+          "$ref": "#/definitions/bayes.bob.SelfDiagnostic",
+          "description": "The self-diagnostic provided by the user before using Bob. If unknown the user didn't\nanswer the question."
+        }
+      }
+    },
+    "bayes.bob.ProjectKind": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_PROJECT_KIND",
+        "CREATE_OR_TAKE_OVER_COMPANY",
+        "REORIENTATION",
+        "FIND_A_FIRST_JOB",
+        "FIND_A_NEW_JOB",
+        "FIND_ANOTHER_JOB"
+      ],
+      "default": "UNKNOWN_PROJECT_KIND"
+    },
+    "bayes.bob.ProjectSeniority": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_PROJECT_SENIORITY",
+        "NO_SENIORITY",
+        "INTERN",
+        "JUNIOR",
+        "INTERMEDIARY",
+        "SENIOR",
+        "EXPERT",
+        "CARREER"
+      ],
+      "default": "UNKNOWN_PROJECT_SENIORITY",
+      "description": " - JUNIOR: Less than 2 years\n - INTERMEDIARY: 2 to less than 6 years.\n - SENIOR: 6 to less than 10 years.\n - EXPERT: More than 10 years.\n - CARREER: More than 20 years. WARNING: This is not always suggested to users, so experts might have more\nthan 20 years experience."
+    },
+    "bayes.bob.ProjectStatus": {
+      "type": "string",
+      "enum": [
+        "PROJECT_UNKNOWN_STATUS",
+        "PROJECT_CURRENT",
+        "PROJECT_ON_STAND_BY",
+        "PROJECT_COMPLETED",
+        "PROJECT_DELETED"
+      ],
+      "default": "PROJECT_UNKNOWN_STATUS",
+      "description": " - PROJECT_CURRENT: This is the default status: the user is currently tackling this project.\n - PROJECT_ON_STAND_BY: The project is selected by the user, but they have set it on stand-by for\na while.\n - PROJECT_COMPLETED: The project was current but got completed.\n - PROJECT_DELETED: The project was current but got deleted."
+    },
+    "bayes.bob.ProjectWorkload": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_PROJECT_WORKLOAD",
+        "PART_TIME",
+        "FULL_TIME"
+      ],
+      "default": "UNKNOWN_PROJECT_WORKLOAD"
+    },
+    "bayes.bob.RecruitingModesDistribution": {
+      "type": "object",
+      "properties": {
+        "modes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.ModePercentage"
+          },
+          "description": "List of application modes percentages\nsorted in descending percentages order.\nNote that percentages sum up to ~100%."
+        }
+      }
+    },
+    "bayes.bob.RelatedJobGroup": {
+      "type": "object",
+      "properties": {
+        "jobGroup": {
+          "$ref": "#/definitions/bayes.bob.JobGroup",
+          "description": "The job group that is related. Only the name and the ROME code are given."
+        },
+        "localStats": {
+          "$ref": "#/definitions/bayes.bob.LocalJobStats",
+          "description": "Shallow stats containing merely the important stats that defines the\nrelation with the main job group, e.g. the IMT market stress."
+        },
+        "mobilityType": {
+          "$ref": "#/definitions/bayes.bob.MobilityType",
+          "description": "Type of mobility to reach the related job group."
+        }
+      },
+      "description": "Stats for a job group related to another one, e.g. a similar job group that\nis less stressful locally."
+    },
+    "bayes.bob.RelocateData": {
+      "type": "object",
+      "properties": {
+        "departementScores": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.DepartementScore"
+          },
+          "description": "Departements with the relative number of offers compared to the user's departement."
+        }
+      }
+    },
+    "bayes.bob.ReorientData": {
+      "type": "object",
+      "properties": {
+        "jobs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.Job"
+          },
+          "description": "Jobs suggested for reorientation (holds only the job names)."
+        }
+      }
+    },
+    "bayes.bob.SalaryEstimation": {
+      "type": "object",
+      "properties": {
+        "shortText": {
+          "type": "string",
+          "description": "The estimation of the salary as a short text in the user's language, e.g.\n\"12-22k€\"."
+        },
+        "minSalary": {
+          "type": "number",
+          "format": "float",
+          "description": "Minimal salary of the estimation (usually corresponds to 80% of data\npoints being greater than this)."
+        },
+        "maxSalary": {
+          "type": "number",
+          "format": "float",
+          "description": "Maximal salary of the estimation (usually corresponds to 80% of data\npoints being less than this)."
+        },
+        "medianSalary": {
+          "type": "number",
+          "format": "float",
+          "description": "Median salary estimation."
+        },
+        "unit": {
+          "$ref": "#/definitions/bayes.bob.SalaryUnit",
+          "description": "Unit of the salary."
+        }
+      }
+    },
+    "bayes.bob.SalaryUnit": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_SALARY_UNIT",
+        "ANNUAL_GROSS_SALARY",
+        "MONTHLY_NET_SALARY",
+        "MONTHLY_GROSS_SALARY",
+        "HOURLY_NET_SALARY",
+        "HOURLY_GROSS_SALARY"
+      ],
+      "default": "UNKNOWN_SALARY_UNIT",
+      "description": " - ANNUAL_GROSS_SALARY: Annual gross salary (mostly used for large salaries).\n - MONTHLY_NET_SALARY: Monthly net salary, i.e. what the job seeker would get at the end of the\nmonth.\n - MONTHLY_GROSS_SALARY: Monthly gross salary, i.e. what the job seeker has written in their contract,\nwhen the contract mentions a monthly salary.\n - HOURLY_NET_SALARY: Hourly net salary, i.e. what the job seeker would get per hour.\n - HOURLY_GROSS_SALARY: Hourly gross salary, i.e. what the job seeker has written in their contract,\nwhen the contract mentions an hourly salary."
+    },
+    "bayes.bob.SelfDiagnostic": {
+      "type": "object",
+      "properties": {
+        "categoryId": {
+          "type": "string",
+          "description": "An identifier for the category the user identifies in. It comes from the list of categories\ncurrently used, provided by the server. It should be empty when the selfDiagnosticStatus is\nset to \"OTHER\"."
+        },
+        "categoryDetails": {
+          "type": "string",
+          "description": "A sentence that describes the category the user identifies in. It is submitted by the user."
+        },
+        "status": {
+          "$ref": "#/definitions/bayes.bob.SelfDiagnosticStatus",
+          "description": "What to expect as user self-identified category, either unknown, undefined, known or other."
+        }
+      }
+    },
+    "bayes.bob.SelfDiagnosticStatus": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_SELF_DIAGNOSTIC",
+        "UNDEFINED_SELF_DIAGNOSTIC",
+        "KNOWN_SELF_DIAGNOSTIC",
+        "OTHER_SELF_DIAGNOSTIC"
+      ],
+      "default": "UNKNOWN_SELF_DIAGNOSTIC",
+      "description": " - UNKNOWN_SELF_DIAGNOSTIC: User either has not answered the question or was not asked the question.\n - UNDEFINED_SELF_DIAGNOSTIC: User doesn't know in which category they might be in when proposed for\nexisting categories and an \"other\" category (\"I don't know\" answer).\n - KNOWN_SELF_DIAGNOSTIC: User self identified in a known category.\n - OTHER_SELF_DIAGNOSTIC: User has proposed a custom category."
+    },
+    "bayes.bob.Skill": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "French name of the skill."
+        },
+        "description": {
+          "type": "string",
+          "description": "Short description, in French, of what this skill represents."
+        },
+        "discoverUrl": {
+          "type": "string",
+          "description": "URL of a web page to discover this skill (video, MOOC, tool)."
+        },
+        "assets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.SkillAsset"
+          },
+          "description": "A sorted list of assets of this skill (most relevant first)."
+        }
+      }
+    },
+    "bayes.bob.SkillAsset": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_SKILL_ASSET",
+        "TIME_TO_MARKET",
+        "BREADTH_OF_JOBS",
+        "JOB_SATISFACTION",
+        "BETTER_INCOME",
+        "NO_AUTOMATISATION"
+      ],
+      "default": "UNKNOWN_SKILL_ASSET",
+      "description": " - TIME_TO_MARKET: Skill is a good help to get a job quickly.\n - BREADTH_OF_JOBS: Skill useful in many different jobs.\n - JOB_SATISFACTION: Skill that increases satisfaction at work.\n - BETTER_INCOME: Skill that will help to get a better salary.\n - NO_AUTOMATISATION: Negative risk of automatisation of this skill."
+    },
+    "bayes.bob.SpontaneousApplicationData": {
+      "type": "object",
+      "properties": {
+        "companies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.Company"
+          },
+          "description": "Specific companies to which the user could apply to."
+        },
+        "maxDistanceToCompaniesKm": {
+          "type": "number",
+          "format": "float",
+          "description": "The maximum distance to companies returned in companies. By default it used to be 10 in the\nLBB API, but if it's not set we do not guarantee it."
+        },
+        "alternanceCompanies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.Company"
+          },
+          "description": "Specific companies to which the user could apply to, to get an alternance contract."
+        },
+        "maxDistanceToAlternanceCompaniesKm": {
+          "type": "number",
+          "format": "float",
+          "description": "The maximum distance to companies returned in alternance_companies. By default it used to be 10\n in the LBA API, but if it's not set we do not guarantee it."
+        }
+      }
+    },
+    "bayes.bob.Strategy": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "A title for the strategy, in the language of the user."
+        },
+        "header": {
+          "type": "string",
+          "description": "A header for the strategy, to explain why it's given to the user, and introduces the advice\nwe're going to give."
+        },
+        "piecesOfAdvice": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.StrategyAdvice"
+          },
+          "description": "The advice module IDs we want to show to the user. Their order is not important for now, as\nthey are ordered by their relevance to the user."
+        },
+        "score": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Value added by this strategy to the overall Bob score, in percent."
+        },
+        "strategyId": {
+          "type": "string",
+          "description": "ID of the strategy module, this strategy was created from."
+        },
+        "isSecondary": {
+          "type": "boolean",
+          "description": "Whether we consider this strategy not to be so relevant to the user's situation."
+        },
+        "isPrincipal": {
+          "type": "boolean",
+          "description": "Whether we consider this strategy to be the most relevant to the user's situation."
+        },
+        "description": {
+          "type": "string",
+          "description": "A short description of what this strategy is for."
+        },
+        "externalUrl": {
+          "type": "string",
+          "description": "When this strategy is actually not a bunch of methods on Bob, but a direct link to another\ntool like Upskilling: this is the URL to link to."
+        }
+      },
+      "description": "See go/bob:strategies about what we mean by strategies. This represents a strategy as given to\nthe user."
+    },
+    "bayes.bob.StrategyAdvice": {
+      "type": "object",
+      "properties": {
+        "adviceId": {
+          "type": "string",
+          "description": "The ID of the advice module."
+        },
+        "header": {
+          "type": "string",
+          "description": "An optional header for this advice."
+        },
+        "teaser": {
+          "type": "string",
+          "description": "An optional teaser for this advice, to override the one given in diagnostic\n(currently presented as a goal)."
+        }
+      },
+      "description": "An advice with a possible header to introduce it."
+    },
+    "bayes.bob.Training": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Main name of the training."
+        },
+        "url": {
+          "type": "string",
+          "description": "Url where the training is available."
+        },
+        "cityName": {
+          "type": "string",
+          "description": "Name of the city in which the training site is."
+        },
+        "formacodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "FORMACODEs associated to this training (cf http://formacode.centre-inffo.fr/?)."
+        },
+        "hiringPotential": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Hiring potential after training: 0 means unknown, then the scale is from 1 to 5."
+        },
+        "romeIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "IDs for the job groups this training is relevant for."
+        },
+        "degreeLevel": {
+          "$ref": "#/definitions/bayes.bob.DegreeLevel",
+          "description": "The level of studies needed for this training, if any."
+        },
+        "filters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A set of filter IDs: do not show the training if one of these filters return\nfalse for the training."
+        }
+      }
+    },
+    "bayes.bob.TrainingCount": {
+      "type": "object",
+      "properties": {
+        "veryShortTrainings": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Number of very short trainings (shorter than 1 month)."
+        },
+        "shortTrainings": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Number of short trainings (between 1 and 6 months)."
+        },
+        "longTrainings": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Number of trainings longer than 6 months."
+        },
+        "openTrainings": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Number of trainings anyone can take (no entry level required)."
+        },
+        "onlineTrainings": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Number of trainings one can take online."
+        }
+      }
+    },
+    "bayes.bob.TrainingFulfillmentEstimate": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_TRAINING_FULFILLMENT",
+        "ENOUGH_DIPLOMAS",
+        "ENOUGH_EXPERIENCE",
+        "CURRENTLY_IN_TRAINING",
+        "TRAINING_FULFILLMENT_NOT_SURE",
+        "NO_TRAINING_REQUIRED"
+      ],
+      "default": "UNKNOWN_TRAINING_FULFILLMENT",
+      "description": "The estimate of the user regarding the training fulfillment."
+    },
+    "bayes.bob.Trainings": {
+      "type": "object",
+      "properties": {
+        "trainings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.Training"
+          }
+        }
+      }
+    },
+    "bayes.bob.UrbanContext": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_URBAN_CONTEXT",
+        "RURAL",
+        "PERIURBAN",
+        "URBAN"
+      ],
+      "default": "UNKNOWN_URBAN_CONTEXT",
+      "description": "A urban context."
+    },
+    "bayes.bob.UseCase": {
+      "type": "object",
+      "properties": {
+        "useCaseId": {
+          "type": "string",
+          "description": "Unique use case ID."
+        },
+        "poolName": {
+          "type": "string",
+          "description": "Name of the use case pool it is part of, if any."
+        },
+        "indexInPool": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Index of this use case in its pool."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the use case, e.g. \"Baker in Rennes\";"
+        },
+        "userData": {
+          "$ref": "#/definitions/bayes.bob.User",
+          "description": "Actual user data."
+        },
+        "evaluation": {
+          "$ref": "#/definitions/bayes.bob.UseCaseEvaluation",
+          "description": "The evaluation for this use case."
+        }
+      }
+    },
+    "bayes.bob.UseCaseEvaluation": {
+      "type": "object",
+      "properties": {
+        "evaluatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the evaluation was last done."
+        },
+        "by": {
+          "type": "string",
+          "description": "Email address of the user that did the latest evaluation of the use case."
+        },
+        "score": {
+          "$ref": "#/definitions/bayes.bob.UseCaseScore",
+          "description": "General score for this use case."
+        },
+        "comments": {
+          "type": "string",
+          "description": "General comments for this use case."
+        },
+        "modules": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "description": "New score for advice modules.\nTODO: put this info in AdviceEvaluation if possible (note that we need to store \"0\" value\nfor \"modules\" to mean that the advice should be hidden)."
+        },
+        "advices": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/bayes.bob.AdviceEvaluation"
+          },
+          "description": "Evaluation for each advice modules."
+        },
+        "diagnostic": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/bayes.bob.GenericEvaluation"
+          },
+          "description": "Evaluation of the diagnostic."
+        }
+      }
+    },
+    "bayes.bob.UseCaseScore": {
+      "type": "string",
+      "enum": [
+        "UNKOWN_EVALUATION",
+        "EXCELLENT",
+        "GOOD_ENOUGH",
+        "BAD"
+      ],
+      "default": "UNKOWN_EVALUATION"
+    },
+    "bayes.bob.User": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "A unique identifier for this user. It is not related to any public\nidentifiers although it is not obfuscated in the API. It looks like a normal Mongo ObjectID,\nunder the hood however we hash it with a salt to make it less guessable.\n\nIn MongoDB, this is stored as the key (\"_id\") and therefore you should not\nrely on this field being populated. However during transport or on the\nclient, this field should be populated as soon as we have an ID."
+        },
+        "profile": {
+          "$ref": "#/definitions/bayes.bob.UserProfile",
+          "description": "Profile of the user."
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.Project"
+          },
+          "description": "List of current projects for this user even the ones on stand-by."
+        },
+        "revision": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Revision of the user's data. This number should always be increasing, it\nhelps keep synchronized the client and the server versions of the user's\ndata. See http://go/bob:revision-design"
+        },
+        "sendCoachingEmailAfter": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Next date after which we can try again sending a coaching email."
+        }
+      },
+      "description": "All data for a user of the mashup app, a job seeker."
+    },
+    "bayes.bob.UserProfile": {
+      "type": "object",
+      "properties": {
+        "gender": {
+          "$ref": "#/definitions/bayes.bob.Gender",
+          "description": "The gender of the user, at least the one they prefer when we have to use a\nmasculine or feminine grammatical form."
+        },
+        "name": {
+          "type": "string",
+          "description": "User's first name (e.g.: Stephan)."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "User's last name (e.g.: Corpet)."
+        },
+        "yearOfBirth": {
+          "type": "integer",
+          "format": "int64",
+          "description": "User's year of birth."
+        },
+        "hasHandicap": {
+          "type": "boolean",
+          "description": "Whether the user has a recognized handicaped."
+        },
+        "familySituation": {
+          "$ref": "#/definitions/bayes.bob.FamilySituation",
+          "description": "The current family situation of the user (e.g.: single, with kids, etc.)."
+        },
+        "highestDegree": {
+          "$ref": "#/definitions/bayes.bob.DegreeLevel",
+          "description": "The users highest school degree."
+        },
+        "frustrations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.Frustration"
+          },
+          "description": "User frustration reasons (e.g.: no offers, no answers, single parent, ...)."
+        },
+        "customFrustrations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "User custom frustration reasons."
+        },
+        "preferredSalaryUnit": {
+          "$ref": "#/definitions/bayes.bob.SalaryUnit",
+          "description": "The preferred salary unit of the user."
+        },
+        "locale": {
+          "type": "string",
+          "description": "The locale that the user prefers. E.g. \"en\", \"nl\", \"fr\", \"fr@tu\" (the tutoiement version of\nFrench)."
+        },
+        "drivingLicenses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.DrivingLicense"
+          },
+          "description": "The driving licenses the user has."
+        },
+        "hasCarDrivingLicense": {
+          "$ref": "#/definitions/bayes.OptionalBool",
+          "description": "Whether the user has the car driving license."
+        },
+        "coachingEmailFrequency": {
+          "$ref": "#/definitions/bayes.bob.EmailFrequency",
+          "description": "How frequent should we send coaching emails (aka focus emails)."
+        },
+        "languages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.LanguageKnowledge"
+          },
+          "description": "Set of languages on which we know the user's level. If a language is missing here, it means\nthat we don't know its current level."
+        },
+        "isAutonomous": {
+          "$ref": "#/definitions/bayes.OptionalBool",
+          "description": "Whether the user is autonomous in their job search, and can apply without much help\nregarding how."
+        }
+      },
+      "example": {
+        "name": "John",
+        "yearOfBirth": 1990,
+        "familySituation": "FAMILY_WITH_KIDS",
+        "highestDegree": "BTS_DUT_DEUG",
+        "frustrations": [
+          "NO_OFFERS",
+          "ATYPIC_PROFILE"
+        ],
+        "locale": "en"
+      },
+      "description": "Profile of a user, a job seeker."
+    },
+    "bayes.bob.VolunteerData": {
+      "type": "object",
+      "properties": {
+        "associationNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Names of associations that have volunteering missions that the user could\ntake on."
+        }
+      }
+    },
+    "bayes.bob.WeightedJob": {
+      "type": "object",
+      "properties": {
+        "job": {
+          "$ref": "#/definitions/bayes.bob.Job"
+        },
+        "weight": {
+          "type": "number",
+          "format": "float"
+        }
+      }
+    },
+    "bayes.bob.WorkEnvironment": {
+      "type": "object",
+      "properties": {
+        "structures": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A set of kind of organizations (e.g. supermarket, large company, consulting\ncompany) in which jobs of a given job group are typically found in."
+        },
+        "sectors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A set of industry sectors in which jobs of a given job group usually are."
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A set of usual or potential conditions for jobs of a given job group."
+        },
+        "domains": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bayes.bob.JobDomain"
+          },
+          "description": "A set of domains (group of industry sectors) in which jobs usually are."
+        }
+      },
+      "description": "A job's working environment through a list of key terms."
+    }
+  }
+}

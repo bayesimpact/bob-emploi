@@ -4,6 +4,7 @@ import "bob_emploi/frontend/api/geo.proto";
 import "bob_emploi/frontend/api/job.proto";
 
 package bayes.bob.old;
+option go_package="bayes.org/bob_emploi/frontend/api/discovery";
 
 message JobsExploration {
   // A sorted list of job groups to explore. We believe that the first are the

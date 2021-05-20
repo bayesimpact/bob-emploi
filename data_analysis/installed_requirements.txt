@@ -1,0 +1,16 @@
+# Requirements already present in pandas-base that are needed for python code.
+algoliasearch
+coverage
+csvkit
+mongomock
+nose
+nose-exclude
+nose-watch
+pandas
+pylint
+requests
+sas7bdat
+scrapy
+sklearn
+tqdm
+xmltodict

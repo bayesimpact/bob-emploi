@@ -1,0 +1,8 @@
+{
+  upskilling: {
+    entry: './src/entry.tsx',
+    htmlFilename: 'upskilling.html',
+    prefixes: ['/orientation'],
+    template: 'index.tsx',
+  },
+}

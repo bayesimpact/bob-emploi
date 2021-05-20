@@ -3,6 +3,7 @@ import i18n from 'i18next'
 import {History, createBrowserHistory} from 'history'
 import {parse} from 'query-string'
 import React, {Suspense, useEffect, useLayoutEffect, useRef, useState} from 'react'
+import {hot} from 'react-hot-loader/root'
 import {connect, Provider, useDispatch, useSelector} from 'react-redux'
 import {useLocation} from 'react-router'
 import {Redirect, Route, Switch} from 'react-router-dom'
@@ -11,33 +12,33 @@ import {composeWithDevTools} from 'redux-devtools-extension'
 import thunk from 'redux-thunk'
 import {polyfill} from 'smoothscroll-polyfill'
 
-import {actionTypesToLog, fetchUser, switchToMobileVersionAction, migrateUserToAdvisor,
+import 'normalize.css'
+import 'styles/App.css'
+
+import useMobileViewport from 'hooks/mobile'
+import {actionTypesToLog, fetchUser, migrateUserToAdvisor, hideToasterMessageAction, AllActions,
   trackInitialUtm, activateDemoInFuture, activateDemo, pageIsLoaded, isActionRegister, RootState,
-  DispatchAllActions, AllActions, hideToasterMessageAction,
-  removeAuthDataAction} from 'store/actions'
-import {createAmplitudeMiddleware} from 'store/amplitude'
+  DispatchAllActions, removeAuthDataAction} from 'store/actions'
+import createAmplitudeMiddleware from 'store/amplitude'
 import {app, asyncState} from 'store/app_reducer'
-import {createFacebookAnalyticsMiddleWare} from 'store/facebook_analytics'
-import {createGoogleAnalyticsMiddleWare} from 'store/google_analytics'
+import createFacebookAnalyticsMiddleWare from 'store/facebook_analytics'
+import createGoogleAnalyticsMiddleWare from 'store/google_analytics'
 import {init as i18nInit} from 'store/i18n'
 import {Logger} from 'store/logging'
 import {onboardingComplete} from 'store/main_selectors'
-import {parsedValueFlattener, removeAmpersandDoubleEncoding} from 'store/parse'
-import {makeCancelableDispatch} from 'store/promise'
-import {createSentryMiddleware} from 'store/sentry'
-import {userReducer} from 'store/user_reducer'
+import {parseQueryString, removeAmpersandDoubleEncoding} from 'store/parse'
+import {useAsynceffect} from 'store/promise'
+import createSentryMiddleware from 'store/sentry'
+import userReducer from 'store/user_reducer'
 import {getUserLocale, isAdvisorUser} from 'store/user'
 
 import {LoginModal} from 'components/login'
-import {isMobileVersion} from 'components/mobile'
-import {Snackbar} from 'components/snackbar'
+import isMobileVersion from 'store/mobile'
+import Snackbar from 'components/snackbar'
 import {Routes, SIGNUP_HASH, staticPages} from 'components/url'
 import {IntroPage} from './intro'
 import {SignUpPage} from './signup'
-import {WaitingPage} from './waiting'
-
-require('normalize.css')
-require('styles/App.css')
+import WaitingPage from './waiting'
 
 polyfill()
 
@@ -55,10 +56,11 @@ const LoadableProjectPage = React.lazy((): Promise<typeof import('./connected/pr
   import(/* webpackChunkName: 'connected', webpackPrefetch: 2 */'./connected/project'))
 
 
+// Do not set custom options here.
 i18nInit()
 
 
-// Whitelist for the path of pages for which we allow storing the scroll position to jump
+// Set of path of pages for which we allow storing the scroll position to jump
 // there directly when coming back.
 const PAGES_WITH_STORED_SCROLL = [Routes.PROJECT_PAGE]
 
@@ -76,19 +78,13 @@ const UserCheckedPagesBase = (): React.ReactElement => {
   )
   const {hash, search} = useLocation()
 
-  const {featuresEnabled, profile, userId} = user
+  const {featuresEnabled, hasAccount, profile, userId, registeredAt} = user
 
-  useEffect((): (() => void) => {
-    if (!userId) {
-      return (): void => void 0
+  useAsynceffect(async (checkIfCanceled) => {
+    if (!userId || await dispatch(fetchUser(userId, true)) || checkIfCanceled()) {
+      return
     }
-    const [safeDispatch, cancel] = makeCancelableDispatch(dispatch)
-    safeDispatch(fetchUser(userId, true)).then((user: bayes.bob.User|void): void => {
-      if (!user) {
-        dispatch(removeAuthDataAction)
-      }
-    })
-    return cancel
+    dispatch(removeAuthDataAction)
   }, [dispatch, userId])
 
   useEffect((): void => {
@@ -113,9 +109,9 @@ const UserCheckedPagesBase = (): React.ReactElement => {
     }
   }, [newLocale])
 
-  const {authToken, resetToken, state, userId: locationUserId} = parse(search)
-  const hasUser = !!user.registeredAt
-  const hasRegisteredUser = hasUser && user.hasAccount
+  const {authToken, resetToken, state, userId: locationUserId} = parseQueryString(search)
+  const hasUser = !!registeredAt
+  const hasRegisteredUser = hasUser && hasAccount
   const hasUrlLoginIncentive =
     resetToken ||
     !hasRegisteredUser && state ||
@@ -186,35 +182,24 @@ const PageHolderBase = (): React.ReactElement => {
   const location = useLocation()
   const {hash, pathname, search} = location
 
-  useEffect((): void => {
-    if (isMobileVersion) {
-      dispatch(switchToMobileVersionAction)
-      const viewport = document.getElementById('viewport')
-      viewport && viewport.setAttribute('content', 'initial-scale=1')
-    }
-  }, [dispatch])
+  useMobileViewport()
 
   useEffect((): void => {
     const {
-      activate,
       utm_campaign: campaign,
       utm_content: content,
       utm_medium: medium,
       utm_source: source,
-    } = parse(search)
+    } = parseQueryString(search)
+    const {activate} = parse(search)
     if (campaign || content || medium || source) {
-      dispatch(trackInitialUtm({
-        campaign: parsedValueFlattener.last(campaign),
-        content: parsedValueFlattener.last(content),
-        medium: parsedValueFlattener.last(medium),
-        source: parsedValueFlattener.last(source),
-      }))
+      dispatch(trackInitialUtm({campaign, content, medium, source}))
     }
     if (activate) {
       if (typeof activate === 'object') {
-        activate.forEach((demo: string): void => {
+        for (const demo of activate) {
           dispatch(activateDemoInFuture(demo as keyof bayes.bob.Features))
-        })
+        }
       } else {
         dispatch(activateDemoInFuture(activate as keyof bayes.bob.Features))
       }
@@ -278,7 +263,7 @@ function createHistoryAndStore(): AppState {
   })
   const facebookAnalyticsMiddleware = createFacebookAnalyticsMiddleWare(config.facebookPixelID, {
     AUTHENTICATE_USER: {
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       params: {content_name: config.productName},
       predicate: isActionRegister,
       type: 'CompleteRegistration',
@@ -305,14 +290,14 @@ function createHistoryAndStore(): AppState {
     }),
   )
   if (module.hot) {
-    module.hot.accept(['store/user_reducer', 'store/app_reducer'], (): void => {
-      const nextAppReducerModule = require('store/app_reducer')
-      const nextUserReducerModule = require('store/user_reducer')
+    module.hot.accept(['store/user_reducer', 'store/app_reducer'], async (): Promise<void> => {
+      const nextAppReducerModule = await import('store/app_reducer')
+      const nextUserReducerModule = await import('store/user_reducer')
       store.replaceReducer(combineReducers({
-        app: nextAppReducerModule.app as typeof app,
-        asyncState: nextAppReducerModule.asyncState as typeof asyncState,
+        app: nextAppReducerModule.app,
+        asyncState: nextAppReducerModule.asyncState,
         router: connectRouter(history),
-        user: nextUserReducerModule.userReducer as typeof userReducer,
+        user: nextUserReducerModule.default,
       }))
     })
   }
@@ -320,7 +305,7 @@ function createHistoryAndStore(): AppState {
 }
 
 
-const AppBase = (): React.ReactElement => {
+const App = (): React.ReactElement => {
   const [{history, store}] = useState(createHistoryAndStore)
   // The Provider puts the store on a `Context`, so we can connect other
   // components to it.
@@ -330,7 +315,6 @@ const AppBase = (): React.ReactElement => {
     </ConnectedRouter>
   </Provider>
 }
-const App = React.memo(AppBase)
 
 
-export {App}
+export default hot(React.memo(App))

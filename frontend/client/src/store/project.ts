@@ -1,9 +1,11 @@
 import {TFunction} from 'i18next'
 
-import {WithLocalizableName, prepareT} from 'store/i18n'
+import {LocalizableString, WithLocalizableName, prepareT} from 'store/i18n'
 import {genderizeJob} from 'store/job'
 import {inCityPrefix} from 'store/french'
 
+
+const NO_CHALLENGE_CATEGORY_ID = 'bravo'
 
 interface LocalizedSelectOption<T = string> extends WithLocalizableName {
   readonly value: T
@@ -18,9 +20,11 @@ const PROJECT_EXPERIENCE_OPTIONS: LocalizedSelectOption<bayes.bob.PreviousJobSim
 
 const PROJECT_LOCATION_AREA_TYPE_OPTIONS: LocalizedSelectOption<bayes.bob.AreaType>[] = [
   {name: prepareT('Uniquement dans cette ville'), value: 'CITY'},
+  // i18next-extract-mark-context-start ["", "fr", "uk", "us"]
   {name: prepareT('Dans le département'), value: 'DEPARTEMENT'},
   {name: prepareT('Dans toute la région'), value: 'REGION'},
   {name: prepareT('Dans toute la France'), value: 'COUNTRY'},
+  // i18next-extract-mark-context-stop
   {disabled: true, name: prepareT("À l'international"), value: 'WORLD'},
 ]
 
@@ -53,15 +57,20 @@ const PROJECT_WORKLOAD_OPTIONS: LocalizedSelectOption<bayes.bob.ProjectWorkload>
 
 // Keep in sync with frontend/server/scoring_base.py
 const SALARY_TO_GROSS_ANNUAL_FACTORS = {
-  // net = gross x 80%
   ANNUAL_GROSS_SALARY: 1,
-  HOURLY_NET_SALARY: 52 * 35 / 0.8,
+  HOURLY_GROSS_SALARY: 52 * config.hoursPerWeek,
+  HOURLY_NET_SALARY: 52 * config.hoursPerWeek / config.grossToNet,
   MONTHLY_GROSS_SALARY: 12,
-  MONTHLY_NET_SALARY: 12 / 0.8,
-}
+  MONTHLY_NET_SALARY: 12 / config.grossToNet,
+} as const
 
 
-const SENIORITY = {
+const SENIORITY: {
+  [seniority in bayes.bob.ProjectSeniority]: {
+    long: LocalizableString
+    short: LocalizableString
+  }
+} = {
   CARREER: {
     long: prepareT("avec plus de 20 ans d'expérience"),
     short: prepareT('Plus de 20 ans'),
@@ -90,7 +99,10 @@ const SENIORITY = {
     long: prepareT("avec entre 5 et 10 ans d'expérience"),
     short: prepareT('6 à 10 ans'),
   },
-  UNKNOWN_PROJECT_SENIORITY: undefined,
+  UNKNOWN_PROJECT_SENIORITY: {
+    long: prepareT('sans expérience'),
+    short: prepareT("pas d'expérience"),
+  },
 } as const
 
 
@@ -109,7 +121,7 @@ const PROJECT_PASSIONATE_OPTIONS: LocalizedSelectOption<bayes.bob.PassionateLeve
 
 const getSeniorityText = (translate: TFunction, seniority?: bayes.bob.ProjectSeniority): string => {
   const {short = undefined} = seniority && SENIORITY[seniority] || {}
-  return short ? translate(short) : ''
+  return short ? translate(...short) : ''
 }
 
 interface TitleComponents {
@@ -127,7 +139,7 @@ const createProjectTitleComponents =
       const {long = undefined} = project.seniority && SENIORITY[project.seniority] || {}
       return {
         // i18next-extract-disable-next-line
-        experience: long ? t(long) : '',
+        experience: long ? t(...long) : '',
         what: genderizeJob(project.targetJob, gender),
         where,
       }
@@ -219,10 +231,19 @@ const flattenProject = (projectFields: bayes.bob.Project): bayes.bob.Project => 
 })
 
 
+const CHALLENGE_RELEVANCE_COLORS: {[R in bayes.bob.MainChallengeRelevance]?: string} = {
+  NEEDS_ATTENTION: colors.RED_PINK,
+  NEUTRAL_RELEVANCE: colors.MODAL_PROJECT_GREY,
+  NOT_RELEVANT: 'rgba(0, 0, 0, 0)',
+  RELEVANT_AND_GOOD: colors.GREENISH_TEAL,
+}
+
+
 export {
   PROJECT_EXPERIENCE_OPTIONS, PROJECT_PASSIONATE_OPTIONS,
   PROJECT_LOCATION_AREA_TYPE_OPTIONS, PROJECT_EMPLOYMENT_TYPE_OPTIONS,
   PROJECT_WORKLOAD_OPTIONS, PROJECT_KIND_OPTIONS, createProjectTitle, newProject,
   createProjectTitleComponents, getSeniorityText, SALARY_TO_GROSS_ANNUAL_FACTORS,
   TRAINING_FULFILLMENT_ESTIMATE_OPTIONS, flattenProject, SENIORITY_OPTIONS,
+  NO_CHALLENGE_CATEGORY_ID, CHALLENGE_RELEVANCE_COLORS,
 }

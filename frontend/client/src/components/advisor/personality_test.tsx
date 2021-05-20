@@ -2,8 +2,10 @@ import {TFunction, TOptions} from 'i18next'
 import PropTypes from 'prop-types'
 import React, {useCallback, useMemo} from 'react'
 
-import {Trans} from 'components/i18n'
-import {Button, GrowingNumber} from 'components/theme'
+import Button from 'components/button'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
+import VideoFrame from 'components/video_frame'
 import Picto from 'images/advices/picto-personality-test.svg'
 
 import {CardProps} from './base'
@@ -76,18 +78,20 @@ const TestCard = React.memo(TestCardBase)
 const testsContainerStyle: React.CSSProperties = {
   display: 'flex',
 }
-const coverallStyle: React.CSSProperties = {
-  bottom: 0,
-  left: 0,
-  position: 'absolute',
-  right: 0,
-  top: 0,
-}
+
+const getIsSenior = (seniority: bayes.bob.ProjectSeniority): boolean =>
+  (seniority === 'INTERMEDIARY' || seniority === 'SENIOR' ||
+    seniority === 'EXPERT' || seniority === 'CARREER')
 
 
 const PersonalityTest: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
-  const {handleExplore, profile: {gender}, t} = props
+  const {handleExplore, profile: {gender, yearOfBirth},
+    project: {seniority = 'UNKNOWN_PROJECT_SENIORITY'}, t} = props
   const tOptions = useMemo((): TOptions => ({context: gender}), [gender])
+  const videoLink = t('https://www.youtube.com/embed/mMBCNR9uIpE')
+  const isOver40 = yearOfBirth && (yearOfBirth <= new Date().getFullYear() - 40)
+  const isSenior = getIsSenior(seniority)
+  const otherQuizzContext = isSenior && isOver40 ? 'senior' : ''
   // TODO(cyrile): Use MethodSuggestionList.
   return <div>
     <Trans parent="p" t={t} tOptions={tOptions}>
@@ -104,37 +108,35 @@ const PersonalityTest: React.FC<CardProps> = (props: CardProps): React.ReactElem
       <div style={testsContainerStyle}>
         <TestCard
           title={t('16 personnalités')} handleExplore={handleExplore('test')}
-          url="https://www.16personalities.com/fr/test-de-personnalite" t={t}>
+          url={t('https://www.16personalities.com/fr/test-de-personnalite')} t={t}>
           <Trans parent={null} t={t}>
             Découvrir les raisons pour lesquelles vous faites les choses de la façon dont vous les
             faites.
           </Trans>
         </TestCard>
         <TestCard
-          title={t('Boussole')} handleExplore={handleExplore('test')}
-          url="https://www.wake-up.io/boussole/" style={{marginLeft: 30}} t={t}>
-          <Trans parent={null} t={t}>
-            Trouver votre "Talent d'or" pour vous aider à identifier votre position clé en
-            entreprise.
-          </Trans>
+          title={t('personalityTestName', {context: otherQuizzContext})}
+          handleExplore={handleExplore('test')}
+          url={t('personalityTestUrl', {context: otherQuizzContext})}
+          style={{marginLeft: 30}} t={t}>
+          {t('personalityTestDescription', {context: otherQuizzContext})}
         </TestCard>
       </div>
     </section>
-    <section style={{marginTop: 10}}>
+    {videoLink ? <section style={{marginTop: 10}}>
       <header><Trans parent="p" t={t}>
         Dans cette vidéo, Paul Duan, un des inventeurs de {{productName: config.productName}},
         raconte comment <span style={{fontWeight: 'bold'}}>apprendre à mieux se connaître</span>
         {' '}lui a permis de retrouver un métier qu'il aime&nbsp;:
       </Trans></header>
-      {/* TODO(cyrille): Use VideoFrame from theme. */}
-      <div style={{height: 0, paddingBottom: '56.25%', position: 'relative'}}>
+      <VideoFrame>
         <iframe
           // TODO(cyrille): Handle explore 'video' when clicking in the iframe.
-          src="https://www.youtube.com/embed/mMBCNR9uIpE"
-          width="100%" height="100%" style={coverallStyle}
-          frameBorder={0} scrolling="no" allowFullScreen={true} />
-      </div>
-    </section>
+          src={videoLink}
+          frameBorder={0} scrolling="no" allowFullScreen={true}
+          title={t('Présentation de Paul Duan à la cérémonie du diplôme de Sciences-Po')} />
+      </VideoFrame>
+    </section> : null}
   </div>
 }
 PersonalityTest.propTypes = {

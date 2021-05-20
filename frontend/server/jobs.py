@@ -1,12 +1,13 @@
 """Common function to handle jobs."""
 
+import logging
 import typing
-from typing import Mapping, Optional, Set
-
-import pymongo
+from typing import KeysView, Mapping, Optional, Set
 
 from bob_emploi.frontend.api import job_pb2
+from bob_emploi.frontend.server import cache
 from bob_emploi.frontend.server import i18n
+from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import proto
 
 
@@ -15,17 +16,96 @@ _JOB_GROUPS_INFO: proto.MongoCachedCollection[job_pb2.JobGroup] = \
     proto.MongoCachedCollection(job_pb2.JobGroup, 'job_group_info')
 
 
-def get_group_proto(database: pymongo.database.Database, rome_id: str, locale: str = 'fr') \
+# TODO(cyrille): Find a way to properly merge translations depending on locale.
+def get_group_proto(database: mongo.NoPiiMongoDatabase, rome_id: str, locale: str = 'fr') \
         -> Optional[job_pb2.JobGroup]:
     """Get a JobGroup proto corresponding to the ROME job group ID."""
 
     locale_prefix = ''
     if locale:
         locale_prefix = '' if locale.startswith('fr') else f'{locale[:2]}:'
-    return _JOB_GROUPS_INFO.get_collection(database).get(f'{locale_prefix}{rome_id}')
+    all_job_groups = _JOB_GROUPS_INFO.get_collection(database)
+    translated = all_job_groups.get(f'{locale_prefix}{rome_id}')
+    if translated:
+        return translated
+    if locale_prefix:
+        logging.warning('Missing a localized job group in %s: %s', locale, rome_id)
+    return all_job_groups.get(rome_id)
 
 
-def get_job_proto(database: pymongo.database.Database, job_id: str, rome_id: str) \
+def get_all_job_group_ids(database: mongo.NoPiiMongoDatabase) -> KeysView[str]:
+    """Get the ID of all job groups."""
+
+    return _JOB_GROUPS_INFO.get_collection(database).keys()
+
+
+_TEMP_JOB_CONTRACTS = {
+    job_pb2.CDD_LESS_EQUAL_3_MONTHS,
+    job_pb2.INTERIM,
+}
+
+
+def _is_mostly_temp_job(job_group: job_pb2.JobGroup) -> bool:
+    total_temp = sum(
+        contract.percent_suggested
+        for contract in job_group.requirements.contract_types
+        if contract.contract_type in _TEMP_JOB_CONTRACTS
+    )
+    return total_temp > 55
+
+
+def get_all_good_job_group_ids(
+        database: mongo.NoPiiMongoDatabase, *, automation_risk_threshold: int = 85) -> Set[str]:
+    """Get the ID of all "good" job groups.
+
+    Good jobs are the ones that we (Bayes) think can make a good career or at least a good first
+    step. The conditions are:
+     - job automation risk unknown or less than 85%
+     - more than 50% of jobs are in less than 3-months CDD
+    """
+
+    has_any_covid_risk_info = has_covid_risk_info(mongo.HashableNoPiiMongoDatabase(database))
+    return {
+        rome_id
+        for rome_id, job_group in _JOB_GROUPS_INFO.get_collection(database).items()
+        if job_group.automation_risk < automation_risk_threshold and
+        not _is_mostly_temp_job(job_group) and
+        (job_group.covid_risk != job_pb2.COVID_RISKY or not has_any_covid_risk_info)
+    }
+
+
+# TODO(cyrille): Localize for sector descriptions.
+@cache.lru(maxsize=10)
+def get_best_jobs_in_area(
+        proxy: mongo.HashableNoPiiMongoDatabase, area_id: str) -> job_pb2.BestJobsInArea:
+    """Get the best jobs in an area."""
+
+    return proto.create_from_mongo(
+        proxy.database.best_jobs_in_area.find_one({'_id': area_id}),
+        job_pb2.BestJobsInArea)
+
+
+@cache.lru()
+def has_covid_risk_info(proxy: mongo.HashableNoPiiMongoDatabase) -> bool:
+    """Check whether any job group has Covid-risk information."""
+
+    return any(
+        bool(job_group.covid_risk)
+        for job_group in _JOB_GROUPS_INFO.get_collection(proxy.database).values()
+    )
+
+
+@cache.lru()
+def has_automation_risk_info(proxy: mongo.HashableNoPiiMongoDatabase) -> bool:
+    """Check whether any job group has automation-risk information."""
+
+    return any(
+        job_group.automation_risk > 0
+        for job_group in _JOB_GROUPS_INFO.get_collection(proxy.database).values()
+    )
+
+
+def get_job_proto(database: mongo.NoPiiMongoDatabase, job_id: str, rome_id: str) \
         -> Optional[job_pb2.Job]:
     """Get a Job proto corresponding to the job ID if it is found in the ROME job group."""
 
@@ -44,7 +124,7 @@ def get_job_proto(database: pymongo.database.Database, job_id: str, rome_id: str
     return None
 
 
-def get_local_stats(database: pymongo.database.Database, departement_id: str, rome_id: str) \
+def get_local_stats(database: mongo.NoPiiMongoDatabase, departement_id: str, rome_id: str) \
         -> job_pb2.LocalJobStats:
     """Get a LocalJobStats proto corresponding to the local ID (departement + ROME)."""
 
@@ -79,7 +159,7 @@ _SUPER_GROUPS = [
         i18n.make_translatable_string('Enseignement et recherche'),
         {'K21', 'K24'}),
     _SuperGroup(
-        i18n.make_translatable_string('Hôtellerie, restauraration et cafés'),
+        i18n.make_translatable_string('Hôtellerie, restauration et cafés'),
         {'G1502', 'G1702'}),
     _SuperGroup(
         i18n.make_translatable_string('Art et spectacle'),

@@ -8,16 +8,17 @@ import requests
 
 from bob_emploi.frontend.api import ali_pb2
 from bob_emploi.frontend.api import user_pb2
-from bob_emploi.frontend.server import mail
-from bob_emploi.frontend.server import proto
+from bob_emploi.frontend.server import proto_flask
+from bob_emploi.frontend.server.mail import mail_send
+from bob_emploi.frontend.server.mail.templates import mailjet_templates
 
 app = flask.Blueprint('ali', __name__)
 
 
 def _send_email(
-        mail_template: str, user_profile: 'mail._Recipient',
+        campaign_id: mailjet_templates.Id, user_profile: 'mail_send._Recipient',
         template_vars: Dict[str, Any]) -> bool:
-    mail_result = mail.send_template(mail_template, user_profile, template_vars)
+    mail_result = mail_send.send_template(campaign_id, user_profile, template_vars)
     try:
         mail_result.raise_for_status()
     except requests.exceptions.HTTPError as error:
@@ -40,15 +41,16 @@ def _send_data_by_email(user_data: ali_pb2.User) -> ali_pb2.EmailStatuses:
     }
 
     if user_profile.email:
-        mails_sent.has_user_email = _send_email('1107108', user_profile, template_vars)
+        mails_sent.has_user_email = _send_email('ali_connect_user', user_profile, template_vars)
     if counselor_email:
         counselor_profile = user_pb2.UserProfile(email=counselor_email)
-        mails_sent.has_counselor_email = _send_email('1109007', counselor_profile, template_vars)
+        mails_sent.has_counselor_email = _send_email(
+            'ali_connect_counselor', counselor_profile, template_vars)
     return mails_sent
 
 
 @app.route('/user', methods=['POST'])
-@proto.flask_api(in_type=ali_pb2.User, out_type=ali_pb2.EmailStatuses)
+@proto_flask.api(in_type=ali_pb2.User, out_type=ali_pb2.EmailStatuses)
 def send_ali_user(user_data: ali_pb2.User) -> ali_pb2.EmailStatuses:
     """Send A-Li user data back by email."""
 

@@ -20,7 +20,7 @@ function dropKey<K extends string, M>(data: M, key: K): Omit<M, K> {
 }
 
 
-function getJsonFromStorage<T extends {}>(storageKey: string): T|null {
+function getJsonFromStorage<T>(storageKey: string): T|null {
   const storedJson = Storage.getItem(storageKey)
   if (!storedJson) {
     return null
@@ -29,11 +29,16 @@ function getJsonFromStorage<T extends {}>(storageKey: string): T|null {
 }
 
 
-function setOnceJsonToStorage(storageKey: string, value: {}): void {
+export function setJsonToStorage(storageKey: string, value: unknown): void {
+  Storage.setItem(storageKey, JSON.stringify(value))
+}
+
+
+function setOnceJsonToStorage(storageKey: string, value: unknown): void {
   if (Storage.getItem(storageKey)) {
     return
   }
-  Storage.setItem(storageKey, JSON.stringify(value))
+  setJsonToStorage(storageKey, value)
 }
 
 
@@ -50,7 +55,7 @@ const {quickDiagnostic: omittedQuickDiagnostic,
   ...initialFeatures}: InitialFeatures =
   getJsonFromStorage<InitialFeatures>(FEATURES_LOCAL_STORAGE_NAME) || {}
 
-const appInitialData: AppState = {
+export const appInitialData: AppState = {
   // Cache for advice data. It is organized as a map of maps: the first key
   // being the project ID and the second one the advice ID.
   adviceData: {},
@@ -72,12 +77,18 @@ const appInitialData: AppState = {
   initialFeatures,
   initialUtm: getJsonFromStorage(UTM_LOCAL_STORAGE_NAME) || undefined,
   isMobileVersion: false,
+  // Cache for full jobGroupInfos.
+  jobGroupInfos: {},
   // Cache of job requirements.
   jobRequirements: {},
   // Cache of labor stats per project.
   laborStats: {},
   lastAccessAt: undefined,
+  // Cache for local stats.
+  localStats: {},
   loginModal: undefined,
+  // Cache for specific jobs.
+  mainChallengesUserCount: {},
   quickDiagnostic: {
     after: {},
     before: {},
@@ -87,6 +98,20 @@ const appInitialData: AppState = {
   userHasAcceptedCookiesUsage: isTimestampInCookieBeforeNow(ACCEPT_COOKIES_COOKIE_NAME),
 }
 
+
+export const addIfKeyExists = <CacheType, K extends keyof CacheType>(
+  cacheField: undefined|CacheType,
+  key?: K,
+  value?: CacheType[K],
+): undefined|CacheType => {
+  if (!key || value === undefined) {
+    return cacheField
+  }
+  return {
+    ...cacheField,
+    [key]: value,
+  } as CacheType
+}
 
 function app(state: AppState = appInitialData, action: AllActions): AppState {
   switch (action.type) {
@@ -171,9 +196,17 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
         }
       }
       break
+    case 'GET_MAIN_CHALLENGES_USERS_COUNT':
+      if (action.status === 'success') {
+        return {
+          ...state,
+          mainChallengesUserCount: action.response?.mainChallengeCounts,
+        }
+      }
+      break
     case 'ACCEPT_COOKIES_USAGE':
       // 604800000 is the number of milliseconds in a week.
-      Storage.setItem(ACCEPT_COOKIES_COOKIE_NAME, (new Date().getTime() + 604800000) + '')
+      Storage.setItem(ACCEPT_COOKIES_COOKIE_NAME, (Date.now() + 604_800_000) + '')
       return {
         ...state,
         userHasAcceptedCookiesUsage: true,
@@ -208,16 +241,29 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
       return {
         ...state,
         adviceData: dropKey(state.adviceData, action.project.projectId),
-        laborStats: dropKey(state.laborStats, action.project.projectId),
       }
     case 'GET_LOCAL_STATS':
-      if (action.status === 'success' && action.project.projectId) {
+      if (action.status === 'success') {
+        const romeId = action.project?.targetJob?.jobGroup?.romeId || ''
+        const departementId = action.project?.city?.departementId || ''
+        const localId = `${romeId}:${departementId}`
         return {
           ...state,
-          laborStats: {
-            ...state.laborStats,
-            [action.project.projectId]: action.response,
-          },
+          jobGroupInfos: addIfKeyExists(
+            state.jobGroupInfos,
+            romeId,
+            action.response.jobGroupInfo || {},
+          ),
+          laborStats: addIfKeyExists(
+            state.laborStats,
+            localId,
+            action.response,
+          ),
+          localStats: addIfKeyExists(
+            state.localStats,
+            localId,
+            action.response.localStats || {},
+          ),
         }
       }
       return state
@@ -318,12 +364,12 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
           [action.commentKey]: true,
         },
       }
-    case 'GET_DIAGNOSTIC_CATEGORIES':
+    case 'GET_DIAGNOSTIC_MAIN_CHALLENGES':
       if (action.status === 'success') {
         return {
           ...state,
-          diagnosticCategories: {
-            ...state.diagnosticCategories,
+          diagnosticMainChallenges: {
+            ...state.diagnosticMainChallenges,
             [action.key]: action.response,
           },
         }
@@ -335,7 +381,6 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
 const asyncInitialData = {
   errorMessage: undefined,
   isFetching: {},
-  pendingFetch: {},
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -352,14 +397,6 @@ AsyncState<AllActions> {
   if (action.type === 'DISPLAY_TOAST_MESSAGE') {
     return {...state, errorMessage: action.error}
   }
-  if (action.type === 'ASYNC_STARTED') {
-    return {
-      ...state,
-      pendingFetch: {
-        ...state.pendingFetch,
-        [action.fetchKey]: action.promise,
-      }}
-  }
   if (!isAsyncAction(action)) {
     return state
   }
@@ -368,36 +405,20 @@ AsyncState<AllActions> {
     const errorMessage = (action.status === 'error') ?
       (action.ignoreFailure || !action.error) ? '' : action.error.toString() :
       authAction.response.errorMessage
-    let pendingFetch: typeof state.pendingFetch
-    if (action.fetchKey) {
-      const {[action.fetchKey]: omittedPendingFetch, ...otherPendingFetch} = state.pendingFetch
-      pendingFetch = otherPendingFetch
-    } else {
-      pendingFetch = state.pendingFetch
-    }
     return {
       ...dropKey(state, 'authMethod'),
       errorMessage,
-      isFetching: {...state.isFetching, [action.type]: false},
-      pendingFetch,
+      isFetching: {...state.isFetching, [action.fetchingKey || action.type]: false},
     }
   }
   if (action.status === 'success') {
-    let pendingFetch: typeof state.pendingFetch
-    if (action.fetchKey) {
-      const {[action.fetchKey]: omittedPendingFetch, ...otherPendingFetch} = state.pendingFetch
-      pendingFetch = otherPendingFetch
-    } else {
-      pendingFetch = state.pendingFetch
-    }
     return {
       ...dropKey(state, 'authMethod'),
       errorMessage: undefined,
-      isFetching: {...state.isFetching, [action.type]: false},
-      pendingFetch,
+      isFetching: {...state.isFetching, [action.fetchingKey || action.type]: false},
     }
   }
-  const isFetching = {...state.isFetching, [action.type]: true}
+  const isFetching = {...state.isFetching, [action.fetchingKey || action.type]: true}
   if (action.type === 'AUTHENTICATE_USER' || action.type === 'EMAIL_CHECK') {
     return {
       ...state,
@@ -412,4 +433,4 @@ AsyncState<AllActions> {
 }
 
 
-export {app, asyncState}
+export {app, asyncState, getJsonFromStorage}

@@ -1,8 +1,9 @@
 import {detect} from 'detect-browser'
 
-import {AdviceAction, AllActions, AsyncAction, AuthenticateUserAction, DisplayToastMessageAction,
-  GetUserDataAction, LoadLandingPageAction, PageIsLoadedAction, ProjectAction, RootState,
-  StrategyAction, TipAction, VisualElementAction, WithFeedback, isActionRegister} from './actions'
+import {AdviceAction, AllActions, AsyncAction, AuthenticateUserAction,
+  DisplayToastMessageAction, GetUserDataAction, LoadLandingPageAction, OnboardingPageAction,
+  PageIsLoadedAction, ProjectAction, RootState, StrategyAction, TipAction, VisualElementAction,
+  WithFeedback, isActionRegister, StaticAdviceAction} from './actions'
 
 
 export const daysSince = (timestamp: number | string): number => {
@@ -10,7 +11,7 @@ export const daysSince = (timestamp: number | string): number => {
   day.setHours(0, 0, 0, 0)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  return Math.round((today.getTime() - day.getTime()) / 86400000)
+  return Math.round((today.getTime() - day.getTime()) / 86_400_000)
 }
 
 
@@ -35,7 +36,7 @@ const getUser = (action: AllActions, state: RootState): bayes.bob.User => {
   return state.user || {}
 }
 
-interface Properties {
+export interface Properties {
   [feature: string]: string | readonly string[] | boolean | number
 }
 
@@ -76,9 +77,12 @@ export class Logger {
     return true
   }
 
-  public getEventName(action: {response?: {isNewUser?: boolean}; type: string}): string {
+  public getEventName(action: AllActions): string {
     if (isActionRegister(action)) {
       return this.actionTypesToLog['REGISTER_USER']
+    }
+    if (action.type === 'ONBOARDING_PAGE') {
+      return `${this.actionTypesToLog[action.type] || action.type} ${action.pathname}`
     }
     return this.actionTypesToLog[action.type]
   }
@@ -88,7 +92,6 @@ export class Logger {
     if (this.browser.name) {
       properties['$browser'] = this.browser.name
     }
-    properties['$hostname'] = window.location.hostname
     if (state.app && state.app.isMobileVersion) {
       properties['Mobile Version'] = true
     }
@@ -128,7 +131,7 @@ export class Logger {
     }
     const projectAction = action as ProjectAction<string>
     if (projectAction.project) {
-      const {city, diagnostic, targetJob} = projectAction.project
+      const {city, diagnostic, originalSelfDiagnostic, targetJob} = projectAction.project
       const {masculineName = ''} = targetJob || {}
       if (masculineName) {
         properties['Project Job Name'] = masculineName
@@ -140,6 +143,16 @@ export class Logger {
       const {categoryId = ''} = diagnostic || {}
       if (categoryId) {
         properties['Bob Thinks'] = categoryId
+      }
+      if (categoryId && originalSelfDiagnostic?.categoryId) {
+        properties["Bob Thinks matches user's self diagnostic"] =
+          categoryId === originalSelfDiagnostic?.categoryId
+      }
+      if (action.type === 'SCORE_PROJECT_CHALLENGE_AGREEMENT') {
+        const {feedback: {challengeAgreementScore} = {}} = action.projectDiff
+        if (challengeAgreementScore) {
+          properties['Main Challenge Agreement Score'] = challengeAgreementScore - 1
+        }
       }
     }
     const adviceAction = action as AdviceAction<string>
@@ -169,6 +182,10 @@ export class Logger {
     if (visualElementAction.visualElement) {
       properties['Visual Element Source'] = visualElementAction.visualElement
     }
+    const staticAdviceAction = action as StaticAdviceAction<string>
+    if (staticAdviceAction.adviceId) {
+      properties['Advice ID'] = staticAdviceAction.adviceId
+    }
     const pageIsLoadedAction = action as PageIsLoadedAction
     if (pageIsLoadedAction.timeToFirstInteractiveMillisecs) {
       properties['Page loading time (ms)'] = pageIsLoadedAction.timeToFirstInteractiveMillisecs
@@ -178,6 +195,111 @@ export class Logger {
       properties['Strategy'] = strategyAction.strategy.strategyId
       if (strategyAction.strategyRank) {
         properties['Strategy Rank'] = strategyAction.strategyRank
+      }
+    }
+    const onboardingAction = action as OnboardingPageAction
+    if (onboardingAction.user && onboardingAction.user.profile) {
+      if (onboardingAction.user.profile.locale) {
+        properties['Can Tutoie'] = onboardingAction.user.profile.locale.indexOf('@tu') > 0
+      }
+      if (onboardingAction.user.profile.gender) {
+        properties['Gender'] = onboardingAction.user.profile.gender
+      }
+      if (onboardingAction.user.profile.yearOfBirth) {
+        properties['Year of Birth'] = onboardingAction.user.profile.yearOfBirth
+        properties['Age'] = new Date().getFullYear() - onboardingAction.user.profile.yearOfBirth
+      }
+      if (onboardingAction.user.profile.familySituation) {
+        properties['Family Situation'] = onboardingAction.user.profile.familySituation
+      }
+      if (onboardingAction.user.profile.highestDegree) {
+        properties['Highest Degree'] = onboardingAction.user.profile.highestDegree
+      }
+      if (onboardingAction.user.profile.hasCarDrivingLicense) {
+        properties['Has Car Driving License'] = onboardingAction.user.profile.hasCarDrivingLicense
+      }
+      if (onboardingAction.user.profile.frustrations) {
+        properties['Frustrations'] = onboardingAction.user.profile.frustrations
+      }
+      if (onboardingAction.user.profile.origin) {
+        properties['Origin'] = onboardingAction.user.profile.origin
+      }
+      if (onboardingAction.user.profile.coachingEmailFrequency) {
+        properties['Coaching Email Freq.'] = onboardingAction.user.profile.coachingEmailFrequency
+      }
+    }
+    if (onboardingAction.project) {
+      if (onboardingAction.project.hasClearProject) {
+        properties['Has clear project'] = onboardingAction.project.hasClearProject
+      }
+      if (onboardingAction.project.targetJob) {
+        if (onboardingAction.project.targetJob.name) {
+          properties['Target Job Name'] = onboardingAction.project.targetJob.name
+        }
+        if (onboardingAction.project.targetJob.jobGroup &&
+          onboardingAction.project.targetJob.jobGroup.name) {
+          properties['Target Job Group Name'] = onboardingAction.project.targetJob.jobGroup.name
+        }
+      }
+      if (onboardingAction.project.areaType) {
+        properties['Area type'] = onboardingAction.project.areaType
+      }
+      if (onboardingAction.project.city) {
+        if (onboardingAction.project.city.regionName) {
+          properties['Region name'] = onboardingAction.project.city.regionName
+        }
+        if (onboardingAction.project.city.urbanScore) {
+          properties['Urban score'] = onboardingAction.project.city.urbanScore
+        }
+      }
+      if (onboardingAction.project.employmentTypes) {
+        properties['Employment Types'] = onboardingAction.project.employmentTypes
+      }
+      if (onboardingAction.project.workloads) {
+        properties['Workloads'] = onboardingAction.project.workloads
+      }
+      if (onboardingAction.project.minSalary) {
+        properties['Min Salary'] = onboardingAction.project.minSalary
+      }
+      if (onboardingAction.project.previousJobSimilarity) {
+        properties['Previous Job Similarity'] = onboardingAction.project.previousJobSimilarity
+      }
+      if (onboardingAction.project.seniority) {
+        properties['Seniority'] = onboardingAction.project.seniority
+      }
+      if (onboardingAction.project.trainingFulfillmentEstimate) {
+        properties['Training Fulfillment Estimate'] =
+          onboardingAction.project.trainingFulfillmentEstimate
+      }
+      if (onboardingAction.project.networkEstimate) {
+        properties['Network Estimate'] = onboardingAction.project.networkEstimate
+      }
+      if (typeof onboardingAction.project.jobSearchHasNotStarted === 'boolean') {
+        properties['Job Search Not Started'] = onboardingAction.project.jobSearchHasNotStarted
+        if (onboardingAction.project.jobSearchStartedAt) {
+          properties['Job Search Started Date'] = onboardingAction.project.jobSearchStartedAt
+        }
+      }
+      if (onboardingAction.project.weeklyOffersEstimate) {
+        properties['Weekly Offers'] = onboardingAction.project.weeklyOffersEstimate
+      }
+      if (onboardingAction.project.weeklyApplicationsEstimate) {
+        properties['Weekly Applications'] = onboardingAction.project.weeklyApplicationsEstimate
+      }
+      if (onboardingAction.project.totalInterviewCount) {
+        properties['Number of Interviews'] = onboardingAction.project.totalInterviewCount
+      }
+      if (onboardingAction.project.originalSelfDiagnostic) {
+        if (onboardingAction.project.originalSelfDiagnostic.categoryId) {
+          properties['Main Challenge Self Diagnostic'] =
+            onboardingAction.project.originalSelfDiagnostic.categoryId
+        }
+        if (onboardingAction.project.originalSelfDiagnostic.status &&
+          onboardingAction.project.originalSelfDiagnostic.status === 'OTHER_SELF_DIAGNOSTIC' &&
+          onboardingAction.project.originalSelfDiagnostic.categoryDetails) {
+          properties['Main Challenge Self Diagnostic Other'] =
+            onboardingAction.project.originalSelfDiagnostic.categoryDetails
+        }
       }
     }
     return properties
@@ -198,6 +320,7 @@ export class Logger {
       yearOfBirth = 0,
     } = profile || {}
     const profileData: Properties = {}
+    profileData['$hostname'] = window.location.hostname
     if (gender) {
       profileData['Gender'] = gender
     }

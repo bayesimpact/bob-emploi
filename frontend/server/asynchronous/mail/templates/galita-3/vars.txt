@@ -1,5 +1,0 @@
-deepLinkToAdvice
-firstName
-gender
-statusUpdateUrl
-unsubscribeLink

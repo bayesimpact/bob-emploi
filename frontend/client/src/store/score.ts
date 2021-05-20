@@ -1,6 +1,6 @@
 import {TFunction} from 'i18next'
 
-import {prepareT} from 'store/i18n'
+import {LocalizableString, combineTOptions, prepareT} from 'store/i18n'
 
 
 const tricotomyScore = <T>(percent: number, low: T, medium: T, high: T): T =>
@@ -27,7 +27,12 @@ interface DiagnosticTitle {
 }
 
 
-const titleTemplates = [
+const titleTemplates: readonly {
+  shortTitle: LocalizableString
+  threshold: number
+  title: LocalizableString
+  titleWithName: LocalizableString
+}[] = [
   {
     shortTitle: prepareT('Objectif **difficile**.'),
     threshold: 40,
@@ -59,8 +64,9 @@ function makeDiagnosticTitle(
     find(({threshold}): boolean => percent < threshold) ||
     titleTemplates[titleTemplates.length - 1]
   const title = userName ?
-    translate(template.titleWithName, {name: userName}) : translate(template.title)
-  const shortTitle = translate(template.shortTitle)
+    translate(...combineTOptions(template.titleWithName, {name: userName})) :
+    translate(...template.title)
+  const shortTitle = translate(...template.shortTitle)
   return {shortTitle, title}
 }
 

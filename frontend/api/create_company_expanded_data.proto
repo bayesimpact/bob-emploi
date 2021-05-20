@@ -4,6 +4,7 @@ import "bob_emploi/frontend/api/event.proto";
 import "bob_emploi/frontend/api/testimonial.proto";
 
 package bayes.bob;
+option go_package="bayes.org/bob_emploi/frontend/api/create_company_expanded_data";
 
 // Expanded data for create your company advice.
 message CreateCompanyExpandedData {

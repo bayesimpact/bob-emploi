@@ -1,3 +1,4 @@
+import Storage from 'local-storage-fallback'
 import {AnyAction, Middleware, MiddlewareAPI} from 'redux'
 
 import {DispatchAllActions, PageIsLoadedAction, RootState} from './actions'
@@ -9,21 +10,40 @@ import {DispatchAllActions, PageIsLoadedAction, RootState} from './actions'
 /* eslint-enable unicorn/no-abusive-eslint-disable */
 
 
-type WindowWithGA = (typeof window) & {
-  ga: ((action: 'create', uaid: string, auto?: 'auto') => void) &
-  ((action: 'send', eventName: string, pathname?: string) => void)
+interface Tracker {
+  get: (key: 'clientId') => string
 }
 
-type MiddlewareReturnType = ReturnType<Middleware<{}, RootState, DispatchAllActions>>
+type CreateOptions = 'auto' | {
+  clientId?: string|null
+  storage: 'none'
+}
 
 
+type WindowWithGA = (typeof window) & {
+  ga: ((action: 'create', uaid: string, options?: CreateOptions) => void) &
+  ((action: 'send', eventName: string, pathname?: string) => void) &
+  ((func: (tracker: Tracker) => void) => void)
+}
+
+type MiddlewareReturnType = ReturnType<Middleware<unknown, RootState, DispatchAllActions>>
+
+
+// Name of the local storage key where to keep the GA client ID.
+const GALocalStorageKey = 'ga:clientId'
 const windowGA = window as WindowWithGA
 
 
 function createGoogleAnalyticsMiddleWare(
   googleUAID: string, actionsTypesToLog: {[actionType: string]: string}):
-  Middleware<{}, RootState, DispatchAllActions> {
-  windowGA.ga('create', googleUAID, 'auto')
+  Middleware<unknown, RootState, DispatchAllActions> {
+  windowGA.ga('create', googleUAID, {
+    clientId: Storage.getItem(GALocalStorageKey),
+    storage: 'none',
+  })
+  windowGA.ga((tracker: Tracker): void => {
+    Storage.setItem(GALocalStorageKey, tracker.get('clientId'))
+  })
   const handleNextDispatch = (next: DispatchAllActions): ReturnType<MiddlewareReturnType> =>
     (anyAction: AnyAction): ReturnType<ReturnType<MiddlewareReturnType>> => {
       const gaAction = actionsTypesToLog[anyAction.type]
@@ -40,4 +60,4 @@ function createGoogleAnalyticsMiddleWare(
 }
 
 
-export {createGoogleAnalyticsMiddleWare}
+export default createGoogleAnalyticsMiddleWare

@@ -4,8 +4,8 @@ import datetime
 import unittest
 from unittest import mock
 
+from bob_emploi.common.python import now
 from bob_emploi.frontend.api import user_pb2
-from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 

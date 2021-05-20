@@ -2,11 +2,17 @@ import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 
-import {LocalizableString, prepareT} from 'store/i18n'
+import {LocalizableString, prepareT, prepareT as prepareTNoExtract} from 'store/i18n'
+import isMobileVersion from 'store/mobile'
 
+import benjaminImage from 'images/people/benjamin.png'
 import cyrilleImage from 'images/people/cyrille.png'
+import emilieImage from 'images/people/emilie.png'
+import floImage from 'images/people/flo.png'
+import florianImage from 'images/people/florian.png'
 import joannaImage from 'images/people/joanna.jpg'
 import johnImage from 'images/people/john.png'
+import lillieImage from 'images/people/lillie.jpg'
 import nicolasImage from 'images/people/nicolas.jpg'
 import pascalImage from 'images/people/pascal.png'
 import paulImage from 'images/people/paul.png'
@@ -19,23 +25,23 @@ import linkedinIcon from 'images/share/linkedin-ico.svg'
 import twitterGrayIcon from 'images/share/twitter-gray-ico.svg'
 import twitterIcon from 'images/share/twitter-ico.svg'
 
-import {Trans} from 'components/i18n'
-import {isMobileVersion} from 'components/mobile'
-import {ModalCloseButton} from 'components/modal'
+import ExternalLink from 'components/external_link'
+import Trans from 'components/i18n_trans'
+import ModalCloseButton from 'components/modal_close_button'
 import {RadiumDiv, RadiumExternalLink} from 'components/radium'
 import {StaticPage, TitleSection} from 'components/static'
-import {ExternalLink, MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING,
-  SmoothTransitions} from 'components/theme'
+import {MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING, SmoothTransitions} from 'components/theme'
 
 
 const paulBio = {
   description: prepareT(
+    'team:paul:bio',
     "Avant de fonder Bayes Impact en 2014, Paul était un data scientist à Eventbrite, \
     où il écrivait des algorithmes ainsi que des mauvais jeux de mots (ce dernier point n'a pas \
     trop changé). Il a étudié un mélange bizarre de mathématiques, d'économie et de sciences \
     politiques à Berkeley, Sciences Po et la Sorbonne."),
   education: 'UC Berkeley, Sciences Po, Université Paris 1',
-  experience: prepareT('Data Scientist à Eventbrite'),
+  experience: prepareT('team:paul:experience', 'Data Scientist à Eventbrite'),
   linkedin: 'https://www.linkedin.com/in/pyduan',
   twitter: 'https://twitter.com/pyduan',
 }
@@ -43,52 +49,61 @@ const paulBio = {
 
 const pascalBio = {
   description: prepareT(
+    'team:pascal:bio',
     "Pascal a commencé à programmer quand il avait huit ans et n'a jamais vraiment \
     arrêté, ou juste le temps de dormir un peu. Avant de rejoindre l'équipe, il était Staff \
     Software Engineer chez Google où il était connu pour son leadership par l'exemple. Il adore \
     les enfants (il en a d'ailleurs beaucoup), et va au boulot en rollers."),
   education: 'École Polytechnique, Télécoms Paris',
-  experience: prepareT('Tech Lead Manager Google Maps, Ministère de la Défense'),
+  experience: prepareT(
+    'team:pascal:experience', 'Tech Lead Manager Google Maps, Ministère de la Défense'),
   linkedin: 'https://www.linkedin.com/in/pascalcorpet/',
   twitter: 'https://twitter.com/pascalcorpet',
 }
 
 const silBio = {
   description: prepareT(
+    'team:sil:bio',
     "Sil a fait de la recherche académique et s'est spécialisé·e dans l'analyse \
     de données dans le domaine de la santé. Iel est toujours enchanté·e de découvrir d'obscurs \
     romans dystopiques et ne refusera jamais une rencontre sur un terrain de basket-ball."),
   education: 'Université Paris-Sud',
-  experience: prepareT('Développeur web à Symbiosis Technologies, Senior Postdoctoral Fellow à \
+  experience: prepareT(
+    'team:sil:experience', 'Développeur web à Symbiosis Technologies, Senior Postdoctoral Fellow à \
     Inserm, Postdoctoral Fellow à INRA'),
   linkedin: 'https://fr.linkedin.com/in/ml-endale-07110713b',
 }
 
 const johnBio = {
   description: prepareT(
+    'team:john:bio',
     "Depuis qu'il est enfant John est absolument passionné par le design et les \
     interfaces. Il a commencé le design à 14 ans en faisant des covers pour DVDs qu'il partageait \
     en ligne. Il voue un culte très particulier pour la symétrie qui l'inspire au quotidien. \
     Véritable Français accompli il adore évidemment le vin et le fromage."),
   education: "Hetic (Hautes études des technologies de l'information et de la communication)",
-  experience: prepareT('Responsable du design à SMACH, Responsable du design à Wipolo, UX Designer \
-    freelance pendant 5 ans'),
+  experience: prepareT(
+    'team:john:experience',
+    'Responsable du design à SMACH, Responsable du design à Wipolo, UX Designer freelance pendant \
+    5 ans'),
   linkedin: 'https://www.linkedin.com/in/johnmetois/',
   twitter: 'https://twitter.com/serialkimi',
 }
 
 const cyrilleBio = {
   description: prepareT(
+    'team:cyrille:bio',
     "Cyrille a fait de la recherche en mathématiques jusqu'à ce qu'il se rende compte \
     que ça n'avait pas vraiment d'impact, et décide de se rendre utile. Il aime les jeux de \
     société, surtout coopératifs, et partir marcher ou faire de l'escalade si le temps le permet."),
   education: 'École Normale Supérieure, Paris',
-  experience: prepareT('Développeur web à Kreactive'),
+  experience: prepareT('team:cyrille:experience', 'Développeur web à Kreactive'),
   linkedin: 'https://www.linkedin.com/in/cyrillecorpet',
 }
 
 const nicolasBio = {
   description: prepareT(
+    'team:nicolas:bio',
     'Nicolas a pu travailler dans différentes agences de \
     communication, aussi bien sur des problématiques de réputation digitale, de \
     gestion de crise ou de relations presse. Durant son cursus universitaire, il \
@@ -96,7 +111,8 @@ const nicolasBio = {
     institutionnelle. Passionné de mode et de politique française, il adore \
     également découvrir et faire découvrir de nouveaux restaurants.'),
   education: 'Sciences-Po Toulouse, La Sorbonne',
-  experience: prepareT("Consultant en communication d'influence et relations presse dans \
+  experience: prepareT(
+    'team:nicolas:experience', "Consultant en communication d'influence et relations presse dans \
     différentes agences"),
   linkedin: 'https://www.linkedin.com/in/nicolasdivet/',
   twitter: 'https://twitter.com/nicolasdivet',
@@ -104,12 +120,82 @@ const nicolasBio = {
 
 const joannaBio = {
   description: prepareT(
+    'team:joanna:bio',
     "Joanna a étudié le français à Cambridge et est accro à la France depuis lors. \
     Elle aime le design pour l'accessibilité, les podcasts avec de bonnes histoires, \
     la London Review of Books et elle ne dit jamais non à une tasse de thé."),
   education: 'University of Cambridge, Sciences-Po Paris',
-  experience: prepareT('Halgo, Qobuz, Apple'),
+  experience: prepareT('team:joanna:experience', 'Halgo, Qobuz, Apple'),
   linkedin: 'https://www.linkedin.com/in/joannabeaufoy/',
+}
+
+const benjaminBio = {
+  description: prepareT(
+    'team:benjamin:bio',
+    "Benjamin développe des partenariats avec les services publics de l'emploi, \
+    en France et dans le monde, afin d'accompagner des milliers de chercheurs d'emploi. \
+    Il travaille également sur la question plus générale du financement de l'ONG. \
+    Il découvre son envie de mettre ses compétences au service des plus vulnérables \
+    dans le cadre d'un VSI durant ses années d'études. \
+    Il a travaillé pendant 2 et demi pour l'association ACAY, aux Philippines et à Marseille. \
+    Responsable du fonctionnement et du développement de l'association, il a également accompagné \
+    plusieurs dizaines de jeunes mineurs en détention et plusieurs jeunes filles en difficulté, \
+    afin de les préparer à une réinsertion sociale et professionnelle."),
+  education: 'Université Aix-Marseille en droit des affaires, EDHEC Business School',
+  experience: prepareT('team:benjamin:experience', 'ACAY'),
+  linkedin: 'https://www.linkedin.com/in/benjamingoullard/',
+}
+
+const emilieBio = {
+  description: prepareT(
+    'team:emilie:bio',
+    "Émilie a participé à plusieurs aventures entrepreunariales dans le jeu vidéo et le tourisme, \
+    avant de réaliser qu'elle voulait avoir plus d'impact dans son quotidien. Elle aime \
+    la course à pieds, et réfléchir à comment avoir un impact positif autour d'elle."),
+  education: 'Polytech Paris-Saclay, INSEAD Management Acceleration Program',
+  experience: prepareT(
+    'team:emilie:experience', 'Direction technique chez Owlient (Ubisoft), associée chez MyAtlas'),
+  linkedin: 'https://www.linkedin.com/in/emilieguth/',
+}
+
+const lillieBio = {
+  description: prepareT(
+    'team:lillie:bio',
+    "Lillie se passionne pour connecter les gens à des carrières durables et qui ont du sens. \
+    Elle a pu faire ces connexions dans divers contextes\u00A0: de la création d'un programme \
+    d'amélioration des compétences pour des personnes précédemment sans logement, au conseil de \
+    leaders du secteur public sur les stratégies de développement de l'emploi."),
+  education: 'MIT, Harvard, Duke',
+  experience: prepareT(
+    'team:lillie:experience', 'Consultante senior chez Guidehouse et Ernst & Young'),
+  linkedin: 'https://www.linkedin.com/in/lilliecarroll',
+}
+
+const florianBio = {
+  description: prepareT(
+    'team:florian:bio',
+    "Florian s'occupe des relations avec les financeurs de Bayes Impact et de la recherche de \
+    mécènes afin de multiplier et continuer l'action de l'organisation. Arrivé chez Bayes Impact \
+    en 2018, Florian a auparavant travaillé pendant près de 7 ans auprès de Jacques Attali au \
+    sein de son cabinet. Il conseillait des grandes entreprises et gouvernements dans leurs \
+    stratégies et leurs politiques publiques."),
+  education: 'Sciences-Po Paris, Columbia NY',
+  experience: prepareT('team:florian:experience', 'cabinet de Jacques Attali'),
+  linkedin: 'https://www.linkedin.com/in/florian-dautil-876b9258',
+}
+
+const floBio = {
+  description: prepareT(
+    'team:flo:bio',
+    "Florian a commencé sa carrière en écrivant des algorithmes pour prédire les vols de voitures \
+    à Etalab (si si, ça marche\u00A0!). Il a ensuite quitté le monde l'IA pour lancer sa startup, \
+    Totem, une app sociale pour organiser des sorties entre amis. Après 3 ans d'apprentissage à la \
+    dure sur comment créer des produits percutants, il en est tombé amoureux. En 2020, Florian \
+    rejoint Bayes Impact, le parfait mélange de tout ce qu'il aime\u00A0: IA, produit et impact \
+    social. Il a aussi une grande passion pour la boxe, mais est doux comme un agneau."),
+  education: 'ENSAI',
+  experience: prepareTNoExtract('Etalab, Totem'),
+  linkedin: 'https://www.linkedin.com/in/florian-gauthier-38760b49',
 }
 
 interface Person {
@@ -134,12 +220,22 @@ const allPersons: Person[] = [
   {bio: silBio, name: 'Sil Endale Ahanda', picture: silImage,
     position: prepareT('Ingénieur·e logiciel')},
   {bio: johnBio, name: 'John Métois', picture: johnImage, position: prepareT('Designer UX')},
+  {bio: joannaBio, name: 'Joanna Beaufoy', picture: joannaImage,
+    position: prepareT('Responsable contenu et soutien des utilisateurs')},
   {bio: cyrilleBio, name: 'Cyrille Corpet', picture: cyrilleImage,
     position: prepareT('Ingénieur logiciel')},
   {bio: nicolasBio, name: 'Nicolas Divet', picture: nicolasImage,
     position: prepareT('Chargé de communication')},
-  {bio: joannaBio, name: 'Joanna Beaufoy', picture: joannaImage,
-    position: prepareT('Responsable contenu et soutien des utilisateurs')},
+  {bio: benjaminBio, name: 'Benjamin Goullard', picture: benjaminImage,
+    position: prepareT('Responsable du développement')},
+  {bio: emilieBio, name: 'Émilie Guth', picture: emilieImage,
+    position: prepareT('Ingénieure logiciel')},
+  {bio: lillieBio, name: 'Lillie Carroll', picture: lillieImage,
+    position: prepareT('Responsable pays, USA')},
+  {bio: florianBio, name: 'Florian Dautil', picture: florianImage,
+    position: prepareT('Directeur des opérations')},
+  {bio: floBio, name: 'Florian Gauthier', picture: floImage,
+    position: prepareT('Directeur des produits')},
 ]
 
 
@@ -200,7 +296,7 @@ const PersonTileBase: React.FC<PersonTileProps> = (props) => {
     <img style={{display: 'block', width: '100%'}} src={picture} alt="" />
     <div style={descriptionStyle}>
       <div style={nameStyle}>{name}</div>
-      <div style={positionStyle}>{translate(position)}</div>
+      <div style={positionStyle}>{translate(...position)}</div>
     </div>
   </RadiumDiv>
 }
@@ -230,8 +326,10 @@ const PersonRowBase: React.FC<TeamPageRowProps> = (props) => {
     justifyContent: nbPersonInARow > 1 ? 'space-between' : 'space-around',
     marginBottom: 70,
   }
-  const fullPersonRow = personRow.concat(
-    new Array(nbPersonInARow - personRow.length).fill(false))
+  const fullPersonRow = [
+    ...personRow,
+    ...Array.from<undefined>({length: nbPersonInARow - personRow.length}),
+  ]
   return <div key={`row-${rowIndex}`} style={rowStyle} >
     {fullPersonRow.map((person, index): React.ReactNode => {
       const personIndex = rowIndex * nbPersonInARow + index
@@ -305,22 +403,23 @@ const TeamPage: React.FC = (): React.ReactElement => {
           </ExternalLink>, une association à but non lucratif, afin de la mettre au service
           de chacun.
         </Trans>
-        {new Array(Math.ceil(allPersons.length / nbPersonInARow)).fill(0).
-          map((unused, rowIndex): readonly Person[] => allPersons.slice(
-            rowIndex * nbPersonInARow, (rowIndex + 1) * nbPersonInARow)).
-          map((personRow: readonly Person[], rowIndex: number): React.ReactNode => {
-            return [
-              <PersonRow
-                key={rowIndex}
-                {...{getPersonClickHandler, nbPersonInARow, personRow, rowIndex, showPersonBio}} />,
-              <PersonBio
-                key={`bio-${rowIndex}`}
-                personRow={personRow}
-                onClose={getPersonClickHandler('')}
-                onOpen={handleBioOpen}
-                showPersonBio={showPersonBio} />,
-            ]
-          })}
+        {Array.from(
+          {length: Math.ceil(allPersons.length / nbPersonInARow)},
+          (unused, rowIndex): readonly Person[] => allPersons.slice(
+            rowIndex * nbPersonInARow, (rowIndex + 1) * nbPersonInARow),
+        ).map((personRow: readonly Person[], rowIndex: number): React.ReactNode => {
+          return [
+            <PersonRow
+              key={rowIndex}
+              {...{getPersonClickHandler, nbPersonInARow, personRow, rowIndex, showPersonBio}} />,
+            <PersonBio
+              key={`bio-${rowIndex}`}
+              personRow={personRow}
+              onClose={getPersonClickHandler('')}
+              onOpen={handleBioOpen}
+              showPersonBio={showPersonBio} />,
+          ]
+        })}
       </div>
     </div>
   </StaticPage>
@@ -456,11 +555,13 @@ const PersonBioBase: React.FC<PersonBioProps> = (props: PersonBioProps) => {
       <strong>{person && person.name}</strong><br />
       <div style={{color: colors.WARM_GREY, fontSize: 14, fontStyle: 'italic', marginTop: 13}}>
         {t('Études\u00A0:')} {person && person.bio.education}<br />
-        {t('Expérience\u00A0:')} {person && translate(person.bio.experience)}
+        {t('Expérience\u00A0:')} {person && translate(...person.bio.experience)}
       </div>
     </div>
     <hr style={hrStyle} />
-    <div style={descriptionStyle}>{person && translate(person.bio.description)}</div>
+    <div style={descriptionStyle}>
+      {person && translate(...person.bio.description)}
+    </div>
     {person ? <PersonSocialLinks {...person} /> : null}
   </div>
 }

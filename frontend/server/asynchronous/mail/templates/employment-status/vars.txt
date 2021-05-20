@@ -1,4 +1,0 @@
-firstName
-registeredMonthsAgo
-seekingUrl
-stopSeekingUrl

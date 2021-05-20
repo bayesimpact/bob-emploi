@@ -32,7 +32,7 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
             '"whichAdvicesWereUsefulComment": "The CV tip",'
             '"generalFeedbackComment": "RAS"}',
             content_type='application/json')
-        self.assertEqual(200, response.status_code, response.get_data(as_text=True))
+        self.assertEqual(204, response.status_code, response.get_data(as_text=True))
 
         # Simulate when one team member curates 'which_advices_were_useful_comment' to normalize it
         # in 'curated_useful_advice_ids'.
@@ -40,7 +40,7 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
             '/api/user/nps-survey-response',
             data=f'{{"email": "{user_email}", "curatedUsefulAdviceIds":["improve-resume"]}}',
             content_type='application/json')
-        self.assertEqual(200, response.status_code, response.get_data(as_text=True))
+        self.assertEqual(204, response.status_code, response.get_data(as_text=True))
 
         # Check the data was correctly saved in the database.
         new_user_data = self.get_user_info(user_id, auth_token)
@@ -114,7 +114,7 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
             '"generalFeedbackComment": "RAS"}',
             content_type='application/json',
             headers={'Authorization': 'cryptic-admin-auth-token-123'})
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(204, response.status_code)
 
 
 class NPSUpdateTestCase(base_test.ServerTestCase):
@@ -220,10 +220,10 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
         response = self.app.post(
             '/api/nps',
             data=f'{{"userId": "{self.user_id}", "comment": "My own comment", "selfDiagnostic":'
-            '{"categoryId": "this_one", "selfDiagnosticStatus": "KNOWN_SELF_DIAGNOSTIC"},'
+            '{"categoryId": "this_one", "status": "KNOWN_SELF_DIAGNOSTIC"},'
             '"hasActionsIdea": "FALSE"}',
             headers={'Authorization': 'Bearer ' + self.nps_auth_token})
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(204, response.status_code)
         self.assertFalse(response.get_data(as_text=True))
 
         user = self.get_user_info(self.user_id, self.auth_token)
@@ -232,9 +232,31 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
             'My own comment',
             user.get('netPromoterScoreSurveyResponse', {}).get('generalFeedbackComment'))
         self.assertEqual(
-            {'categoryId': 'this_one', 'selfDiagnosticStatus': 'KNOWN_SELF_DIAGNOSTIC'},
+            {'categoryId': 'this_one', 'status': 'KNOWN_SELF_DIAGNOSTIC'},
             user.get('netPromoterScoreSurveyResponse', {}).get('npsSelfDiagnostic'))
         self.assertEqual('FALSE', user['netPromoterScoreSurveyResponse'].get('hasActionsIdea'))
+
+    def test_set_nps_next_actions(self) -> None:
+        """Set the NPS score then the next actions."""
+
+        self.app.get('/api/nps', query_string={
+            'score': '8',
+            'token': self.nps_auth_token,
+            'user': self.user_id,
+        })
+
+        response = self.app.post(
+            '/api/nps',
+            data=f'{{"userId":"{self.user_id}","nextActions":["sleep","eat","code","repeat"]}}',
+            headers={'Authorization': 'Bearer ' + self.nps_auth_token})
+        self.assertEqual(204, response.status_code)
+        self.assertFalse(response.get_data(as_text=True))
+
+        user = self.get_user_info(self.user_id, self.auth_token)
+        self.assertEqual(8, user.get('netPromoterScoreSurveyResponse', {}).get('score'))
+        self.assertEqual(
+            ['sleep', 'eat', 'code', 'repeat'],
+            user.get('netPromoterScoreSurveyResponse', {}).get('nextActions'))
 
     # TODO(cyrille): Externalize in own module (or add PR to requests_mock).
     def _match_request_data(self, request: 'requests_mock._RequestObjectProxy') -> bool:
@@ -264,7 +286,7 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
             '/api/nps',
             data=f'{{"userId": "{self.user_id}", "comment": "This is a bad comment"}}',
             headers={'Authorization': 'Bearer ' + self.nps_auth_token})
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(204, response.status_code)
         self.assertFalse(response.get_data(as_text=True))
 
     def test_set_nps_no_content(self) -> None:
@@ -275,8 +297,63 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
             data=f'{{"userId": "{self.user_id}"}}',
             headers={'Authorization': 'Bearer ' + self.nps_auth_token})
 
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(204, response.status_code)
         self.assertFalse(response.get_data(as_text=True))
+
+    def test_set_nps_full_fields(self) -> None:
+        """Call the NPS API with answers from the full NPS form."""
+
+        self.app.get('/api/nps', query_string={
+            'score': '8',
+            'token': self.nps_auth_token,
+            'user': self.user_id,
+        })
+
+        response = self.app.post(
+            '/api/nps',
+            data=f'{{"userId": "{self.user_id}", '
+            '"answers": {"localMarketEstimate": 2, "email": "secret@example.com"}}',
+            headers={'Authorization': 'Bearer ' + self.nps_auth_token})
+
+        self.assertEqual(204, response.status_code, msg=response.get_data(as_text=True))
+        self.assertFalse(response.get_data(as_text=True))
+
+        user = self.get_user_info(self.user_id, self.auth_token)
+        self.assertEqual(8, user.get('netPromoterScoreSurveyResponse', {}).get('score'))
+        self.assertEqual(
+            'LOCAL_MARKET_BAD',
+            user.get('netPromoterScoreSurveyResponse', {}).get('localMarketEstimate'))
+        self.assertFalse(user.get('netPromoterScoreSurveyResponse', {}).get('email'))
+
+
+class NPSUserTests(base_test.ServerTestCase):
+    """Unit tests for the /api/nps/user endpoint"""
+
+    def test_get_user(self) -> None:
+        """Get user info."""
+
+        user_id = self.create_user_with_token(data={
+            'profile': {'name': 'Pascale', 'gender': 'FEMININE'},
+            'projects': [{
+                'city': {'name': 'Lyon'},
+                'createdAt': '2017-05-31T19:25:01Z',
+                'targetJob': {'name': 'CTO'}}]})[0]
+        nps_auth_token = auth.create_token(user_id, role='nps')
+
+        response = self.app.get(
+            f'/api/nps/user/{user_id}',
+            headers={'Authorization': 'Bearer ' + nps_auth_token})
+
+        user = self.json_from_response(response)
+        self.assertEqual(
+            {
+                'profile': {'gender': 'FEMININE'},
+                'projects': [{
+                    'city': {'name': 'Lyon'},
+                    'targetJob': {'name': 'CTO'},
+                }],
+            },
+            user)
 
 
 if __name__ == '__main__':

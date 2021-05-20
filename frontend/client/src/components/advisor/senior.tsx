@@ -2,8 +2,8 @@ import {TOptions} from 'i18next'
 import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
-import {Trans} from 'components/i18n'
-import {GrowingNumber} from 'components/theme'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import Picto from 'images/advices/picto-senior.svg'
 
 import {CardProps, MethodSuggestionList} from './base'

@@ -1,20 +1,21 @@
 """Unit tests for the feedback_report module."""
 
 import io
+import os
 import unittest
 from unittest import mock
 
 import mongomock
-import requests
+import requests_mock
+import sentry_sdk
 
 from bob_emploi.frontend.server.asynchronous import feedback_report
-from bob_emploi.frontend.server.asynchronous import report
 
 
-@mock.patch(requests.__name__ + '.post')
-@mock.patch(report.__name__ + '.setup_sentry_logging')
-# TODO(pascal) -> None: Use requests_mock.
+@requests_mock.mock()
+@mock.patch(sentry_sdk.__name__ + '.init')
 @mock.patch(feedback_report.__name__ + '._SLACK_FEEDBACK_URL', 'https://slack/')
+@mock.patch.dict(os.environ, {'SENTRY_DSN': 'https://42:42@sentry.io/42'})
 class FeedbackReportTestCase(unittest.TestCase):
     """Unit tests for the module."""
 
@@ -25,39 +26,38 @@ class FeedbackReportTestCase(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-        feedback_report.os.environ['SENTRY_DSN'] = 'https://42:42@sentry.io/42'
-
-    def tearDown(self) -> None:
-        del feedback_report.os.environ['SENTRY_DSN']
-        super().tearDown()
-
     def test_send_report(
-            self, mock_sentry_logging: mock.MagicMock, mock_post: mock.MagicMock) -> None:
+            self, mock_requests: requests_mock.Mocker, mock_sentry_init: mock.MagicMock) -> None:
         """Test sending the report for real."""
 
+        mock_requests.post('https://slack/')
         output = io.StringIO()
         feedback_report.main(
             ['nps', '--from', '2017-10-30', '--to', '2017-11-07', '--no-dry-run'], output)
         self.assertFalse(output.getvalue())
-        self.assertTrue(mock_post.called)
-        slack_json = mock_post.call_args[1]['json']
+        self.assertTrue(mock_requests.called)
+        slack_json = mock_requests.request_history[0].json()
         self.assertEqual(
             ':bar_chart: NPS Report from 2017-10-30 to 2017-11-07',
             slack_json['attachments'][0]['title'])
         self.assertIn('0 users answered the NPS survey', slack_json['attachments'][0]['text'])
-        mock_sentry_logging.assert_called_once_with('https://42:42@sentry.io/42')
+        mock_sentry_init.assert_called_once()
+        self.assertEqual('https://42:42@sentry.io/42', mock_sentry_init.call_args[1]['dsn'])
 
-    def test_dry_run(self, mock_sentry_logging: mock.MagicMock, mock_post: mock.MagicMock) -> None:
+    def test_dry_run(
+            self, mock_requests: requests_mock.Mocker, mock_sentry_init: mock.MagicMock) -> None:
         """Test sending the report using dry run."""
 
+        mock_requests.post('https://slack/')
         output = io.StringIO()
         feedback_report.main(['nps', '--from', '2017-10-30', '--to', '2017-11-07'], output)
-        self.assertFalse(mock_post.called)
-        self.assertFalse(mock_sentry_logging.called)
+        self.assertFalse(mock_requests.called)
+        self.assertFalse(mock_sentry_init.called)
         self.assertIn('0 users answered the NPS survey', output.getvalue())
 
     def test_exclude_alpha_users(
-            self, unused_mock_sentry_logging: mock.MagicMock, mock_post: mock.MagicMock) -> None:
+            self, mock_requests: requests_mock.Mocker,
+            unused_mock_sentry_init: mock.MagicMock) -> None:
         """Test computing the NPS report on alpha user."""
 
         self._db.user.insert_one({
@@ -77,9 +77,10 @@ class FeedbackReportTestCase(unittest.TestCase):
                 'sentAt': '2017-11-01T13:00:00Z',
             }],
         })
+        mock_requests.post('https://slack/')
         feedback_report.main(
             ['nps', '--from', '2017-10-30', '--to', '2017-11-07', '--no-dry-run'], io.StringIO())
-        slack_json = mock_post.call_args[1]['json']
+        slack_json = mock_requests.request_history[0].json()
         self.assertEqual(
             '0 users answered the NPS survey (out of 0 - 0% answer rate) '
             'for a global NPS of *0%*\n\n'
@@ -87,7 +88,8 @@ class FeedbackReportTestCase(unittest.TestCase):
             slack_json['attachments'][0]['text'])
 
     def test_compute_nps_report(
-            self, unused_mock_sentry_logging: mock.MagicMock, mock_post: mock.MagicMock) -> None:
+            self, mock_requests: requests_mock.Mocker,
+            unused_mock_sentry_init: mock.MagicMock) -> None:
         """Test computing the NPS report on multiple user feedback."""
 
         self._db.user.insert_many([
@@ -160,9 +162,10 @@ class FeedbackReportTestCase(unittest.TestCase):
                 }],
             },
         ])
+        mock_requests.post('https://slack/')
         feedback_report.main(
             ['nps', '--from', '2017-10-30', '--to', '2017-11-07', '--no-dry-run'], io.StringIO())
-        slack_json = mock_post.call_args[1]['json']
+        slack_json = mock_requests.request_history[0].json()
         self.assertEqual(
             '4 users answered the NPS survey (out of 5 - 80% answer rate) '
             'for a global NPS of *25.0%*\n'
@@ -177,7 +180,8 @@ class FeedbackReportTestCase(unittest.TestCase):
             slack_json['attachments'][0]['text'])
 
     def test_compute_nps_report_no_comments(
-            self, unused_mock_sentry_logging: mock.MagicMock, mock_post: mock.MagicMock) -> None:
+            self, mock_requests: requests_mock.Mocker,
+            unused_mock_sentry_init: mock.MagicMock) -> None:
         """Test computing the NPS report on multiple user feedback."""
 
         self._db.user.insert_many([
@@ -228,9 +232,10 @@ class FeedbackReportTestCase(unittest.TestCase):
                 }],
             },
         ])
+        mock_requests.post('https://slack/')
         feedback_report.main(
             ['nps', '--from', '2017-10-30', '--to', '2017-11-07', '--no-dry-run'], io.StringIO())
-        slack_json = mock_post.call_args[1]['json']
+        slack_json = mock_requests.request_history[0].json()
         self.assertEqual(
             '4 users answered the NPS survey (out of 4 - 100% answer rate) '
             'for a global NPS of *25.0%*\n'
@@ -241,7 +246,8 @@ class FeedbackReportTestCase(unittest.TestCase):
             slack_json['attachments'][0]['text'])
 
     def test_compute_stars_report(
-            self, unused_mock_sentry_logging: mock.MagicMock, mock_post: mock.MagicMock) -> None:
+            self, mock_requests: requests_mock.Mocker,
+            unused_mock_sentry_init: mock.MagicMock) -> None:
         """Test computing the stars report on multiple user feedback."""
 
         self._db.user.insert_many([
@@ -296,9 +302,10 @@ class FeedbackReportTestCase(unittest.TestCase):
                 }],
             },
         ])
+        mock_requests.post('https://slack/')
         feedback_report.main(
             ['stars', '--from', '2017-10-30', '--to', '2017-11-07', '--no-dry-run'], io.StringIO())
-        slack_json = mock_post.call_args[1]['json']
+        slack_json = mock_requests.request_history[0].json()
         self.assertEqual(
             '3 projects were scored in the app (out of 4 - 75% answer rate) '
             'for a global average of *3.0 :star:*\n'
@@ -309,8 +316,78 @@ class FeedbackReportTestCase(unittest.TestCase):
             '> Well well',
             slack_json['attachments'][0]['text'])
 
+    def test_compute_agreement_report(
+            self, mock_requests: requests_mock.Mocker,
+            unused_mock_sentry_init: mock.MagicMock) -> None:
+        """Test computing the agreement report on multiple user feedback."""
+
+        self._db.user.insert_many([
+            {
+                'registeredAt': '2017-11-01T12:00:00Z',
+                'projects': [{
+                    'createdAt': '2017-11-01T13:00:00Z',
+                    'diagnostic': {},
+                    'feedback': {
+                        'challengeAgreementScore': 2,
+                    },
+                }],
+            },
+            {
+                'registeredAt': '2017-11-01T12:00:00Z',
+                'projects': [{
+                    'createdAt': '2017-11-01T13:00:00Z',
+                    'diagnostic': {},
+                    'feedback': {
+                        'challengeAgreementScore': 5,
+                    },
+                }],
+            },
+            {
+                'registeredAt': '2017-11-01T12:00:00Z',
+                'projects': [{
+                    'createdAt': '2017-11-01T13:00:00Z',
+                    'diagnostic': {},
+                    'feedback': {
+                        'challengeAgreementScore': 2,
+                    },
+                }],
+            },
+            # User did not answer the feedback.
+            {
+                'registeredAt': '2017-11-01T12:00:00Z',
+                'projects': [{
+                    'createdAt': '2017-11-01T13:00:00Z',
+                    'diagnostic': {},
+                }],
+            },
+            # User registered and answered the feeback after the to_date.
+            {
+                'registeredAt': '2017-11-11T12:00:00Z',
+                'projects': [{
+                    'createdAt': '2017-11-11T13:00:00Z',
+                    'diagnostic': {},
+                    'feedback': {
+                        'challengeAgreementScore': 2,
+                    },
+                }],
+            },
+        ])
+        mock_requests.post('https://slack/')
+        feedback_report.main(
+            ['agreement', '--from', '2017-10-30', '--to', '2017-11-07', '--no-dry-run'],
+            io.StringIO())
+        slack_json = mock_requests.request_history[0].json()
+        self.assertEqual(
+            '3 project challenges were evaluated in the app (out of 4 - 75% answer rate) '
+            'for a global average agreement of *2.0/4*\n'
+            '4/4: 1 project\n'
+            '1/4: 2 projects',
+            slack_json['attachments'][0]['text'])
+        self.assertIn(':ok_hand: Agreement Report', slack_json['attachments'][0]['title'])
+
     def test_compute_rer_report(
-            self, unused_mock_sentry_logging: mock.MagicMock, mock_post: mock.MagicMock) -> None:
+            self, mock_requests: requests_mock.Mocker,
+            unused_mock_sentry_init: mock.MagicMock) -> None:
         """Test computing the RER report on multiple user feedback."""
 
         self._db.user.insert_many([
@@ -382,9 +459,10 @@ class FeedbackReportTestCase(unittest.TestCase):
                 }],
             },
         ])
+        mock_requests.post('https://slack/')
         feedback_report.main(
             ['rer', '--from', '2017-10-30', '--to', '2017-11-07', '--no-dry-run'], io.StringIO())
-        slack_json = mock_post.call_args[1]['json']
+        slack_json = mock_requests.request_history[0].json()
         self.assertEqual(
             '4 users have answered the survey, *25.0%* have stopped seeking:\n'
             '*STILL_SEEKING*: 3 users (50.0% said Bob helped - excluding N/A)\n'

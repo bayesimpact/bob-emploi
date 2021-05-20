@@ -1,0 +1,23 @@
+[
+  {
+    "deployment": "fr",
+    "region": "eu-west-3",
+    "stackId": "bob-fr"
+  },
+  {
+    "deployment": "us",
+    "deprecatedFor": "usa",
+    "region": "us-east-1",
+    "stackId": "bob-us"
+  },
+  {
+    "deployment": "usa",
+    "region": "us-east-1",
+    "stackId": "bob-us"
+  },
+  {
+    "deployment": "uk",
+    "region": "eu-west-2",
+    "stackId": "bob-uk"
+  }
+]

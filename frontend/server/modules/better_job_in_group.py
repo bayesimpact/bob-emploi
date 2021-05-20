@@ -35,17 +35,17 @@ class _AdviceBetterJobInGroup(scoring_base.ModelBase):
 
         reasons = []
         if has_way_better_job:
-            reasons.append(project.translate_string(
+            reasons.append(project.translate_static_string(
                 "il y a beaucoup plus d'offres dans des métiers proches"))
         elif (project.get_search_length_at_creation() > 6 and has_better_job):
-            reasons.append(project.translate_string(
+            reasons.append(project.translate_static_string(
                 "il y a plus d'offres dans des métiers proches"))
         if is_looking_for_new_job:
-            reasons.append(project.translate_string(
+            reasons.append(project.translate_static_string(
                 'vous nous avez dit vouloir vous reconvertir'))
         if reasons:
             return scoring_base.ExplainedScore(3, reasons)
-        return scoring_base.ExplainedScore(2, [project.translate_string(
+        return scoring_base.ExplainedScore(2, [project.translate_static_string(
             "il y a un bon nombre d'offres dans des métiers proches")])
 
 

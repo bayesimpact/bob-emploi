@@ -14,6 +14,6 @@ aws ecs run-task \
   --overrides '{
     "containerOverrides": [{
       "name": "flask",
-      "command": ["python", "bob_emploi/frontend/server/asynchronous/mail/mail_blast.py", "focus-network", "dry-run"]
+      "command": ["python", "bob_emploi/frontend/server/mail/mail_blast.py", "focus-network", "dry-run"]
     }]
   }'

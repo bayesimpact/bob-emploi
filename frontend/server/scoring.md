@@ -14,6 +14,7 @@ advice-driving-license-euro
 advice-driving-license-low-income
 advice-driving-license-written
 advice-event
+advice-explore-safe-jobs
 advice-follow-up
 advice-fresh-resume
 advice-immersion-milo
@@ -66,6 +67,8 @@ for-experienced(6)
 for-few-job-creation
 for-first-job-search
 for-first-time-in-job
+for-foreign-diploma
+for-foreign-language
 for-frustrated-young(25)
 for-good-diagnostic-submetrics(+4)
 for-good-diagnostic-submetrics(ALL)
@@ -81,6 +84,7 @@ for-low-mobility(departement)
 for-mainly-hiring-through-network(±15%)
 for-mainly-hiring-through-spontaneous(±15%)
 for-medium-mobility(region)
+for-migrant
 for-missing-job-language
 for-missing-language
 for-more-job-offers-locally(5)
@@ -100,6 +104,7 @@ for-qualified(bac+3)
 for-qualified(bac+5)
 for-recruiting-sector
 for-reorientation
+for-risky-covid
 for-rural-area-inhabitant
 for-searching-forever
 for-short-search(-1)
@@ -158,6 +163,7 @@ training-fullfillment-score
 
 ```
 /^constant\((.+)\)$/
+/^favor-strategy\((.*)\)$/
 /^for-active-experiment\((.*)\)$/
 /^for-all-projects\((.*)\)$/
 /^for-any-project\((.*)\)$/

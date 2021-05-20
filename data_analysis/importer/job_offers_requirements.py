@@ -88,10 +88,10 @@ _DRIVING_LICENSE_TYPES = {
 class _DiplomaRequirement(typing.NamedTuple):
     is_required: bool
     name: str
-    degree: 'job_pb2.DegreeLevel'
+    degree: 'job_pb2.DegreeLevel.V'
 
 
-class _ProxyFields(object):
+class _ProxyFields:
     """A proxy class that updates field names on the fly.
 
     Let's say you have an object o with fields: o.foo_bar, o.foo_bla,
@@ -127,7 +127,7 @@ def _diploma_name(job_offer_diploma: _ProxyFields) -> Optional[str]:
     return name
 
 
-def _employment_type(job_offer: 'job_offers._JobOffer') -> job_pb2.EmploymentType:
+def _employment_type(job_offer: 'job_offers._JobOffer') -> 'job_pb2.EmploymentType.V':
     """Compute the employment type of the job offer."""
 
     if job_offer.contract_type_code == 'CDI':
@@ -168,7 +168,7 @@ _DEGREE_TO_DIPLOMA = {
 }
 
 
-def _get_degree_from_diploma(job_offer_diploma: _ProxyFields) -> job_pb2.DegreeLevel:
+def _get_degree_from_diploma(job_offer_diploma: _ProxyFields) -> 'job_pb2.DegreeLevel.V':
     """Get the degree of a diploma by its name in Pôle emploi job offers dataset."""
 
     name = _diploma_name(job_offer_diploma)
@@ -220,14 +220,14 @@ def list_diplomas(job_offer: 'job_offers._JobOffer') -> Iterator[_DiplomaRequire
 
 
 class _RequirementKind(enum.Enum):
-    diplomas = 1
-    driving_licenses = 2
-    desktop_tools = 3
-    contract_type = 4
-    job = 5
+    DIPLOMAS = 1
+    DRIVING_LICENSES = 2
+    DESTKOP_TOOLS = 3
+    CONTRACT_TYPE = 4
+    JOB = 5
 
 
-class _RequirementsCollector(object):
+class _RequirementsCollector:
 
     def __init__(self) -> None:
         self.num_offers = 0
@@ -280,7 +280,7 @@ class _RequirementsCollector(object):
             yield name, count, max(1, round(100 * required_count / count))
 
     def _collect_diploma(self, job_offer: 'job_offers._JobOffer') -> None:
-        kind = _RequirementKind.diplomas
+        kind = _RequirementKind.DIPLOMAS
         for is_required, name, degree in list_diplomas(job_offer):
             if is_required:
                 self.requirements[kind][(name, degree)] += 1
@@ -288,7 +288,7 @@ class _RequirementsCollector(object):
                 self.suggestions[kind][(name, degree)] += 1
 
     def _collect_driving_license(self, job_offer: 'job_offers._JobOffer') -> None:
-        kind = _RequirementKind.driving_licenses
+        kind = _RequirementKind.DRIVING_LICENSES
         if not job_offer.driving_lic_code_1 or job_offer.driving_lic_code_1 == 'NULL':
             return
 
@@ -309,7 +309,7 @@ class _RequirementsCollector(object):
                 required=job_offer.driving_lic_req_code_2 == 'E')
 
     def _collect_desktop_tools(self, job_offer: 'job_offers._JobOffer') -> None:
-        kind = _RequirementKind.desktop_tools
+        kind = _RequirementKind.DESTKOP_TOOLS
         tools_1 = job_offer.desktop_tools_name_1
         tools_2 = job_offer.desktop_tools_name_2
         if (not tools_1 or not tools_1.startswith('T') or not job_offer.desktop_tools_lev_code_1 or
@@ -328,11 +328,11 @@ class _RequirementsCollector(object):
             self._add_suggestion(kind, 3)
 
     def _collect_employment_type(self, job_offer: 'job_offers._JobOffer') -> None:
-        kind = _RequirementKind.contract_type
+        kind = _RequirementKind.CONTRACT_TYPE
         self._add_suggestion(kind, _employment_type(job_offer))
 
     def _collect_job(self, job_offer: 'job_offers._JobOffer') -> None:
-        kind = _RequirementKind.job
+        kind = _RequirementKind.JOB
         if job_offer.rome_profession_code is None:
             return
         self._add_suggestion(kind, str(int(job_offer.rome_profession_code)))
@@ -359,8 +359,8 @@ class _RequirementsCollector(object):
         }
 
     def _get_diplomas(self) -> Iterator[Dict[str, Any]]:
-        kind = _RequirementKind.diplomas
-        levels: Dict[job_pb2.DegreeLevel, Dict[str, int]] = \
+        kind = _RequirementKind.DIPLOMAS
+        levels: Dict['job_pb2.DegreeLevel.V', Dict[str, int]] = \
             collections.defaultdict(lambda: collections.defaultdict(int))
 
         num_suggestions = sum(self.suggestions[kind].values())
@@ -386,7 +386,7 @@ class _RequirementsCollector(object):
     def _get_driving_licenses(self, count_threshold: float) -> Iterator[Dict[str, Any]]:
         # Sort by descending count, then ascending licence name.
         licenses = self._get_sorted_requirements(
-            _RequirementKind.driving_licenses, count_threshold)
+            _RequirementKind.DRIVING_LICENSES, count_threshold)
         for license_name, count, percent_required in licenses:
             yield {
                 'percentSuggested': round(100 * count / self.num_offers),
@@ -397,7 +397,7 @@ class _RequirementsCollector(object):
     def _get_desktop_tools(self, count_threshold: float) -> Iterator[Dict[str, Any]]:
         # Sort by descending count, then ascending license name.
         tools = self._get_sorted_requirements(
-            _RequirementKind.desktop_tools, count_threshold)
+            _RequirementKind.DESTKOP_TOOLS, count_threshold)
         for level, count, unused_percent_required in tools:
             yield {
                 'percentSuggested': round(100 * count / self.num_offers),
@@ -406,7 +406,7 @@ class _RequirementsCollector(object):
 
     def _get_contract_types(self) -> Iterator[Dict[str, Any]]:
         contract_types = self._get_sorted_requirements(
-            _RequirementKind.contract_type, 0)
+            _RequirementKind.CONTRACT_TYPE, 0)
         for contract_type, count, unused_percent_required in contract_types:
             yield {
                 'percentSuggested': round(100 * count / self.num_offers),
@@ -415,7 +415,7 @@ class _RequirementsCollector(object):
             }
 
     def _get_jobs(self, count_threshold: float) -> Iterator[Dict[str, Any]]:
-        jobs = self._get_sorted_requirements(_RequirementKind.job, count_threshold)
+        jobs = self._get_sorted_requirements(_RequirementKind.JOB, count_threshold)
         for job_id, count, unused_percent_required in jobs:
             yield {
                 'percentSuggested': round(100 * count / self.num_offers),

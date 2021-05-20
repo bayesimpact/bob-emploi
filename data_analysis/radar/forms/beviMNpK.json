@@ -1,0 +1,2027 @@
+{
+  "_links": {
+    "display": "https://b4pjvgge4vu.typeform.com/to/beviMNpK"
+  },
+  "fields": [
+    {
+      "attachment": {
+        "href": "https://images.typeform.com/images/EGXRgJR445rw",
+        "type": "image"
+      },
+      "id": "hzk0smVtWicV",
+      "layout": {
+        "attachment": {
+          "href": "https://images.typeform.com/images/EGXRgJR445rw",
+          "properties": {
+            "focal_point": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "type": "image"
+        },
+        "type": "split"
+      },
+      "properties": {
+        "button_text": "Continuer",
+        "description": "Concerne l'ensemble des acteurs, des dispositifs, des outils et comportements permettant un accès à l'emploi des jeunes.\n\n[Dossier du jeune : {{hidden:dossier_id}}](https://portail.i-milo.fr/dossier/{{hidden:dossier\\_id}})",
+        "fields": [
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/EGXRgJR445rw",
+              "type": "image"
+            },
+            "id": "3qRkOj8hNypj",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/EGXRgJR445rw",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": 0,
+                    "y": 0
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/z8d4rh3r3iWB",
+                    "type": "image"
+                  },
+                  "id": "V7wCJlqIxcox",
+                  "label": "Niveau 0",
+                  "ref": "job-people-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/6bJFFaZcTFXi",
+                    "type": "image"
+                  },
+                  "id": "3K6B4DskGJd6",
+                  "label": "Niveau 1",
+                  "ref": "job-people-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/bxDSPq3JBzFu",
+                    "type": "image"
+                  },
+                  "id": "xVMd8jlbQLuq",
+                  "label": "Niveau 2",
+                  "ref": "job-people-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/U5TCnFQPfHne",
+                    "type": "image"
+                  },
+                  "id": "mxipsqc8f1kC",
+                  "label": "Niveau 3",
+                  "ref": "job-people-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/V2yCkUUgZGVs",
+                    "type": "image"
+                  },
+                  "id": "0OMWaK2URKKF",
+                  "label": "Niveau 4",
+                  "ref": "job-people-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser les acteurs* (Ex: Pôle emploi, Cap Emploi, Agence d'emploi, entreprises, etc.) et *les dispositifs* (Ex: PACEA, GJ, AIJ, IAE, etc.) utiles à son parcours.\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "job-people",
+            "title": "Capacité *à être accompagné*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/EGXRgJR445rw",
+              "type": "image"
+            },
+            "id": "yRt9kIdnnEmv",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/EGXRgJR445rw",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": 0,
+                    "y": 0
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/z8d4rh3r3iWB",
+                    "type": "image"
+                  },
+                  "id": "fxG6EMJegDAh",
+                  "label": "Niveau 0",
+                  "ref": "job-tools-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/6bJFFaZcTFXi",
+                    "type": "image"
+                  },
+                  "id": "SXDesUED7amh",
+                  "label": "Niveau 1",
+                  "ref": "job-tools-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/bxDSPq3JBzFu",
+                    "type": "image"
+                  },
+                  "id": "s8YbxBInWB22",
+                  "label": "Niveau 2",
+                  "ref": "job-tools-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/U5TCnFQPfHne",
+                    "type": "image"
+                  },
+                  "id": "yr7hVy1FiChz",
+                  "label": "Niveau 3",
+                  "ref": "job-tools-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/V2yCkUUgZGVs",
+                    "type": "image"
+                  },
+                  "id": "kS9aqCLN9oLa",
+                  "label": "Niveau 4",
+                  "ref": "job-tools-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser et à articuler les outils* utiles à son parcours (Ex: TRE, Site internet, outils numérique et techniques de communication, etc.).\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "job-tools",
+            "title": "Capacité *à outiller son parcours*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/EGXRgJR445rw",
+              "type": "image"
+            },
+            "id": "2j1FQMd5N2aL",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/EGXRgJR445rw",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": 0,
+                    "y": 0
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/z8d4rh3r3iWB",
+                    "type": "image"
+                  },
+                  "id": "AAUP5F5H1w12",
+                  "label": "Niveau 0",
+                  "ref": "job-skills-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/6bJFFaZcTFXi",
+                    "type": "image"
+                  },
+                  "id": "XauDEq0oGWXb",
+                  "label": "Niveau 1",
+                  "ref": "job-skills-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/bxDSPq3JBzFu",
+                    "type": "image"
+                  },
+                  "id": "5adCL6ld13DI",
+                  "label": "Niveau 2",
+                  "ref": "job-skills-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/U5TCnFQPfHne",
+                    "type": "image"
+                  },
+                  "id": "jkZ89wo3Ix71",
+                  "label": "Niveau 3",
+                  "ref": "job-skills-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/V2yCkUUgZGVs",
+                    "type": "image"
+                  },
+                  "id": "DQVb1X9cVbLL",
+                  "label": "Niveau 4",
+                  "ref": "job-skills-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser les bons comportements* ou *les savoir être* utiles à son parcours (Ex: postures, savoir être, motivations, etc.).\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "job-skills",
+            "title": "Capacité *à adopter les comportements adéquats*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          }
+        ],
+        "show_button": true
+      },
+      "ref": "job",
+      "title": "Accès *à l'emploi*",
+      "type": "group"
+    },
+    {
+      "attachment": {
+        "href": "https://images.typeform.com/images/84MY8tqLWa5J",
+        "type": "image"
+      },
+      "id": "q90HZJcKCJro",
+      "layout": {
+        "attachment": {
+          "href": "https://images.typeform.com/images/84MY8tqLWa5J",
+          "properties": {
+            "focal_point": {
+              "x": -0.056816496068832545,
+              "y": 0.11403422015626541
+            }
+          },
+          "type": "image"
+        },
+        "type": "split"
+      },
+      "properties": {
+        "button_text": "Continuer",
+        "description": "Concerne l'ensemble des acteurs, des dispositifs, des outils et comportements permettant un accès à la formation des jeunes.\n\n[Dossier du jeune : {{hidden:dossier_id}}](https://portail.i-milo.fr/dossier/{{hidden:dossier\\_id}})",
+        "fields": [
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/84MY8tqLWa5J",
+              "type": "image"
+            },
+            "id": "RgOJ1lmtBoEd",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/84MY8tqLWa5J",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": -0.056816496068832545,
+                    "y": 0.11403422015626541
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/x4NUXdb6M6HY",
+                    "type": "image"
+                  },
+                  "id": "YA8ZTVbZygXf",
+                  "label": "Niveau 0",
+                  "ref": "training-people-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/Zh7rERitzUVE",
+                    "type": "image"
+                  },
+                  "id": "pYg91cBKiJUT",
+                  "label": "Niveau 1",
+                  "ref": "training-people-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/aCrHy6UX8XvB",
+                    "type": "image"
+                  },
+                  "id": "GX09CBFgxV8l",
+                  "label": "Niveau 2",
+                  "ref": "training-people-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/RbVzc9F3fuyz",
+                    "type": "image"
+                  },
+                  "id": "nErcWBjkuwff",
+                  "label": "Niveau 3",
+                  "ref": "training-people-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/bCCqrStTfqZq",
+                    "type": "image"
+                  },
+                  "id": "QFuUMg87kKpx",
+                  "label": "Niveau 4",
+                  "ref": "training-people-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser les acteurs* (Ex: Centre de formation, Pôle emploi, Conseil Régional, services d'orientation, etc.) et *les dispositifs* (Ex: Qualifiant de la région, POEC, formation de remise à niveau, etc.) utiles à son parcours.\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "training-people",
+            "title": "Capacité *à être accompagné*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/84MY8tqLWa5J",
+              "type": "image"
+            },
+            "id": "UaVLd9WSLolb",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/84MY8tqLWa5J",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": -0.056816496068832545,
+                    "y": 0.11403422015626541
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/x4NUXdb6M6HY",
+                    "type": "image"
+                  },
+                  "id": "nisddffmOw5D",
+                  "label": "Niveau 0",
+                  "ref": "training-tools-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/Zh7rERitzUVE",
+                    "type": "image"
+                  },
+                  "id": "17vGjG4PzvIa",
+                  "label": "Niveau 1",
+                  "ref": "training-tools-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/aCrHy6UX8XvB",
+                    "type": "image"
+                  },
+                  "id": "Wf2Hj2T51OGv",
+                  "label": "Niveau 2",
+                  "ref": "training-tools-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/RbVzc9F3fuyz",
+                    "type": "image"
+                  },
+                  "id": "nntuoEUfboSa",
+                  "label": "Niveau 3",
+                  "ref": "training-tools-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/bCCqrStTfqZq",
+                    "type": "image"
+                  },
+                  "id": "9MByzQp0RZOZ",
+                  "label": "Niveau 4",
+                  "ref": "training-tools-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser et à articuler les outils* utiles à son parcours (Ex: outils d'orientation, de remise à niveau, etc.).\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "training-tools",
+            "title": "Capacité *à outiller son parcours*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/84MY8tqLWa5J",
+              "type": "image"
+            },
+            "id": "BlvMLYK9p3DI",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/84MY8tqLWa5J",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": -0.056816496068832545,
+                    "y": 0.11403422015626541
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/x4NUXdb6M6HY",
+                    "type": "image"
+                  },
+                  "id": "zL1xInLMKQjT",
+                  "label": "Niveau 0",
+                  "ref": "training-skills-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/Zh7rERitzUVE",
+                    "type": "image"
+                  },
+                  "id": "fIysOPwetyvE",
+                  "label": "Niveau 1",
+                  "ref": "training-skills-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/aCrHy6UX8XvB",
+                    "type": "image"
+                  },
+                  "id": "K1Qbmm6twysB",
+                  "label": "Niveau 2",
+                  "ref": "training-skills-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/RbVzc9F3fuyz",
+                    "type": "image"
+                  },
+                  "id": "96Lr9xbHotgm",
+                  "label": "Niveau 3",
+                  "ref": "training-skills-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/bCCqrStTfqZq",
+                    "type": "image"
+                  },
+                  "id": "rHsrr9zk70SO",
+                  "label": "Niveau 4",
+                  "ref": "training-skills-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser les bons comportements* ou *les savoir être* utiles à son parcours (Ex: postures, savoir être, motivations, etc.).\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "training-skills",
+            "title": "Capacité *à adopter les comportements adéquats*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          }
+        ],
+        "show_button": true
+      },
+      "ref": "training",
+      "title": "Accès *à la formation*",
+      "type": "group"
+    },
+    {
+      "attachment": {
+        "href": "https://images.typeform.com/images/QrdaJGRKkEuW",
+        "type": "image"
+      },
+      "id": "numKxjc3161t",
+      "layout": {
+        "attachment": {
+          "href": "https://images.typeform.com/images/QrdaJGRKkEuW",
+          "properties": {
+            "focal_point": {
+              "x": -0.0316440049443758,
+              "y": -0.11392405063291144
+            }
+          },
+          "type": "image"
+        },
+        "type": "split"
+      },
+      "properties": {
+        "button_text": "Continuer",
+        "description": "Concerne l'ensemble des acteurs, des dispositifs, des outils et comportements permettant un accès à la mobilité des jeunes.\n\n[Dossier du jeune : {{hidden:dossier_id}}](https://portail.i-milo.fr/dossier/{{hidden:dossier\\_id}})",
+        "fields": [
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/QrdaJGRKkEuW",
+              "type": "image"
+            },
+            "id": "4yZCJnMXeXIU",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/QrdaJGRKkEuW",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": -0.0316440049443758,
+                    "y": -0.11392405063291144
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/TiaqDdfDkhGE",
+                    "type": "image"
+                  },
+                  "id": "4Y79mvcp7mXK",
+                  "label": "Niveau 0",
+                  "ref": "mobility-people-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/ZNMek4V2CZ4t",
+                    "type": "image"
+                  },
+                  "id": "j0ZS8bbqiajo",
+                  "label": "Niveau 1",
+                  "ref": "mobility-people-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/7VsCNwnkRdB2",
+                    "type": "image"
+                  },
+                  "id": "VN9W4FYBehqJ",
+                  "label": "Niveau 2",
+                  "ref": "mobility-people-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/GjzW4eySdR8Z",
+                    "type": "image"
+                  },
+                  "id": "ymdqY2KamVXe",
+                  "label": "Niveau 3",
+                  "ref": "mobility-people-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/LBn5gUfHGmGP",
+                    "type": "image"
+                  },
+                  "id": "czScxZyF41hM",
+                  "label": "Niveau 4",
+                  "ref": "mobility-people-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser les acteurs* (Ex: Auto-école, Plateformes de mobilité, etc.) et *les dispositifs* (Ex: Fonds d'aide aux jeunes, Permis à 1€, etc.) utiles à son parcours.\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "mobility-people",
+            "title": "Capacité *à être accompagné*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/QrdaJGRKkEuW",
+              "type": "image"
+            },
+            "id": "FrzEWxFlcvZH",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/QrdaJGRKkEuW",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": -0.0316440049443758,
+                    "y": -0.11392405063291144
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/TiaqDdfDkhGE",
+                    "type": "image"
+                  },
+                  "id": "pp73IQCL0cG9",
+                  "label": "Niveau 0",
+                  "ref": "mobility-tools-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/ZNMek4V2CZ4t",
+                    "type": "image"
+                  },
+                  "id": "F7gzbGIagGrM",
+                  "label": "Niveau 1",
+                  "ref": "mobility-tools-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/7VsCNwnkRdB2",
+                    "type": "image"
+                  },
+                  "id": "yvAlXE27xNnv",
+                  "label": "Niveau 2",
+                  "ref": "mobility-tools-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/GjzW4eySdR8Z",
+                    "type": "image"
+                  },
+                  "id": "K94hBhdiAbas",
+                  "label": "Niveau 3",
+                  "ref": "mobility-tools-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/LBn5gUfHGmGP",
+                    "type": "image"
+                  },
+                  "id": "GEXn80AkV5S2",
+                  "label": "Niveau 4",
+                  "ref": "mobility-tools-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser et à articuler les outils* utiles à son parcours (Ex: atelier d'aide au code, locations de véhicule, etc.).\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "mobility-tools",
+            "title": "Capacité *à outiller son parcours*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/QrdaJGRKkEuW",
+              "type": "image"
+            },
+            "id": "xVp1q14ursVy",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/QrdaJGRKkEuW",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": -0.0316440049443758,
+                    "y": -0.11392405063291144
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/TiaqDdfDkhGE",
+                    "type": "image"
+                  },
+                  "id": "l8VMdDoXTGup",
+                  "label": "Niveau 0",
+                  "ref": "mobility-skills-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/ZNMek4V2CZ4t",
+                    "type": "image"
+                  },
+                  "id": "sIl6lwUHHP8C",
+                  "label": "Niveau 1",
+                  "ref": "mobility-skills-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/7VsCNwnkRdB2",
+                    "type": "image"
+                  },
+                  "id": "Dp2GkRbWDeE8",
+                  "label": "Niveau 2",
+                  "ref": "mobility-skills-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/GjzW4eySdR8Z",
+                    "type": "image"
+                  },
+                  "id": "KpDjBkSnp4mH",
+                  "label": "Niveau 3",
+                  "ref": "mobility-skills-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/LBn5gUfHGmGP",
+                    "type": "image"
+                  },
+                  "id": "UzugeowYo3i6",
+                  "label": "Niveau 4",
+                  "ref": "mobility-skills-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser les bons comportements* ou *les savoir être* utiles à son parcours (Ex: postures, savoir être, motivations, etc.).\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "mobility-skills",
+            "title": "Capacité *à adopter les comportements adéquats*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          }
+        ],
+        "show_button": true
+      },
+      "ref": "mobility",
+      "title": "Accès *à la mobilité*",
+      "type": "group"
+    },
+    {
+      "attachment": {
+        "href": "https://images.typeform.com/images/WBbMHDRFj8Sn",
+        "type": "image"
+      },
+      "id": "0fhoKzuz4MOJ",
+      "layout": {
+        "attachment": {
+          "href": "https://images.typeform.com/images/WBbMHDRFj8Sn",
+          "properties": {
+            "focal_point": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "type": "image"
+        },
+        "type": "split"
+      },
+      "properties": {
+        "button_text": "Continuer",
+        "description": "Concerne l'ensemble des acteurs, des dispositifs, des outils et comportements permettant un accès au logement des jeunes.\n\n[Dossier du jeune : {{hidden:dossier_id}}](https://portail.i-milo.fr/dossier/{{hidden:dossier\\_id}})",
+        "fields": [
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/WBbMHDRFj8Sn",
+              "type": "image"
+            },
+            "id": "vV919AY0M6IW",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/WBbMHDRFj8Sn",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": 0,
+                    "y": 0
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/GcMeeuP7FKqg",
+                    "type": "image"
+                  },
+                  "id": "9MWCUI98FktJ",
+                  "label": "Niveau 0",
+                  "ref": "housing-people-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/pf8EJycG9G2h",
+                    "type": "image"
+                  },
+                  "id": "MTmUMx3NBRO0",
+                  "label": "Niveau 1",
+                  "ref": "housing-people-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/XvxgNWSY3dey",
+                    "type": "image"
+                  },
+                  "id": "eiGap6R5FRfI",
+                  "label": "Niveau 2",
+                  "ref": "housing-people-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/sWkERBuZExWt",
+                    "type": "image"
+                  },
+                  "id": "RO5BMMftAjgc",
+                  "label": "Niveau 3",
+                  "ref": "housing-people-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/FrjBm9RWguxK",
+                    "type": "image"
+                  },
+                  "id": "9wwAG5AEsHCY",
+                  "label": "Niveau 4",
+                  "ref": "housing-people-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser les acteurs* (Ex: Bailleurs publics et privés, FJT, CLAJ, centre médicaux sociaux, CCAS, etc.) et *les dispositifs* (Ex: Fond Social Logement, etc.) utiles à son parcours.\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "housing-people",
+            "title": "Capacité *à être accompagné*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/WBbMHDRFj8Sn",
+              "type": "image"
+            },
+            "id": "ZwwFxPMSMIpM",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/WBbMHDRFj8Sn",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": 0,
+                    "y": 0
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/GcMeeuP7FKqg",
+                    "type": "image"
+                  },
+                  "id": "GFMzd1DADJQp",
+                  "label": "Niveau 0",
+                  "ref": "housing-tools-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/pf8EJycG9G2h",
+                    "type": "image"
+                  },
+                  "id": "Po6Vj9G7q0DN",
+                  "label": "Niveau 1",
+                  "ref": "housing-tools-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/XvxgNWSY3dey",
+                    "type": "image"
+                  },
+                  "id": "Z5hpa0Ytcg6I",
+                  "label": "Niveau 2",
+                  "ref": "housing-tools-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/sWkERBuZExWt",
+                    "type": "image"
+                  },
+                  "id": "qkxzbqxFYzjP",
+                  "label": "Niveau 3",
+                  "ref": "housing-tools-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/FrjBm9RWguxK",
+                    "type": "image"
+                  },
+                  "id": "ppopjRoPKGOA",
+                  "label": "Niveau 4",
+                  "ref": "housing-tools-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser et à articuler les outils* utiles à son parcours (Ex: APL, Locapass, etc.).\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "housing-tools",
+            "title": "Capacité *à outiller son parcours*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/WBbMHDRFj8Sn",
+              "type": "image"
+            },
+            "id": "YHRkMDDMC9cJ",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/WBbMHDRFj8Sn",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": 0,
+                    "y": 0
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/GcMeeuP7FKqg",
+                    "type": "image"
+                  },
+                  "id": "nNjqQGcBDSgI",
+                  "label": "Niveau 0",
+                  "ref": "housing-skills-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/pf8EJycG9G2h",
+                    "type": "image"
+                  },
+                  "id": "8obEltb3lgbR",
+                  "label": "Niveau 1",
+                  "ref": "housing-skills-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/XvxgNWSY3dey",
+                    "type": "image"
+                  },
+                  "id": "Sv2fUPRFC5Ba",
+                  "label": "Niveau 2",
+                  "ref": "housing-skills-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/sWkERBuZExWt",
+                    "type": "image"
+                  },
+                  "id": "iOcRE3UhY24b",
+                  "label": "Niveau 3",
+                  "ref": "housing-skills-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/FrjBm9RWguxK",
+                    "type": "image"
+                  },
+                  "id": "AnzHA8W28boy",
+                  "label": "Niveau 4",
+                  "ref": "housing-skills-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser les bons comportements* ou *les savoir être* utiles à son parcours (Ex: postures, savoir être, motivations, etc.).\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "housing-skills",
+            "title": "Capacité *à adopter les comportements adéquats*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          }
+        ],
+        "show_button": true
+      },
+      "ref": "housing",
+      "title": "Accès *aux logements*",
+      "type": "group"
+    },
+    {
+      "attachment": {
+        "href": "https://images.typeform.com/images/KNQDQveMaVuL",
+        "type": "image"
+      },
+      "id": "CA8kiQ243q98",
+      "layout": {
+        "attachment": {
+          "href": "https://images.typeform.com/images/KNQDQveMaVuL",
+          "properties": {
+            "focal_point": {
+              "x": 0.12598425196850394,
+              "y": 0.05614534311043018
+            }
+          },
+          "type": "image"
+        },
+        "type": "split"
+      },
+      "properties": {
+        "button_text": "Continuer",
+        "description": "Concerne l'ensemble des acteurs, des dispositifs, des outils et comportements permettant un accès à la santé des jeunes.\n\n[Dossier du jeune : {{hidden:dossier_id}}](https://portail.i-milo.fr/dossier/{{hidden:dossier\\_id}})",
+        "fields": [
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/KNQDQveMaVuL",
+              "type": "image"
+            },
+            "id": "uz3bWykj71mw",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/KNQDQveMaVuL",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": 0.12598425196850394,
+                    "y": 0.05614534311043018
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/VsjUnaP5pXZX",
+                    "type": "image"
+                  },
+                  "id": "51HUaxWKX6eg",
+                  "label": "Niveau 0",
+                  "ref": "healthcare-people-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/jaiWQsF79Rxd",
+                    "type": "image"
+                  },
+                  "id": "Kt2uPZUZwub7",
+                  "label": "Niveau 1",
+                  "ref": "healthcare-people-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/zxykWQW4NffX",
+                    "type": "image"
+                  },
+                  "id": "IqRSZ50oFlIc",
+                  "label": "Niveau 2",
+                  "ref": "healthcare-people-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/smTbp8fmSE4N",
+                    "type": "image"
+                  },
+                  "id": "qUaRPEeL4SVq",
+                  "label": "Niveau 3",
+                  "ref": "healthcare-people-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/2UBgeyKJnqfx",
+                    "type": "image"
+                  },
+                  "id": "J6XBbWTNXd5k",
+                  "label": "Niveau 4",
+                  "ref": "healthcare-people-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser les acteurs* (Ex: Centres médicaux social, PMI, travailleur de santé, associations, CPAM, etc.) et *les dispositifs* (Ex: sécurité sociale, CMU, etc.) utiles à son parcours.\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "healthcare-people",
+            "title": "Capacité *à être accompagné*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/KNQDQveMaVuL",
+              "type": "image"
+            },
+            "id": "1qS0iVQuM2w3",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/KNQDQveMaVuL",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": 0.12598425196850394,
+                    "y": 0.05614534311043018
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/VsjUnaP5pXZX",
+                    "type": "image"
+                  },
+                  "id": "rVaRIpsyRBPQ",
+                  "label": "Niveau 0",
+                  "ref": "healthcare-tools-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/jaiWQsF79Rxd",
+                    "type": "image"
+                  },
+                  "id": "2dxPNnktDi0A",
+                  "label": "Niveau 1",
+                  "ref": "healthcare-tools-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/zxykWQW4NffX",
+                    "type": "image"
+                  },
+                  "id": "YhQZciFtG8uV",
+                  "label": "Niveau 2",
+                  "ref": "healthcare-tools-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/smTbp8fmSE4N",
+                    "type": "image"
+                  },
+                  "id": "VqcxA3EzJXvW",
+                  "label": "Niveau 3",
+                  "ref": "healthcare-tools-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/2UBgeyKJnqfx",
+                    "type": "image"
+                  },
+                  "id": "2EoZbggViHWH",
+                  "label": "Niveau 4",
+                  "ref": "healthcare-tools-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser et à articuler les outils* utiles à son parcours (Ex: atelier d'accès à la santé, actions de prévention et de dépistage, etc.).\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "healthcare-tools",
+            "title": "Capacité *à outiller son parcours*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/KNQDQveMaVuL",
+              "type": "image"
+            },
+            "id": "2PDP07inH7LX",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/KNQDQveMaVuL",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": 0.12598425196850394,
+                    "y": 0.05614534311043018
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/VsjUnaP5pXZX",
+                    "type": "image"
+                  },
+                  "id": "mtkoHoIUNbUl",
+                  "label": "Niveau 0",
+                  "ref": "healthcare-skills-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/jaiWQsF79Rxd",
+                    "type": "image"
+                  },
+                  "id": "o7pnr8TVDgUE",
+                  "label": "Niveau 1",
+                  "ref": "healthcare-skills-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/zxykWQW4NffX",
+                    "type": "image"
+                  },
+                  "id": "g9gGjNc96fti",
+                  "label": "Niveau 2",
+                  "ref": "healthcare-skills-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/smTbp8fmSE4N",
+                    "type": "image"
+                  },
+                  "id": "D4RioDOzd0yp",
+                  "label": "Niveau 3",
+                  "ref": "healthcare-skills-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/2UBgeyKJnqfx",
+                    "type": "image"
+                  },
+                  "id": "mKz2nSUoOl5y",
+                  "label": "Niveau 4",
+                  "ref": "healthcare-skills-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser les bons comportements* ou *les savoir être* utiles à son parcours (Ex: postures, savoir être, motivations, etc.).\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "healthcare-skills",
+            "title": "Capacité *à adopter les comportements adéquats*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          }
+        ],
+        "show_button": true
+      },
+      "ref": "healthcare",
+      "title": "Accès *à la santé*",
+      "type": "group"
+    },
+    {
+      "attachment": {
+        "href": "https://images.typeform.com/images/miw2jxuCCPk6",
+        "type": "image"
+      },
+      "id": "mNhiKrAfp1ND",
+      "layout": {
+        "attachment": {
+          "href": "https://images.typeform.com/images/miw2jxuCCPk6",
+          "properties": {
+            "focal_point": {
+              "x": 0.12598425196850394,
+              "y": 0.05614534311043018
+            }
+          },
+          "type": "image"
+        },
+        "type": "split"
+      },
+      "properties": {
+        "button_text": "Continuer",
+        "description": "Concerne l'ensemble des acteurs, des dispositifs, des outils et comportements permettant un accès aux ressources financières pour les jeunes.\n\n[Dossier du jeune : {{hidden:dossier_id}}](https://portail.i-milo.fr/dossier/{{hidden:dossier\\_id}})",
+        "fields": [
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/miw2jxuCCPk6",
+              "type": "image"
+            },
+            "id": "wqPEx9ThULFa",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/miw2jxuCCPk6",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": 0.12598425196850394,
+                    "y": 0.05614534311043018
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/m25BKpWhCFWS",
+                    "type": "image"
+                  },
+                  "id": "aEfhK0MiU99V",
+                  "label": "Niveau 0",
+                  "ref": "financial-people-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/GzcCMp5TyBG7",
+                    "type": "image"
+                  },
+                  "id": "kXBhJxiQhyZD",
+                  "label": "Niveau 1",
+                  "ref": "financial-people-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/KKQGstcnCsMT",
+                    "type": "image"
+                  },
+                  "id": "GNRYHsnKDKzh",
+                  "label": "Niveau 2",
+                  "ref": "financial-people-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/ZVLGVRAaA9RX",
+                    "type": "image"
+                  },
+                  "id": "HxAeiZy5DNFQ",
+                  "label": "Niveau 3",
+                  "ref": "financial-people-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/jMLzEMaEp4gN",
+                    "type": "image"
+                  },
+                  "id": "UGycEb10NSH2",
+                  "label": "Niveau 4",
+                  "ref": "financial-people-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser les acteurs* (Ex: centre médicaux social, CCAS, association caritative, Banque de France, etc.) et *les dispositifs* (Ex: PACEA, GJ, aides sociales, etc.) utiles à son parcours.\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "financial-people",
+            "title": "Capacité *à être accompagné*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/miw2jxuCCPk6",
+              "type": "image"
+            },
+            "id": "aC5eY3SeK24a",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/miw2jxuCCPk6",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": 0.12598425196850394,
+                    "y": 0.05614534311043018
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/m25BKpWhCFWS",
+                    "type": "image"
+                  },
+                  "id": "zBml5hfAJ9x7",
+                  "label": "Niveau 0",
+                  "ref": "financial-tools-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/GzcCMp5TyBG7",
+                    "type": "image"
+                  },
+                  "id": "pyVafIdvh1ii",
+                  "label": "Niveau 1",
+                  "ref": "financial-tools-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/KKQGstcnCsMT",
+                    "type": "image"
+                  },
+                  "id": "IxgcnlEYFpS4",
+                  "label": "Niveau 2",
+                  "ref": "financial-tools-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/ZVLGVRAaA9RX",
+                    "type": "image"
+                  },
+                  "id": "ACi5nhDZxJnO",
+                  "label": "Niveau 3",
+                  "ref": "financial-tools-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/jMLzEMaEp4gN",
+                    "type": "image"
+                  },
+                  "id": "lFmeEkqmwtMn",
+                  "label": "Niveau 4",
+                  "ref": "financial-tools-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser et à articuler les outils* utiles à son parcours (Ex: atelier d'aide au budget, fonds d'aide aux jeunes, allocations, etc.).\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "financial-tools",
+            "title": "Capacité *à outiller son parcours*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/miw2jxuCCPk6",
+              "type": "image"
+            },
+            "id": "Png33kv8tVWh",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/miw2jxuCCPk6",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": 0.12598425196850394,
+                    "y": 0.05614534311043018
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/m25BKpWhCFWS",
+                    "type": "image"
+                  },
+                  "id": "nwuyhzvZiTZE",
+                  "label": "Niveau 0",
+                  "ref": "financial-skills-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/GzcCMp5TyBG7",
+                    "type": "image"
+                  },
+                  "id": "Cz5O8il0gcpb",
+                  "label": "Niveau 1",
+                  "ref": "financial-skills-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/KKQGstcnCsMT",
+                    "type": "image"
+                  },
+                  "id": "wDwEq64vWt2A",
+                  "label": "Niveau 2",
+                  "ref": "financial-skills-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/ZVLGVRAaA9RX",
+                    "type": "image"
+                  },
+                  "id": "cvIovhk07tA8",
+                  "label": "Niveau 3",
+                  "ref": "financial-skills-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/jMLzEMaEp4gN",
+                    "type": "image"
+                  },
+                  "id": "tSxzCzEi89rD",
+                  "label": "Niveau 4",
+                  "ref": "financial-skills-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser les bons comportements* ou *les savoir être* utiles à son parcours (Ex: postures, savoir être, motivations, etc.).\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "financial-skills",
+            "title": "Capacité *à adopter les comportements adéquats*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          }
+        ],
+        "show_button": true
+      },
+      "ref": "financial",
+      "title": "Accès *aux ressources financières*",
+      "type": "group"
+    },
+    {
+      "attachment": {
+        "href": "https://images.typeform.com/images/n2EetPPjcsXd",
+        "type": "image"
+      },
+      "id": "D1nBkomYz8Pw",
+      "layout": {
+        "attachment": {
+          "href": "https://images.typeform.com/images/n2EetPPjcsXd",
+          "properties": {
+            "focal_point": {
+              "x": 0.09451781893307754,
+              "y": 0.26594797745030174
+            }
+          },
+          "type": "image"
+        },
+        "type": "split"
+      },
+      "properties": {
+        "button_text": "Continuer",
+        "description": "Concerne l'ensemble des acteurs, des dispositifs, des outils et comportements permettant un accès à la citoyenneté des jeunes.\n\n[Dossier du jeune : {{hidden:dossier_id}}](https://portail.i-milo.fr/dossier/{{hidden:dossier\\_id}})",
+        "fields": [
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/n2EetPPjcsXd",
+              "type": "image"
+            },
+            "id": "mEgOY45cGQgP",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/n2EetPPjcsXd",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": 0.09451781893307754,
+                    "y": 0.26594797745030174
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/wPxe9nKSgfDS",
+                    "type": "image"
+                  },
+                  "id": "dgamODOv09HL",
+                  "label": "Niveau 0",
+                  "ref": "citizenship-people-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/fm8BbHX8n8Mw",
+                    "type": "image"
+                  },
+                  "id": "Omh3pdDWcAJc",
+                  "label": "Niveau 1",
+                  "ref": "citizenship-people-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/uCq7LYQivdNs",
+                    "type": "image"
+                  },
+                  "id": "0sicz5RfUYS4",
+                  "label": "Niveau 2",
+                  "ref": "citizenship-people-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/QJ3yp7jKwbJj",
+                    "type": "image"
+                  },
+                  "id": "Xq61sYrx8fiK",
+                  "label": "Niveau 3",
+                  "ref": "citizenship-people-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/u4dWc5jEFNa8",
+                    "type": "image"
+                  },
+                  "id": "MRJJmTpjPyIb",
+                  "label": "Niveau 4",
+                  "ref": "citizenship-people-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser les acteurs* (Ex: Mairie, collectivités, associations, etc.) et *les dispositifs* (Ex: Services Civiques, engagement citoyen ou associatifs, etc.) utiles à son parcours.\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "citizenship-people",
+            "title": "Capacité *à être accompagné*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/n2EetPPjcsXd",
+              "type": "image"
+            },
+            "id": "YxDXVdH5HY6A",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/n2EetPPjcsXd",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": 0.09451781893307754,
+                    "y": 0.26594797745030174
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/wPxe9nKSgfDS",
+                    "type": "image"
+                  },
+                  "id": "T6KpODCdTLIf",
+                  "label": "Niveau 0",
+                  "ref": "citizenship-tools-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/fm8BbHX8n8Mw",
+                    "type": "image"
+                  },
+                  "id": "oaqGINLEQRmx",
+                  "label": "Niveau 1",
+                  "ref": "citizenship-tools-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/uCq7LYQivdNs",
+                    "type": "image"
+                  },
+                  "id": "hKkZm4jpsrrh",
+                  "label": "Niveau 2",
+                  "ref": "citizenship-tools-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/QJ3yp7jKwbJj",
+                    "type": "image"
+                  },
+                  "id": "nSTBszAMbRDO",
+                  "label": "Niveau 3",
+                  "ref": "citizenship-tools-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/u4dWc5jEFNa8",
+                    "type": "image"
+                  },
+                  "id": "nNamr3qajNmX",
+                  "label": "Niveau 4",
+                  "ref": "citizenship-tools-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser et à articuler les outils* utiles à son parcours (Ex: Journée de défense et citoyenneté, etc.).\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "citizenship-tools",
+            "title": "Capacité *à outiller son parcours*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "attachment": {
+              "href": "https://images.typeform.com/images/n2EetPPjcsXd",
+              "type": "image"
+            },
+            "id": "peIvItwPpP4K",
+            "layout": {
+              "attachment": {
+                "href": "https://images.typeform.com/images/n2EetPPjcsXd",
+                "properties": {
+                  "brightness": 0.9,
+                  "focal_point": {
+                    "x": 0.09451781893307754,
+                    "y": 0.26594797745030174
+                  }
+                },
+                "type": "image"
+              },
+              "type": "wallpaper"
+            },
+            "properties": {
+              "allow_multiple_selection": false,
+              "allow_other_choice": false,
+              "choices": [
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/wPxe9nKSgfDS",
+                    "type": "image"
+                  },
+                  "id": "o6SILXR0DACx",
+                  "label": "Niveau 0",
+                  "ref": "citizenship-skills-0"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/fm8BbHX8n8Mw",
+                    "type": "image"
+                  },
+                  "id": "5XT5DzRQ7t6b",
+                  "label": "Niveau 1",
+                  "ref": "citizenship-skills-1"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/uCq7LYQivdNs",
+                    "type": "image"
+                  },
+                  "id": "FaJxmlVODgtX",
+                  "label": "Niveau 2",
+                  "ref": "citizenship-skills-2"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/QJ3yp7jKwbJj",
+                    "type": "image"
+                  },
+                  "id": "Wibvv7Lv31JM",
+                  "label": "Niveau 3",
+                  "ref": "citizenship-skills-3"
+                },
+                {
+                  "attachment": {
+                    "href": "https://images.typeform.com/images/u4dWc5jEFNa8",
+                    "type": "image"
+                  },
+                  "id": "a1ro7xe4Wj1C",
+                  "label": "Niveau 4",
+                  "ref": "citizenship-skills-4"
+                }
+              ],
+              "description": "Il s'agit de la capacité du jeune *à mobiliser les bons comportements* ou *les savoir être* utiles à son parcours (Ex: postures, savoir être, motivations, etc.).\n    [Schéma de pensée](https://drive.google.com/file/d/1ZAGddOW3nuoaOnFzkL\\_f36ksS-CnDlBd/view)",
+              "randomize": false,
+              "show_labels": false,
+              "supersized": false
+            },
+            "ref": "citizenship-skills",
+            "title": "Capacité *à adopter les comportements adéquats*",
+            "type": "picture_choice",
+            "validations": {
+              "required": true
+            }
+          }
+        ],
+        "show_button": true
+      },
+      "ref": "citizenship",
+      "title": "Accès *à la citoyenneté*",
+      "type": "group"
+    },
+    {
+      "id": "sHW1DQFZYEti",
+      "properties": {
+        "button_text": "Continuer",
+        "description": "Vous pouvez encore revenir dans le formulaire avec la roulette ou les flèches en bas à droite de l'écran.\n\n[Dossier du jeune : {{hidden:dossier_id}}](https://portail.i-milo.fr/dossier/{{hidden:dossier\\_id}})",
+        "hide_marks": true
+      },
+      "ref": "confirm",
+      "title": "Merci de votre coopération ! *En cliquant sur « Envoyer » vous validez vos réponses* et ne pourrez plus les modifier.",
+      "type": "statement"
+    }
+  ],
+  "hidden": [
+    "age",
+    "counselor_id",
+    "dossier_id",
+    "referent_id",
+    "structure_id",
+    "counselor_email",
+    "current_policies",
+    "school_level"
+  ],
+  "id": "beviMNpK",
+  "settings": {
+    "are_uploads_public": false,
+    "hide_navigation": false,
+    "is_public": true,
+    "is_trial": false,
+    "language": "fr",
+    "meta": {
+      "allow_indexing": false
+    },
+    "progress_bar": "proportion",
+    "show_progress_bar": true,
+    "show_time_to_complete": false,
+    "show_typeform_branding": true
+  },
+  "thankyou_screens": [
+    {
+      "attachment": {
+        "href": "https://images.typeform.com/images/iAfyfvGCTY43",
+        "properties": {},
+        "type": "image"
+      },
+      "id": "mwWNZTYrcVKk",
+      "properties": {
+        "button_mode": "reload",
+        "button_text": "again",
+        "share_icons": false,
+        "show_button": false
+      },
+      "ref": "a635_08fe-39e5-47ce-a459-422_504_696a7a",
+      "title": "*Les Missions Locales de Normandie vous remercient.*"
+    },
+    {
+      "id": "DefaultTyScreen",
+      "properties": {
+        "share_icons": false,
+        "show_button": false
+      },
+      "ref": "default_tys",
+      "title": "Merci ! Vos informations ont parfaitement été envoyées."
+    }
+  ],
+  "theme": {
+    "href": "https://api.typeform.com/themes/fl604Cs6"
+  },
+  "title": "MILOrizons",
+  "type": "form",
+  "welcome_screens": [
+    {
+      "attachment": {
+        "href": "https://images.typeform.com/images/iAfyfvGCTY43",
+        "properties": {},
+        "type": "image"
+      },
+      "id": "LdFPjHgzDN1N",
+      "properties": {
+        "button_text": "Allons-y",
+        "description": "Un outil du réseau des Missions Locales et de la Fondation AlphaOmega\n\n[Télécharger le guide](https://drive.google.com/file/d/13ozOpzkXCe0wbHFk4\\_eQc8pyuIx9Ty83/view)\n\n[Dossier du jeune : {{hidden:dossier_id}}](https://portail.i-milo.fr/dossier/{{hidden:dossier\\_id}})",
+        "show_button": true
+      },
+      "ref": "bb71facf-cfd6-4f1f-aaf6-a08d5f189c3e",
+      "title": "*Un outil de valorisation de l'impact de l'accompagnement des Missions Locales sur l'autonomie des jeunes.*"
+    }
+  ],
+  "workspace": {
+    "href": "https://api.typeform.com/workspaces/fpJBY6"
+  }
+}

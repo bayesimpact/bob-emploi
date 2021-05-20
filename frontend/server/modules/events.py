@@ -25,11 +25,11 @@ class _AdviceEventScoringModel(scoring_base.ModelBase):
         first_modes = set(fap_modes.modes[0].mode for fap_modes in application_modes)
         first_modes.discard(job_pb2.UNDEFINED_APPLICATION_MODE)
         if first_modes == {job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS}:
-            return scoring_base.ExplainedScore(2, [project.translate_string(
+            return scoring_base.ExplainedScore(2, [project.translate_static_string(
                 'les embauches se font surtout par les contacts personnels ou professionnels dans'
                 ' votre métier')])
 
-        return scoring_base.ExplainedScore(1, [project.translate_string(
+        return scoring_base.ExplainedScore(1, [project.translate_static_string(
             "c'est un bon moyen d'étendre votre réseau")])
 
     @scoring_base.ScoringProject.cached('events')

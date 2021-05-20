@@ -1,8 +1,10 @@
 syntax = "proto3";
 
 import "bob_emploi/frontend/api/job.proto";
+import "bob_emploi/frontend/api/options.proto";
 
 package bayes.bob;
+option go_package="bayes.org/bob_emploi/frontend/api/training";
 
 message Training {
   // Main name of the training.
@@ -25,6 +27,10 @@ message Training {
 
   // The level of studies needed for this training, if any.
   DegreeLevel degree_level = 7;
+
+  // A set of filter IDs: do not show the training if one of these filters return
+  // false for the training.
+  repeated string filters = 8 [(string_format) = SCORING_MODEL_ID];
 }
 
 message Trainings {

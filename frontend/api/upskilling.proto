@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+import "bob_emploi/frontend/api/job.proto";
+
+package bayes.upskilling;
+option go_package="bayes.org/bob_emploi/frontend/api/upskilling";
+
+// Description of a job within a section. Please note that a job is representing a job group.
+message Job {
+  // The group this job is part of.
+  // We should have the fields: rome_id, samples[0].name
+  bob.JobGroup job_group = 1;
+
+  // Metric shown for this job, such as "salary".
+  string shown_metric = 2;
+}
+
+// Description of a section, like "top 10 of best wage jobs".
+message Section {
+  // Identifier of the section for analytics.
+  string id = 1;
+
+  // Name of the section
+  string name = 2;
+
+  // List of this section's jobs.
+  repeated Job jobs = 3;
+
+  // Opaque state parameter to describe this section for the recommendation engine.
+  string state = 4;
+}
+
+message Sections {
+  // Sorted list of sections to show.
+  repeated Section sections = 1;
+}

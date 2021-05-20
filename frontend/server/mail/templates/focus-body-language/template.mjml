@@ -1,0 +1,548 @@
+{
+  "attributes": {
+    "owa": "desktop",
+    "passport": {
+      "ck-version": "5",
+      "id": "2wH18uwQlwa",
+      "revertLostLink": true
+    },
+    "version": "4.6.3"
+  },
+  "children": [
+    {
+      "attributes": {
+        "background-color": "#ffffff",
+        "color": "#55575d",
+        "font-family": "Arial, sans-serif",
+        "passport": {
+          "id": "G0UM2O0fs"
+        }
+      },
+      "children": [
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "background-size": "auto",
+            "padding": "20px 0px 20px 0px",
+            "passport": {
+              "header": true,
+              "hidden": true,
+              "id": "S7GHKBzYmTvqC"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "hidden": true,
+                  "id": "4z2LRze9bHhto"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "0px 0px 0px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "hidden": true,
+                      "id": "K5MtuqQvnoS_Q",
+                      "oldContentEditor": "<p style=\"margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\">Donnez un résumé de cet email à vos destinataires</p>",
+                      "oldMjAttributes": "{\"align\":\"left\",\"color\":\"#55575d\",\"font-family\":\"Arial, sans-serif\",\"font-size\":\"11px\",\"line-height\":\"22px\",\"padding\":\"0px 0px 0px 25px\",\"padding-bottom\":\"0px\",\"padding-top\":\"0px\"}"
+                    }
+                  },
+                  "content": "<p style=\"text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px\"><span style=\"line-height:22px;font-size:16px;font-family:Arial;color:#55575d;text-align:left;\">Donnez un résumé de cet email à vos destinataires</span></p>",
+                  "id": "aqXP6Q1fHhIg",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "gK6CsMzZKXtc",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "w4B47P5Drqfe",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-color": "transparent",
+            "background-repeat": "repeat",
+            "full-width": "full-width",
+            "padding": "20px 0px 20px 0px",
+            "padding-bottom": "12px",
+            "padding-top": "12px",
+            "passport": {
+              "id": "8NDUUonjfO"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "kEqk3BetyH"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "0px 25px 0px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "PJDmA8MCFZ",
+                      "oldContentEditor": "<p style=\"line-height: 1.38; margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"font-size:14px\">&nbsp;<span style=\"color:#000000; font-family:Arial; text-decoration:none\">Bonjour {{var:firstName:\"Élise\"}},</span>&nbsp;</span></p>",
+                      "oldMjAttributes": "{\"align\":\"left\",\"color\":\"#55575d\",\"font-family\":\"Arial, sans-serif\",\"font-size\":\"13px\",\"line-height\":\"22px\",\"padding\":\"0px 25px 0px 25px\",\"padding-bottom\":\"0px\",\"padding-left\":\"0px\",\"padding-right\":\"0px\",\"padding-top\":\"0px\"}"
+                    }
+                  },
+                  "content": "<p style=\"text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px; line-height:1.38;font-size:14px;font-family:Arial;color:#000000;text-align:left;\">Bonjour {{var:firstName:\"Élise\"}},</p>",
+                  "id": "hwnGUIzov6wL",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "Nnh3F6eBr7RI",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "DZ8h2Zkij1JW",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "DgaLG3hhhgR7_"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "sLIzucE9Id"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "Npe8Ljf0XQ",
+                      "oldContentEditor": "<p style=\"line-height: 1.38; margin: 10px 0; margin-top: 10px;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Comment allez-vous ?</span></p><p style=\"line-height: 1.38; margin: 10px 0; margin-bottom: 10px;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Lors de votre inscription sur Bob, vous nous avez dit que&nbsp;{%if var:worstFrustration:\"\" == \"SELF_CONFIDENCE\"%}vous manquez parfois de confiance en vous{%elseif var:worstFrustration:\"\" == \"INTERVIEW\"%}vous avez l'impression de ne pas réussir vos&nbsp;entretiens{%else%}vous avez l'impression de ne pas rentrer dans les cases des recruteurs{%endif%}. Est-ce toujours le cas ?</span></p>",
+                      "oldMjAttributes": "{\"align\":\"left\",\"color\":\"#55575d\",\"font-family\":\"Arial, sans-serif\",\"font-size\":\"13px\",\"line-height\":\"22px\",\"padding\":\"10px 25px\",\"padding-bottom\":\"0px\",\"padding-left\":\"0px\",\"padding-right\":\"0px\",\"padding-top\":\"0px\"}"
+                    }
+                  },
+                  "content": "<p class=\"text-build-content\" data-testid=\"Npe8Ljf0XQ\" style=\"margin: 10px 0; color:#000000;font-family:Arial;line-height:24px;\">Comment allez-vous ?</p><p class=\"text-build-content\" data-testid=\"Npe8Ljf0XQ\" style=\"margin: 10px 0; color:#000000;font-family:Arial;line-height:24px;\">Lors de votre inscription sur Bob, vous nous avez dit que {%if var:worstFrustration:\"\" == \"SELF_CONFIDENCE\"%}vous manquez parfois de confiance en vous{%elseif var:worstFrustration:\"\" == \"INTERVIEW\"%}vous avez l'impression de ne pas réussir vos entretiens{%else%}vous avez l'impression de ne pas rentrer dans les cases des recruteurs{%endif%}. Est-ce toujours le cas ?</p>",
+                  "id": "UmkhQezlYlK8",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "HksjgR9jluV2",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "Wn5sP4i24gMS",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "AxqtmLv8L4"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "n7fHtDMezY"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "TB1Via7Eby",
+                      "oldContentEditor": "<p style=\"line-height: 1.38; margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"color:#000000\">&nbsp;<span style=\"font-size:14.6667px\">Je suis tombée, il y a quelque temps,&nbsp;sur <a target=\"_blank\" href=\"https://www.ted.com/talks/amy_cuddy_your_body_language_shapes_who_you_are?language=fr\">cette vidéo</a> de 20 min qui m'a fait penser à vous. Du coup je voulais vous la partager car je trouve que le petit conseil est utile à essayer (ne serait-ce que pour l'effet placebo) :&nbsp;<b>et si travailler sur votre langage corporel pouvait vous aider à vous rendre plus confiant{%if var:gender:\"\" == \"FEMININE\"%}e{%endif%} ?</b></span></span></p>",
+                      "oldMjAttributes": "{\"align\":\"left\",\"color\":\"#55575d\",\"font-family\":\"Arial, sans-serif\",\"font-size\":\"13px\",\"line-height\":\"22px\",\"padding\":\"10px 25px\",\"padding-bottom\":\"0px\",\"padding-left\":\"0px\",\"padding-right\":\"0px\",\"padding-top\":\"0px\"}"
+                    }
+                  },
+                  "content": "<p class=\"text-build-content\" style=\"line-height: 24px; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px\" data-testid=\"TB1Via7Eby\"><span style=\"color:#000000;font-family:Arial;line-height:24px;\">Je suis tombée, il y a quelque temps, sur </span><a class=\"link-build-content\" style=\"color:inherit;\" target=\"_blank\" href=\"https://www.ted.com/talks/amy_cuddy_your_body_language_shapes_who_you_are?language=fr\"><span style=\"color:#0000EE;font-family:Arial;line-height:24px;\"><u>cette vidéo</u></span></a><span style=\"color:#000000;font-family:Arial;line-height:24px;\"> de 20 min qui m'a fait penser à vous. Du coup je voulais vous la partager car je trouve que le petit conseil est utile à essayer (ne serait-ce que pour l'effet placebo) : <b>et si travailler sur votre langage corporel pouvait vous aider à vous rendre plus confiant{%if var:gender:\"\" == \"FEMININE\"%}e{%else%}{%if var:gender:\"\" == \"MASCULINE\"%}{%else%}·e{%endif%}{%endif%} ?</b></span></p>",
+                  "id": "eWhitj5-yUxe",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "11e2UXZzWFH-",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "ZIvS-boPzMDd",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "HBDj1Z1tu8"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "RfRUtH-qsB"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "IfvHvToCMU",
+                      "oldContentEditor": "<p style=\"line-height: 1.38; margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"color:#000000\"><span style=\"font-size:14.6667px\">Car même si ça fait un peu bâteau, une chose que j'ai apprise dans la vie, c'est que l'important c'est d'être vous-même et d'être fi{%if var:gender:\"\" == \"FEMININE\"%}ère{%else%}er{%endif%} de qui vous êtes. Souvenez-vous lorsque vous postulez, c'est avant tout l'<i>entreprise</i> qui a besoin de <i>vous</i> !</span></span></p>",
+                      "oldMjAttributes": "{\"align\":\"left\",\"color\":\"#55575d\",\"font-family\":\"Arial, sans-serif\",\"font-size\":\"13px\",\"line-height\":\"22px\",\"padding\":\"10px 25px\",\"padding-bottom\":\"0px\",\"padding-left\":\"0px\",\"padding-right\":\"0px\",\"padding-top\":\"0px\"}"
+                    }
+                  },
+                  "content": "<p class=\"text-build-content\" style=\"line-height: 24px; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px\" data-testid=\"IfvHvToCMU\"><span style=\"color:#000000;font-family:Arial;line-height:24px;\">Car même si ça fait un peu bâteau, une chose que j'ai apprise dans la vie, c'est que l'important c'est d'être vous-même et d'être fi{%if var:gender:\"\" == \"FEMININE\"%}ère{%else%}{%if var:gender:\"\" == \"MASCULINE\"%}er{%else%}er·e{%endif%}{%endif%} de qui vous êtes. Souvenez-vous lorsque vous postulez, c'est avant tout l'<i>entreprise</i> qui a besoin de <i>vous</i> !</span></p>",
+                  "id": "WsuF-rLi16KT1",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "center",
+                    "alt": "",
+                    "border": "none",
+                    "height": "auto",
+                    "href": "https://www.ted.com/talks/amy_cuddy_your_body_language_shapes_who_you_are?language=fr",
+                    "padding": "10px 25px",
+                    "passport": {
+                      "id": "nr-w8hfWEoOepE",
+                      "image-id": 5945653
+                    },
+                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/4psz/24mpu.png",
+                    "target": "_blank",
+                    "title": "",
+                    "width": "700px"
+                  },
+                  "id": "dOENHfoBR5r1Y",
+                  "tagName": "mj-image"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "QDbEJSYE1",
+                      "oldContentEditor": "<p style=\"margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\">Astuce 🇫🇷 Si les sous-titres en français ne sont pas activés sur la vidéo, cliquez sur l'icône&nbsp;<b>réglages</b>&nbsp;en bas de la vidéo, puis sur&nbsp;<b>subtitles</b>&nbsp;et choisissez&nbsp;<b>français ☕️</b></p>",
+                      "oldMjAttributes": "{\"align\":\"left\",\"color\":\"#55575d\",\"font-family\":\"Arial, sans-serif\",\"font-size\":\"13px\",\"line-height\":\"24px\",\"padding\":\"10px 25px\",\"padding-bottom\":\"0px\",\"padding-top\":\"0px\"}"
+                    }
+                  },
+                  "content": "<p style=\"text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px\"><span style=\"line-height:24px;font-size:16px;font-family:Arial;color:#55575d;text-align:left;\">Astuce 🇫🇷 Si les sous-titres en français ne sont pas activés sur la vidéo, cliquez sur l'icône </span><span style=\"line-height:24px;font-size:16px;font-family:Arial;color:#55575d;text-align:left;\"><b>réglages</b></span><span style=\"line-height:24px;font-size:16px;font-family:Arial;color:#55575d;text-align:left;\"> en bas de la vidéo, puis sur </span><span style=\"line-height:24px;font-size:16px;font-family:Arial;color:#55575d;text-align:left;\"><b>subtitles</b></span><span style=\"line-height:24px;font-size:16px;font-family:Arial;color:#55575d;text-align:left;\"> et choisissez </span><span style=\"line-height:24px;font-size:16px;font-family:Arial;color:#55575d;text-align:left;\"><b>français ☕️</b></span></p>",
+                  "id": "mk-vccHFuPEA6",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "LAcHwOv5f11Br",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "_6vhMNcsO6UXO",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-color": "#ffffff",
+            "background-repeat": "repeat",
+            "background-size": "auto",
+            "full-width": "full-width",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "passport": {
+              "id": "RSgdIepJlcn"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "k1RK0J913aW"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "I33-1_pwflw",
+                      "oldContentEditor": "<p style=\"line-height: 1.38; margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"color:#000000\"><span style=\"font-size:14.6667px\">J'espère que cette vidéo vous inspirera aussi !</span></span></p>",
+                      "oldMjAttributes": "{\"align\":\"left\",\"color\":\"#55575d\",\"font-family\":\"Arial, sans-serif\",\"font-size\":\"13px\",\"line-height\":\"22px\",\"padding\":\"10px 25px\",\"padding-bottom\":\"0px\",\"padding-left\":\"0px\",\"padding-right\":\"0px\",\"padding-top\":\"0px\"}"
+                    }
+                  },
+                  "content": "<p style=\"text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px\"><span style=\"line-height:1.38;font-size:14.6667px;font-family:Arial;color:#000000;text-align:left;\">J'espère que cette vidéo vous inspirera aussi !</span></p>",
+                  "id": "o2WFOay3QQe3w",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "LX9qS_LMESg",
+                      "oldContentEditor": "<p style=\"line-height: 1.38; margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"color:#000000\"><span style=\"font-size:14.6667px\">Joanna et l'équipe de Bob</span></span></p>",
+                      "oldMjAttributes": "{\"align\":\"left\",\"color\":\"#55575d\",\"font-family\":\"Arial, sans-serif\",\"font-size\":\"13px\",\"line-height\":\"22px\",\"padding\":\"10px 25px\",\"padding-bottom\":\"0px\",\"padding-left\":\"0px\",\"padding-right\":\"0px\",\"padding-top\":\"0px\"}"
+                    }
+                  },
+                  "content": "<p style=\"text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px\"><span style=\"line-height:1.38;font-size:14.6667px;font-family:Arial;color:#000000;text-align:left;\">Joanna et l'équipe de Bob</span></p>",
+                  "id": "0HqEWY8l6DknW",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "Opc0A53yO57XR",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "peLlVdFU3Mgk4",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "vMgala0dc4K3OI",
+              "version": "3.3.5"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "gUCVcn-gFmy"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "alt": "",
+                    "border": "none",
+                    "height": "auto",
+                    "href": "",
+                    "padding": "10px 25px",
+                    "padding-left": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "NsDr5hRcT2qsjB",
+                      "image-id": 6036334
+                    },
+                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
+                    "target": "_blank",
+                    "title": "",
+                    "width": "102px"
+                  },
+                  "id": "D0LnrM4KCEw3C",
+                  "tagName": "mj-image"
+                }
+              ],
+              "id": "zCOJqCDNnDjqj",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "pxFNvgUrIMd1n",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "up8Rr6ZOW0e"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "enatrrmuXjk"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "WVKuQDO2hgf",
+                      "oldContentEditor": "<p style=\"margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">PS : Si le cœur vous en dit, vous pouvez me donner votre avis en répondant directement à ce mail.</span></span></p>",
+                      "oldMjAttributes": "{\"align\":\"left\",\"color\":\"#55575d\",\"font-family\":\"Arial, sans-serif\",\"font-size\":\"13px\",\"line-height\":\"24px\",\"padding\":\"10px 25px\",\"padding-bottom\":\"0px\",\"padding-left\":\"0px\",\"padding-right\":\"0px\",\"padding-top\":\"0px\"}"
+                    }
+                  },
+                  "content": "<p style=\"text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px\"><span style=\"line-height:24px;font-size:14px;font-family:Arial;color:#000000;text-align:left;\">PS : Si le cœur vous en dit, vous pouvez me donner votre avis en répondant directement à ce mail.</span></p>",
+                  "id": "SlDxI2FmznPUf",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "lssPVfon3y3_K",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "n6MpnbXuylA_4",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "WJZocvQ2a9t",
+              "version": "3.3.5"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "XvWsPhfdFti"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "H1PD3uqtD9C",
+                      "oldContentEditor": "<p style=\"margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"font-size:11px\">Vous recevez cet email car vous êtes inscrit{% if var:gender:\"\" == \"FEMININE\" %}e{% endif %}</span><span style=\"font-size:11px\">&nbsp;sur <a target=\"_blank\" href=\"https://www.bob-emploi.fr?utm_source=bob-emploi&amp;utm_medium=email\">Bob</a>&nbsp;et avez demandé des emails de coaching. <a target=\"_blank\" href=\"{{var:changeEmailSettingsUrl}}\"><u>Cliquez ici</u></a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte Bob en veille ? <a target=\"_blank\" href=\"{{var:statusUpdateUrl}}\">cliquez ici</a>.</span></p>",
+                      "oldMjAttributes": "{\"line-height\":\"22px\",\"padding-right\":\"0px\",\"font-family\":\"Arial, sans-serif\",\"padding-left\":\"0px\",\"color\":\"#55575d\",\"align\":\"left\",\"padding-bottom\":\"0px\",\"padding\":\"10px 25px\",\"padding-top\":\"0px\",\"font-size\":\"13px\"}"
+                    }
+                  },
+                  "content": "<p style=\"text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px\"><span style=\"line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#55575d;font-family:Arial;\">Vous recevez cet email car vous êtes inscrit{%if var:gender:\"\"==\"FEMININE\"%}e{%else%}{%if var:gender:\"\"==\"MASCULINE\"%}{%else%}·e{%endif%}{% endif %} sur </span><a href=\"https://www.bob-emploi.fr?utm_source=bob-emploi&utm_medium=email\" target=\"_blank\"><span><u><span style=\"line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#0000EE;font-family:Arial;\"><u>Bob</u></span></u></span></a><span style=\"line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#55575d;font-family:Arial;\"> et avez demandé des emails de coaching. </span><a href=\"{{var:changeEmailSettingsUrl}}\" target=\"_blank\"><span><u><span style=\"line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#0000EE;font-family:Arial;\"><u>Cliquez ici</u></span></u></span></a><span style=\"line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#55575d;font-family:Arial;\"> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte Bob en veille ? </span><a href=\"{{var:statusUpdateUrl}}\" target=\"_blank\"><span><u><span style=\"line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#0000EE;font-family:Arial;\"><u>cliquez ici</u></span></u></span></a><span style=\"line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#55575d;font-family:Arial;\">.</span></p>",
+                  "id": "ZpRTq9ZOtmfDb",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "iPH7MD_lYsPNM",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "WxFhjET493gzO",
+          "tagName": "mj-section"
+        }
+      ],
+      "id": "XZTUSqZ6RxML",
+      "tagName": "mj-body"
+    }
+  ],
+  "id": "JDUMAIMeWeKz",
+  "tagName": "mjml"
+}

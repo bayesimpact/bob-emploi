@@ -1,18 +1,17 @@
 import PropTypes from 'prop-types'
 import React from 'react'
 
-import {getEmailTemplates} from 'store/french'
-import {prepareT} from 'store/i18n'
+import {LocalizableString, getEmailTemplates, combineTOptions, prepareT} from 'store/i18n'
 import {isEmailTemplatePersonalized, projectMatchAllFilters} from 'store/user'
 
-import {Trans} from 'components/i18n'
-import {GrowingNumber} from 'components/theme'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import Picto from 'images/advices/picto-network-application.svg'
 
 import {CardProps, MethodSuggestionList, EmailTemplate, useAdviceData} from './base'
 
 
-const CONTACT_EXCUSES = [
+const CONTACT_EXCUSES: readonly {example: LocalizableString; name: LocalizableString}[] = [
   {
     example: prepareT(
       "J'ai vu que \\[partager une actualité de votre profession\\] cela m'a fait " +
@@ -49,7 +48,7 @@ const emptyArray = [] as const
 // TODO(pascal): Move to the methods' UI.
 const NetworkAdvicePageBase = (props: NetworkCardProps): React.ReactElement => {
   const {handleExplore, profile, profile: {gender}, project, t, t: translate, intro} = props
-  const {leads = emptyArray} = useAdviceData<bayes.bob.ContactLeads>(props)
+  const {data: {leads = emptyArray}, loading} = useAdviceData<bayes.bob.ContactLeads>(props)
   const selectedEmails = getEmailTemplates(t).network.
     filter(({filters}): boolean => projectMatchAllFilters(project, filters))
   // TODO(pascal): Remove the selectedEmails
@@ -61,20 +60,21 @@ const NetworkAdvicePageBase = (props: NetworkCardProps): React.ReactElement => {
     <GrowingNumber number={3} isSteady={true} /> prétextes pour envoyer un message à
     quelqu'un
   </Trans>
+  if (loading) {
+    return loading
+  }
   // TODO(cyrille): Put intro inside one of the method sections.
   return <div>
     {intro ? <div style={{marginBottom: 20}}>{intro}</div> : null}
     <MethodSuggestionList title={leadsTitle}>
       {(leads.length) ?
         leads.map((lead, idx): ReactStylableElement|null => lead.emailExample ? <EmailTemplate
-          isMethodSuggestion={true}
           content={lead.emailExample}
           tip={lead.contactTip}
           title={lead.name}
           key={`lead-${idx}`}
           onContentShown={handleExplore('contact lead')} /> : null)
         : selectedEmails.map((email, idx): ReactStylableElement => <EmailTemplate
-          isMethodSuggestion={true}
           content={email.content}
           title={email.title}
           whyForYou={
@@ -85,9 +85,8 @@ const NetworkAdvicePageBase = (props: NetworkCardProps): React.ReactElement => {
     </MethodSuggestionList>
     <MethodSuggestionList style={{marginTop: 20}} title={excusesTitle}>
       {CONTACT_EXCUSES.map((excuse, idx): ReactStylableElement => <EmailTemplate
-        isMethodSuggestion={true}
-        content={translate(excuse.example, {context: gender})}
-        title={translate(excuse.name)}
+        content={translate(...combineTOptions(excuse.example, {context: gender}))}
+        title={translate(...excuse.name)}
         key={`example-${idx}`}
         onContentShown={handleExplore('contact excuses')} />)}
     </MethodSuggestionList>

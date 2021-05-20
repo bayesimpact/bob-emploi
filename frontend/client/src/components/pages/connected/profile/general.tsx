@@ -1,13 +1,17 @@
+import {TFunction} from 'i18next'
 import PropTypes from 'prop-types'
-import React, {useCallback} from 'react'
+import React, {useCallback, useState} from 'react'
 import {components} from 'react-select'
 
-import {localizeOptions, prepareT} from 'store/i18n'
-import {DEGREE_OPTIONS, GENDER_OPTIONS, FAMILY_SITUATION_OPTIONS, userExample} from 'store/user'
+import {getLanguage, isGenderNeeded, localizeOptions, prepareT} from 'store/i18n'
+import {DEGREE_OPTIONS, GENDER_OPTIONS, FAMILY_SITUATION_OPTIONS, useUserExample} from 'store/user'
 
-import {isMobileVersion} from 'components/mobile'
-import {BirthYearSelector, FieldSet, Select} from 'components/pages/connected/form_utils'
-import {RadioGroup} from 'components/theme'
+import BirthYearSelector from 'components/birth_year_selector'
+import FieldSet from 'components/field_set'
+import isMobileVersion from 'store/mobile'
+import InformationIcon from 'components/information_icon'
+import RadioGroup from 'components/radio_group'
+import Select from 'components/select'
 
 import {ProfileStepProps, Step, useProfileChangeCallback, useProfileUpdater} from './step'
 
@@ -18,7 +22,8 @@ const hasHandicapOptions = [
 ] as const
 
 
-const HighestDegreeOption = ({children, ...props}: GetProps<typeof components['Option']>):
+type HighestDegreeOptionProps = React.ComponentProps<typeof components['Option']>
+const HighestDegreeOption = ({children, ...props}: HighestDegreeOptionProps):
 React.ReactElement => <components.Option {...props}>
   <span style={{display: 'flex'}}>
     <span>{children}</span>
@@ -29,19 +34,32 @@ React.ReactElement => <components.Option {...props}>
   </span>
 </components.Option>
 
+interface DegreeOption {
+  equivalent?: string
+  name: string
+  value: bayes.bob.DegreeLevel
+}
+function localizeDegreeOptions(translate: TFunction): readonly DegreeOption[] {
+  return DEGREE_OPTIONS.map(({equivalent, name, ...other}) => ({
+    ...equivalent ? {equivalent: translate(...equivalent)} : {},
+    name: translate(...name),
+    ...other,
+  }))
+}
+
 
 const fieldsRequired = {
   familySituation: true,
-  gender: true,
+  gender: false,
   hasHandicap: false,
   highestDegree: true,
   yearOfBirth: true,
 } as const
 
 
-const GeneralStepBase = (props: ProfileStepProps): React.ReactElement => {
+const GeneralStep = (props: ProfileStepProps): React.ReactElement => {
   const {isShownAsStepsDuringOnboarding, onChange, onSubmit, profile, profile: {familySituation,
-    gender, hasCompletedOnboarding, hasHandicap, highestDegree, yearOfBirth}, t} = props
+    gender, hasCompletedOnboarding, hasHandicap, highestDegree, locale, yearOfBirth}, t} = props
 
   const {isFormValid, isValidated, handleSubmit} =
     useProfileUpdater(fieldsRequired, profile, onSubmit)
@@ -52,6 +70,8 @@ const GeneralStepBase = (props: ProfileStepProps): React.ReactElement => {
   const handleChangeHighestDegree = useProfileChangeCallback('highestDegree', profile, onChange)
   const handleChangeHasHandicap = useProfileChangeCallback('hasHandicap', profile, onChange)
 
+  const language = getLanguage(locale)
+  const userExample = useUserExample()
   const fastForward = useCallback((): void => {
     if (isFormValid) {
       handleSubmit()
@@ -61,7 +81,7 @@ const GeneralStepBase = (props: ProfileStepProps): React.ReactElement => {
     const {familySituation, gender, highestDegree, yearOfBirth} = profile
     const profileDiff: {-readonly [K in keyof bayes.bob.UserProfile]?: bayes.bob.UserProfile[K]} =
       {}
-    if (!gender) {
+    if (!gender && isGenderNeeded(language)) {
       profileDiff.gender = userExample.profile.gender
     }
     if (!familySituation) {
@@ -74,13 +94,25 @@ const GeneralStepBase = (props: ProfileStepProps): React.ReactElement => {
       profileDiff.yearOfBirth = userExample.profile.yearOfBirth
     }
     onChange?.({profile: profileDiff})
-  }, [isFormValid, handleSubmit, onChange, profile])
+  }, [isFormValid, handleSubmit, language, onChange, profile, userExample])
+
+  const [isGenderQuestionShown] = useState((): boolean => isGenderNeeded(language) ?
+    // If gender is needed: only show it during the first onboarding or if it's unset.
+    !hasCompletedOnboarding || !gender :
+    // Gender is not required: only show it if it was set.
+    !hasCompletedOnboarding && !!gender)
+
+  const [isFamilySituationQuestionShown] = useState((): boolean =>
+    !hasCompletedOnboarding || !familySituation)
+
+  const [isYearOfBirthQuestionShown] = useState((): boolean =>
+    !hasCompletedOnboarding || !yearOfBirth)
 
   // Keep in sync with 'isValid' fields from fieldset below.
   const checks = [
-    !!gender,
-    !!familySituation,
-    !!yearOfBirth,
+    !isGenderQuestionShown || !!gender,
+    !isFamilySituationQuestionShown || !!familySituation,
+    !isYearOfBirthQuestionShown || !!yearOfBirth,
     !!highestDegree,
   ]
   const radioGroupStyle = isShownAsStepsDuringOnboarding ? {
@@ -99,15 +131,24 @@ const GeneralStepBase = (props: ProfileStepProps): React.ReactElement => {
     // Hide Previous button.
     onPreviousButtonClick={null}
     {...props}>
-    {hasCompletedOnboarding ? null : <FieldSet
-      label={t('Vous êtes\u00A0:')}
+    {isGenderQuestionShown ? <FieldSet
+      label={<React.Fragment>
+        {t('Vous êtes\u00A0:')}
+        <InformationIcon tooltipWidth={220}>
+          {t(
+            'Vous aurez accès au même contenu. {{productName}} se sert de cette information ' +
+            "uniquement pour savoir s'il faut parler de vous au masculin ou au féminin.",
+            {productName: config.productName},
+          )}
+        </InformationIcon>
+      </React.Fragment>}
       isValid={!!gender} isValidated={isValidated}>
       <RadioGroup<bayes.bob.Gender>
         style={radioGroupStyle}
         onChange={handleChangeGender}
         options={localizeOptions(t, GENDER_OPTIONS)} value={gender} />
-    </FieldSet>}
-    {checks[0] && !hasCompletedOnboarding ? <FieldSet
+    </FieldSet> : null}
+    {checks[0] && isFamilySituationQuestionShown ? <FieldSet
       label={t('Quelle est votre situation familiale\u00A0?')}
       isValid={!!familySituation}
       isValidated={isValidated} hasCheck={true}>
@@ -117,7 +158,7 @@ const GeneralStepBase = (props: ProfileStepProps): React.ReactElement => {
         placeholder={t('choisissez une situation')}
         value={familySituation} />
     </FieldSet> : null}
-    {checks.slice(0, 2).every((c): boolean => c) && !hasCompletedOnboarding ? <FieldSet
+    {checks.slice(0, 2).every((c): boolean => c) && isYearOfBirthQuestionShown ? <FieldSet
       label={t('En quelle année êtes-vous né·e\u00A0?', {context: gender})}
       isValid={!!yearOfBirth} isValidated={isValidated} hasCheck={true}>
       <BirthYearSelector
@@ -131,7 +172,7 @@ const GeneralStepBase = (props: ProfileStepProps): React.ReactElement => {
       <Select<bayes.bob.DegreeLevel>
         onChange={handleChangeHighestDegree} value={highestDegree}
         components={{Option: HighestDegreeOption}}
-        options={DEGREE_OPTIONS}
+        options={localizeDegreeOptions(t)}
         placeholder={t("choisissez un niveau d'études")} />
     </FieldSet> : null}
     {/* TODO(pascal): Please remove the left padding on the fieldset, I can't get rid of it */}
@@ -146,15 +187,14 @@ const GeneralStepBase = (props: ProfileStepProps): React.ReactElement => {
     </FieldSet> : null}
   </Step>
 }
-GeneralStepBase.propTypes = {
+GeneralStep.propTypes = {
   featuresEnabled: PropTypes.object,
   isShownAsStepsDuringOnboarding: PropTypes.bool,
   onChange: PropTypes.func,
   profile: PropTypes.object.isRequired,
   t: PropTypes.func.isRequired,
 }
-const GeneralStep = React.memo(GeneralStepBase)
 
 
 
-export {GeneralStep}
+export default React.memo(GeneralStep)

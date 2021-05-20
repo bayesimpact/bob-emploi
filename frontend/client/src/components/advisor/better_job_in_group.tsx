@@ -7,11 +7,14 @@ import {useDispatch, useSelector} from 'react-redux'
 
 import {DispatchAllActions, RootState, getJobs} from 'store/actions'
 import {genderizeJob, getJobSearchURL} from 'store/job'
+import isMobileVersion from 'store/mobile'
 
-import {Trans} from 'components/i18n'
-import {isMobileVersion} from 'components/mobile'
+import DataSource from 'components/data_source'
+import ExternalLink from 'components/external_link'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
+import PercentBar from 'components/percent_bar'
 import {RadiumExternalLink} from 'components/radium'
-import {DataSource, ExternalLink, GrowingNumber, PercentBar} from 'components/theme'
 import Picto from 'images/advices/picto-better-job-in-group.svg'
 
 import {CardProps, MethodSuggestionList} from './base'
@@ -75,7 +78,7 @@ const WeightedJobBase = (props: WeightedJobProps): React.ReactElement => {
   const barColor = isBetterThanTarget ? colors.GREENISH_TEAL : colors.SLATE
   const percent = 100 * (weight || 0) / maxWeight
   return <RadiumExternalLink
-    href={getJobSearchURL(job, gender)} style={containerStyle} onClick={onClick}>
+    href={getJobSearchURL(t, job, gender)} style={containerStyle} onClick={onClick}>
     <span style={jobNameStyle}>
       {genderizeJob(job, gender)}
       {isTargetJob ? ` (${t('vous')})` : ''}
@@ -111,6 +114,14 @@ const WeightedJob = React.memo(WeightedJobBase)
 
 function hasRomeId(jobGroup?: bayes.bob.JobGroup): jobGroup is {romeId: string} {
   return !!jobGroup?.romeId
+}
+
+
+const showMoreButtonStyle = {
+  color: 'inherit',
+  fontWeight: 500,
+  justifyContent: 'center',
+  width: '100%',
 }
 
 
@@ -152,17 +163,13 @@ const BetterJobInGroup = (props: CardProps): React.ReactElement => {
 
   const showAllJobs = useCallback((): void => setAreAllJobsShown(true), [])
 
-  const showMoreButtonStyle = {
-    fontWeight: 500,
-    justifyContent: 'center',
-  }
-  const showMoreButton: ReactStylableElement|null = areAllJobsShown ? null : <div
+  const showMoreButton: ReactStylableElement|null = areAllJobsShown ? null : <button
     key="show-more" style={showMoreButtonStyle} onClick={showAllJobs}>
     <Trans parent="span" style={{fontSize: 13}} t={t}>
       Voir tous les métiers
     </Trans>
     <ChevronDownIcon style={{fill: colors.CHARCOAL_GREY, height: 20, width: 20}} />
-  </div>
+  </button>
 
   const targetJobIndex = weightedJobs.
     findIndex(({job}: WeightedJobState): boolean => job?.codeOgr === codeOgr)
@@ -176,19 +183,31 @@ const BetterJobInGroup = (props: CardProps): React.ReactElement => {
   ) + '*'
   const footer = <DataSource style={{margin: 0}}>
     ROME <ExternalLink
-      href={`http://candidat.pole-emploi.fr/marche-du-travail/fichemetierrome?codeRome=${jobGroup.romeId}`}
-      style={{color: colors.COOL_GREY}}>{jobGroup.romeId}</ExternalLink> / Pôle emploi
+      href={`http://candidat.pole-emploi.fr/marche-du-travail/fichemetierrome?codeRome=${romeId}`}
+      style={{color: colors.COOL_GREY}}>{romeId}</ExternalLink> / Pôle emploi
   </DataSource>
   const shownJobs = areAllJobsShown ? weightedJobs :
     weightedJobs.slice(0, (targetJobIndex + 1) || 10)
   return <MethodSuggestionList title={title} subtitle={subtitle} footer={footer}>
-    {shownJobs.map(({job, weight}: WeightedJobState, index): ReactStylableElement|null =>
+    {[...shownJobs.map(({job, weight}: WeightedJobState, index): ReactStylableElement|null =>
       <WeightedJob
         isTargetJob={index === targetJobIndex}
         isBetterThanTarget={index < targetJobIndex} key={job.codeOgr}
         onClick={handleExplore('job')}
-        {...{gender, job, maxWeight, t, weight}} />).concat([showMoreButton])}
+        {...{gender, job, maxWeight, t, weight}} />), showMoreButton]}
   </MethodSuggestionList>
+}
+BetterJobInGroup.propTypes = {
+  handleExplore: PropTypes.func.isRequired,
+  profile: PropTypes.shape({
+    gender: PropTypes.string,
+  }).isRequired,
+  project: PropTypes.shape({
+    targetJob: PropTypes.shape({
+      name: PropTypes.string,
+    }),
+  }).isRequired,
+  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(BetterJobInGroup)
 

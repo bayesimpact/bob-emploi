@@ -5,7 +5,7 @@ import typing
 import unittest
 
 from bob_emploi.frontend.api import geo_pb2
-from bob_emploi.frontend.api import project_pb2
+from bob_emploi.frontend.api import boolean_pb2
 from bob_emploi.frontend.server.test import scoring_test
 
 
@@ -33,14 +33,14 @@ class DrivingLicenseHelpScoringModelTestCase(scoring_test.ScoringModelTestBase):
         persona.project.target_job.job_group.rome_id = rome_id
         persona.project.city.departement_id = departement
         persona.project.job_search_started_at.FromDatetime(datetime.datetime(2017, 5, 1))
-        persona.user_profile.has_car_driving_license = project_pb2.FALSE
+        persona.user_profile.has_car_driving_license = boolean_pb2.FALSE
         return persona
 
     def test_already_has_license(self) -> None:
         """User already has driving license."""
 
         persona = self._random_persona().clone()
-        persona.user_profile.has_car_driving_license = project_pb2.TRUE
+        persona.user_profile.has_car_driving_license = boolean_pb2.TRUE
         score = self._score_persona(persona)
 
         self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
@@ -178,14 +178,14 @@ class DrivingLicenseOneEuroScoringModelTestCase(scoring_test.ScoringModelTestBas
         self.now = datetime.datetime(2018, 2, 2)
         persona = self._random_persona().clone()
         persona.user_profile.year_of_birth = 2000
-        persona.user_profile.has_car_driving_license = project_pb2.FALSE
+        persona.user_profile.has_car_driving_license = boolean_pb2.FALSE
         return persona
 
     def test_already_has_license(self) -> None:
         """User already has driving license."""
 
         persona = self._random_persona().clone()
-        persona.user_profile.has_car_driving_license = project_pb2.TRUE
+        persona.user_profile.has_car_driving_license = boolean_pb2.TRUE
         score = self._score_persona(persona)
 
         self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
@@ -289,14 +289,14 @@ class DrivingLicenseWrittenScoringModelTestCase(scoring_test.ScoringModelTestBas
         self.now = datetime.datetime(2018, 2, 2)
         persona = self._random_persona().clone()
         persona.user_profile.year_of_birth = 2000
-        persona.user_profile.has_car_driving_license = project_pb2.FALSE
+        persona.user_profile.has_car_driving_license = boolean_pb2.FALSE
         return persona
 
     def test_already_has_license(self) -> None:
         """User already has driving license."""
 
         persona = self._random_persona().clone()
-        persona.user_profile.has_car_driving_license = project_pb2.TRUE
+        persona.user_profile.has_car_driving_license = boolean_pb2.TRUE
         score = self._score_persona(persona)
 
         self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')

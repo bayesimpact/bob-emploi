@@ -2,12 +2,12 @@ import PropTypes from 'prop-types'
 import {stringify} from 'query-string'
 import React from 'react'
 
-import {getEmailTemplates} from 'store/french'
+import {getEmailTemplates} from 'store/i18n'
 
 import vroomVroomImage from 'images/vroom-vroom-picto.jpg'
 
-import {Trans} from 'components/i18n'
-import {GrowingNumber} from 'components/theme'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import Picto from 'images/advices/picto-driving-license.svg'
 
 import {CardProps, EmailTemplate, ExpandableAction, ToolCard, useAdviceData} from './base'
@@ -77,7 +77,7 @@ const getVroomVroomUrl =
 
 const SchoolsBase: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
   const {handleExplore, project: {city}, t} = props
-  const adviceData = useAdviceData<bayes.bob.FrenchCity>(props)
+  const {data: adviceData, loading} = useAdviceData<bayes.bob.FrenchCity>(props)
   const schoolComparators = [
     <ToolCard
       imageSrc={vroomVroomImage} href={getVroomVroomUrl(adviceData, city)}
@@ -92,6 +92,9 @@ const SchoolsBase: React.FC<CardProps> = (props: CardProps): React.ReactElement 
   ]
   const schoolsStyle = {
     paddingBottom: 35,
+  }
+  if (loading) {
+    return loading
   }
   return <ExpandableAction
     onContentShown={handleExplore('schools list')}

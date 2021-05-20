@@ -2,10 +2,12 @@
   adviceModules: {
     base: 'appXmyc7yYj0pOcae',
     idField: 'advice_id',
+    output: 'src/components/advisor/data/advice_modules.json',
     table: 'advice_modules',
     translatableFields: [
-      'explanations (for client)',
+      'static_explanations',
       'goal',
+      'short_title',
       'title',
       'title_3_stars',
       'title_2_stars',
@@ -14,18 +16,42 @@
     ],
     view: 'Ready to Import',
   },
-  categories: {
+  diagnosticIllustrations: {
     base: 'appXmyc7yYj0pOcae',
-    table: 'diagnostic_categories',
+    idField: 'id',
+    output: 'src/components/advisor/data/diagnosticIllustrations.json',
+    table: 'convince_illustrations',
+    translatableFields: [
+      'highlight',
+      'text',
+    ],
+    view: 'Grid view',
+  },
+  diagnosticMainChallenges: {
+    base: 'appXmyc7yYj0pOcae',
+    idField: 'category_id',
+    output: 'src/components/strategist/data/diagnosticMainChallenges.json',
+    table: 'diagnostic_main_challenges',
     translatableFields: [
       'category_description',
-      'metric_title',
+      'achievement_text',
+      'bob_explanation',
+      'description',
+      'description_answer',
+      'interesting_highlight',
+      'interesting_text',
       'metric_details',
+      'metric_not_reached',
+      'metric_reached',
+      'metric_title',
+      'opportunity_highlight',
+      'opportunity_text',
     ],
     view: 'Ready to Import',
   },
   emailTemplates: {
     base: 'appXmyc7yYj0pOcae',
+    output: 'src/components/advisor/data/email_templates.json',
     table: 'email_templates',
     translatableFields: [
       'content',
@@ -34,12 +60,43 @@
     ],
     view: 'Ready to Import',
   },
-  strategyGoals: {
+  goals: {
     base: 'appXmyc7yYj0pOcae',
+    idField: 'goal_id',
+    output: 'src/components/strategist/data/goals.json',
     table: 'strategy_goals',
     translatableFields: [
       'content',
       'step_title',
+    ],
+    view: 'Ready to Import',
+  },
+  impactMeasurement: {
+    base: 'appXmyc7yYj0pOcae',
+    idField: 'action_id',
+    output: 'src/components/strategist/data/impactMeasurement.json',
+    table: 'impact_measurement',
+    translatableFields: [
+      'name',
+    ],
+    view: 'Ready to Import',
+  },
+  resourceThemes: {
+    base: 'appXmyc7yYj0pOcae',
+    idField: 'theme_id',
+    output: 'src/components/advisor/data/resource_themes.json',
+    table: 'resource_themes',
+    translatableFields: [
+      'name',
+    ],
+    view: 'viwYZ0CeDuIfM4Wkn',
+  },
+  vae: {
+    base: 'appMRMtWV61Kibt37',
+    output: 'src/components/advisor/data/vae.json',
+    table: 'VAE_Stats',
+    translatableFields: [
+      'name',
     ],
     view: 'Ready to Import',
   },

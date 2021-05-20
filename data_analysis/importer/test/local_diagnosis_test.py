@@ -31,9 +31,11 @@ class BmoRomeImporterTestCase(unittest.TestCase):
         collection = local_diagnosis.csv2dicts(
             self.bmo_csv, self.fap_rome, self.pcs_rome, self.salaries_csv,
             self.unemployment_duration_csv, self.job_offers_changes_json,
-            self.imt_folder, self.mobility_csv, self.data_folder)
+            self.imt_folder, self.mobility_csv,
+            trainings_csv=path.join(self.data_folder, 'cpf_trainings.csv'),
+            data_folder=self.data_folder)
 
-        self.assertEqual(36, len(collection))
+        self.assertEqual(54, len(collection))
         protos = dict(mongo.collection_to_proto_mapping(
             collection, job_pb2.LocalJobStats))
 
@@ -51,7 +53,7 @@ class BmoRomeImporterTestCase(unittest.TestCase):
         proto = protos['74:A1203']
         self.assertEqual(17800, proto.salary.max_salary)
         self.assertEqual(17700, proto.salary.min_salary)
-        self.assertEqual('17 700 - 17 800', proto.salary.short_text)
+        self.assertEqual('17\u202f700 - 17\u202f800', proto.salary.short_text)
         self.assertEqual(job_pb2.ANNUAL_GROSS_SALARY, proto.salary.unit)
 
         proto = protos['971:A1203']
@@ -60,7 +62,8 @@ class BmoRomeImporterTestCase(unittest.TestCase):
         proto = protos['09:F1402']
         self.assertEqual(2900, proto.imt.junior_salary.max_salary)
         self.assertEqual(1550, proto.imt.junior_salary.min_salary)
-        self.assertEqual('De 1\xa0550\xa0€ à 2\xa0900\xa0€', proto.imt.junior_salary.short_text)
+        self.assertEqual(
+            'De 1\u202f550\xa0€ à 2\u202f900\xa0€', proto.imt.junior_salary.short_text)
         employment_type_percentages = [
             employment_type.percentage for employment_type in proto.imt.employment_type_percentages]
         employment_type_codes = [
@@ -71,7 +74,7 @@ class BmoRomeImporterTestCase(unittest.TestCase):
 
         proto = protos['55:K2103']
         self.assertFalse(proto.imt.junior_salary.short_text)
-        self.assertEqual('De 3\xa0500\xa0€ à 5\xa0550\xa0€', proto.imt.senior_salary.short_text)
+        self.assertEqual('De 3\u202f500\xa0€ à 5\u202f550\xa0€', proto.imt.senior_salary.short_text)
 
         proto = protos['10:F1402']
         self.assertEqual(4, len(proto.less_stressful_job_groups))
@@ -101,6 +104,9 @@ class BmoRomeImporterTestCase(unittest.TestCase):
         proto = protos['02:A1101']
         self.assertEqual(19, proto.bmo.percent_difficult)
 
+        proto = protos['65:A1201']
+        self.assertEqual(2, proto.training_count)
+
     def test_finalize_salary_estimation(self) -> None:
         """Basic usage of finalize_salary_estimation."""
 
@@ -108,7 +114,7 @@ class BmoRomeImporterTestCase(unittest.TestCase):
             'minSalary': 14660,
             'maxSalary': 35100,
             'medianSalary': 22000})
-        self.assertEqual('14 660 - 35 100', estimation['shortText'])
+        self.assertEqual('14\u202f660 - 35\u202f100', estimation['shortText'])
 
 
 if __name__ == '__main__':

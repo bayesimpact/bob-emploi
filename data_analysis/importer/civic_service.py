@@ -77,7 +77,7 @@ def csv2dicts(civic_service_missions_csv: str, today: Optional[str] = None) -> L
     missions = missions.drop_duplicates()
 
     # Change Corsica departement ID to match ours (e.g Corse du Sud  "20/A -> 2A".).
-    missions['departement_id'] = missions.departement_id.str.replace('0/', '')
+    missions['departement_id'] = missions.departement_id.str.replace('0/', '', regex=False)
 
     # As date is given in French, add a formatted date column.
     try:
@@ -88,7 +88,7 @@ def csv2dicts(civic_service_missions_csv: str, today: Optional[str] = None) -> L
             f'Dates do not have the right format: "{missions.start_date}"') from error
 
     # Format the start date for first date of the month in proper French (e.g 1 -> 1ᵉʳ).
-    missions.start_date = missions.start_date.str.replace('1 ', '1ᵉʳ ')
+    missions.start_date = missions.start_date.str.replace('1 ', '1ᵉʳ ', regex=False)
 
     # Keeping only missions starting now and after.
     earlier_start = today[:-3]

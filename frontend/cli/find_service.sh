@@ -7,6 +7,9 @@ readonly test_service=$3
 readonly relative_file_path=${file_path#"$project_path/"}
 
 if [[ $relative_file_path == frontend/client* ]]; then
+    if [[ $relative_file_path == *test* || -n "$test_service" ]]; then
+        service="frontend-test"
+    fi
     echo "frontend-dev"
     exit
 fi

@@ -90,11 +90,11 @@ class _TooManyApplicationsScoringModel(scoring_base.ModelHundredBase):
         try:
             nb_applications = _ESTIMATE_OPTION_TO_NUMBER[
                 project.details.weekly_applications_estimate]
-        except KeyError:
+        except KeyError as err:
             logging.error(
                 '_ESTIMATE_OPTION_TO_NUMBER should have all keys from '
                 'project_pb2.NumberOfferEstimateOption')
-            raise scoring_base.NotEnoughDataException()
+            raise scoring_base.NotEnoughDataException() from err
         if nb_applications <= 5:
             # This is just to ensure that too many applications get sanctionned,
             # we don't look at what happens below.
@@ -296,7 +296,7 @@ class _FrustrationScoringModel(scoring_base.ModelHundredBase):
     to lower the overall score of a submetric.
     """
 
-    def __init__(self, frustration: user_pb2.Frustration) -> None:
+    def __init__(self, frustration: 'user_pb2.Frustration.V') -> None:
         self.frustration = frustration
 
     def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:

@@ -1,4 +1,4 @@
-"""Script to update the "VAE Stats" in AirTable.
+"""Script to update the "VAE_Stats" in AirTable.
 
 Data originally from https://www.education.gouv.fr/cid123187/dispositif-academique-de-validation-des-acquis-12-700-diplomes-delivres-en-2017.html
 
@@ -20,7 +20,7 @@ _FIELDNAME = 'vae_ratio_in_diploma'
 
 
 def main(
-        api_key: str, base_id: str = 'appMRMtWV61Kibt37', table: str = 'VAE Stats',
+        api_key: str, base_id: str = 'appMRMtWV61Kibt37', table: str = 'VAE_Stats',
         data_folder: str = 'data', filename: str = 'vae-2018.xls',
         sheetname: str = 'Figure 5 web') -> None:
     """Update an AirTable field based on data from XLS file."""

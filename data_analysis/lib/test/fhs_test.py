@@ -1,19 +1,20 @@
 """Tests for the bob_emploi.lib.fhs module."""
 
-import collections
 import datetime
-from typing import Any, Dict, Iterator
+import typing
+from typing import Any, Dict, Iterator, Optional, Mapping
 import unittest
 from unittest import mock
 
 from bob_emploi.data_analysis.lib import fhs
 
+
 # Jobseeker criteria provided per unemployment period.
-_JobseekerCriteria = collections.namedtuple('JobseekerCriteria', [
-    'jobseeker_unique_id',
-    'code_rome',
-    'departement',
-    'gender'])
+class _JobseekerCriteria(typing.NamedTuple):
+    jobseeker_unique_id: str
+    code_rome: str
+    departement: Optional[str]
+    gender: Optional[str]
 
 
 class FhsTestCase(unittest.TestCase):
@@ -197,8 +198,10 @@ class FhsTestCase(unittest.TestCase):
 # TODO: Add more unit tests.
 
 
-StateAtDateTestCase = collections.namedtuple(
-    'TestCase', ['name', 'date', 'expect'])
+class _StateAtDateTestCase(typing.NamedTuple):
+    name: str
+    date: datetime.date
+    expect: Optional[Mapping[str, Any]]
 
 
 class JobSeekerTestCase(unittest.TestCase):
@@ -254,15 +257,15 @@ class JobSeekerTestCase(unittest.TestCase):
                     'DATINS': datetime.date(2015, 5, 1),
                     'DATANN': datetime.date(2015, 12, 22),
                     'CATREGR': '1',
-                    'MOTINS': 'aaa',
-                    'MOTANN': 'bbb',
+                    'MOTINS': 'A',
+                    'MOTANN': '07',
                 },
                 {
                     'DATINS': datetime.date(2015, 12, 22),
                     'DATANN': datetime.date(2015, 12, 31),
                     'CATREGR': '2',
-                    'MOTINS': 'ccc',
-                    'MOTANN': 'ddd',
+                    'MOTINS': 'B',
+                    'MOTANN': '08',
                 },
             ],
             'e0': [],
@@ -274,8 +277,8 @@ class JobSeekerTestCase(unittest.TestCase):
                 {'DATINS': datetime.date(2015, 5, 1),
                  'DATANN': datetime.date(2015, 12, 31),
                  'CATREGR': '2',
-                 'MOTINS': 'aaa',
-                 'MOTANN': 'ddd'})]),
+                 'MOTINS': 'A',
+                 'MOTANN': '08'})]),
             periods)
 
     def test_unemployment_a_periods_switching_to_e(self) -> None:
@@ -324,22 +327,22 @@ class JobSeekerTestCase(unittest.TestCase):
                     'DATINS': datetime.date(2015, 5, 1),
                     'DATANN': datetime.date(2015, 7, 31),
                     'CATREGR': '1',
-                    'MOTINS': 'aaa',
-                    'MOTANN': 'bbb',
+                    'MOTINS': 'A',
+                    'MOTANN': '07',
                 },
                 {
                     'DATINS': datetime.date(2015, 8, 12),
                     'DATANN': datetime.date(2015, 10, 31),
                     'CATREGR': '1',
-                    'MOTINS': 'ccc',
-                    'MOTANN': 'ddd',
+                    'MOTINS': 'B',
+                    'MOTANN': '08',
                 },
                 {
                     'DATINS': datetime.date(2015, 11, 13),
                     'DATANN': None,
                     'CATREGR': '1',
-                    'MOTINS': 'eee',
-                    'MOTANN': 'fff',
+                    'MOTINS': 'C',
+                    'MOTANN': '12',
                 },
             ],
             'e0': [],
@@ -352,14 +355,14 @@ class JobSeekerTestCase(unittest.TestCase):
                  {'DATINS': datetime.date(2015, 5, 1),
                   'DATANN': datetime.date(2015, 10, 31),
                   'CATREGR': '1',
-                  'MOTINS': 'aaa',
-                  'MOTANN': 'ddd'}),
+                  'MOTINS': 'A',
+                  'MOTANN': '08'}),
                 (datetime.date(2015, 11, 13), None,
                  {'DATINS': datetime.date(2015, 11, 13),
                   'DATANN': None,
                   'CATREGR': '1',
-                  'MOTINS': 'eee',
-                  'MOTANN': 'fff'})]),
+                  'MOTINS': 'C',
+                  'MOTANN': '12'})]),
             periods)
         self.assertEqual(
             fhs.Period(
@@ -367,8 +370,8 @@ class JobSeekerTestCase(unittest.TestCase):
                 {'DATINS': datetime.date(2015, 5, 1),
                  'DATANN': datetime.date(2015, 10, 31),
                  'CATREGR': '1',
-                 'MOTINS': 'aaa',
-                 'MOTANN': 'ddd'}),
+                 'MOTINS': 'A',
+                 'MOTANN': '08'}),
             periods.first_contiguous_period())
 
     def test_state_at_date(self) -> None:
@@ -397,27 +400,27 @@ class JobSeekerTestCase(unittest.TestCase):
             'ROME': 'H1234',
         }
         tests = [
-            StateAtDateTestCase(
+            _StateAtDateTestCase(
                 name='In the middle',
                 date=datetime.date(2015, 5, 10),
                 expect=first_state),
-            StateAtDateTestCase(
+            _StateAtDateTestCase(
                 name='Before unemployment',
                 date=datetime.date(2014, 5, 10),
                 expect=None),
-            StateAtDateTestCase(
+            _StateAtDateTestCase(
                 name='After unemployment',
                 date=datetime.date(2016, 5, 10),
                 expect=None),
-            StateAtDateTestCase(
+            _StateAtDateTestCase(
                 name='Between 2 unemployment periods',
                 date=datetime.date(2015, 5, 30),
                 expect=None),
-            StateAtDateTestCase(
+            _StateAtDateTestCase(
                 name='First day of unemployment',
                 date=datetime.date(2015, 5, 1),
                 expect=first_state),
-            StateAtDateTestCase(
+            _StateAtDateTestCase(
                 name='First day of employment',
                 date=datetime.date(2015, 5, 22),
                 expect=None),
@@ -439,7 +442,7 @@ class JobSeekerTestCase(unittest.TestCase):
                     'CATREGR': '1',
                     'ROME': 'H1234',
                     'DEPCOM': 'Here',
-                    'MOTINS': 'aaa',
+                    'MOTINS': 'A',
                     'SEXE': '1',
                 },
                 {
@@ -449,7 +452,7 @@ class JobSeekerTestCase(unittest.TestCase):
                     'CATREGR': '1',
                     'ROME': 'A1001',
                     'DEPCOM': 'There',
-                    'MOTINS': 'aaa',
+                    'MOTINS': 'A',
                     'SEXE': '1',
                 },
             ],
@@ -499,7 +502,7 @@ class JobSeekerTestCase(unittest.TestCase):
                     'CATREGR': '1',
                     'ROME': 'H1234',
                     'DEPCOM': 'Here',
-                    'MOTINS': 'aaa',
+                    'MOTINS': 'A',
                     'SEXE': '1',
                 },
                 {
@@ -509,7 +512,7 @@ class JobSeekerTestCase(unittest.TestCase):
                     'CATREGR': '1',
                     'ROME': 'B1234',
                     'DEPCOM': 'There',
-                    'MOTINS': 'aaa',
+                    'MOTINS': 'A',
                     'SEXE': '1',
                 }
             ],

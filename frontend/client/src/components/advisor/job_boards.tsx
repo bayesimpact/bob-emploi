@@ -2,9 +2,13 @@ import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
-import {Trans} from 'components/i18n'
+import {getGoogleJobSearchUrl} from 'store/job'
+
+import ExternalLink from 'components/external_link'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import {RadiumExternalLink} from 'components/radium'
-import {ExternalLink, GrowingNumber, Tag} from 'components/theme'
+import Tag from 'components/tag'
 import Picto from 'images/advices/picto-find-a-jobboard.svg'
 
 import {CardProps, MethodSuggestionList, useAdviceData} from './base'
@@ -12,17 +16,11 @@ import {CardProps, MethodSuggestionList, useAdviceData} from './base'
 
 const JobBoardsMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
   const {targetJob: {name: jobName} = {name: ''}} = props.project
-  const {jobBoards = []} = useAdviceData<bayes.bob.JobBoards>(props)
+  const {data: {jobBoards = []}, loading} = useAdviceData<bayes.bob.JobBoards>(props)
   const {handleExplore, t} = props
 
-  const googleJobSearchUrl = useMemo((): string => {
-    const queryTerms = ["offres d'emploi"]
-    if (jobName) {
-      queryTerms.push(jobName)
-    }
-    const query = queryTerms.join(' ')
-    return `https://www.google.fr/search?q=${encodeURIComponent(query)}&ibp=htl;jobs&sa=X`
-  }, [jobName])
+  const googleJobSearchUrl = useMemo(
+    (): string => getGoogleJobSearchUrl(t, jobName), [jobName, t])
 
   const numSpecializedJobBoards =
     jobBoards.filter(({filters}): boolean => !!(filters && filters.length)).length
@@ -50,6 +48,9 @@ const JobBoardsMethod: React.FC<CardProps> = (props: CardProps): React.ReactElem
       Google
     </ExternalLink>
   </Trans>
+  if (loading) {
+    return loading
+  }
   return <MethodSuggestionList title={title} footer={footer}>
     {jobBoards.map(({filters, link: href, title}, index): ReactStylableElement|null =>
       href ? <JobBoardLink

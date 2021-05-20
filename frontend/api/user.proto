@@ -3,6 +3,7 @@ syntax = "proto3";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 
+import "bob_emploi/frontend/api/boolean.proto";
 import "bob_emploi/frontend/api/diagnostic.proto";
 import "bob_emploi/frontend/api/geo.proto";
 import "bob_emploi/frontend/api/job.proto";
@@ -10,9 +11,10 @@ import "bob_emploi/frontend/api/options.proto";
 import "bob_emploi/frontend/api/project.proto";
 
 package bayes.bob;
+option go_package="bayes.org/bob_emploi/frontend/api/user";
 
 // All data for a user of the mashup app, a job seeker.
-// Next ID: 32
+// Next ID: 33
 message User {
   // A unique identifier for this user. It is not related to any public
   // identifiers although it is not obfuscated in the API. It looks like a normal Mongo ObjectID,
@@ -62,13 +64,12 @@ message User {
   // We only look at the date of this value, not at the time.
   google.protobuf.Timestamp requested_by_user_at_date = 10 [(field_usage) = APP_ONLY];
 
+  // The date on which it is OK to check if the user can be deleted.
+  google.protobuf.Timestamp check_for_deletion_date = 32 [(field_usage) = APP_ONLY];
+
   // The date and time we last sent an email to the user. This does not include
   // password recovery emails.
   google.protobuf.Timestamp last_email_sent_at = 11 [(field_usage) = APP_ONLY];
-
-  // A map of likes (+1) and dislikes (-1) per feature.
-  // TODO(pascal): Clean this up.
-  map<string, int32> likes = 13 [(field_usage) = USER_FEEDBACK, deprecated = true];
 
   // Value of the utm parameters the first time the user reached our website.
   TrackingParameters origin = 23;
@@ -76,14 +77,6 @@ message User {
   // Response from the user to the survey we send by email to get feedback on the app
   // and on the relevance of the given advices.
   NPSSurveyResponse net_promoter_score_survey_response = 15 [(field_usage) = USER_FEEDBACK];
-
-  // Identifier of the latest changelog message seen by the user, e.g. 2017-06-18_00.
-  // TODO(pascal): Move inside notifications.
-  string latest_changelog_seen = 16 [(field_usage) = APP_ONLY];
-
-  // The notifications that the user has seen.
-  // TODO(pascal): Maybe clean it up as we don't use it anymore.
-  Notifications notifications_seen = 17 [(field_usage) = APP_ONLY];
 
   // Revision of the user's data. This number should always be increasing, it
   // helps keep synchronized the client and the server versions of the user's
@@ -120,6 +113,17 @@ message User {
   // Unused tickets should be deleted after some time.
   // TODO(cyrille): Add a cleaner CRON.
   repeated SupportTicket support_tickets = 30;
+
+  // Information about the link between the product and Ma Voie.
+  MaVoieInfo ma_voie = 31;
+}
+
+message MaVoieInfo {
+  // The ID for this specific user in Ma Voie.
+  string ma_voie_id = 1 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // The step in Ma Voie this user is expected to fulfill with the product.
+  string step_id = 2;
 }
 
 message SupportTicket {
@@ -176,7 +180,8 @@ message UserProfile {
   string name = 8 [(field_usage) = PERSONAL_IDENTIFIER];
 
   // User's last name (e.g.: Corpet).
-  string last_name = 16 [(field_usage) = PERSONAL_IDENTIFIER];
+  // DEPRECATED: We don't display it anywhere anymore, so no need to ask for it.
+  string last_name = 16 [(field_usage) = PERSONAL_IDENTIFIER, deprecated = true];
 
   // User's year of birth.
   uint32 year_of_birth = 9;
@@ -220,15 +225,6 @@ message UserProfile {
 
   // How did the user found out about the application.
   UserOrigin origin = 21 [(field_usage) = APP_ONLY];
-
-  // Whether the user asked to be "tutoyé".
-  // DEPRECATED(2020-03-01): use locale "fr@tu" instead.
-  // Old users should be updated when they come back.
-  // A migration might be considered.
-  // Asynchronous server code (e.g. analytics, emails) should use
-  //   scoring_base.get_user_locale(profile)
-  // Client code should not set or read this field anymore.
-  bool can_tutoie = 23 [(field_usage) = APP_ONLY, deprecated = true];
 
   // The locale that the user prefers. E.g. "en", "nl", "fr", "fr@tu" (the tutoiement version of
   // French).
@@ -430,6 +426,16 @@ message Features {
   // whom we would have shown the UI.
   // TODO(pascal): Add a start date when ready.
   BinaryExperiment strat_two = 31;
+
+  // Whether it's possible for the user to set their job as unknown in the project definition.
+  // Started: 2021-01-15 (for UK only).
+  bool job_unknown_disabled = 32;
+
+  // Whether we show the UI for self diagnostic at the end of the onboarding (ACTIVE), or near
+  // the beginning (CONTROL).
+  // Started: 2021-03-10
+  // Ended 2021-04-27: New users now have the diagnostic near the beginning.
+  BinaryExperiment late_self_diagnostic = 33;
 }
 
 message Notifications {
@@ -472,7 +478,7 @@ enum FamilySituation {
   SINGLE_PARENT_SITUATION = 4;
 }
 
-// Next ID: 15
+// Next ID: 17
 enum Frustration {
   UNKNOWN_JOB_SEARCH_FRUSTRATION = 0;
 
@@ -507,10 +513,10 @@ enum Frustration {
   // The users profile does not fit what recruiters have in mind.
   ATYPIC_PROFILE = 10;
 
-  // The user feels discriminated for their age.
+  // The user feels discriminated against because of their age.
   AGE_DISCRIMINATION = 11;
 
-  // The user feels discriminated for their sex.
+  // The user feels discriminated against because of their sex.
   SEX_DISCRIMINATION = 12;
 
   // The user experience does not fit what the recruiters expect.
@@ -523,6 +529,20 @@ enum Frustration {
   // The user has difficulty to come back to work after a long absence as a stay-at-home parent.
   // Added on 2018-10-16.
   STAY_AT_HOME_PARENT = 15;
+
+  // The user feels discriminated against because of their race/ethnicity.
+  RACE_DISCRIMINATION = 16;
+
+  // The user has difficulties speaking/writing/understing the country's main language(s).
+  // Added on 2020-11-06.
+  LANGUAGE = 17;
+
+  // The user has qualifications obtained in another country that are not recognized properly.
+  // Added on 2020-11-06.
+  FOREIGN_QUALIFICATIONS = 18;
+
+  // The user has difficulties getting access to childcare.
+  CHILD_CARE = 19;
 }
 
 enum BinaryExperiment {
@@ -594,7 +614,7 @@ enum NPSEmailStatus {
 // Responses to the survey sent by email to user to compute the Net Promoter Score,
 // get feedback on the advices (https://bayes.typeform.com/to/uuPH5r?email=me@example.com)
 // and make sure the user understood Bob's value proposition.
-// Next ID: 10.
+// Next ID: 15.
 message NPSSurveyResponse {
   // The email address used to answer the survey.
   string email = 1;
@@ -628,6 +648,37 @@ message NPSSurveyResponse {
   // Whether the user has ideas to act on its own self-diagnostic. The exact action is part of the
   // general feedback comment.
   OptionalBool has_actions_idea = 9;
+
+  // What the user thinks about local market.
+  LocalMarketUserEstimate local_market_estimate = 10;
+
+  // Relative personalization of Bob compared to the other coaches, the
+  // baseline being 10. 10 means "as personalized as the other coaches", 12
+  // means Bob was more personalized, 15 Bob was way more personalized, 8 Bob
+  // was less personalized, 5 Bob was way less personalized.
+  uint32 bob_relative_personalization = 11;
+
+  // How much the user is better informed about different career options after using Bob.
+  // 1 means no change, 2 more informed, 3 way more.
+  uint32 user_informed_about_career_options = 12;
+
+  // Ease of use of Bob.
+  // 0 is unknown, 1 is "very difficult to use", 5 is "very easy to use".
+  uint32 product_usability_score = 13;
+
+  // What actions the user plans to do next.
+  // List of actionIds (example: "explore-jobs"), the order doesn't matter.
+  repeated string next_actions = 14;
+}
+
+enum LocalMarketUserEstimate {
+  // User did not answer.
+  UNKNOWN_LOCAL_MARKET_ESTIMATE = 0;
+
+  LOCAL_MARKET_GOOD = 1;
+  LOCAL_MARKET_BAD = 2;
+  LOCAL_MARKET_UNKNOWN = 3;
+  LOCAL_MARKET_UNKNOWN_COVID = 4;
 }
 
 message SetNPSCommentRequest {
@@ -643,6 +694,13 @@ message SetNPSCommentRequest {
 
   // Whether the user has ideas to act on its own self-diagnostic.
   OptionalBool has_actions_idea = 4;
+
+  // A response to merge with what was already found.
+  NPSSurveyResponse answers = 5;
+
+  // What actions the user plans to do next.
+  // List of actionIds (example: "explore-jobs"), the order doesn't matter.
+  repeated string next_actions = 6;
 }
 
 // Description of an email we sent to the user.
@@ -668,6 +726,9 @@ message EmailSent {
 
   // Subject of the email (actually of the template) that was sent.
   string subject = 8;
+
+  // Whether this email was considered coaching when it was sent.
+  bool is_coaching = 9;
 }
 
 // Status of email sent. This relies only on the mailjet API and is named
@@ -682,6 +743,14 @@ enum EmailSentStatus {
   EMAIL_SENT_SPAM = 6;
   EMAIL_SENT_UNSUB = 7;
   EMAIL_SENT_BLOCKED = 8;
+  EMAIL_SENT_HARDBOUNCED = 9;
+  EMAIL_SENT_SOFTBOUNCED = 10;
+  EMAIL_SENT_DEFERRED = 11;
+}
+
+message EmailHistory {
+  // The emails that were sent to the user.
+  repeated EmailSent emails_sent = 19;
 }
 
 // Description of an employement survey response.
@@ -706,6 +775,15 @@ message EmploymentStatus {
 
   // Whether the user's new job is in a different sector than its previous one.
   OptionalBool is_job_in_different_sector = 10;
+
+  // Whether the user's salary has increased.
+  OptionalBool has_salary_increased = 11;
+
+  // Whether the user's has taken on new responsibilities.
+  OptionalBool has_greater_role = 12;
+
+  // Whether the user's has been promoted.
+  OptionalBool has_been_promoted = 13;
 
   // List of Bob features that were useful.
   repeated UsefulFeature bob_features_that_helped = 6;

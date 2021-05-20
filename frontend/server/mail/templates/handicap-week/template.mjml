@@ -1,0 +1,345 @@
+{
+  "attributes": {
+    "owa": "desktop",
+    "version": "4.5.1"
+  },
+  "children": [
+    {
+      "attributes": {},
+      "children": [
+        {
+          "content": "Bayes Impact a travaillé avec Hanploi pour adapter les conseils de Bob, son outil d'aide à la recherche d'emploi.",
+          "id": "vUcS6-LATln8",
+          "tagName": "mj-preview"
+        }
+      ],
+      "id": "Mz2izttNVvOe",
+      "tagName": "mj-head"
+    },
+    {
+      "attributes": {
+        "background-color": "#ffffff",
+        "color": "#55575d",
+        "font-family": "Arial, sans-serif",
+        "passport": {
+          "id": "qTIptLU_RZ"
+        }
+      },
+      "children": [
+        {
+          "attributes": {
+            "background-color": "#ffffff",
+            "background-repeat": "repeat",
+            "background-size": "auto",
+            "full-width": "full-width",
+            "padding": "20px 0px 20px 0px",
+            "passport": {
+              "id": "nsuTENXAxT"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "w6N4-CQtdO"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "line-height": "22px",
+                    "padding": "0px 25px 0px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "K21XzqgBHr"
+                    }
+                  },
+                  "content": "<h1><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"color:#1888ff\">Répondre aux parcours de vie spécifiques</span></span> <span style=\"font-family:\" apple=\"\" color=\"\" emoji=\"\">♿</span></h1>",
+                  "id": "n5MoNpBnrhvx",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "line-height": "22px",
+                    "padding": "0px 25px 0px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "NFhJP5NSyC"
+                    }
+                  },
+                  "content": "<p style=\"color: #55575d; font-family: Arial,sans-serif; font-size: 13px; letter-spacing: normal; line-height: 1.38; margin: 10px 0; text-align: -webkit-left;\"><span style=\"color:#666666\"><span style=\"font-size:15px\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><b>Bayes Impact a travaillé avec <a target=\"_blank\" style=\"color:#1888ff\" href=\"http://r.bob-emploi.fr/lnk/AT4AADIv-ggAAAAAAAAAAG1yNsMAARpchvMAAAAAAAeZAwBd1sCDT1l7-a-JRy-Im3NnSH5kqAAHPJo/1/gFTSC89dVYbaX3H9H2wClw/aHR0cHM6Ly93d3cuaGFucGxvaS5jb20v\">Hanploi</a> pour adapter les conseils de Bob, son outil d'aide à la recherche d'emploi.</b></span></span></span></p><p style=\"color: #55575d; font-family: Arial,sans-serif; font-size: 13px; letter-spacing: normal; line-height: 1.38; margin: 10px 0; text-align: -webkit-left;\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif; font-weight:400\"><b><b style=\"font-weight:400\"><span style=\"color:#666666; font-weight:400\"><span style=\"font-weight:400\"><span style=\"font-size:15px; font-weight:400\">Cette semaine, c'est la </span></span></span></b><span style=\"color:#3468cf; font-size:15px; font-weight:400\"><span style=\"font-weight:400\"><a target=\"_blank\" style=\"color:#1888ff; font-weight:400\" href=\"http://r.bob-emploi.fr/lnk/AT4AADIv-ggAAAAAAAAAAG1yNsMAARpchvMAAAAAAAeZAwBd1sCDT1l7-a-JRy-Im3NnSH5kqAAHPJo/2/MAfAD6-9_tz89ONZuy2sGA/aHR0cDovL3d3dy5zZW1haW5lLWVtcGxvaS1oYW5kaWNhcC5jb20v\"><b style=\"font-weight:400\">Semaine européenne pour l'emploi des personnes handicapées</b></a><b style=\"font-weight:400\"><span style=\"color:#1888ff; font-weight:400\">.</span></b></span></span><b style=\"font-weight:400\"><span style=\"color:#666666; font-weight:400\"><span style=\"font-weight:400\"><span style=\"font-size:15px; font-weight:400\"> Notre équipe a récemment créé de nouveaux contenus pour améliorer l'expérience de Bob pour des personnes en situation de handicap. Ces dernières représentent près de <span style=\"font-weight:400\">7% des travailleurs</span> en France, et <span style=\"font-weight:400\">6% de nos utilisateurs.</span></span></span></span></b></b></span></p><p style=\"color: #55575d; font-family: Arial,sans-serif; font-size: 13px; letter-spacing: normal; line-height: 1.38; margin: 10px 0; text-align: -webkit-left;\"><span style=\"color:#666666\"><span style=\"font-size:15px\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\">Nous avons donc travaillé avec Hanploi sur les défis particuliers auxquels ces personnes peuvent être confrontées dans leurs recherches d'emploi. Le but : prodiguer des conseils clairs et accessibles.</span></span></span></p>",
+                  "id": "K5AGXan3LZYX",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "center",
+                    "alt": "",
+                    "border": "none",
+                    "height": "auto",
+                    "href": "",
+                    "padding": "10px 25px",
+                    "passport": {
+                      "id": "2fqNahVWC",
+                      "image-id": 13341772,
+                      "mode": "image"
+                    },
+                    "src": "http://r.bob-emploi.fr/img/6u2u/b/m63g4/vz1lk.png",
+                    "target": "_blank",
+                    "title": "",
+                    "width": "593px"
+                  },
+                  "id": "tztVi2cqf5i6",
+                  "tagName": "mj-image"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "line-height": "24px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "fkQOPcejK"
+                    }
+                  },
+                  "content": "<p style=\"color: #55575d; font-family: Arial,sans-serif; font-size: 13px; letter-spacing: normal; line-height: 1.38; margin: 10px 0; text-align: -webkit-left;\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"font-size:15px\">Pour n'importe quelle utilisatrice, l'algorithme</span><span style=\"color:#666666\"><span style=\"font-size:15px\"> de Bob trouve les stratégies de recherche d'emploi les plus pertinentes ainsi que les méthodes pour atteindre son objectif.</span></span></span></p><p style=\"color: #55575d; font-family: Arial,sans-serif; font-size: 13px; letter-spacing: normal; line-height: 1.38; margin: 10px 0; text-align: -webkit-left;\"><span style=\"color:#666666\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"font-size:15px\">Dans l'exemple ci-dessus, il s'agit d'aider un utilisateur à décider comment parler de son handicap auprès d'un employeur. </span></span></span><span style=\"color:#666666\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"font-size:15px\">Aujourd'hui, c'est <b style=\"font-weight:700\">plus de la moitié des méthodes de recherche d'emploi qui ont été revues et adaptées.</b></span></span></span></p><p style=\"color: #55575d; font-family: Arial,sans-serif; font-size: 13px; letter-spacing: normal; line-height: 1.38; margin: 10px 0; text-align: -webkit-left;\"><span style=\"color:#666666\"><span style=\"font-family:Lato,Helvetica,Arial,sans-serif\"><span style=\"font-size:15px\">Des efforts restent à faire pour un coaching encore plus inclusif, mais nous espérons avoir apporté une pierre de plus à l'édifice avec ces dernières fonctionnalités.</span></span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"></p>",
+                  "id": "SL5mgWVsnRsT",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "center",
+                    "background-color": "#1888FF",
+                    "border": "0px solid #ffffff",
+                    "border-radius": "3px",
+                    "color": "#ffffff",
+                    "font-family": "Lato, Helvetica, Arial, sans-serif",
+                    "font-size": "17px",
+                    "font-weight": "normal",
+                    "href": "https:///www-bob-emploi.fr",
+                    "inner-padding": "10px 25px 10px 25px",
+                    "padding": "10px 25px 10px 25px",
+                    "padding-left": "25px",
+                    "padding-right": "25px",
+                    "passport": {
+                      "id": "eEk-Yj5Ad"
+                    },
+                    "text-decoration": "none",
+                    "text-transform": "none",
+                    "vertical-align": "middle"
+                  },
+                  "content": "<b style=\"font-weight:700\"><span style=\"color:#ffffff; font-weight:700\">Tester Bob</span></b>",
+                  "id": "K6gb99SOxHFJ",
+                  "tagName": "mj-button"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "line-height": "24px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "eFC3j-HoO"
+                    }
+                  },
+                  "content": "<p style=\"margin: 10px 0; text-align: right;\"> </p><p style=\"margin: 10px 0; text-align: center;\"><span style=\"color:#1888ff\"><b style=\"font-weight:700\"><span style=\"font-size:15px; font-weight:700\">L'équipe de Bayes Impact, qui retourne travailler sur Bob !</span></b></span></p>",
+                  "id": "JNGNHBkH2Rl5",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "border-color": "#E6E6E6",
+                    "border-style": "solid",
+                    "border-width": "2px",
+                    "padding": "10px 25px",
+                    "passport": {
+                      "id": "9WjuYGDQj"
+                    },
+                    "width": "100%"
+                  },
+                  "id": "_ID-edzAq52k",
+                  "tagName": "mj-divider"
+                }
+              ],
+              "id": "blca80Rl4SJh",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "WAnsMB32qDUQ",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "background-size": "auto",
+            "padding": "20px 0px 20px 0px",
+            "passport": {
+              "footer": true,
+              "id": "SASq3fu8kPCJw4"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "NDMmgQ3Ytg2"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "line-height": "24px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "J8WA7Kr9n"
+                    }
+                  },
+                  "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:11px\">Bob est rendu possible grâce au soutien à notre ONG Bayes Impact de nombreuses organisations et individus engagés, dont notamment :</span></p><p style=\"margin: 10px 0; text-align: center;\"><span style=\"font-size:11px\"><span style=\"color:#1888ff\"><b style=\"font-weight:700\">Google.org - La Fondation La France s'engage - JP Morgan - Les Galeries Lafayette</b></span></span></p><p style=\"margin: 10px 0;\"><span style=\"font-size:11px\">Retrouvez l'ensemble de nos soutiens par <a target=\"_blank\" href=\"https://www.bayesimpact.org/fr/about/partners-funders\">ici</a>.</span></p>",
+                  "id": "jCXp6GxaErldk",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "center",
+                    "background-color": "#1888FF",
+                    "border": "0px solid #ffffff",
+                    "border-radius": "3px",
+                    "color": "#ffffff",
+                    "font-family": "Lato, Helvetica, Arial, sans-serif",
+                    "font-size": "14px",
+                    "font-weight": "normal",
+                    "href": "https://www.helloasso.com/associations/bayes-impact-france/formulaires/3",
+                    "inner-padding": "10px 25px 10px 25px",
+                    "padding": "10px 25px 10px 25px",
+                    "padding-left": "25px",
+                    "padding-right": "25px",
+                    "passport": {
+                      "id": "aQS0Fyci_"
+                    },
+                    "text-decoration": "none",
+                    "text-transform": "none",
+                    "vertical-align": "middle"
+                  },
+                  "content": "<b style=\"font-weight:700\">Faire un don à notre ONG</b>",
+                  "id": "C6r5cPL6z1qbn",
+                  "tagName": "mj-button"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#000000",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "line-height": "24px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "hnYdVFoAd"
+                    }
+                  },
+                  "content": "<p style=\"text-align: center; margin: 10px 0;\"> </p><p style=\"text-align: center; margin: 10px 0;\"><span style=\"font-size:14px;\">Cet email a été envoyé à [[EMAIL_TO]], </span><a target=\"_blank\" style=\"color: inherit; text-decoration: none; font-size: 14px;\" href=\"[[UNSUB_LINK_FR]]\"><span style=\"font-size:14px;\">cliquez ici pour vous désabonner</span></a><span style=\"font-size:14px;\">.</span></p>",
+                  "id": "XKichVpe65NH4",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "ygACAYvO9lWSE",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "XONDv3pBWS8qS",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "full-width": "full-width",
+            "padding": "0 0 20px 0",
+            "passport": {
+              "brand": true,
+              "hidden": true,
+              "id": "4h7us3Hmmq0",
+              "locked": true
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "yQqpO1gZ7Fs",
+                  "locked": true
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "center",
+                    "alt": "",
+                    "border": "none",
+                    "height": "auto",
+                    "href": "https://fr.mailjet.com/?utm_source=footer&utm_medium=email&utm_campaign=logo1",
+                    "padding": "0px",
+                    "passport": {
+                      "id": "RC5h8sAIg-F",
+                      "locked": true
+                    },
+                    "src": "https://assets.mailjet.com/lib/images/passport/mailjet-brand/logo1.png",
+                    "target": "_blank",
+                    "title": "",
+                    "width": "140px"
+                  },
+                  "id": "e6gY935p3tFe-",
+                  "tagName": "mj-image"
+                }
+              ],
+              "id": "rmMq9c6-W7f56",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "VQSyieYKCzJmv",
+          "tagName": "mj-section"
+        }
+      ],
+      "id": "S69a6zEBdmWp",
+      "tagName": "mj-body"
+    }
+  ],
+  "id": "fQQS4SphIZT0",
+  "tagName": "mjml"
+}

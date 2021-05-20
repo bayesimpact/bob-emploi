@@ -60,8 +60,8 @@ def job_seeker_rows(job_seeker: fhs.JobSeeker, now: datetime.date) -> Iterator[_
     """
 
     category_periods = job_seeker.all_registration_periods()
-    category_periods.exclude_after(now, lambda m: dict(
-        m, MOTANN=fhs.CancellationReason.NOW))
+    category_periods.exclude_after(now, lambda m: typing.cast('fhs._UnemploymentPeriodData', dict(
+        m, MOTANN=fhs.CancellationReason.NOW)))
     period = category_periods.last_contiguous_period()
     if not period:
         return
@@ -101,9 +101,9 @@ def job_seeker_rows(job_seeker: fhs.JobSeeker, now: datetime.date) -> Iterator[_
             num_training=len(trainings),
             training_info=training.metadata.get('FORMACOD', ''),
             training_objective=training.metadata.get('OBJFORM', ''),
-            training_level=training.metadata.get('P2NIVFOR', ''),
-            training_begin_date=training.metadata.get('P2DATDEB', ''),
-            training_end_date=training.metadata.get('P2DATFIN', ''),
+            training_level=str(training.metadata.get('P2NIVFOR', '')),
+            training_begin_date=str(training.metadata.get('P2DATDEB', '')),
+            training_end_date=str(training.metadata.get('P2DATFIN', '')),
         )
 
 

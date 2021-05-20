@@ -1,17 +1,34 @@
 """Unit tests for the salary_recommendation_model module."""
 
+import typing
+from typing import Iterable
 import unittest
-
-import collections
 
 import pandas
 
 from bob_emploi.data_analysis.modeling import salary_recommendation_model
 
-_RecoScore = collections.namedtuple('RecoScore', ['from_salary', 'gained_offers'])
-_RecoCDF = collections.namedtuple('RecoCDF', ['from_salary', 'salary_decrease'])
-_SalariesExpectedReco = collections.namedtuple(
-    'SalariesExpectedReco', ['test_name', 'salaries', 'expected_reco'])
+
+class _RecoScore(typing.NamedTuple):
+    from_salary: float
+    gained_offers: float
+
+
+class _RecoCDF(typing.NamedTuple):
+    from_salary: float
+    salary_decrease: str
+
+
+class _SalariesExpectedRecoScore(typing.NamedTuple):
+    test_name: str
+    salaries: Iterable[float]
+    expected_reco: Iterable[_RecoScore]
+
+
+class _SalariesExpectedRecoCDF(typing.NamedTuple):
+    test_name: str
+    salaries: Iterable[float]
+    expected_reco: Iterable[_RecoCDF]
 
 
 class BucketsTestCase(unittest.TestCase):
@@ -22,12 +39,12 @@ class BucketsTestCase(unittest.TestCase):
 
         # List of namedtuples of (test_name, salary, expected reco).
         salaries_expected_recos = [
-            _SalariesExpectedReco(
+            _SalariesExpectedRecoCDF(
                 test_name='same salary for all job offers (cdf)',
                 salaries=[20000 for x in range(10)],
                 expected_reco=[
                     _RecoCDF(from_salary=20000.0, salary_decrease='no better alternative')]),
-            _SalariesExpectedReco(
+            _SalariesExpectedRecoCDF(
                 test_name='two different salaries (cdf)',
                 salaries=[20000 for x in range(5)] + [25000 for x in range(5)],
                 expected_reco=[
@@ -72,17 +89,17 @@ class BucketsTestCase(unittest.TestCase):
 
         # List of namedtuples of (test_name, salary, expected reco).
         salaries_expected_recos = [
-            _SalariesExpectedReco(
+            _SalariesExpectedRecoScore(
                 test_name='same salary for all job offers (score)',
                 salaries=[20000 for x in range(10)],
                 expected_reco=[_RecoScore(from_salary=20000, gained_offers=0)]),
-            _SalariesExpectedReco(
+            _SalariesExpectedRecoScore(
                 test_name='two different salaries (score)',
                 salaries=[20000 for x in range(5)] + [25000 for x in range(5)],
                 expected_reco=[
                     _RecoScore(from_salary=20000.0, gained_offers=0.0),
                     _RecoScore(from_salary=25000.0, gained_offers=1.0)]),
-            _SalariesExpectedReco(
+            _SalariesExpectedRecoScore(
                 test_name='three different salaries and one outlier (score)',
                 salaries=[17000 for x in range(2)] + [20000 for x in range(7)] + [50000],
                 expected_reco=[

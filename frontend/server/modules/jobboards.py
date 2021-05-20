@@ -34,7 +34,7 @@ class _AdviceJobBoards(scoring_base.LowPriorityAdvice):
         """Compute a score for the given ScoringProject, and with why it's received this score."""
 
         if self._main_frustration in project.user_profile.frustrations:
-            return [project.translate_string(
+            return [project.translate_static_string(
                 "vous nous avez dit ne pas trouver assez d'offres")]
         return []
 

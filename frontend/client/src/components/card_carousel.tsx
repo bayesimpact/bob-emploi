@@ -1,8 +1,9 @@
 import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useRef, useState} from 'react'
 
-import {isMobileVersion} from 'components/mobile'
-import {CarouselArrow, SmoothTransitions} from 'components/theme'
+import isMobileVersion from 'store/mobile'
+import CarouselArrow from 'components/carousel_arrow'
+import {SmoothTransitions} from 'components/theme'
 
 
 const ARROW_WIDTH = 45
@@ -18,12 +19,16 @@ const numCardsToShow = (totalWidth: number, isLarge?: boolean): number => {
 
 interface CarouselProps {
   backGroundColor?: string
-  children: readonly ReactStylableElement[]
+  children: readonly React.ReactElement<{
+    'aria-hidden'?: boolean
+    style?: RadiumCSSProperties
+    tabIndex?: number
+  }>[]
   isLarge?: boolean
   maxWidth?: number
 }
 
-const CardCarouselBase: React.FC<CarouselProps> = (props: CarouselProps): React.ReactElement => {
+const CardCarousel: React.FC<CarouselProps> = (props: CarouselProps): React.ReactElement => {
   const {backGroundColor, children, isLarge, maxWidth} = props
   const [carouselWidth, setCarouselWidth] = useState(320)
   const [containerWidth, setContainerWidth] = useState(0)
@@ -139,12 +144,17 @@ const CardCarouselBase: React.FC<CarouselProps> = (props: CarouselProps): React.
       <div
         style={slidingCardsContainerStyle}
         onTransitionEnd={onTransitionEnd}>
-        {children.map((child, index): React.ReactNode => React.cloneElement(child, {
-          style: {
-            ...child.props.style,
-            ...cardStyle(index >= indexFirstShown && index < indexFirstShown + numCardsShown),
-          },
-        }))}
+        {children.map((child, index): React.ReactNode => {
+          const isVisible = index >= indexFirstShown && index < indexFirstShown + numCardsShown
+          return React.cloneElement(child, {
+            'aria-hidden': !isVisible,
+            'style': {
+              ...child.props.style,
+              ...cardStyle(isVisible),
+            },
+            'tabIndex': isVisible ? 0 : -1,
+          })
+        })}
       </div>
       <div style={disappearingStyle(false)} />
     </div>
@@ -153,7 +163,7 @@ const CardCarouselBase: React.FC<CarouselProps> = (props: CarouselProps): React.
       handleClick={getCarouselMover(numCardsShown)} style={arrowStyle} />
   </div>
 }
-CardCarouselBase.propTypes = {
+CardCarousel.propTypes = {
   backGroundColor: PropTypes.string,
   children: PropTypes.arrayOf(PropTypes.element.isRequired).isRequired,
   isLarge: PropTypes.bool,
@@ -162,7 +172,6 @@ CardCarouselBase.propTypes = {
   // outside this width.
   maxWidth: PropTypes.number,
 }
-const CardCarousel = React.memo(CardCarouselBase)
 
 
-export {CardCarousel}
+export default React.memo(CardCarousel)

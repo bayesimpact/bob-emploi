@@ -38,13 +38,13 @@ class _AdviceSeasonalRelocate(scoring_base.ModelBase):
         if (is_not_ready_to_move or is_not_young or is_not_single or has_advanced_degree or
                 looks_only_for_cdi):
             return scoring_base.NULL_EXPLAINED_SCORE
-        reasons.append(project.translate_string(
+        reasons.append(project.translate_static_string(
             'vous nous avez dit être prêt%eFeminine à déménager'))
-        reasons.append(project.translate_string(
+        reasons.append(project.translate_static_string(
             'vous êtes disponible familialement'))
 
         if len(self._get_seasonal_departements(project).departement_stats) > 1:
-            reasons.append(project.translate_string(
+            reasons.append(project.translate_static_string(
                 "il y a plus d'offres saisonnières par habitants dans d'autres villes"))
             return scoring_base.ExplainedScore(2, reasons)
         return scoring_base.NULL_EXPLAINED_SCORE

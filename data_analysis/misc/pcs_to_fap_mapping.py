@@ -20,7 +20,7 @@ def main(
 
     if not filename:
         filename = os.path.join(data_folder, 'crosswalks/c2rp_table_supra_def_fap_pcs_rome.xlsx')
-    pcs_fap_rome_xlsx = pd.read_excel(filename, sheet_name=None)
+    pcs_fap_rome_xlsx = pd.read_excel(filename, sheet_name=None, engine='openpyxl')
 
     output_file: TextIO
     if isinstance(output_csv, str):
@@ -28,11 +28,11 @@ def main(
     else:
         output_file = output_csv
 
-    fap_to_pcs = pcs_fap_rome_xlsx['SUPRA-DEF-FAP-PCS'][['FAP', 'PCS']]
-    fap_to_rome = pcs_fap_rome_xlsx['SUPRA-DEF-FAP-ROME'][['FAP', 'ROME']]
+    fap_to_pcs = pcs_fap_rome_xlsx['SUPRA-DEF-FAP-PCS'][['FAP', 'PCS']].dropna()
+    fap_to_rome = pcs_fap_rome_xlsx['SUPRA-DEF-FAP-ROME'][['FAP', 'ROME']].dropna()
     fap_to_romeq = pcs_fap_rome_xlsx['SUPRA-DEF-FAP-ROMEQ']
-
-    fap_to_romeq['ROME'] = fap_to_romeq.ROMEq.apply(lambda x: x[:5])
+    fap_to_romeq['ROME'] = fap_to_romeq.ROMEq.apply(lambda x: x[:5] if isinstance(x, str) else x)
+    fap_to_romeq.dropna(inplace=True)
     complete_fap_rome = fap_to_rome.append(fap_to_romeq[['FAP', 'ROME']])
     fap_to_pcs_agg = fap_to_pcs.groupby('FAP').PCS.apply(list).to_frame()
     complete_fap_rome.set_index('FAP', inplace=True)

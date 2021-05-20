@@ -3,16 +3,14 @@
 import datetime
 import functools
 import logging
+import os
 import random
 import re
 import typing
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Pattern, Set, Tuple, \
     Union
-from urllib import parse
 
 from google.protobuf import message
-from pymongo import database as pymongo_database
-import unidecode
 
 from bob_emploi.frontend.api import application_pb2
 from bob_emploi.frontend.api import association_pb2
@@ -25,32 +23,15 @@ from bob_emploi.frontend.api import training_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import carif
 from bob_emploi.frontend.server import french
-from bob_emploi.frontend.server import geo
 from bob_emploi.frontend.server import i18n
 from bob_emploi.frontend.server import jobs
+from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import privacy
 from bob_emploi.frontend.server import proto
 
 
-# Score for each percent of additional job offers that an advice enables. We
-# want to have a score of 3 for 30% increase.
-_SCORE_PER_JOB_OFFERS_PERCENT = .1
-
-# Score per interview ratio. E.g. a value of 1/5 would make us recommend a
-# small impact advice (1 impact point) if a user gets an interview for every
-# 5 applications they do; a value of 1/15 would make us recommend a large
-# impact advice (3 impact points) or 3 small ones if auser gets an interview
-# for every 15 applications.
-_SCORE_PER_INTERVIEW_RATIO = 1 / 5
-
-# Average number of days per month.
-_DAYS_PER_MONTH = 365.25 / 12
-
-# Average number of weeks per month.
-_WEEKS_PER_MONTH = 52 / 12
-
-# Maximum of the estimation scale for English skills, or office tools.
-_ESTIMATION_SCALE_MAX = 3
+# Environment variable stating which deployment is used.
+_BOB_DEPLOYMENT = os.getenv('BOB_DEPLOYMENT', 'fr')
 
 _APPLICATION_TIPS: proto.MongoCachedCollection[application_pb2.ApplicationTip] = \
     proto.MongoCachedCollection(application_pb2.ApplicationTip, 'application_tips')
@@ -61,26 +42,22 @@ _REGIONS: proto.MongoCachedCollection[geo_pb2.Region] = \
 _SPECIFIC_TO_JOB_ADVICE: proto.MongoCachedCollection[advisor_pb2.DynamicAdvice] = \
     proto.MongoCachedCollection(advisor_pb2.DynamicAdvice, 'specific_to_job_advice')
 
-_EXPERIENCE_DURATION = {
-    project_pb2.INTERN: 'peu',
-    project_pb2.JUNIOR: 'peu',
-    project_pb2.INTERMEDIARY: 'plus de 2 ans',
-    project_pb2.SENIOR: 'plus de 6 ans',
-    project_pb2.EXPERT: 'plus de 10 ans',
-}
+_TRAININGS: proto.MongoCachedCollection[training_pb2.Training] = \
+    proto.MongoCachedCollection(training_pb2.Training, 'trainings')
+
 # Matches variables that need to be replaced by populate_template.
 TEMPLATE_VAR_PATTERN = re.compile('%[a-zA-Z]{3,}')
 # Pattern to skip when looking for variables not replaced. Matches URLs with query strings, can be
 # used with a sub(r'\1') to drop the query string:
 # https://www.google.com?search=foo => https://www.google.com?
 _SKIP_VAR_PATTERN = re.compile(r'(https?://[^\?\s]*\?)\S+')
-# Matches tutoiement choices to be replaced by populate_template.
-_YOU_PATTERN = re.compile('%you<(.*?)/(.*?)>')
 
 # Keep in sync with frontend/client/src/store/project.ts
+# TODO(pascal): Use deployment factors for the gross/net ratio.
 _TO_GROSS_ANNUAL_FACTORS: Dict[int, float] = {
     # net = gross x 80%
     job_pb2.ANNUAL_GROSS_SALARY: 1,
+    job_pb2.HOURLY_GROSS_SALARY: 52 * 35,
     job_pb2.HOURLY_NET_SALARY: 52 * 35 / 0.8,
     job_pb2.MONTHLY_GROSS_SALARY: 12,
     job_pb2.MONTHLY_NET_SALARY: 12 / 0.8,
@@ -88,14 +65,6 @@ _TO_GROSS_ANNUAL_FACTORS: Dict[int, float] = {
 
 ASSOCIATIONS: proto.MongoCachedCollection[association_pb2.Association] = \
     proto.MongoCachedCollection(association_pb2.Association, 'associations')
-
-# This is to be put in a sentence related to several people:
-# "Les gens trouvent surtout un emploi grâce à ..."
-APPLICATION_MODES = {
-    job_pb2.SPONTANEOUS_APPLICATION: 'une candidature spontanée',
-    job_pb2.PLACEMENT_AGENCY: 'un intermédiaire du placement',
-    job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS: 'leur réseau personnel ou professionnel',
-}
 
 _AType = typing.TypeVar('_AType')
 
@@ -107,8 +76,7 @@ def get_user_locale(profile: user_pb2.UserProfile) -> str:
     assuming it might be for a user that comes from the can_tutoie era.
     """
 
-    locale = '' if profile.locale == 'fr' else profile.locale
-    return locale or ('fr@tu' if profile.can_tutoie else 'fr')
+    return profile.locale or 'fr'
 
 
 def _keep_only_departement_filters(
@@ -122,7 +90,7 @@ def _add_left_pad_to_message(text: str, tab: str = '\t') -> str:
     return '\n'.join(tab + line if line else line for line in text.split('\n'))
 
 
-class ScoringProject(object):
+class ScoringProject:
     """The project and its environment for the scoring.
 
     When deciding whether an advice is useful or not for a given project we
@@ -134,7 +102,7 @@ class ScoringProject(object):
             self,
             project: project_pb2.Project,
             user: user_pb2.User,
-            database: pymongo_database.Database,
+            database: mongo.NoPiiMongoDatabase,
             now: Optional[datetime.datetime] = None):
         self.details = project
         self.user_profile = user.profile
@@ -255,7 +223,7 @@ class ScoringProject(object):
         return _decorator
 
     @property
-    def database(self) -> pymongo_database.Database:
+    def database(self) -> mongo.NoPiiMongoDatabase:
         """Access to the MongoDB behind this project."""
 
         return self._db
@@ -276,13 +244,19 @@ class ScoringProject(object):
         return self.job_group_info().requirements
 
     # TODO(cyrille): Add trainings from fagerh.fr for for-handicapped.
+    # TODO(sil): Add tests for UK.
     def get_trainings(self) -> List[training_pb2.Training]:
         """Get the training opportunities from our partner's API."""
 
         if self._trainings is not None:
             return self._trainings
-        self._trainings = carif.get_trainings(
-            self.details.target_job.job_group.rome_id, self.details.city.departement_id)
+        if _BOB_DEPLOYMENT == 'uk':
+            all_trainings = _TRAININGS.get_collection(self._db)
+            self._trainings = list(
+                filter_using_score(all_trainings, lambda t: t.filters, self))
+        else:
+            self._trainings = carif.get_trainings(
+                self.details.target_job.job_group.rome_id, self.details.city.departement_id)
         return self._trainings
 
     def _translate_tip(self, tip: application_pb2.ApplicationTip) -> application_pb2.ApplicationTip:
@@ -403,30 +377,57 @@ class ScoringProject(object):
             logging.warning(msg)
         return new_template
 
-    def translate_string(self, string: str, is_genderized: bool = False) -> str:
+    def translate_string(
+            self, string: str, is_genderized: bool = False, is_static: bool = False,
+            context: str = '', can_log_exception: bool = True) -> str:
         """Translate a string to a language and locale defined by the project."""
 
         locale = get_user_locale(self.user_profile)
 
         keys = [string]
+        if context:
+            keys.insert(0, f'{string}_{context}')
         if is_genderized and self.user_profile.gender:
             keys.insert(0, f'{string}_{user_pb2.Gender.Name(self.user_profile.gender)}')
 
         try:
-            return i18n.translate_string(keys, locale, self._db)
+            return i18n.translate_string(keys, locale, None if is_static else self._db)
         except i18n.TranslationMissingException:
-            if locale != 'fr':
+            if not locale.startswith('fr') and can_log_exception:
                 logging.exception('Falling back to French on "%s"', string)
 
         return string
+
+    def translate_static_string(
+            self, string: str, is_genderized: bool = False, context: str = '',
+            can_log_exception: bool = True) -> str:
+        """Translate a static string to a language and locale defined by the project."""
+
+        return self.translate_string(
+            string, is_genderized, is_static=True, context=context,
+            can_log_exception=can_log_exception)
+
+    def translate_airtable_string(
+            self, collection: str, record_id: str, field_name: str, hint: str = '',
+            is_genderized: bool = False) -> str:
+        """Translate a string from Airtable to a language and locale defined by the project."""
+
+        if record_id:
+            key = f'{collection}:{record_id}:{field_name}'
+            translation = self.translate_string(
+                key, is_genderized=is_genderized, can_log_exception=False)
+            if translation != key:
+                return translation
+
+        if not hint:
+            return ''
+
+        return self.translate_string(hint, is_genderized=is_genderized)
 
     def get_search_length_at_creation(self) -> float:
         """Compute job search length (in months) relatively to a project creation date."""
 
         if self.details.WhichOneof('job_search_length') != 'job_search_started_at':
-            # TODO(sil): Check if it still makes sense to prioritize this field.
-            if self.details.job_search_length_months:
-                return self.details.job_search_length_months
             return -1
         delta = self.details.created_at.ToDatetime() - \
             self.details.job_search_started_at.ToDatetime()
@@ -494,168 +495,7 @@ class ScoringProject(object):
         return all(self.score(f, force_exists=force_exists) > 0 for f in filters)
 
 
-def _a_job_name(scoring_project: ScoringProject) -> str:
-    is_feminine = scoring_project.user_profile.gender == user_pb2.FEMININE
-    genderized_determiner = 'une' if is_feminine else 'un'
-    return f'{genderized_determiner} {_job_name(scoring_project)}'
-
-
-def _an_application_mode(scoring_project: ScoringProject) -> str:
-    best_mode = scoring_project.get_best_application_mode()
-    best_mode_enum = best_mode.mode if best_mode else job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS
-    try:
-        return APPLICATION_MODES[best_mode_enum]
-    except KeyError:
-        return APPLICATION_MODES[job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS]
-
-
-def _in_city(scoring_project: ScoringProject) -> str:
-    return french.in_city(scoring_project.details.city.name)
-
-
-def _in_region(scoring_project: ScoringProject) -> str:
-    region = scoring_project.get_region()
-    return region.prefix + region.name if region else 'dans la région'
-
-
-def _in_departement(scoring_project: ScoringProject) -> str:
-    try:
-        return geo.get_in_a_departement_text(
-            scoring_project.database,
-            scoring_project.details.city.departement_id)
-    except KeyError:
-        return 'dans le département'
-
-
-def _in_area_type(scoring_project: ScoringProject) -> str:
-    area_type = scoring_project.details.area_type
-    if area_type == geo_pb2.CITY:
-        return _in_city(scoring_project)
-    elif area_type == geo_pb2.DEPARTEMENT:
-        return geo.get_in_a_departement_text(
-            scoring_project.database,
-            scoring_project.details.city.departement_id)
-    elif area_type == geo_pb2.REGION:
-        return _in_region(scoring_project)
-    else:
-        return 'dans le pays'
-
-
-def _job_name(scoring_project: ScoringProject) -> str:
-    return french.genderize_job(
-        scoring_project.details.target_job, scoring_project.user_profile.gender, is_lowercased=True)
-
-
-def _job_search_length_months_at_creation(scoring_project: ScoringProject) -> str:
-    count = round(scoring_project.get_search_length_at_creation())
-    if count < 0:
-        logging.warning(
-            'Trying to show negative job search length at creation:\n%s', scoring_project)
-        return 'quelques'
-    try:
-        return french.try_stringify_number(count)
-    except NotImplementedError:
-        return 'quelques'
-
-
-def _a_required_diploma(scoring_project: ScoringProject) -> str:
-    diplomas = ', '.join(
-        sorted(diploma.name for diploma in scoring_project.requirements().diplomas))
-    if not diplomas:
-        logging.warning(
-            'Trying to show required diplomas when there are none.\n%s', scoring_project)
-        return 'un diplôme'
-    return f'un {diplomas} ou équivalent'
-
-
-def _total_interview_count(scoring_project: ScoringProject) -> str:
-    number = scoring_project.details.total_interview_count
-    try:
-        return french.try_stringify_number(number)
-    except NotImplementedError:
-        return str(number)
-
-
-def _postcode(scoring_project: ScoringProject) -> str:
-    city = scoring_project.details.city
-    return city.postcodes.split('-')[0] or (
-        city.departement_id + '0' * (5 - len(city.departement_id)))
-
-
-def _what_i_love_about(project: ScoringProject) -> str:
-    return project.user_profile.gender == user_pb2.FEMININE and \
-        project.job_group_info().what_i_love_about_feminine or \
-        project.job_group_info().what_i_love_about
-
-
-def _url_encode(name: str) -> Callable[[ScoringProject], str]:
-    def _wrapped(project: ScoringProject) -> str:
-        return parse.quote(project._get_template_variable(name))  # pylint: disable=protected-access
-    return _wrapped
-
-
-def _of_job_name(project: ScoringProject) -> str:
-    translated = project.translate_string('de {job_name}').format(job_name=_job_name(project))
-    if translated.startswith('de '):
-        return french.maybe_contract_prefix('de ', "d'", _job_name(project))
-    return translated
-
-
-_TEMPLATE_VARIABLES: Dict[str, Callable[[ScoringProject], str]] = {
-    '%aJobName': _a_job_name,
-    # This is a comma separated list of diplomas. Make sure before-hand that there's at least one.
-    # Can be used as "nécessite %aRequiredDiploma".
-    # TODO(cyrille): Make it smarter, especially when it's a list of Bac+N levels.
-    '%aRequiredDiploma': _a_required_diploma,
-    '%anApplicationMode': _an_application_mode,
-    '%cityId':
-    lambda scoring_project: scoring_project.details.city.city_id,
-    # TODO(pascal): Investigate who's using that template and rename it to someting with URL in it.
-    '%cityName': lambda scoring_project: parse.quote(scoring_project.details.city.name),
-    '%departementId':
-    lambda scoring_project: scoring_project.details.city.departement_id,
-    '%eFeminine': lambda scoring_project: (
-        'e' if scoring_project.user_profile.gender == user_pb2.FEMININE else ''),
-    '%experienceDuration': lambda scoring_project: _EXPERIENCE_DURATION.get(
-        scoring_project.details.seniority, ''),
-    '%feminineJobName': lambda scoring_project: french.lower_first_letter(
-        scoring_project.details.target_job.feminine_name),
-    '%inAreaType': _in_area_type,
-    '%inAWorkplace': lambda scoring_project: scoring_project.job_group_info().in_a_workplace,
-    '%inCity': _in_city,
-    '%inDepartement': _in_departement,
-    '%inDomain': lambda scoring_project: scoring_project.job_group_info().in_domain,
-    '%inRegion': _in_region,
-    # TODO(pascal): Don't use Url as a prefix, as this makes %jobGroupName forbidden (no variable
-    # can be the prefix of another variable).
-    '%jobGroupNameUrl': lambda scoring_project: parse.quote(unidecode.unidecode(
-        scoring_project.details.target_job.job_group.name.lower().replace(' ', '-').replace(
-            "'", '-'))),
-    '%jobId': lambda scoring_project: scoring_project.details.target_job.code_ogr,
-    '%jobName': _job_name,
-    # This in only the **number** of months, use as '%jobSearchLengthMonthsAtCreation mois'.
-    '%jobSearchLengthMonthsAtCreation': _job_search_length_months_at_creation,
-    '%language': lambda scoring_project: scoring_project.user_profile.locale[:2] or 'fr',
-    '%latin1CityName': lambda scoring_project: parse.quote(
-        scoring_project.details.city.name.encode('latin-1', 'replace')),
-    '%latin1MasculineJobName': lambda scoring_project: parse.quote(
-        scoring_project.details.target_job.masculine_name.encode('latin-1', 'replace')),
-    '%lastName': lambda scoring_project: scoring_project.user_profile.last_name,
-    '%likeYourWorkplace': lambda scoring_project: (
-        scoring_project.job_group_info().like_your_workplace),
-    '%masculineJobName': lambda scoring_project: french.lower_first_letter(
-        scoring_project.details.target_job.masculine_name),
-    '%name': lambda scoring_project: scoring_project.user_profile.name,
-    '%ofCity': lambda scoring_project: french.of_city(scoring_project.details.city.name),
-    '%ofJobName': _of_job_name,
-    '%placePlural': lambda scoring_project: scoring_project.job_group_info().place_plural,
-    '%postcode': _postcode,
-    '%regionId': lambda scoring_project: scoring_project.details.city.region_id,
-    '%romeId': lambda scoring_project: scoring_project.details.target_job.job_group.rome_id,
-    '%totalInterviewCount': _total_interview_count,
-    '%urlEncodeJobName': _url_encode('%jobName'),
-    '%whatILoveAbout': _what_i_love_about,
-}
+_TEMPLATE_VARIABLES: Dict[str, Callable[[ScoringProject], str]] = {}
 
 
 class NotEnoughDataException(Exception):
@@ -680,7 +520,7 @@ class ExplainedScore(typing.NamedTuple):
 NULL_EXPLAINED_SCORE = ExplainedScore(0, [])
 
 
-class ModelBase(object):
+class ModelBase:
     """A base scoring model.
 
     The sub classes must override either `score` or `score_and_explain` methods.
@@ -769,11 +609,13 @@ class RelevanceModelBase(ModelBase):
             return 1
         if relevance == diagnostic_pb2.RELEVANT_AND_GOOD:
             return 3
-        raise TypeError(f'Unexpected relevance: {diagnostic_pb2.CategoryRelevance.Name(relevance)}')
+        raise TypeError(
+            f'Unexpected relevance: {diagnostic_pb2.MainChallengeRelevance.Name(relevance)}')
 
     # TODO(cyrille): Restrict the output type
     # so that it cannot be other than one of the three above.
-    def score_relevance(self, unused_project: ScoringProject) -> diagnostic_pb2.CategoryRelevance:
+    def score_relevance(self, unused_project: ScoringProject) \
+            -> 'diagnostic_pb2.MainChallengeRelevance.V':
         """Compute a relevance for the given project.
 
         Default to RELEVANT_AND_GOOD,
@@ -933,3 +775,15 @@ def register_regexp(
     if get_scoring_model(example, cache_generated_model=False):
         raise ValueError(f'The pattern "{regexp}" is probably already used')
     SCORING_MODEL_REGEXPS.append(_ScoringModelRegexp(regexp, constructor))
+
+
+def register_template_variable(
+        variable_name: str, value_func: Callable[[ScoringProject], str]) -> None:
+    """Register a template variable."""
+
+    for existing_variable in _TEMPLATE_VARIABLES:
+        if existing_variable.startswith(variable_name) or \
+                variable_name.startswith(existing_variable):
+            raise ValueError(
+                f'The new variable "{variable_name}" might conflict with "{existing_variable}')
+    _TEMPLATE_VARIABLES[variable_name] = value_func

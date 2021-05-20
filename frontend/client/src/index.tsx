@@ -1,13 +1,23 @@
+import {TFunction} from 'i18next'
 import React from 'react'
 import ReactDOMServer from 'react-dom/server'
-import {WaitingPage} from 'components/pages/waiting'
 
-const description = `${config.productName} fait un bilan sur votre recherche d'emploi et vous ` +
-  "donne les meilleurs conseils. 100% gratuit, rapide et fait par l'ONG Bayes Impact"
+import {init as i18nInit} from 'store/i18n'
 
-export default (): string => '<!doctype html>' + ReactDOMServer.renderToString(
-  <html lang="fr">
+import favicon from 'images/favicon.ico'
+import WaitingPage from 'components/pages/waiting'
+
+
+// TODO(cyrille): DRY with upskilling_index.
+const Template = ({t}: {t: TFunction}): React.ReactElement => {
+  const description = t(
+    "{{productName}} fait un bilan sur votre recherche d'emploi et vous donne les meilleurs " +
+    "conseils. 100% gratuit, rapide et fait par l'ONG Bayes Impact",
+    {productName: config.productName},
+  )
+  return <html lang={config.defaultLang.replace('_', '-').replace(/-UK$/, '-GB')}>
     <head>
+      <link rel="icon" type="image/x-icon" href={favicon} />
       <meta charSet="utf-8" />
       <title>{config.productName}</title>
       <meta httpEquiv="X-UA-Compatible" content="IE=edge,chrome=1" />
@@ -18,11 +28,23 @@ export default (): string => '<!doctype html>' + ReactDOMServer.renderToString(
       <meta property="og:type" content="website" />
       <meta property="og:title" content={config.productName} />
       <meta property="og:description" name="description" content={description} />
-      <meta property="og:image" content="https://www.bob-emploi.fr/assets/bob-circle-picto.png" />
-      <meta property="og:url" content="https://www.bob-emploi.fr/" />
-      <meta property="fb:app_id" content={config.facebookSSOAppId} />
+      <meta property="og:image" content={`${config.canonicalUrl}/assets/bob-circle-picto.png`} />
+      <meta property="og:url" content={config.canonicalUrl} />
+      {config.facebookSSOAppId ?
+        <meta property="fb:app_id" content={config.facebookSSOAppId} /> : null}
+      <meta property="version" content={config.clientVersion} />
     </head>
     <body style={{margin: 0}}>
       <div id="app"><WaitingPage /></div>
     </body>
-  </html>)
+  </html>
+}
+
+
+async function renderTemplate(): Promise<string> {
+  const t = await i18nInit({isStatic: true})
+  return '<!doctype html>' + ReactDOMServer.renderToString(<Template t={t} />)
+}
+
+
+export default renderTemplate

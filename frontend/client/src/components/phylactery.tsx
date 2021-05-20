@@ -41,9 +41,23 @@ const GrowingPhylacteryBase = (props: PhylacteryProps): React.ReactElement => {
     setDiscussing} = props
   const [lastShownStep, setLastShownStep] = useState(-1)
 
-  const realChildren = children.
-    filter((child): child is React.ReactElement<ElementProps> => !!child)
+  const realChildren = useMemo(
+    () => children.filter((child): child is React.ReactElement<ElementProps> => !!child),
+    [children],
+  )
   const realChildrenLength = realChildren.length
+
+  const previousKeys = useRef<(React.Key|null)[]>([])
+  useLayoutEffect(() => {
+    const childrenKeys = realChildren.map(({key}) => key)
+    const firstChangedKey = childrenKeys.
+      findIndex((value, index) => value !== previousKeys.current[index])
+    if (firstChangedKey < 0 || firstChangedKey >= lastShownStep) {
+      return
+    }
+    setLastShownStep(firstChangedKey)
+    previousKeys.current = childrenKeys
+  }, [lastShownStep, previousKeys, realChildren])
 
   useLayoutEffect((): void => {
     if (isFastForwarded) {
@@ -97,7 +111,7 @@ const GrowingPhylacteryBase = (props: PhylacteryProps): React.ReactElement => {
       React.cloneElement(child, {
         isFastForwarded,
         isShown: index <= lastShownStep,
-        key: index,
+        key: child.key || index,
         onDone: onChildDoneHandlers[index],
         onUpdate,
         setDiscussing,
@@ -160,6 +174,15 @@ const notDiscussingEllipsisStyle: React.CSSProperties = {
 }
 
 
+const getScrollPosition = (): number => window.scrollY ||
+    window.pageYOffset ||
+    document.body.scrollTop + (document.documentElement.scrollTop || 0)
+
+
+const getMaxScrollPosition = (): number =>
+  document.documentElement.offsetHeight - window.innerHeight
+
+
 function scrollDown(): void {
   window.scrollTo(0, document.body.scrollHeight)
 }
@@ -167,22 +190,25 @@ function scrollDown(): void {
 
 function useBottomScrollSticker(): (() => void) {
   const [isStuckToBottom, setIsStuckToBottom] = useState(true)
+  const isSoonStuck = useRef(true)
 
   const onScroll = useCallback((): void => {
-    const pageHeight = document.documentElement.offsetHeight
-    const windowHeight = window.innerHeight
-    const scrollPosition = window.scrollY ||
-      window.pageYOffset ||
-      document.body.scrollTop + (document.documentElement.scrollTop || 0)
-    const isAtBottom = pageHeight <= windowHeight + scrollPosition
+    const scrollPosition = getScrollPosition()
+    const maxScrollPosition = getMaxScrollPosition()
+    const isAtBottom = scrollPosition >= maxScrollPosition
+    isSoonStuck.current = isAtBottom
     setIsStuckToBottom(isAtBottom)
   }, [])
 
   useEffect((): (() => void) => {
-    if (isStuckToBottom) {
+    if (!isStuckToBottom) {
       return (): void => void 0
     }
-    const interval = window.setInterval(scrollDown, 100)
+    const interval = window.setInterval((): void => {
+      if (isSoonStuck.current) {
+        scrollDown()
+      }
+    }, 100)
     return (): void => clearInterval(interval)
   }, [isStuckToBottom])
 
@@ -192,11 +218,11 @@ function useBottomScrollSticker(): (() => void) {
   }, [onScroll])
 
   const stick = useCallback((): void => {
-    if (!isStuckToBottom) {
+    if (!isSoonStuck.current) {
       setIsStuckToBottom(true)
       scrollDown()
     }
-  }, [isStuckToBottom])
+  }, [])
   return stick
 }
 
@@ -260,7 +286,7 @@ const WaitingElementBase = (props: WaitingElementProps): React.ReactElement|null
       onDone?.()
       setIsOver(true)
     }, waitingMillisec)
-    return ((): void => clearTimeout(timeout))
+    return ((): void => window.clearTimeout(timeout))
   }, [isShown, onDone, waitingMillisec])
 
   if (isFastForwarded || !isShown || isOver) {
@@ -339,12 +365,12 @@ interface WaitingOnDoneProps extends Omit<ElementProps, 'children'> {
 // the phylactery continue growing.
 const WaitingOnDone = (props: WaitingOnDoneProps): null => {
   const {isDone, isFastForwarded, onDone} = props
-  const [wasDone, setWasDone] = useState(isDone)
+  const [wasDone, setWasDone] = useState(false)
   useEffect((): void => {
     if ((isFastForwarded || isDone) && !wasDone) {
       onDone?.()
     }
-    setWasDone(isFastForwarded || isDone)
+    setWasDone(isFastForwarded || !!isDone)
   }, [isDone, isFastForwarded, onDone, wasDone])
   return null
 }
@@ -374,7 +400,7 @@ const NoOpElement = (props: ElementProps): React.ReactElement => {
       padding: 0,
     },
   }
-  return <div style={containerStyle}>
+  return <div style={containerStyle} aria-hidden={!isShown}>
     {children}
   </div>
 }
@@ -445,12 +471,14 @@ const BubbleBase = (props: BubbleProps, ref: React.Ref<TextContainer>): React.Re
   const smallBubbleStyle = {
     height: isShown ? 'initial' : 0,
     marginBottom: isShown ? 2 : 0,
+    marginLeft: 25,
+    marginRight: 25,
     padding: isShown ? '19px 25px 21px' : '0 25px',
     ...isUserSpeaking ? {} : bobBubbleStyle,
     ...bubbleStyle,
   }
 
-  return <div style={style}>
+  return <div style={style} aria-hidden={!isShown}>
     <div ref={contentRef} style={smallBubbleStyle}>{children}</div>
   </div>
 }
@@ -484,7 +512,7 @@ const BubbleToReadBase = (props: BubbleToReadProps): React.ReactElement => {
       return (): void => void 0
     }
     const timeout = window.setTimeout((): void => setDiscussing?.(true), 450)
-    return (): void => clearTimeout(timeout)
+    return (): void => window.clearTimeout(timeout)
   }, [isShown, isFastForwarded, readingDuration, setDiscussing])
 
   const handleDone = useCallback((): void => {

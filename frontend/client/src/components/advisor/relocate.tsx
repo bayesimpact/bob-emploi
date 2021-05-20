@@ -4,9 +4,10 @@ import React, {useCallback, useMemo} from 'react'
 
 import {lowerFirstLetter, thanInDepartement} from 'store/french'
 
-import {Trans} from 'components/i18n'
+import AppearingList from 'components/appearing_list'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import {RadiumDiv} from 'components/radium'
-import {AppearingList, GrowingNumber} from 'components/theme'
 import Picto from 'images/advices/picto-relocate.svg'
 
 import {CardProps, PercentageBoxes, useAdviceData} from './base'
@@ -20,7 +21,8 @@ const RelocateMethod = (props: CardProps): React.ReactElement|null => {
     city,
     targetJob: {jobGroup: {name = ''} = {}} = {},
   }, t} = props
-  const {departementScores = emptyArray} = useAdviceData<bayes.bob.RelocateData>(props)
+  const {data: {departementScores = emptyArray}, loading} =
+    useAdviceData<bayes.bob.RelocateData>(props)
 
   const otherDepartements = useMemo((): React.ReactElement<SuggestionProps>[] =>
     departementScores.map(
@@ -29,6 +31,10 @@ const RelocateMethod = (props: CardProps): React.ReactElement|null => {
         departementScore={score}
         style={{marginTop: -1}} t={t} />),
   [departementScores, handleExplore, t])
+
+  if (loading) {
+    return loading
+  }
 
   if (!otherDepartements.length) {
     return null
@@ -51,7 +57,7 @@ const RelocateMethod = (props: CardProps): React.ReactElement|null => {
       {' '}département {{thanInDepartementText}}&nbsp;:
     </Trans>
     <AppearingList style={{marginTop: 15}}>
-      {[targetDepList].concat(otherDepartements)}
+      {[targetDepList, ...otherDepartements]}
     </AppearingList>
   </div>
 }
@@ -74,8 +80,9 @@ interface SuggestionProps {
 const RelocateDepartmentSuggestionBase = (props: SuggestionProps): React.ReactElement => {
   const {departementScore, isTargetDepartment, onClick, style, t} = props
   const handleClick = useCallback((): void => {
-    const searchTerm = encodeURIComponent(`${departementScore.name} département, france`)
-    window.open(`https://www.google.fr/maps/search/${searchTerm}`, '_blank')
+    const searchTerm = encodeURIComponent(
+      `${departementScore.name} ${config.geoAdmin2Name}, ${config.countryName}`)
+    window.open(`https://${config.googleTopLevelDomain}/maps/search/${searchTerm}`, '_blank')
     onClick && onClick()
   }, [departementScore, onClick])
 
@@ -113,11 +120,11 @@ const RelocateDepartmentSuggestionBase = (props: SuggestionProps): React.ReactEl
   }
 
   const multiplierStyle: React.CSSProperties = {
-    color: colors.HOVER_GREEN,
+    color: colors.LIME_GREEN,
     fontWeight: 'bold',
     marginRight: 0,
   }
-  const roundedOffers = Math.round((departementScore.offerRatio || 0) * 10) / 10
+  const roundedOffers = Number.parseFloat((departementScore.offerRatio || 0).toPrecision(2))
 
   return <RadiumDiv style={containerStyle} onClick={handleClick}>
     <span style={{fontWeight: 'bold', marginRight: 10}}>

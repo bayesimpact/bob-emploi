@@ -9,14 +9,15 @@ import threading
 from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
 from urllib import parse
 
-from pymongo import database as pymongo_database
 import mailjet_rest
 
+from bob_emploi.common.python import now
 from bob_emploi.frontend.server import auth
-from bob_emploi.frontend.server import mail
-from bob_emploi.frontend.server import now
+from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring
+from bob_emploi.frontend.server.mail import campaign
+from bob_emploi.frontend.server.mail import mail_send
 from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import advisor_pb2
 from bob_emploi.frontend.api import project_pb2
@@ -26,7 +27,7 @@ from bob_emploi.frontend.api import user_pb2
 def maybe_advise(
         user: user_pb2.User,
         project: project_pb2.Project,
-        database: pymongo_database.Database,
+        database: mongo.NoPiiMongoDatabase,
         base_url: str = 'http://localhost:3000') -> None:
     """Check if a project needs advice and populate all advice fields if not.
 
@@ -46,7 +47,7 @@ def maybe_advise(
 
 def maybe_send_late_activation_emails(
         user: user_pb2.User,
-        database: pymongo_database.Database,
+        database: mongo.NoPiiMongoDatabase,
         base_url: str) -> None:
     """Send activation emails for projects already advised but that had no email at the time."""
 
@@ -61,7 +62,7 @@ def maybe_send_late_activation_emails(
 def _maybe_recommend_advice(
         user: user_pb2.User,
         project: project_pb2.Project,
-        database: pymongo_database.Database) -> bool:
+        database: mongo.NoPiiMongoDatabase) -> bool:
     if user.features_enabled.advisor == user_pb2.CONTROL or project.advices:
         return False
     advices = compute_advices_for_project(user, project, database)
@@ -74,7 +75,7 @@ def _maybe_recommend_advice(
 def compute_advices_for_project(
         user: user_pb2.User,
         project: project_pb2.Project,
-        database: pymongo_database.Database,
+        database: mongo.NoPiiMongoDatabase,
         scoring_timeout_seconds: float = 3) -> project_pb2.Advices:
     """Advise on a user project.
 
@@ -135,7 +136,7 @@ def compute_available_methods(
             if thread.is_alive():
                 logging.warning(
                     'Timeout while scoring advice "%s" for:\n%s',
-                    module.trigger_scoring_model, scoring_project)
+                    module.trigger_scoring_model, str(scoring_project))
 
     modules = sorted(
         method_modules,
@@ -191,10 +192,10 @@ def _compute_score_and_reasons(
             missing_fields[module.advice_id] = err.fields
         else:
             logging.exception(
-                'Scoring "%s" crashed for:\n%s', module.trigger_scoring_model, scoring_project)
+                'Scoring "%s" crashed for:\n%s', module.trigger_scoring_model, str(scoring_project))
     except Exception:  # pylint: disable=broad-except
         logging.exception(
-            'Scoring "%s" crashed for:\n%s', module.trigger_scoring_model, scoring_project)
+            'Scoring "%s" crashed for:\n%s', module.trigger_scoring_model, str(scoring_project))
 
 
 def _maybe_override_advice_data(
@@ -214,7 +215,7 @@ def _maybe_override_advice_data(
 def _send_activation_email(
         user: user_pb2.User,
         project: project_pb2.Project,
-        database: pymongo_database.Database,
+        database: mongo.NoPiiMongoDatabase,
         base_url: str) -> None:
     """Send an email to the user just after we have defined their diagnosis."""
 
@@ -222,21 +223,46 @@ def _send_activation_email(
         return
 
     # Set locale.
-    locale.setlocale(locale.LC_ALL, 'fr_FR.UTF-8')
+    user_locale = user.profile.locale.split('@', 1)[0]
+    date_format = '%d %B %Y'
+    if user_locale == 'fr' or not user_locale:
+        locale.setlocale(locale.LC_ALL, 'fr_FR.UTF-8')
+    elif user_locale == 'en_UK':
+        locale.setlocale(locale.LC_ALL, 'en_GB.UTF-8')
+        date_format = '%B %d %Y'
+    elif user_locale == 'en':
+        locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+        date_format = '%B %d %Y'
+    else:
+        logging.exception('Sending an email with an unknown locale: %s', user_locale)
 
     scoring_project = scoring.ScoringProject(project, user, database, now=now.get())
     auth_token = parse.quote(auth.create_token(user.user_id, is_using_timestamp=True))
     settings_token = parse.quote(auth.create_token(user.user_id, role='settings'))
     coaching_email_frequency_name = \
         user_pb2.EmailFrequency.Name(user.profile.coaching_email_frequency)
-    data = {
+    # This uses tutoiement by default, because its content adressed from the user to a third party
+    # (that we assume the user is familiar enough with), not from Bob to the user.
+    virality_template = parse.urlencode({
+        'body': scoring_project.translate_static_string(
+            'Salut,\n\n'
+            "Est-ce que tu connais Bob\u00A0? C'est un site qui propose de t'aider dans ta "
+            "recherche d'emploi en te proposant un diagnostic et des conseils personnalisés. "
+            'Tu verras, ça vaut le coup\u00A0: en 15 minutes, tu en sauras plus sur où tu en es, '
+            'et ce que tu peux faire pour avancer plus efficacement. '
+            "Et en plus, c'est gratuit\u00A0!\n\n"
+            '{base_url}/invite#vm2m\n\n'
+            'En tous cas, bon courage pour la suite,\n\n'
+            '{first_name}',
+        ).format(base_url=base_url, first_name=user.profile.name),
+        'subject': scoring_project.translate_static_string("Ça m'a fait penser à toi"),
+    })
+    data = dict(campaign.get_default_vars(user), **{
         'changeEmailSettingsUrl':
             f'{base_url}/unsubscribe.html?user={user.user_id}&auth={settings_token}&'
             f'coachingEmailFrequency={coaching_email_frequency_name}&'
             f'hl={parse.quote(user.profile.locale)}',
-        'date': now.get().strftime('%d %B %Y'),
-        'firstName': user.profile.name,
-        'gender': user_pb2.Gender.Name(user.profile.gender),
+        'date': now.get().strftime(date_format),
         'isCoachingEnabled':
             'True' if
             user.profile.coaching_email_frequency and
@@ -244,9 +270,10 @@ def _send_activation_email(
             else '',
         'loginUrl': f'{base_url}?userId={user.user_id}&authToken={auth_token}',
         'ofJob': scoring_project.populate_template('%ofJobName', raise_on_missing_var=True),
-    }
+        'viralityTemplate': f'mailto:?{virality_template}'
+    })
     # https://app.mailjet.com/template/636862/build
-    response = mail.send_template('636862', user.profile, data)
+    response = mail_send.send_template('activation-email', user.profile, data)
     if response.status_code != 200:
         logging.warning(
             'Error while sending diagnostic email: %s\n%s', response.status_code, response.text)
@@ -255,17 +282,12 @@ def _send_activation_email(
 def _translate_tip(
         tip: action_pb2.ActionTemplate,
         scoring_project: scoring.ScoringProject) -> action_pb2.ActionTemplate:
-    is_feminine = scoring_project.user_profile.gender == user_pb2.FEMININE
-
-    title = (is_feminine and tip.title_feminine) or tip.title
-    short_description = (is_feminine and tip.short_description_feminine) or tip.short_description
-
     result = action_pb2.ActionTemplate()
     result.MergeFrom(tip)
-    result.ClearField('title_feminine')
-    result.ClearField('short_description_feminine')
-    result.title = scoring_project.translate_string(title)
-    result.short_description = scoring_project.translate_string(short_description)
+    result.title = scoring_project.translate_string(
+        tip.title, is_genderized=True)
+    result.short_description = scoring_project.translate_string(
+        tip.short_description, is_genderized=True)
 
     return result
 
@@ -274,7 +296,7 @@ def list_all_tips(
         user: user_pb2.User,
         project: project_pb2.Project,
         piece_of_advice: project_pb2.Advice,
-        database: pymongo_database.Database) -> List[action_pb2.ActionTemplate]:
+        database: mongo.NoPiiMongoDatabase) -> List[action_pb2.ActionTemplate]:
     """List all available tips for a piece of advice.
 
     Args:
@@ -311,12 +333,12 @@ _ADVICE_MODULES: proto.MongoCachedCollection[advisor_pb2.AdviceModule] = \
     proto.MongoCachedCollection(advisor_pb2.AdviceModule, 'advice_modules')
 
 
-def _advice_modules(database: pymongo_database.Database) \
+def _advice_modules(database: mongo.NoPiiMongoDatabase) \
         -> proto.CachedCollection[advisor_pb2.AdviceModule]:
     return _ADVICE_MODULES.get_collection(database)
 
 
-def get_advice_module(advice_id: str, database: pymongo_database.Database) \
+def get_advice_module(advice_id: str, database: mongo.NoPiiMongoDatabase) \
         -> Optional[advisor_pb2.AdviceModule]:
     """Get a module by its ID."""
 
@@ -328,7 +350,7 @@ _TIP_TEMPLATES: proto.MongoCachedCollection[action_pb2.ActionTemplate] = \
     proto.MongoCachedCollection(action_pb2.ActionTemplate, 'tip_templates')
 
 
-def _tip_templates(database: pymongo_database.Database) \
+def _tip_templates(database: mongo.NoPiiMongoDatabase) \
         -> proto.CachedCollection[action_pb2.ActionTemplate]:
     """Returns a list of known tip templates as protos."""
 

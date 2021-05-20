@@ -1,9 +1,11 @@
 import CloseIcon from 'mdi-react/CloseIcon'
 import PropTypes from 'prop-types'
 import React from 'react'
+import {useTranslation} from 'react-i18next'
 
-import {isMobileVersion} from 'components/mobile'
-import {Button} from 'components/theme'
+import isMobileVersion from 'store/mobile'
+
+import Button from 'components/button'
 
 
 interface BannerProps {
@@ -13,8 +15,9 @@ interface BannerProps {
   style?: React.CSSProperties
 }
 
-const BannerBase: React.FC<BannerProps> = (props: BannerProps): React.ReactElement => {
+const Banner: React.FC<BannerProps> = (props: BannerProps): React.ReactElement => {
   const {children, hasRoundButton = false, onClose, style} = props
+  const {t} = useTranslation()
   const boxStyle: React.CSSProperties = {
     display: 'flex',
     fontSize: 14,
@@ -37,7 +40,7 @@ const BannerBase: React.FC<BannerProps> = (props: BannerProps): React.ReactEleme
     verticalAlign: 'middle',
     width: hasRoundButton ? 24 : 30,
   }
-  return <div style={boxStyle}>
+  return <aside style={boxStyle}>
     <div style={{flex: 1}}>
       <div style={{margin: 'auto', maxWidth: 900, padding: 15}}>
         {children}
@@ -46,16 +49,16 @@ const BannerBase: React.FC<BannerProps> = (props: BannerProps): React.ReactEleme
     <Button
       type="navigationOnImage" style={buttonStyle} onClick={onClose}
       isNarrow={hasRoundButton} isRound={hasRoundButton}
-      aria-label="Fermer">
-      <CloseIcon style={closeIconStyle} /> {isMobileVersion ? null : 'Fermer'}
+      aria-label={t('Fermer')}>
+      <CloseIcon style={closeIconStyle} /> {isMobileVersion ? null : t('Fermer')}
     </Button>
-  </div>
+  </aside>
 }
-BannerBase.propTypes = {
+Banner.propTypes = {
   children: PropTypes.node,
   hasRoundButton: PropTypes.bool,
   onClose: PropTypes.func.isRequired,
   style: PropTypes.object,
 }
-const Banner = React.memo(BannerBase)
-export {Banner}
+
+export default React.memo(Banner)

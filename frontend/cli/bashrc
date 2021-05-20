@@ -3,6 +3,130 @@
 
 BOB_ROOT_FOLDER="$(realpath $(dirname "${BASH_SOURCE[0]}")/../..)"
 
+function __bob_get_stack {
+  jq --arg deployment "$1" '.[] | select(.deployment == $deployment)' "$BOB_ROOT_FOLDER/frontend/release/stack_deployments.json" |
+  # Log to stderr a deprecation notice.
+  tee >(jq -r --arg deployment "$1" 'if has("deprecatedFor") then "Deprecated deployment \"\($deployment)\", use \"\(.deprecatedFor)\" instead" else empty end' 1>&2)
+}
+function __bob_get_stack_complete {
+  local available_deployments cur
+  cur=${COMP_WORDS[COMP_CWORD]}
+  available_deployments=$(
+    jq -r '.[]|select(.deprecatedFor|not)|.deployment' \
+      "$BOB_ROOT_FOLDER/frontend/release/stack_deployments.json")
+  COMPREPLY=( ${COMPREPLY[@]} $(compgen -W "$available_deployments" -- $cur) )
+}
+
+function __bob_get_stack_region {
+  __bob_get_stack "$1" | jq -r '.region'
+}
+function __bob_stack_params {
+  {
+    read -r region; read -r stack
+  } < <(__bob_get_stack "$1" | jq -r '.region,.stackId')
+  if [ -z "$region" ]; then
+    >&2 echo "'$1' is not a valid deployment."
+    return 1
+  fi
+  echo "--region $region --stack-name $stack"
+}
+
+function bob_stack_var {
+  local deployment param
+  deployment=$1
+  param=$2
+  aws cloudformation describe-stacks $(__bob_stack_params $deployment) |
+    jq -r --arg param "$param" '.Stacks[].Parameters[]|select(.ParameterKey == $param).ParameterValue'
+}
+function __bob_stack_var_complete {
+  local available_stack_vars cur
+  cur=${COMP_WORDS[COMP_CWORD]}
+  if [ $COMP_CWORD == 1 ]; then
+    __bob_get_stack_complete
+    return
+  fi
+  available_stack_vars=$(jq -r '.Parameters|keys[]' \
+    "$BOB_ROOT_FOLDER/frontend/release/cloudformation/main_template.json")
+  COMPREPLY=( $(compgen -W "$available_stack_vars" -- $cur) )
+}
+complete -F __bob_stack_var_complete bob_stack_var
+
+# Get AWS ID for our stack resources.
+# For instance, calling `bob_stack_resource fr ECSCluster` will give the name of the ECS Cluster.
+function bob_stack_resource {
+  local deployment resource
+  deployment=$1
+  resource=$2
+  aws cloudformation describe-stack-resource $(__bob_stack_params $deployment) \
+    --logical-resource-id $resource |
+    jq -r '.StackResourceDetail.PhysicalResourceId'
+}
+
+# A docker-compose like command, with a first parameter for using a specific Bob environment.
+# Use as you would use docker-compose: bob-dc run --rm frontend-dev
+# Or with a deployment parameter: bob-dc usa run --rm frontend-dev
+# This will fetch and set the relevant environment variables.
+function bob-dc {
+  local deployment=$1
+  if [ -z "$(__bob_get_stack_region $deployment)" ]; then
+    echo "Defaulting to fr deployment"
+    deployment="fr"
+  else
+    shift
+  fi
+  if [ "$deployment" == fr ]; then
+    local translation_locales="fr@tu,en"
+  elif [ "$deployment" == uk ]; then
+    local translation_locales="en_UK"
+  else
+    local translation_locales="en"
+  fi
+  (
+    export BOB_DEPLOYMENT=$deployment
+    export MONGO_URL=${MONGO_URL:-"$(bob_prod_var "$deployment" MONGO_URL)"}
+    export IMPORTER_MONGO_URL=${IMPORTER_MONGO_URL:-"$(bob_importer_var "$deployment" MONGO_URL)"}
+    export REQUIRED_LOCALES=${REQUIRED_LOCALES:-"$translation_locales"}
+    docker-compose $@
+  )
+}
+
+# Piggy-back autocomplete function, with shifted arguments.
+function _shift_for_complete {
+  local completer=$1
+  local old_cword=$COMP_CWORD
+  local old_words=(${COMP_WORDS[@]})
+  ((COMP_CWORD--))
+  set -- "${COMP_WORDS[@]}"
+  shift
+  COMP_WORDS=($@)
+  $completer
+  COMP_CWORD=$old_cword
+  COMP_WORDS=(${old_words[@]})
+}
+
+function _bob_dc {
+  local dc_complete deployment_regex cur
+  cur=${COMP_WORDS[COMP_CWORD]}
+  deployment_regex=$(
+    jq -r '.[]|select(.deprecatedFor|not)|.deployment' \
+      "$BOB_ROOT_FOLDER/frontend/release/stack_deployments.json" |
+    tr "\n" "|")
+  dc_complete=$(complete -p docker-compose | sed -e 's/^complete -F //;s/ docker-compose$//')
+  if [ $COMP_CWORD == 1 ] ||
+    [[ ! "${COMP_WORDS[1]}" =~ ^$deployment_regex$ ]]; then
+    $dc_complete
+  fi
+  if [ $COMP_CWORD == 1 ]; then
+    __bob_get_stack_complete
+    return
+  fi
+  if [[ "${COMP_WORDS[1]}" =~ ^$deployment_regex$ ]]; then
+    _shift_for_complete $dc_complete
+    return
+  fi
+}
+complete -F _bob_dc bob-dc
+
 function _ecs_var_from_json {
   local container=$1
   local var=$2
@@ -15,23 +139,41 @@ function _ecs_var_from_json {
 # You need to have awscli and jq installed, as well have read access to the
 # prod configuration.
 function bob_prod_var {
-  aws ecs describe-task-definition --task-definition=frontend-flask | _ecs_var_from_json flask "$@"
+  local container region definition
+  region="$(__bob_get_stack_region $1)"
+  if [ "$region" ]; then
+    shift
+  else
+    region="$(__bob_get_stack_region fr)"
+  fi
+  # Keep those in sync with cloudformation.json
+  definition=bob-frontend-server
+  container=flask
+  aws ecs describe-task-definition --region "$region" --task-definition "$definition" | _ecs_var_from_json "$container" "$@"
 }
 
 # Access a demo environment var of Bob.
 #
 # You need to have ssh access to the demo server.
 function bob_demo_var {
-  ssh demo-mygameplan.bayes.org 'bash --login -c "echo \$'$1'"'
+  if [ "$(__bob_get_stack_region $1)" ]; then
+    local prefix_option="--prefix $1"
+    shift
+  elif [[ "$1" == "fr" ]]; then
+    shift
+  fi
+  # TODO(cyrille): Drop the -T if https://github.com/docker/compose/issues/5696 ever gets fixed.
+  ssh bob-demo.bayes.org 'bash --login -c "cd ../pascal && docker-compose exec -T frontend-demo-runner python demos.py '$1' '$prefix_option'"'
 }
 
 function _multiple_ecs_vars {
   task_definition=$1
-  shift
+  container=$2
+  shift 2
   tmpfile=$(mktemp)
   aws ecs describe-task-definition --task-definition=$task_definition > $tmpfile
   for var in "$@"; do
-    value="$(_ecs_var_from_json flask "$var" "$tmpfile")"
+    value="$(_ecs_var_from_json $container "$var" "$tmpfile")"
     echo -n "-e $var=$value "
   done
   # Finalize the line with a linebreak to conform to unix standards.
@@ -44,15 +186,34 @@ function _multiple_ecs_vars {
 # You need to have awscli and jq installed, as well have read access to the
 # prod configuration.
 function bob_prod_vars {
-  _multiple_ecs_vars frontend-flask $@
+  local container region definition
+  region="$(__bob_get_stack_region $1)"
+  (
+    if [ "$region" ]; then
+      export AWS_DEFAULT_REGION=$region
+      shift
+    fi
+    # Keep in sync with cloudformation.json
+    _multiple_ecs_vars bob-frontend-server flask $@
+  )
 }
 
 function bob_importer_var {
-  aws ecs describe-task-definition --task-definition=data-importer | _ecs_var_from_json master "$@"
+  local container region definition
+  region="$(__bob_get_stack_region $1)"
+  if [ "$region" ]; then
+    shift
+  else
+    region="$(__bob_get_stack_region fr)"
+  fi
+  # Keep those in sync with cloudformation.json
+  definition=bob-data-importer
+  container=importer
+  aws ecs describe-task-definition --region "$region" --task-definition "$definition" | _ecs_var_from_json "$container" "$@"
 }
 
 function mailjet_template {
-  $BOB_ROOT_FOLDER/frontend/cli/mailjet.sh "$@"
+  docker-compose run -e RECIPIENT --rm mailjet npm --no-update-notifier run mailjet "$@"
 }
 
 function _mailjet_template {
@@ -61,7 +222,7 @@ function _mailjet_template {
     COMPREPLY=( $(compgen -W "upload download" -- $cur) )
     return
   fi
-  templates=$(jq -rc .[].name "$BOB_ROOT_FOLDER/frontend/server/asynchronous/mail/templates/mailjet.json")
+  templates=$(jq -rc .[].name "$BOB_ROOT_FOLDER/frontend/server/mail/templates/mailjet.json")
   COMPREPLY=( $(compgen -W "$templates" -- $cur))
 }
 

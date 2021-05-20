@@ -30,6 +30,7 @@ if False:  # pylint: disable=using-constant-test
     from . import reorient_to_close_job
     from . import seasonal_relocate
     from . import skill_for_future
+    from . import strategy
     from . import volunteer
 
 _MODULE_FOLDER = os.path.dirname(os.path.realpath(__file__))

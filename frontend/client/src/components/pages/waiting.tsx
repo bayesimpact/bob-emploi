@@ -1,11 +1,16 @@
-import React from 'react'
+import i18n from 'i18next'
+import PropTypes from 'prop-types'
+import React, {useMemo} from 'react'
+import {useTranslation} from 'react-i18next'
 
-import loadingImage from 'images/logo-bob-loading.svg'
+import loadingImageFr from 'images/logo-bob-loading-fr.svg'
+// TODO(émilie): Vectorize the text to avoid font bug on Chrome for MacOS.
+import loadingImageEn from 'images/logo-bob-loading-en.svg'
 
 
-const style: React.CSSProperties = {
+const baseStyle: React.CSSProperties = {
   alignItems: 'center',
-  background: '#fff',
+  backgroundColor: '#fff',
   boxSizing: 'border-box',
   display: 'flex',
   height: '100%',
@@ -14,14 +19,25 @@ const style: React.CSSProperties = {
   width: '100vw',
 }
 
-
-// Keep this component in sync with index.html.
-const WaitingPage: React.FC = (): React.ReactElement => {
-  return <div style={style}>
-    <img src={loadingImage} alt="Chargement…" />
+interface Props {
+  loadingImage?: string
+  style?: React.CSSProperties
+}
+const WaitingPage: React.FC<Props> = ({loadingImage, style}): React.ReactElement => {
+  const {t} = useTranslation('translation', {useSuspense: false})
+  const finalStyle = useMemo((): React.CSSProperties => ({
+    ...baseStyle,
+    ...style,
+  }), [style])
+  return <div style={finalStyle}>
+    <img alt={t('Chargement…')}
+      src={loadingImage || (i18n.language?.startsWith('en') ? loadingImageEn : loadingImageFr)} />
   </div>
 }
-const WaitingPageMemo = React.memo(WaitingPage)
+WaitingPage.propTypes = {
+  loadingImage: PropTypes.string,
+  style: PropTypes.object,
+}
 
 
-export {WaitingPageMemo as WaitingPage}
+export default React.memo(WaitingPage)

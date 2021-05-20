@@ -4,6 +4,7 @@ import datetime
 import unittest
 
 from bob_emploi.frontend.server import privacy
+from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import options_pb2
 from bob_emploi.frontend.api import user_pb2
 
@@ -56,12 +57,12 @@ class PrivacyTestCase(unittest.TestCase):
     def test_anonymize_proto_map(self) -> None:
         """anonymize_proto does not choke on a scalar map."""
 
-        user = user_pb2.User()
-        user.likes['pascal'] = True
+        stats = job_pb2.LocalJobStats()
+        stats.num_job_offers_per_year[2021] = 42
 
-        self.assertFalse(privacy.anonymize_proto(user))
+        self.assertFalse(privacy.anonymize_proto(stats))
 
-        self.assertTrue(user.likes['pascal'])
+        self.assertEqual(42, stats.num_job_offers_per_year[2021])
 
     def test_redact_user(self) -> None:
         """redact_proto clears personal identifiers."""

@@ -9,9 +9,18 @@ set -e
 
 source "$(dirname "${BASH_SOURCE[0]}")/bashrc"
 
-curl https://www.bob-emploi.fr/api/user \
+readonly BOB_DEPLOYMENT="${BOB_DEPLOYMENT:-fr}"
+readonly PROD_HOST="$(jq -r '.Aliases.Items[0]' "$(dirname "${BASH_SOURCE[0]}")/../release/cloudfront/$BOB_DEPLOYMENT.json")"
+
+if [ -z "$PROD_HOST" ]; then
+    >&2 echo "Couldn't find a valid host name, please check BOB_DEPLOYMENT=\"$BOB_DEPLOYMENT\" is a valid deployment"
+    >&2 echo "and make sure it has a Cloudfront config in frontend/release/cloudfront/"
+    exit 1
+fi
+
+curl "https://$PROD_HOST/api/user" \
   -X DELETE \
-  -H "Authorization: $(bob_prod_var ADMIN_AUTH_TOKEN)" \
+  -H "Authorization: $(bob_prod_var "$BOB_DEPLOYMENT" ADMIN_AUTH_TOKEN)" \
   -H "Content-Type: application/json" \
   --data '{"profile": {"email": "'$1'"}}'
 

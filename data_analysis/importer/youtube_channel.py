@@ -31,7 +31,7 @@ if typing.TYPE_CHECKING:
         snippet: _Snippet
 
 
-class YouTubeAPI(object):
+class YouTubeAPI:
     """Client for YouTube Data API."""
 
     def __init__(self) -> None:

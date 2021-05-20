@@ -2,7 +2,7 @@ import React, {useMemo} from 'react'
 
 import {prepareT} from 'store/i18n'
 
-import {Trans} from 'components/i18n'
+import Trans from 'components/i18n_trans'
 import {TestimonialCard} from 'components/testimonials'
 import picto from 'images/advices/picto-association-help.svg'
 
@@ -17,7 +17,7 @@ const adviceId = 'soutien-association'
 const name = prepareT('Plus de soutien')
 
 
-type TestimonialCardProps = GetProps<typeof TestimonialCard>
+type TestimonialCardProps = React.ComponentProps<typeof TestimonialCard>
 
 
 const Page: React.FC<AdvicePageProps> = (props: AdvicePageProps): React.ReactElement => {

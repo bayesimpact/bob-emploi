@@ -3,6 +3,7 @@
 import json
 from typing import Any, Dict
 import unittest
+from unittest import mock
 
 from bob_emploi.frontend.server.test import base_test
 
@@ -13,6 +14,11 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
     def setUp(self) -> None:
         super().setUp()
         # The default user should get strategies.
+        self._db.diagnostic_main_challenges.insert_one({
+            'categoryId': 'stuck-market',
+            'strategiesIntroduction': 'Stuck Market',
+            'order': 1,
+        })
         self._db.strategy_modules.insert_many([
             {
                 'categoryIds': ['stuck-market', 'find-what-you-like'],
@@ -61,7 +67,8 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
                 'fr@tu': 'Tu devrais utiliser un commutateur',
             },
             {
-                'string': 'Vous êtes fait%eFeminine pour cette stratégie',
+                'string': 'strategyModules:application-method:description_template',
+                'fr': 'Vous êtes fait%eFeminine pour cette stratégie',
                 'fr@tu': 'Tu es fait%eFeminine pour cette stratégie',
             }
         ])
@@ -70,14 +77,17 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
         self.project: Dict[str, Any] = {
             'advices': [{'adviceId': 'commute', 'numStars': 2}],
             'city': {'name': 'Toulouse'},
-            'diagnostic': {'categoryId': 'stuck-market'},
+            'diagnostic': {
+                'categoryId': 'stuck-market',
+                'categories': [{'categoryId': 'stuck-market', 'relevance': 1}],
+            },
         }
         self.user_data: Dict[str, Any] = {
             'userId': self.user_id,
             'profile': {
-                'canTutoie': True,
                 'email': 'foo@bar.com',
                 'gender': 'FEMININE',
+                'locale': 'fr@tu',
             },
             'projects': [self.project],
         }
@@ -128,8 +138,8 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
     def test_get_strategy_in_other_category(self) -> None:
         """User gets a strategy on complete project if they have one advice in it."""
 
-        self.user_data['projects'][0]['diagnostic']['categoryId'] = 'find-what-you-like'
-        self.user_data['projects'][0]['advices'].append({'adviceId': 'improve-resume'})
+        self.project['diagnostic']['categoryId'] = 'find-what-you-like'
+        self.project['advices'].append({'adviceId': 'improve-resume'})
         response = self.app.post(
             '/api/user',
             data=json.dumps(self.user_data),
@@ -197,7 +207,8 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
     def test_get_alpha_strategies(self) -> None:
         """Ensure an alpha user get strategies for a category in the works."""
 
-        self._db.diagnostic_category.insert_one({
+        self._db.diagnostic_main_challenges.drop()
+        self._db.diagnostic_main_challenges.insert_one({
             'categoryId': 'stuck-market',
             'strategiesIntroduction': 'Stuck Market',
             'areStrategiesForAlphaOnly': True,
@@ -209,9 +220,9 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
         user_data: Dict[str, Any] = {
             'userId': user_id,
             'profile': {
-                'canTutoie': True,
                 'email': 'foo@example.com',
                 'gender': 'FEMININE',
+                'locale': 'fr@tu',
             },
             'projects': [self.project],
         }
@@ -226,34 +237,6 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
             data=json.dumps(user_data),
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
-        user_info = self.json_from_response(response)
-        strategies = user_info['projects'][0].get('strategies', [])
-        self.assertEqual(
-            ['other-leads', 'before-search', 'application-method'],
-            [s.get('strategyId') for s in strategies])
-
-    # TODO(pascal): Clean up this test as having an alpha category is now restricted to alpha users.
-    def test_get_strategies_even_if_for_alpha_only(self) -> None:
-        """Ensure a non-alpha user still get strategies for a category in the works."""
-
-        self._db.diagnostic_category.insert_one({
-            'categoryId': 'stuck-market',
-            'strategiesIntroduction': 'Stuck Market',
-            'areStrategiesForAlphaOnly': True,
-            'order': 1,
-        })
-
-        self.project['advices'] = [
-            {'adviceId': 'other-work-env'},
-            {'adviceId': 'network-application'},
-            {'adviceId': 'improve-resume'},
-        ]
-        self.project['diagnostic'] = {'categoryId': 'stuck-market'}
-        response = self.app.post(
-            '/api/user',
-            data=json.dumps(self.user_data),
-            content_type='application/json',
-            headers={'Authorization': 'Bearer ' + self.auth_token})
         user_info = self.json_from_response(response)
         strategies = user_info['projects'][0].get('strategies', [])
         self.assertEqual(
@@ -327,6 +310,118 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
             strat in user_info['projects'][0].get('strategies', [])
             if strat.get('strategyId') == 'other-leads')
         self.assertTrue(strategy.get('isSecondary'))
+
+    def test_hide_alpha_strategy(self) -> None:
+        """User does not get alpha strategies if they are not in alpha version."""
+
+        self._db.strategy_modules.update_one(
+            {'strategyId': 'other-leads'},
+            {'$set': {'isForAlpha': True}})
+
+        response = self.app.post(
+            '/api/user',
+            data=json.dumps(self.user_data),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + self.auth_token})
+        user_info = self.json_from_response(response)
+
+        strategy_ids = [
+            strat.get('strategyId')
+            for strat in user_info['projects'][0].get('strategies', [])
+        ]
+        self.assertNotIn('other-leads', strategy_ids)
+
+    def test_show_alpha_strategy(self) -> None:
+        """User gets alpha strategies if they are in alpha version."""
+
+        self._db.strategy_modules.update_one(
+            {'strategyId': 'other-leads'},
+            {'$set': {'isForAlpha': True}})
+
+        self.user_data['featuresEnabled'] = {'alpha': True}
+        response = self.app.post(
+            '/api/user',
+            data=json.dumps(self.user_data),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + self.auth_token})
+        user_info = self.json_from_response(response)
+
+        strategy_ids = [
+            strat.get('strategyId')
+            for strat in user_info['projects'][0].get('strategies', [])
+        ]
+        self.assertIn('other-leads', strategy_ids)
+
+    def test_get_strategy_external_url(self) -> None:
+        """User gets a strategy even if there are no advice modules, if it has an external URL."""
+
+        self._db.strategy_modules.update_one(
+            {'strategyId': 'other-leads'},
+            {'$set': {'externalUrlTemplate': '/orientation?departement=%departementId'}})
+
+        self.project['city']['departementId'] = '31'
+        self.project['diagnostic'] = {'categoryId': 'stuck-market'}
+        self.project['advices'] = []
+        response = self.app.post(
+            '/api/user',
+            data=json.dumps(self.user_data),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + self.auth_token})
+        user_info = self.json_from_response(response)
+        self.assertFalse(user_info['projects'][0].get('advices'))
+        self.assertTrue(user_info['projects'][0].get('strategies'))
+        strategy = user_info['projects'][0]['strategies'][0]
+        self.assertEqual('/orientation?departement=31', strategy.get('externalUrl'))
+
+    @mock.patch('logging.error')
+    def test_get_strategy_external_url_with_methods(self, mock_logging: mock.MagicMock) -> None:
+        """User gets a strategy with both methods and an external URL."""
+
+        self._db.strategy_modules.update_one(
+            {'strategyId': 'other-leads'},
+            {'$set': {'externalUrlTemplate': '/orientation?departement=%departementId'}})
+
+        self.project['city']['departementId'] = '31'
+        self.project['diagnostic'] = {'categoryId': 'stuck-market'}
+        response = self.app.post(
+            '/api/user',
+            data=json.dumps(self.user_data),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + self.auth_token})
+        user_info = self.json_from_response(response)
+        self.assertTrue(user_info['projects'][0].get('advices'))
+        self.assertTrue(user_info['projects'][0].get('strategies'))
+        strategy = user_info['projects'][0]['strategies'][0]
+        self.assertTrue(strategy.get('piecesOfAdvice'))
+        self.assertEqual('/orientation?departement=31', strategy.get('externalUrl'))
+
+        self.assertTrue(mock_logging.called)
+        error_message = mock_logging.call_args[0][0] % mock_logging.call_args[0][1:]
+        self.assertIn(
+            'Strategy other-leads has both an external URL and some pieces of advice',
+            error_message)
+
+    @mock.patch('logging.error')
+    def test_no_strategies(self, mock_error: mock.MagicMock) -> None:
+        """Properly log when no strategies match."""
+
+        self.project['advices'] = [
+            {'adviceId': 'a-very-old-module'},
+        ]
+        self.project['diagnostic'] = {'categoryId': 'stuck-market'}
+        response = self.app.post(
+            '/api/user',
+            data=json.dumps(self.user_data),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + self.auth_token})
+        user_info = self.json_from_response(response)
+        mock_error.assert_called_once()
+        error_message = mock_error.call_args[0][0] % mock_error.call_args[0][1:]
+        self.assertIn('We could not find *any* strategy', error_message)
+        self.assertIn('application-method, other-leads, before-search', error_message)
+        self.assertIn('a-very-old-module', error_message)
+        strategies = user_info['projects'][0].get('strategies', [])
+        self.assertFalse([s.get('strategyId') for s in strategies])
 
 
 if __name__ == '__main__':

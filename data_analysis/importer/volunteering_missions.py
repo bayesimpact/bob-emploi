@@ -50,13 +50,13 @@ def get_missions_dicts() -> List[Dict[str, Any]]:
     missions = pd.DataFrame(dataset['jobs']['job'])
 
     # Clean up fields, see http://go/pe:notebooks/datasets/tous_benevoles.ipynb
-    missions['title'] = missions.JobTitle.str.replace('^Bénévolat : ', '')
+    missions['title'] = missions.JobTitle.str.replace('^Bénévolat : ', '', regex=True)
     missions['associationName'] = \
         missions.JobDescription.str.extract('^Mission proposée par ([^<]+)<br />', expand=False)
     missions['description'] = missions.JobDescription\
-        .str.replace('^Mission proposée par ([^<]+)<br />', '')\
-        .str.replace('^<b>Informations complémentaires</b>', '')\
-        .str.replace('\n· *', '\n\n* ')\
+        .str.replace('^Mission proposée par ([^<]+)<br />', '', regex=True)\
+        .str.replace('^<b>Informations complémentaires</b>', '', regex=True)\
+        .str.replace('\n· *', '\n\n* ', regex=True)\
         .str.strip()
     missions.rename(columns={'applyURL': 'link'}, inplace=True)
     missions['departement'] = missions.PostalCode.str[:2]

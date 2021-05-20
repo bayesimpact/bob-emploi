@@ -1,15 +1,17 @@
 import CloseIcon from 'mdi-react/CloseIcon'
 import PropTypes from 'prop-types'
 import React from 'react'
+import {useTranslation} from 'react-i18next'
 import {useSelector} from 'react-redux'
 import {Link} from 'react-router-dom'
 
 import {RootState, acceptCookiesUsageAction, useDispatch} from 'store/actions'
+import isMobileVersion from 'store/mobile'
 
-import {Banner} from 'components/banner'
-import {Trans} from 'components/i18n'
-import {isMobileVersion} from 'components/mobile'
-import {Button, SmoothTransitions} from 'components/theme'
+import Banner from 'components/banner'
+import Button from 'components/button'
+import Trans from 'components/i18n_trans'
+import {SmoothTransitions} from 'components/theme'
 import {Routes} from 'components/url'
 
 
@@ -29,7 +31,7 @@ const useCookieStore = (): CookieMessageStore => {
 }
 
 
-const SimpleCookieMessageBase: React.FC<{}> = (): React.ReactElement => {
+const SimpleCookieMessageBase = ({isShown = true}: {isShown?: boolean}): React.ReactElement => {
   const linkStyle: React.CSSProperties = {
     color: 'inherit',
     cursor: 'pointer',
@@ -38,14 +40,15 @@ const SimpleCookieMessageBase: React.FC<{}> = (): React.ReactElement => {
   }
   if (isMobileVersion) {
     return <Trans>
-      Ce site utilise des <Link style={linkStyle} to={Routes.COOKIES_PAGE}>cookies</Link>.
+      Ce site utilise des <Link
+        style={linkStyle} to={Routes.COOKIES_PAGE} tabIndex={isShown ? 0 : -1}>cookies</Link>.
     </Trans>
   }
   return <Trans>
     En poursuivant votre navigation sur ce site, vous acceptez l'utilisation de cookies pour
     améliorer la qualité du service et pour réaliser des statistiques de visite. Vos données ne
     seront ni cédées à des tiers, ni exploitées à des fins commerciales. <Link
-      style={linkStyle} to={Routes.COOKIES_PAGE}>
+      style={linkStyle} to={Routes.COOKIES_PAGE} tabIndex={isShown ? 0 : -1}>
       En savoir plus
     </Link>
   </Trans>
@@ -82,6 +85,7 @@ const CookieMessage = React.memo(CookieMessageBase)
 
 const CookieMessageOverlayBase: React.FC = (): React.ReactElement => {
   const {isMessageShown, onAcceptCookieUsage} = useCookieStore()
+  const {t} = useTranslation()
   const containerStyle: React.CSSProperties = {
     backgroundColor: '#fff',
     borderRadius: 2,
@@ -110,12 +114,14 @@ const CookieMessageOverlayBase: React.FC = (): React.ReactElement => {
     'top': -15,
     'width': 30,
   }
-  return <div style={containerStyle}>
-    <Button onClick={onAcceptCookieUsage} aria-label="Fermer" style={closeButtonStyle}>
+  return <aside style={containerStyle} aria-hidden={!isMessageShown}>
+    <Button
+      onClick={onAcceptCookieUsage} aria-label={t('Fermer')} style={closeButtonStyle}
+      tabIndex={isMessageShown ? 0 : -1}>
       <CloseIcon color={colors.DARK} />
     </Button>
-    <SimpleCookieMessage />
-  </div>
+    <SimpleCookieMessage isShown={isMessageShown} />
+  </aside>
 }
 const CookieMessageOverlay = React.memo(CookieMessageOverlayBase)
 

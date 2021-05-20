@@ -1,3 +1,4 @@
+import {TFunction} from 'i18next'
 import ChevronLeftIcon from 'mdi-react/ChevronLeftIcon'
 import PropTypes from 'prop-types'
 import {parse} from 'query-string'
@@ -5,16 +6,15 @@ import React, {useEffect, useMemo, useRef} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useDispatch, useSelector} from 'react-redux'
 import {Link, Redirect, useLocation, useParams} from 'react-router-dom'
-import ReactRouterPropTypes from 'react-router-prop-types'
 
 import {DispatchAllActions, RootState, advicePageIsShown, workbenchIsShown} from 'store/actions'
 import {ValidAdvice, getAdviceShortTitle, getAdviceTitle} from 'store/advice'
+import isMobileVersion from 'store/mobile'
 
 import {AdviceCard} from 'components/advisor'
-import {isMobileVersion} from 'components/mobile'
+import Button from 'components/button'
 import {PageWithNavigationBar, Scrollable} from 'components/navigation'
-import {RocketChain} from 'components/rocket_chain'
-import {Button} from 'components/theme'
+import RocketChain from 'components/rocket_chain'
 import {ObservationMethod} from './strategy'
 
 const emptyObject = {} as const
@@ -85,6 +85,7 @@ interface AllMethodsProps {
   baseUrl: string
   project: bayes.bob.Project
   style?: React.CSSProperties
+  t: TFunction
 }
 
 
@@ -107,14 +108,16 @@ const allMethodsWrapStyle: React.CSSProperties = {
 
 
 const AllMethodsBase = (props: AllMethodsProps): React.ReactElement|null => {
-  const {advice, baseUrl, project: {advices = []}, style} = props
+  const {advice, baseUrl, project: {advices = []}, style, t} = props
   const currentAdviceId = advice && advice.adviceId
   const otherAdvicePieces = advices.filter(({adviceId}) => adviceId !== currentAdviceId)
   if (!otherAdvicePieces.length) {
     return null
   }
   return <div style={style}>
-    <div style={allMethodsTitleStyle}>Toutes les méthodes de Bob</div>
+    <div style={allMethodsTitleStyle}>
+      {t('Toutes les méthodes de {{productName}}', {productName: config.productName})}
+    </div>
     <div style={allMethodsWrapStyle}>
       {otherAdvicePieces.filter((a: bayes.bob.Advice): a is ValidAdvice => a && !!a.adviceId).map(
         (advice: ValidAdvice, index: number) =>
@@ -210,7 +213,7 @@ function getAdvice(
 
 
 // TODO(pascal): Merge back with the WorkbenchWithAdvice below.
-const WorkbenchBase = (props: WorkbenchProps): React.ReactElement => {
+const Workbench = (props: WorkbenchProps): React.ReactElement => {
   const {
     baseUrl,
     project: {advices = [], strategies = []},
@@ -240,18 +243,18 @@ const WorkbenchBase = (props: WorkbenchProps): React.ReactElement => {
 
   return <WorkbenchWithAdvice {...props} {...{advice, hasStrategyPage, urlOnClose}} />
 }
-WorkbenchBase.propTypes = {
+Workbench.propTypes = {
   baseUrl: PropTypes.string.isRequired,
-  location: ReactRouterPropTypes.location.isRequired,
-  match: ReactRouterPropTypes.match.isRequired,
   project: PropTypes.shape({
     advices: PropTypes.arrayOf(PropTypes.shape({
       adviceId: PropTypes.string.isRequired,
       score: PropTypes.number,
     }).isRequired),
+    strategies: PropTypes.arrayOf(PropTypes.shape({
+      strategyId: PropTypes.string.isRequired,
+    }).isRequired),
   }).isRequired,
 }
-const Workbench = React.memo(WorkbenchBase)
 
 const contentStyle = {
   margin: 'auto',
@@ -295,7 +298,6 @@ const WorkbenchWithAdviceBase = (props: WorkbenchWithAdviceProps): React.ReactEl
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, advice.adviceId])
 
-  // TODO(sil): Update to the new strategy UI (https://app.zeplin.io/project/574ff4c2e5c988a36aba1335/screen/5dcd1e49e0f29b23c5f6e31b).
   const pageStyle: React.CSSProperties = {
     backgroundColor: '#fff',
     display: 'flex',
@@ -315,7 +317,7 @@ const WorkbenchWithAdviceBase = (props: WorkbenchWithAdviceProps): React.ReactEl
         <BreadCrumbs hasStrategyPage={hasStrategyPage} urlOnClose={urlOnClose} />
         <div style={contentStyle}>
           <WorkbenchAdvice {...{advice, profile, project}} />
-          <AllMethods style={allMethodsStyle} {...{advice, baseUrl, project}} />
+          <AllMethods style={allMethodsStyle} {...{advice, baseUrl, project, t}} />
         </div>
       </div>}
   </PageWithNavigationBar>
@@ -327,11 +329,10 @@ WorkbenchWithAdviceBase.propTypes = {
   }).isRequired,
   baseUrl: PropTypes.string.isRequired,
   hasStrategyPage: PropTypes.bool,
-  project: PropTypes.shape({
-  }).isRequired,
+  project: PropTypes.object.isRequired,
   urlOnClose: PropTypes.string.isRequired,
 }
 const WorkbenchWithAdvice = React.memo(WorkbenchWithAdviceBase)
 
 
-export {Workbench}
+export default React.memo(Workbench)

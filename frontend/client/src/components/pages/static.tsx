@@ -14,10 +14,9 @@ import Professionals from './static/professionals'
 import VideoSignup from './static/video_signup'
 import Terms from './static/terms'
 import Vision from './static/vision'
-import ImiloIntegration from './static/imilo_integration'
 import StaticAdvice from './static/static_advice'
 
-const StaticPages: React.FC<{}> = () => <Switch>
+const StaticPages = (): React.ReactElement => <Switch>
   <Route path={Routes.CONTRIBUTION_PAGE} component={Contribution} />
   <Route path={Routes.COOKIES_PAGE} component={Cookies} />
   <Route path={Routes.COVID_PAGE} component={Covid} />
@@ -29,7 +28,6 @@ const StaticPages: React.FC<{}> = () => <Switch>
   <Route path={Routes.VIDEO_SIGNUP_PAGE} component={VideoSignup} />
   <Route path={Routes.TERMS_AND_CONDITIONS_PAGE} component={Terms} />
   <Route path={Routes.VISION_PAGE} component={Vision} />
-  <Route path={Routes.IMILO_INTEGRATION_PAGE} component={ImiloIntegration} />
   <Route path={Routes.STATIC_ADVICE_PATH} component={StaticAdvice} />
 </Switch>
 

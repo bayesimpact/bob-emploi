@@ -1,109 +1,109 @@
 {
   "driving-license-euro": [
     {
-      "content": "Bonjour,\n\nJe voudrais passer mon permis et je souhaiterais connaître vos tarifs.\nPourriez-vous m'envoyer un devis pour une formation permis B ?\nPar ailleurs, pourriez-vous me confirmer que votre auto-école est agréée pour le dispositif de l'État, \"permis à 1€ par jour\" ?\n\nMerci d'avance,\n\nBien cordialement,",
-      "title": "Demander un devis à une auto-école partenaire"
+      "content": "recPzDMOZdVD0opz1:content",
+      "title": "recPzDMOZdVD0opz1:title"
     }
   ],
   "driving-license-low-income": [
     {
-      "content": "Bonjour, \n\nJe me suis renseigné\\[e\\] sur l'aide au permis de conduire proposée par Pôle emploi.\nAvoir le permis de conduire augmenterait mes chances de trouver un emploi et je crois que je remplis les conditions pour pouvoir demander cette aide.\n\nPensez-vous que je puisse être éligible ? \nSouhaitez-vous que je réunisse des documents pour faire la demande, comme un devis d'une auto-école ? \n\nMerci de vos conseils, \n\nBien cordialement, ",
-      "title": "Envoyer un mail à votre conseiller Pôle emploi pour en parler avec lui "
+      "content": "recIlQhXlEzIb3Ai4:content",
+      "title": "recIlQhXlEzIb3Ai4:title"
     },
     {
-      "content": "Bonjour, \n\nJe voudrais passer mon permis et je souhaiterais connaître vos tarifs.\nPourriez-vous m'envoyer un devis pour une formation permis B ? \n\nPar ailleurs, pourriez-vous me confirmer que vous acceptez le financement du permis B par Pôle emploi ? \n\nMerci d'avance, \n\nBien cordialement,",
-      "title": "Demander un devis par mail à une auto-école"
+      "content": "rec8GBKtXlHVQkTOS:content",
+      "title": "rec8GBKtXlHVQkTOS:title"
     }
   ],
   "follow-up": [
     {
-      "content": "Je me permets de revenir vers vous suite à la candidature que je vous ai adressée le \\[date\\] dernier. \n\nJe souhaite vous proposer que nous nous rencontrions  afin que je vous expose en détail mes motivations. \n\nJe reste à votre disposition pour fixer une date de rendez-vous.",
-      "title": "Exemple 1 - Relancer pour demander un rendez-vous"
+      "content": "recEmPzerhiTNkW4N:content",
+      "title": "recEmPzerhiTNkW4N:title"
     },
     {
-      "content": "Pour faire suite à ma candidature concernant le poste de \\[nom du poste\\].\nJ'espère qu'elle vous est bien parvenue, je suis particulièrement intéressé\\[e\\] par ce travail qui correspond à mes compétences et à mes ambitions professionnelles.\n\nJe reste à votre disposition pour échanger.",
-      "title": "Exemple 2 - Relancer pour réaffirmer sa motivation"
+      "content": "recBcmcTC0YwXGaAd:content",
+      "title": "recBcmcTC0YwXGaAd:title"
     }
   ],
   "motivation-email": [
     {
-      "content": "**Objet :** Candidature spontanée : (intitulé du poste)\n\n**Corps du message :**\n\nJ'ai récemment appris, via mon réseau professionnel, que vous recherchiez un (intitulé du poste).\n\nAyant plus de (...) années d'expertise dans le domaine de (...) et étant passionné depuis toujours par (secteur de l'entreprise), je vous contacte afin de vous rencontrer pour envisager une collaboration.\n\nQuand seriez-vous disponible pour échanger ?",
-      "title": "Candidature spontanée - option 1",
+      "content": "recwWxLQbJVYAWs2A:content",
+      "title": "recwWxLQbJVYAWs2A:title",
       "type": "spontaneous-application"
     },
     {
-      "content": "**Objet :** Candidature spontanée : \\[intitulé du poste\\]\n\n**Corps du message :**\n\n\nJ'ai lu dans la presse, que vous développiez votre activité. Passionné depuis toujours par (secteur de l'entreprise), je vous contacte afin de vous rencontrer.\nMes précédentes expériences m'ont permises de développer mes capacités de (2 ou 3 compétences). Et je suis convaincu que je pourrais participer à la croissance de votre équipe et contribuer à la réalisation de vos objectifs.\n\nRencontrons-nous la semaine prochaine pour en discuter.",
-      "title": "Candidature spontanée - option 2",
+      "content": "recW6ww5N3ujdiwO3:content",
+      "title": "recW6ww5N3ujdiwO3:title",
       "type": "spontaneous-application"
     },
     {
-      "content": "**Objet :** Candidature à l'offre \\[intitulé de l'offre\\]\n\n**Corps du message :**\n\n\nSuite à votre offre diffusée sur (nom du site) je vous propose ma candidature pour le poste de (nom du poste)\nAprès (…) années d'experience, je cherche aujourd'hui à m'épanouir dans un autre milieu afin de relever de nouveaux challenges. Mon parcours m'a notamment permis de développer ma capacité à (2 ou 3 compétences). Je suis convaincu que je pourrais apporter un oeil neuf au sein de votre équipe et vous aider à realiser vos objectifs.\n\nVous trouverez en pièce jointe mon CV et je me tiens à votre disposition pour un entretien à votre convenance.",
-      "title": "Réponse à une offre - option 1",
+      "content": "reczXul18THrBoT0Q:content",
+      "title": "reczXul18THrBoT0Q:title",
       "type": "apply-to-offer"
     },
     {
-      "content": "**Objet :** Candidature à l'offre \\[intitulé de l'offre\\]\n\n**Corps du message :**\n\nJ'ai pris connaissance de votre offre d'emploi pour le poste de (nom du poste). Je suis vraiment intéressé par cette opportunité, car elle correspond parfaitement à mes compétences, mais surtout parce que l'esprit de votre entreprise me plaît tout particulièrement. Les valeurs de (2 ou 3 valeurs de l'entreprise) que vous avez adoptées et qui ont fait votre succès, me correspondent exactement et j'aimerais mettre mes compétences au service d'une entreprise comme la vôtre.\n\nAu cours de mes précédentes expériences j'ai pu développer mes capacités de (2 ou 3 compétences). Aujourd'hui j'ai envie de me consacrer à (…) et je suis convaincu que je pourrais également participer à la croissance de votre équipe et contribuer à la réalisation de vos objectifs.\n\n\nEn espérant que ma candidature saura retenir votre attention, je vous adresse, ci-joint, mon CV.",
-      "title": "Réponse à une offre - option 2",
+      "content": "recHewWdpQt1Xqryb:content",
+      "title": "recHewWdpQt1Xqryb:title",
       "type": "apply-to-offer"
     },
     {
-      "content": "**Objet :** Candidature à l'offre \\[intitulé de l'offre\\]\n\n**Corps du message :**\n\nJ'ai découvert votre entreprise il y a quelques mois et j'ai été très impressionné par (…). En (..) années vous avez réussi à vous imposer comme leader sur votre marché. Votre approche de (…) m'a vraiment intéressée, je suis moi-même passionné par (...) et j'aimerais mettre mes compétences au service d'une entreprise comme la vôtre.\n\nMes expériences professionnelles m'ont permis de développer mes capacités de (...).\nAujourd'hui je suis à la recherche d'un poste de (...).\n\nJe vous propose de nous rencontrer la semaine prochaine.",
-      "title": "Réponse à une offre - option 3",
+      "content": "recHO6AUC9F2DB4Dz:content",
+      "title": "recHO6AUC9F2DB4Dz:title",
       "type": "apply-to-offer"
     },
     {
-      "content": "**Objet :** Candidature à l'offre \\[intitulé de l'offre\\]\n\n**Corps du message :**\n\nVous recherchez un (nom de poste) capable de (2 ou 3 compétences marquantes), afin de développer votre activité.\n\nJe suis convaincu d'être la bonne personne pour compléter votre équipe et participer à la croissance de votre entreprise. Mes précédentes expériences m'ont permises de développer mes capacités de (2 ou 3 compétences).\n\nJ'espère que mon profil et ma motivation retiendront votre attention, et vous propose que nous rencontrions la semaine prochaine.",
-      "title": "Réponse à une offre - option 4",
+      "content": "recpNq8DKvMu2Ihae:content",
+      "title": "recpNq8DKvMu2Ihae:title",
       "type": "apply-to-offer"
     }
   ],
   "network": [
     {
-      "content": "Bonjour,\n\nJe suis actuellement en recherche d'emploi et j'aimerais beaucoup échanger avec toi sur mon projet et sur les entreprises que je voudrais contacter, afin que tu puisses me donner quelques conseils.\n\nAurais-tu un moment à me consacrer ?",
+      "content": "recr8zEcZ5b2gtvBh:content",
       "personalizations": [
         "NETWORK_SCORE_1",
         "MOTIVATION"
       ],
-      "reason": "Commencez par contacter les personnes que vous connaissez le mieux, ça sera plus facile et on ne sait pas qui connaît de fil en aiguille vos proches pourront sûrement vous aider",
-      "title": "Amis et proches"
+      "reason": "recr8zEcZ5b2gtvBh:reason",
+      "title": "recr8zEcZ5b2gtvBh:title"
     },
     {
-      "content": "Bonjour,\n\n\\[Prénom\\] \\[Nom\\], en copie de ce mail, m'a vivement recommandé de prendre contact avec vous. Actuellement en recherche d'emploi, j'aimerais beaucoup échanger avec vous  sur votre métier,  mon projet et sur les entreprises que je voudrais contacter afin que vous puissiez me donner quelques conseils.\n\nAuriez-vous quelques minutes à me consacrer ?",
+      "content": "recB6FxOldQB7oAq0:content",
       "personalizations": [
         "NETWORK_SCORE_2"
       ],
-      "reason": "Souvenez-vous que toute personne sur le globe peut être reliée à n'importe quelle autre, au travers d'une chaîne de seulement 6 personnes 😊",
-      "title": "Amis d'amis"
+      "reason": "recB6FxOldQB7oAq0:reason",
+      "title": "recB6FxOldQB7oAq0:title"
     },
     {
-      "content": "Bonjour,\n\nEn consultant les parcours des anciens élèves de la formation \\[nom de la formation\\] je suis tombé sur votre profil que j'ai trouvé très inspirant. J'aimerais beaucoup échanger avec vous sur votre parcours et sur mon projet professionnel afin que vous puissiez me donner quelques conseils.\n\nAuriez-vous quelques minutes à me consacrer ?",
+      "content": "recSraf1FOonDPymV:content",
       "personalizations": [
         "GRADUATE"
       ],
-      "reason": "Le réseau des anciens élèves peut vous débloquer et vous permettre d'élargir votre réseau",
-      "title": "Connaissances de classe"
+      "reason": "recSraf1FOonDPymV:reason",
+      "title": "recSraf1FOonDPymV:title"
     },
     {
-      "content": "Bonjour,\n\nJe suis actuellement en recherche d'emploi et j'aimerais beaucoup échanger avec toi sur mon projet et sur les entreprises que je voudrais contacter, afin que tu puisses me donner quelques conseils.\n\nAurais-tu un moment à me consacrer ?",
+      "content": "rec6K98zxhBjWvoW1:content",
       "filters": [
         "for-experienced(2)"
       ],
       "personalizations": [
         "SAME_JOB"
       ],
-      "reason": "Vos anciens collègues pourraient avoir eu vent de bonnes opportunités qui pourraient vous intéresser",
-      "title": "Anciens collègues"
+      "reason": "rec6K98zxhBjWvoW1:reason",
+      "title": "rec6K98zxhBjWvoW1:title"
     },
     {
-      "content": "Bonjour, \n\nJ'ai vu l'offre postée sur votre site pour \\[nom du poste\\] qui m'intéresse beaucoup.  \n\nPourrais-tu me donner ton avis sur ma candidature ? \n\nUn grand merci",
+      "content": "recGEuRxsPS4C71eT:content",
       "personalizations": [
         "NETWORK_SCORE_3"
       ],
-      "reason": "Une recommandation peut vous aider à obtenir un premier rendez-vous. Ça n'est pas du piston c'est juste mettre toutes les chances de son côté",
-      "title": "Amis en poste"
+      "reason": "recGEuRxsPS4C71eT:reason",
+      "title": "recGEuRxsPS4C71eT:title"
     },
     {
-      "content": "Bonjour,\n\nAprès avoir lu votre article sur \\[titre de l'article\\], j'ai découvert votre profil que j'ai trouvé très inspirant. J'aimerais beaucoup échanger avec vous sur votre parcours et sur mon projet professionnel afin que vous puissiez me donner quelques conseils.\n\nAuriez-vous quelques minutes à me consacrer ?",
+      "content": "recifpiQUl5AmxeDQ:content",
       "filters": [
         "for-experienced(6)"
       ],
@@ -111,19 +111,19 @@
         "ATYPIC_PROFILE",
         "GRADUATE"
       ],
-      "reason": "Les relations sur les réseaux sociaux n'ont pas de valeur si vous n'interragissez pas avec. Lancez-vous pour créer des liens réels",
-      "title": "Contacts repérés sur Linkedin"
+      "reason": "recifpiQUl5AmxeDQ:reason",
+      "title": "recifpiQUl5AmxeDQ:title"
     },
     {
-      "content": "Bonjour,\n\nDepuis notre dernière rencontre, je me suis lancé à la recherche de mon prochain défi professionnel, j'aimerais beaucoup échanger avec vous sur les entreprises du secteur et vos derniers développements.\n\nSeriez-vous disponible pour échanger autour d'un café dans les semaines à venir ?",
+      "content": "recFXzcq2o0UduqQk:content",
       "filters": [
         "for-experienced(6)"
       ],
       "personalizations": [
         "SAME_JOB"
       ],
-      "reason": "Vos anciens fournisseurs, clients ou partenaires connaissent sûrement d'autres entreprises de votre secteur et pourraient vous aider dans votre recherche.",
-      "title": "Anciens fournisseurs ou clients"
+      "reason": "recFXzcq2o0UduqQk:reason",
+      "title": "recFXzcq2o0UduqQk:title"
     }
   ]
 }

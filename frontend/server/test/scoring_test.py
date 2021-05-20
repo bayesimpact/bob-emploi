@@ -14,7 +14,6 @@ from unittest import mock
 from google.protobuf import message
 import mongomock
 import pyjson5
-import pymongo
 import rstr
 
 from bob_emploi.frontend.api import advisor_pb2
@@ -23,9 +22,12 @@ from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import training_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import advisor
+from bob_emploi.frontend.server import cache
 from bob_emploi.frontend.server import carif
 from bob_emploi.frontend.server import companies
+from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import scoring
+from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.server import proto
 
 _TESTDATA_FOLDER = path.join(path.dirname(__file__), 'testdata')
@@ -34,7 +36,7 @@ _TESTDATA_FOLDER = path.join(path.dirname(__file__), 'testdata')
 # pylint: disable=too-many-lines
 
 
-def _load_json_to_mongo(database: pymongo.database.Database, collection: str) -> None:
+def _load_json_to_mongo(database: mongo.NoPiiMongoDatabase, collection: str) -> None:
     """Load a MongoDB collection from a JSON file."""
 
     with open(path.join(_TESTDATA_FOLDER, collection + '.json')) as json_file:
@@ -45,6 +47,8 @@ def _load_json_to_mongo(database: pymongo.database.Database, collection: str) ->
 class ScoringProjectTestCase(unittest.TestCase):
     """Test methods of the ScoringProject class."""
 
+    _db = mongo.NoPiiMongoDatabase(mongomock.MongoClient().test)
+
     def test_string_representation(self) -> None:
         """A scoring project can be represented as a meaningful string."""
 
@@ -52,7 +56,7 @@ class ScoringProjectTestCase(unittest.TestCase):
         user.profile.gender = user_pb2.MASCULINE
         user.features_enabled.alpha = True
         project = project_pb2.Project(title='Developpeur web a Lyon')
-        project_str = str(scoring.ScoringProject(project, user, None))
+        project_str = str(scoring.ScoringProject(project, user, self._db))
         self.assertIn(str(user.profile), project_str)
         self.assertIn(str(project), project_str)
         self.assertIn(str(user.features_enabled), project_str)
@@ -64,7 +68,7 @@ class ScoringProjectTestCase(unittest.TestCase):
         user.profile.name = 'Cyrille'
         user.features_enabled.alpha = True
         project = project_pb2.Project(project_id='secret-project')
-        project_str = str(scoring.ScoringProject(project, user, None))
+        project_str = str(scoring.ScoringProject(project, user, self._db))
         self.assertNotIn('Cyrille', project_str)
         self.assertNotIn('secret-project', project_str)
         self.assertEqual('Cyrille', user.profile.name)
@@ -75,7 +79,7 @@ class ScoringProjectTestCase(unittest.TestCase):
 
         user = user_pb2.User()
         user.profile.locale = 'nl'
-        database = mongomock.MongoClient().test
+        database = mongo.NoPiiMongoDatabase(mongomock.MongoClient().test)
         database.job_group_info.insert_many(
             [{'_id': 'A1234', 'name': 'french'}, {'_id': 'nl:A1234', 'name': 'dutch'}])
         project = project_pb2.Project(
@@ -89,7 +93,7 @@ class ScoringProjectTestCase(unittest.TestCase):
 
         user = user_pb2.User()
         user.profile.locale = ''
-        database = mongomock.MongoClient().test
+        database = mongo.NoPiiMongoDatabase(mongomock.MongoClient().test)
         database.job_group_info.insert_many(
             [{'_id': 'A1234', 'name': 'french'}, {'_id': 'nl:A1234', 'name': 'dutch'}])
         project = project_pb2.Project(
@@ -99,7 +103,7 @@ class ScoringProjectTestCase(unittest.TestCase):
         self.assertEqual('french', job_group_info.name)
 
 
-class _Persona(object):
+class _Persona:
     """A preset user and project.
 
     Do not modify the proto of a persona in a test unless you have just
@@ -156,7 +160,7 @@ class _Persona(object):
 
     def scoring_project(
             self,
-            database: pymongo.database.Database,
+            database: mongo.NoPiiMongoDatabase,
             now: Optional[datetime.datetime] = None) -> scoring.ScoringProject:
         """Creates a new scoring.ScoringProject for this persona."""
 
@@ -190,8 +194,8 @@ class PersonaTestBase(unittest.TestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        proto.clear_mongo_fetcher_cache()
-        self.database = mongomock.MongoClient().test
+        cache.clear()
+        self.database = mongo.NoPiiMongoDatabase(mongomock.MongoClient().test)
         self.now: Optional[datetime.datetime] = None
 
     def _scoring_project(
@@ -309,6 +313,32 @@ class ScoringModelTestBase(PersonaTestBase):
         if missing_fields is not None:
             self.assertLessEqual(missing_fields, error.fields, msg=f'Fail for "{persona.name}"')
 
+    def _enforce_search_length_duration(
+            self,
+            project: project_pb2.Project,
+            exact_months: Optional[int] = None, min_months: Optional[int] = None,
+            max_months: Optional[int] = None) -> None:
+        """Update a project to make sure the search length duration matches some criteria."""
+
+        try:
+            default_months = next(
+                m for m in (exact_months, min_months, max_months)
+                if m is not None)
+        except StopIteration as error:
+            raise TypeError('One of exact_months, min_months or max_months must be set') from error
+
+        if not project.job_search_has_not_started and project.HasField('job_search_started_at'):
+            current_duration = (
+                project.created_at.ToDatetime() - project.job_search_started_at.ToDatetime()
+            ).days / 30.5
+            if (min_months is None or current_duration >= min_months) and \
+                    (max_months is None or current_duration <= max_months) and \
+                    (exact_months is None or current_duration == exact_months):
+                return
+
+        project.job_search_started_at.FromDatetime(
+            project.created_at.ToDatetime() - datetime.timedelta(days=30.5 * default_months))
+
 
 class AdviceScoringModelTestBase(ScoringModelTestBase):
     """Creates a base class for unit tests of scoring models used as advice modules."""
@@ -404,7 +434,6 @@ class TrainingAdviceScoringModelTestCase(AdviceScoringModelTestBase):
         mock_carif_get_trainings.return_value = self._many_trainings
         self.persona.project.city.departement_id = '35'
         self.persona.project.target_job.job_group.rome_id = 'A1234'
-        self.persona.project.job_search_length_months = 0
         self.persona.project.job_search_started_at.CopyFrom(self.persona.project.created_at)
         if self.persona.project.kind == project_pb2.REORIENTATION:
             self.persona.project.kind = project_pb2.FIND_A_NEW_JOB
@@ -415,7 +444,6 @@ class TrainingAdviceScoringModelTestCase(AdviceScoringModelTestBase):
         """The user has been searching for a job for 3 months."""
 
         mock_carif_get_trainings.return_value = self._many_trainings
-        self.persona.project.job_search_length_months = 3
         self.persona.project.job_search_started_at.FromDatetime(
             self.persona.project.created_at.ToDatetime() -
             datetime.timedelta(days=94))
@@ -428,7 +456,6 @@ class TrainingAdviceScoringModelTestCase(AdviceScoringModelTestBase):
         """The user has been searching for a job for 1 month."""
 
         mock_carif_get_trainings.return_value = self._many_trainings
-        self.persona.project.job_search_length_months = 1
         self.persona.project.job_search_started_at.FromDatetime(
             self.persona.project.created_at.ToDatetime() -
             datetime.timedelta(days=30.5))
@@ -459,6 +486,24 @@ class TrainingAdviceScoringModelTestCase(AdviceScoringModelTestBase):
         extra_data = typing.cast(
             training_pb2.Trainings, self._compute_expanded_card_data(self.persona))
         self.assertEqual(3, len(extra_data.trainings))
+
+    def test_uk_expanded_card_data(
+            self, unused_mock_carif_get_trainings: mock.MagicMock) -> None:
+        """Test the uk training values"""
+
+        patcher = mock.patch(scoring_base.__name__ + '._BOB_DEPLOYMENT', new='uk')
+        patcher.start()
+
+        self.database.trainings.insert_one({
+            'name': 'UK Training',
+            'url': 'http://aspirationtraining.com',
+        })
+        extra_data = typing.cast(
+            training_pb2.Trainings, self._compute_expanded_card_data(self.persona))
+        self.assertEqual(1, len(extra_data.trainings))
+        training = extra_data.trainings[0]
+        self.assertEqual('UK Training', training.name)
+        self.assertEqual('http://aspirationtraining.com', training.url)
 
 
 class ConstantScoreModelTestCase(ScoringModelTestBase):
@@ -497,7 +542,7 @@ class PersonasTestCase(unittest.TestCase):
             training_pb2.Training(),
             training_pb2.Training(),
         ]
-        database = mongomock.MongoClient().test
+        database = mongo.NoPiiMongoDatabase(mongomock.MongoClient().test)
         _load_json_to_mongo(database, 'associations')
         _load_json_to_mongo(database, 'cities')
         _load_json_to_mongo(database, 'departements')
@@ -958,7 +1003,7 @@ class FilterUsingScoreTestCase(unittest.TestCase):
     dummy_project = scoring.ScoringProject(
         project_pb2.Project(),
         user_pb2.User(),
-        mongomock.MongoClient().test)
+        mongo.NoPiiMongoDatabase(mongomock.MongoClient().test))
 
     def test_filter_list_with_no_filters(self) -> None:
         """Filter a list with no filters to apply."""

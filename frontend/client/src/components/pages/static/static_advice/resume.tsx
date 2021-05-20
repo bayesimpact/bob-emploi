@@ -71,7 +71,7 @@ const Page: React.FC<AdvicePageProps> = (props: AdvicePageProps): React.ReactEle
 
 
 const StaticAdviceCard: React.FC<CardProps> = (props: CardProps): React.ReactElement =>
-  <StaticAdviceCardBase picto={picto} name="CV percutant" {...props} >
+  <StaticAdviceCardBase picto={picto} name={prepareT('CV percutant')} {...props} >
     Les qualités indispensables à mettre dans votre <strong>CV</strong> selon
     votre <strong>métier</strong>
   </StaticAdviceCardBase>

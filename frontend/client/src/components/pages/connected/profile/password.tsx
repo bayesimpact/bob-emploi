@@ -1,28 +1,21 @@
 import React, {useCallback, useState} from 'react'
 import {useTranslation} from 'react-i18next'
-import {connect} from 'react-redux'
+import {useDispatch, useSelector} from 'react-redux'
 
 import {DispatchAllActions, RootState, askPasswordReset, changePassword, displayToasterMessage,
   emailCheck, registerNewUser} from 'store/actions'
 
-import {Trans} from 'components/i18n'
+import Button from 'components/button'
+import FieldSet from 'components/field_set'
+import Trans from 'components/i18n_trans'
+import Input from 'components/input'
 import {LoginButton} from 'components/login'
-import {isMobileVersion} from 'components/mobile'
+import isMobileVersion from 'store/mobile'
 import {RadiumSpan} from 'components/radium'
-import {FieldSet} from 'components/pages/connected/form_utils'
-import {Button, Input, WithNote} from 'components/theme'
+import WithNote from 'components/with_note'
 
 import {ProfileStepProps, Step} from './step'
 
-
-interface StepConnectedProps {
-  hasPassword: boolean
-  isAuthenticating: boolean
-}
-
-interface StepProps extends ProfileStepProps, StepConnectedProps {
-  dispatch: DispatchAllActions
-}
 
 interface NoteProps {
   email: string
@@ -32,9 +25,11 @@ interface NoteProps {
 const ForgottenPasswordNoteBase: React.FC<NoteProps> =
 ({dispatch, email}: NoteProps): React.ReactElement => {
   const [hasAskedForReset, setHasAskedForReset] = useState(false)
-  const handleResetPassword = useCallback(() => {
-    dispatch(askPasswordReset(email)).then((response): void =>
-      response && setHasAskedForReset(true))
+  const handleResetPassword = useCallback(async () => {
+    const response = await dispatch(askPasswordReset(email))
+    if (response) {
+      setHasAskedForReset(true)
+    }
   }, [email, dispatch, setHasAskedForReset])
   if (hasAskedForReset) {
     return <Trans parent="span">
@@ -57,35 +52,42 @@ const ForgottenPasswordNote = React.memo(ForgottenPasswordNoteBase)
 
 // TODO(cyrille): Check for missing email workflow.
 // TODO(sil): Add clearer error messages.
-const PasswordStepBase: React.FC<StepProps> = (props: StepProps): React.ReactElement => {
-  const {dispatch, hasAccount, hasPassword, isAuthenticating, profile: {email}} = props
+const PasswordStep = (props: ProfileStepProps): React.ReactElement => {
+  const {hasAccount, profile: {email}} = props
+  const dispatch = useDispatch<DispatchAllActions>()
+  const hasPassword = useSelector(({user: {hasPassword}}: RootState): boolean => !!hasPassword)
+  const isAuthenticating = useSelector(
+    ({asyncState: {isFetching}}: RootState): boolean => !!isFetching['AUTHENTICATE_USER'],
+  )
   const [oldPassword, setOldPassword] = useState('')
   const [password, setPassword] = useState('')
   const [isValidated, setIsValidated] = useState(false)
   const {t} = useTranslation()
-  const handleChangePassword = useCallback(() => {
+  const handleChangePassword = useCallback(async () => {
     if (!email) {
       return
     }
-    const passwordChangePromise = hasPassword ?
-      dispatch(emailCheck(email)).then((response): Promise<bayes.bob.AuthResponse|void> => {
-        const {hashSalt = ''} = response || {}
-        return dispatch(changePassword(email, oldPassword, hashSalt, password))
-      }) :
-      dispatch(registerNewUser(email, password, '', ''))
-    passwordChangePromise.then((response): void => {
-      if (!response) {
+    if (hasPassword) {
+      const checkedEmail = await dispatch(emailCheck(email))
+      const {hashSalt = ''} = checkedEmail || {}
+      const passwordChanged = await dispatch(changePassword(email, oldPassword, hashSalt, password))
+      if (!passwordChanged) {
         return
       }
-      setOldPassword('')
-      setPassword('')
-      setIsValidated(false)
-      dispatch(displayToasterMessage(
-        hasPassword ?
-          t('Le mot de passe a bien été modifié') :
-          t('Le mot de passe a bien été créé'),
-      ))
-    })
+    } else {
+      const passwordChanged = await dispatch(registerNewUser(email, password, ''))
+      if (!passwordChanged) {
+        return
+      }
+    }
+    setOldPassword('')
+    setPassword('')
+    setIsValidated(false)
+    dispatch(displayToasterMessage(
+      hasPassword ?
+        t('Le mot de passe a bien été modifié') :
+        t('Le mot de passe a bien été créé'),
+    ))
   }, [
     dispatch, email, hasPassword, oldPassword,
     password, setIsValidated, setPassword, setOldPassword, t,
@@ -104,12 +106,15 @@ const PasswordStepBase: React.FC<StepProps> = (props: StepProps): React.ReactEle
   }, [handleChangePassword, hasPassword, oldPassword, password, setOldPassword, setPassword])
   if (!hasAccount) {
     return <Step fastForward={handleForward} title={t('Créer un compte')} {...props}>
-      Avec un compte, je peux revenir sur {config.productName} plus tard pour suivre mes progrès
-      (c'est gratuit et le restera toujours).
+      {t(
+        'Avec un compte, je peux revenir sur {{productName}} plus tard pour suivre mes progrès ' +
+        "(c'est gratuit et le restera toujours).",
+        {productName: config.productName},
+      )}
       <LoginButton
         visualElement="profile" isSignUp={true}
         isRound={true} type="navigation" style={{marginTop: 20}}>
-        Créer un compte
+        {t('Créer un compte')}
       </LoginButton>
     </Step>
   }
@@ -141,10 +146,6 @@ const PasswordStepBase: React.FC<StepProps> = (props: StepProps): React.ReactEle
     </Button>
   </Step>
 }
-const PasswordStep = connect(({user: {hasPassword}, asyncState: {isFetching}}: RootState) => ({
-  hasPassword: !!hasPassword,
-  isAuthenticating: !!isFetching['AUTHENTICATE_USER'],
-}))(React.memo(PasswordStepBase))
 
 
-export {PasswordStep}
+export default React.memo(PasswordStep)

@@ -5,11 +5,12 @@ import {useDispatch} from 'react-redux'
 import {DispatchAllActions, emailCheck, silentlyRegisterUser} from 'store/actions'
 import {validateEmail} from 'store/validations'
 
-import {Trans} from 'components/i18n'
+import Button from 'components/button'
+import Trans from 'components/i18n_trans'
+import Input from 'components/input'
 import {LoginLink} from 'components/login'
-import {isMobileVersion} from 'components/mobile'
+import isMobileVersion from 'store/mobile'
 import {Modal} from 'components/modal'
-import {Button, Input} from 'components/theme'
 
 
 interface CoachingConfirmModalProps {
@@ -32,28 +33,26 @@ const errorStyle = {
 }
 
 
-const CoachingConfirmationModalBase: React.FC<CoachingConfirmModalProps> =
-(props: CoachingConfirmModalProps): React.ReactElement => {
+const CoachingConfirmationModal = (props: CoachingConfirmModalProps): React.ReactElement => {
   const {coachingEmailFrequency, onCloseModal} = props
   const [email, setEmail] = useState('')
   const [isEmailAlreadyUsed, setIsEmailAlreadyUsed] = useState(false)
   const dispatch = useDispatch<DispatchAllActions>()
   const {t} = useTranslation()
 
-  const submitEmail = useCallback((): void => {
+  const submitEmail = useCallback(async (): Promise<void> => {
     if (!validateEmail(email)) {
       return
     }
-    dispatch(emailCheck(email)).then((response): void => {
-      if (!response) {
-        return
-      }
-      if (!response.isNewUser) {
-        setIsEmailAlreadyUsed(true)
-        return
-      }
-      dispatch(silentlyRegisterUser(email))
-    })
+    const response = await dispatch(emailCheck(email))
+    if (!response) {
+      return
+    }
+    if (!response.isNewUser) {
+      setIsEmailAlreadyUsed(true)
+      return
+    }
+    dispatch(silentlyRegisterUser(email))
   }, [dispatch, email])
 
   const submitEmailViaForm = useCallback((event: React.FormEvent<HTMLFormElement>): void => {
@@ -95,7 +94,6 @@ const CoachingConfirmationModalBase: React.FC<CoachingConfirmModalProps> =
     </div>
   </Modal>
 }
-const CoachingConfirmationModal = React.memo(CoachingConfirmationModalBase)
 
 
-export {CoachingConfirmationModal}
+export default React.memo(CoachingConfirmationModal)

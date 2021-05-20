@@ -77,7 +77,7 @@ class AdviceBetterJobInGroupTestCase(scoring_test.ScoringModelTestBase):
         persona = self._random_persona().clone()
         persona.project.target_job.job_group.rome_id = 'A1234'
         persona.project.target_job.code_ogr = '1234'
-        persona.project.job_search_length_months = 2
+        self._enforce_search_length_duration(persona.project, exact_months=2)
         persona.project.kind = project_pb2.FIND_A_FIRST_JOB
         self.database.job_group_info.insert_one({
             '_id': 'A1234',

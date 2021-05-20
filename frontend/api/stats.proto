@@ -5,6 +5,7 @@ import "google/protobuf/timestamp.proto";
 import "bob_emploi/frontend/api/project.proto";
 
 package bayes.bob;
+option go_package="bayes.org/bob_emploi/frontend/api/stats";
 
 message UsersCount {
   // Total number of registered users.
@@ -40,6 +41,14 @@ message UsersCount {
   // their job search lengths.
   repeated PassionLevelCategory passion_level_counts = 11;
 
+  // Number of users according to their main challenges.
+  map<string, int32> main_challenge_counts = 13;
+
+  // Most given firstnames. For privacy reasons we don't keep firstnames with less than 50
+  // occurrences. The keys are the firstnames and the values are the frequency of each firstname
+  // among other frequent ones (the frequencies sum up to 1).
+  map<string, float> frequent_firstnames = 12;
+
   // Time when aggregation of data happened.
   google.protobuf.Timestamp aggregated_at = 6;
 }
@@ -55,6 +64,11 @@ message PassionLevelCount {
 
   // Number of users with this passionate level.
   int32 count = 2;
+}
+
+message Monitoring {
+  // Version of current server
+  string server_version = 1;
 }
 
 enum SearchLengthCategory {

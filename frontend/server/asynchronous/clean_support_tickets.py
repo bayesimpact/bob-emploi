@@ -2,11 +2,10 @@
 
 import argparse
 import logging
-import os
 from typing import List, Optional
 
+from bob_emploi.common.python import now
 from bob_emploi.frontend.server import mongo
-from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.asynchronous import report
 
@@ -17,18 +16,11 @@ def main(string_args: Optional[List[str]] = None) -> None:
     """Clean all support tickets marked for deletion."""
 
     parser = argparse.ArgumentParser(description='Clean support tickets from the database.')
-    parser.add_argument(
-        '--disable-sentry', action='store_true', help='Disable logging to Sentry.')
+    report.add_report_arguments(parser)
 
     args = parser.parse_args(string_args)
-    logging.basicConfig(level='INFO')
-    if not args.disable_sentry:
-        try:
-            report.setup_sentry_logging(os.getenv('SENTRY_DSN'))
-        except ValueError:
-            logging.error(
-                'Please set SENTRY_DSN to enable logging to Sentry, or use --disable-sentry option')
-            return
+    if not report.setup_sentry_logging(args):
+        return
 
     instant = proto.datetime_to_json_string(now.get())
     result = _DB.user.update_many(

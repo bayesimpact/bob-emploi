@@ -23,11 +23,12 @@ const VAEMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement =>
   // TODO(cyrille): Try to scrape relevant VAE from Avril.
   return <MethodSuggestionList
     title={t("Validation des Acquis de l'Expérience (VAE)")}
+    isNotClickable={true}
     subtitle={t(
       'Valorisez les compétences que vous avez acquises au fil des années au même titre que si ' +
       'vous les aviez acquises par une formation équivalente.')}>
     {tips.map(({text, intro, name, url}, index): ReactStylableElement => <ActionWithHandyLink
-      key={index} discoverUrl={url} linkIntro={intro} linkName={name} isNotClickable={true}
+      key={index} discoverUrl={url} linkIntro={intro} linkName={name}
       onClick={handleClick}>
       {text}
     </ActionWithHandyLink>)}

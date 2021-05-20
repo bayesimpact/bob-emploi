@@ -1,9 +1,9 @@
 import {TOptions} from 'i18next'
 import React, {useMemo} from 'react'
 
-import {LocalizableString, prepareT} from 'store/i18n'
+import {LocalizableString, combineTOptions, prepareT} from 'store/i18n'
 
-import {Trans} from 'components/i18n'
+import Trans from 'components/i18n_trans'
 import Picto from 'images/advices/picto-long-term-mom.svg'
 
 import {CardProps, MethodSuggestionList, Skill} from './base'
@@ -56,22 +56,24 @@ const LongTermParent: React.FC<CardProps> = (props: CardProps): React.ReactEleme
   const {handleExplore, profile: {gender}, t, t: translate} = props
   const tOptions = useMemo((): TOptions => ({context: gender}), [gender])
   // TODO(cyrille): Put text in title/subtitle/headerContent, once OKed by product team.
-  return <Trans t={t} tOptions={tOptions}>
-    Vous vous êtes un peu éloigné·e du monde de l'emploi, rien de plus normal. Pourtant, vous avez
-    continué de développer vos talents pendant un des plus grands défis de la vie&nbsp;:
-    la parentalité <span aria-label={t('muscle')} role="img">💪🏽</span>{' '}
+  return <div>
+    <Trans parent={null} t={t} tOptions={tOptions}>
+      Vous vous êtes un peu éloigné·e du monde de l'emploi, rien de plus normal. Pourtant, vous avez
+      continué de développer vos talents pendant un des plus grands défis de la vie&nbsp;:
+      la parentalité <span aria-label={t('muscle')} role="img">💪</span>{' '}
 
-    Pour vous réinventer dans cette nouvelle étape professionnelle, <strong>
-      valorisez votre expérience de parent dans vos candidatures
-    </strong>. En voici quelques idées&nbsp;:
+      Pour vous réinventer dans cette nouvelle étape professionnelle, <strong>
+        valorisez votre expérience de parent dans vos candidatures
+      </strong>. En voici quelques idées&nbsp;:
+    </Trans>
     <MethodSuggestionList style={listStyle}>
       {momSkills.map(({description, name, ...content}):
       React.ReactElement<{style?: RadiumCSSProperties}> => <Skill
-        {...{handleExplore, ...content}} key={name}
-        description={translate(description, tOptions)}
-        name={translate(name)} />)}
+        {...{handleExplore, ...content}} key={name[0]}
+        description={translate(...combineTOptions(description, tOptions))}
+        name={translate(...name)} />)}
     </MethodSuggestionList>
-  </Trans>
+  </div>
 }
 const ExpandedAdviceCardContent = React.memo(LongTermParent)
 

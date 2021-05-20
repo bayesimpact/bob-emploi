@@ -1,3 +1,4 @@
+import {LocationState} from 'history'
 import {TOptions} from 'i18next'
 import _fromPairs from 'lodash/fromPairs'
 import _mapValues from 'lodash/mapValues'
@@ -11,19 +12,21 @@ import {Redirect, Route, Switch, useHistory} from 'react-router-dom'
 
 import {DispatchAllActions, RootState, sendProjectFeedback} from 'store/actions'
 import {getAdviceShortTitle, isValidAdvice} from 'store/advice'
-import {prepareT} from 'store/i18n'
+import {LocalizableString, prepareT} from 'store/i18n'
 
 import starIcon from 'images/star.svg'
 import whiteStarIcon from 'images/star-white.svg'
 import starOutlineIcon from 'images/star-outline.svg'
-import greyStarOutlineIcon from 'images/star-outline.svg?stroke=#9596a0'
-import {Trans} from 'components/i18n'
-import {isMobileVersion} from 'components/mobile'
+import greyStarOutlineIcon from 'images/star-outline.svg?stroke=%239596a0'
+import Button from 'components/button'
+import CheckboxList from 'components/checkbox_list'
+import Trans from 'components/i18n_trans'
+import isMobileVersion from 'store/mobile'
 import {Modal, useModal} from 'components/modal'
 import {ShareModal} from 'components/share'
-import {Button, SmoothTransitions, Textarea} from 'components/theme'
+import Textarea from 'components/textarea'
+import {SmoothTransitions} from 'components/theme'
 import {FEEDBACK_TAB} from 'components/url'
-import {CheckboxList} from 'components/pages/connected/form_utils'
 
 const feedbackTitle = {
   1: prepareT('Vraiment inutile'),
@@ -62,17 +65,17 @@ const getRequestFeedbackShowDate = (
     }
 
     // Wait for 13s in diagnostic even if they do not open an advice page.
-    return diagnosticShownAt ? addDuration(diagnosticShownAt, 13000) : undefined
+    return diagnosticShownAt ? addDuration(diagnosticShownAt, 13_000) : undefined
   }
 
   // User has started a strategy: wait for 20s.
   const lastStratStarted = _max(openedStrategies.map(({startedAt}): string|undefined => startedAt))
   if (lastStratStarted) {
-    return addDuration(lastStratStarted, 20000)
+    return addDuration(lastStratStarted, 20_000)
   }
 
   // User has seen the diagnostic but has not started a strategy: wait 60s.
-  return diagnosticShownAt ? addDuration(diagnosticShownAt, 60000) : undefined
+  return diagnosticShownAt ? addDuration(diagnosticShownAt, 60_000) : undefined
 }
 
 
@@ -157,9 +160,9 @@ const FeedbackBarBase = (props: BarProps): React.ReactElement|null => {
   return <React.Fragment>
     {modal}
     <div style={isMobileVersion ? {overflow: 'hidden'} : fixedBottomStyle}>
-      <div style={containerStyle}>
+      <aside style={containerStyle}>
         <FeedbackStars score={score} onStarClick={openModal} isWhite={true} />
-      </div>
+      </aside>
     </div>
     {isMobileVersion ? null : <div style={{height: 80}} />}
   </React.Fragment>
@@ -196,9 +199,9 @@ const PageWithFeedbackBase = (props: PageWithFeedbackProps): React.ReactElement 
     if (!showAfter) {
       return (): void => void 0
     }
-    const showInMillisec = showAfter.getTime() - new Date().getTime()
+    const showInMillisec = showAfter.getTime() - Date.now()
     const timeout = window.setTimeout((): void => setIsShown(true), showInMillisec)
-    return (): void => clearTimeout(timeout)
+    return (): void => window.clearTimeout(timeout)
   }, [showAfter])
 
   const handleReturnFromFeedback = useCallback((newScore: number): void => {
@@ -207,7 +210,8 @@ const PageWithFeedbackBase = (props: PageWithFeedbackProps): React.ReactElement 
     }
   }, [showShareBob])
 
-  const {state: {returningFromFeedbackPage = false} = {}} = useLocation()
+  const {state: {returningFromFeedbackPage = false} = {}} =
+    useLocation<{returningFromFeedbackPage: boolean}>()
   useEffect((): void => {
     if (returningFromFeedbackPage) {
       handleReturnFromFeedback(score)
@@ -248,7 +252,7 @@ const PageWithFeedback = React.memo(PageWithFeedbackBase)
 
 
 interface PageProps extends FormProps {
-  backTo: string | {pathname: string; state: object}
+  backTo: string | {pathname: string; state: LocationState}
 }
 
 
@@ -294,9 +298,9 @@ const FeedbackFormBase = (props: FormProps, ref: React.Ref<FormRef>): React.Reac
 
   const saveFeedback = useCallback((): void => {
     const usefulAdviceModules: {[adviceId: string]: boolean} = {}
-    selectedAdvices.forEach((adviceId: string): void => {
+    for (const adviceId of selectedAdvices) {
       usefulAdviceModules[adviceId] = true
-    })
+    }
     dispatch(sendProjectFeedback(project, {score, text, usefulAdviceModules}, t))
     onSubmit?.(score)
   }, [dispatch, onSubmit, project, score, selectedAdvices, t, text])
@@ -329,7 +333,7 @@ const FeedbackFormBase = (props: FormProps, ref: React.Ref<FormRef>): React.Reac
         style={{height: 180, padding: 10, width: '100%'}}
         placeholder={t('Écrivez votre commentaire ici')}
         value={text} onChange={setText} />
-      {isGoodFeedback ? <div>
+      {isGoodFeedback && shownAdvices.length ? <div>
         <Trans style={{fontSize: 18, fontWeight: 'bold', marginBottom: 20}} tOptions={tOptions}>
           Y a-t-il des conseils qui vous ont particulièrement intéressé·e&nbsp;?
         </Trans>
@@ -367,26 +371,36 @@ interface StarProps extends
 }
 
 
+const starButtonStyle: React.CSSProperties = {
+  padding: 5,
+}
+
+
 const FeedbackStarBase = (props: StarProps): React.ReactElement => {
   const {alt, numStars, onClick, onMouseEnter, onMouseLeave, ...imgProps} = props
   const enter = useCallback(() => onMouseEnter(numStars), [numStars, onMouseEnter])
   const leave = useCallback(() => onMouseLeave?.(numStars), [numStars, onMouseLeave])
   const click = useCallback(() => onClick(numStars), [numStars, onClick])
-  return <img
+  return <button
     onMouseEnter={isMobileVersion ? undefined : enter}
     onMouseLeave={isMobileVersion ? undefined : leave}
-    onClick={click} alt={alt} {...imgProps} />
+    onFocus={enter} onBlur={leave}
+    onClick={click}
+    style={starButtonStyle}>
+    <img alt={alt} {...imgProps} />
+  </button>
 }
 const FeedbackStar = React.memo(FeedbackStarBase)
 
 
 interface StarsProps {
-  isWhite?: boolean
-  levels?: {[key in NumStarsString]: string}
+  isWhite?: true
+  levels?: false | {[key in NumStarsString]: string}
   onStarClick: (star: number) => void
   score: number
   size?: number
-  title?: string
+  style?: React.CSSProperties
+  title?: false | string
 }
 
 
@@ -397,36 +411,35 @@ const FeedbackStarsBase = (props: StarsProps): React.ReactElement => {
   const {t, t: translate} = useTranslation()
   const {
     isWhite,
-    levels = _mapValues(feedbackTitle, (title: string): string => translate(title)),
+    levels = _mapValues(feedbackTitle, (title: LocalizableString): string => translate(...title)),
     onStarClick,
     score,
     size = 20,
-    title,
+    style,
+    title = t('Que pensez-vous de {{productName}}\u00A0?', {productName: config.productName}),
   } = props
   const [hoveredStars, setHoveredStars] = useState<0|NumStars>(0)
   const highlightedStars = hoveredStars || score || 0
 
   const resetHoveredStars = useCallback((): void => setHoveredStars(0), [])
 
-  const shownTitle = useMemo((): React.ReactNode => {
-    return levels[(highlightedStars + '') as NumStarsString] || title
-      || t('Que pensez-vous de {{productName}}\u00A0?', {productName: config.productName})
-  }, [highlightedStars, levels, t, title])
+  const shownTitle = useMemo(
+    (): React.ReactNode => levels && levels[(highlightedStars + '') as NumStarsString] || title,
+    [highlightedStars, levels, title],
+  )
 
   const starStyle = useMemo((): React.CSSProperties => ({
-    cursor: 'pointer',
     height: size + 10,
-    padding: 5,
   }), [size])
 
   const fullStar = isWhite ? whiteStarIcon : starIcon
   const emptyStar = isWhite ? starOutlineIcon : greyStarOutlineIcon
-  return <div style={{textAlign: 'center'}}>
-    <div style={starsTitleStyle}>
+  return <div style={{textAlign: 'center', ...style}}>
+    {shownTitle ? <div style={starsTitleStyle}>
       {shownTitle}
-    </div>
+    </div> : null}
     <div>
-      {new Array(5).fill(null).map((unused, index): React.ReactNode => <FeedbackStar
+      {Array.from({length: 5}, (unused, index): React.ReactNode => <FeedbackStar
         onMouseEnter={setHoveredStars}
         onMouseLeave={(hoveredStars === index + 1) ? resetHoveredStars : undefined}
         style={starStyle}
@@ -434,18 +447,27 @@ const FeedbackStarsBase = (props: StarsProps): React.ReactElement => {
         onClick={onStarClick}
         src={(index < highlightedStars) ? fullStar : emptyStar}
         key={index}
+        role="button"
         numStars={(index + 1) as NumStars} />)}
     </div>
   </div>
 }
 FeedbackStarsBase.propTypes = {
   isWhite: PropTypes.bool,
-  levels: PropTypes.shape(_fromPairs(new Array(5).
-    fill(undefined).map((unused, index) => [index + 1 + '', PropTypes.string.isRequired]))),
+  levels: PropTypes.oneOfType([
+    PropTypes.bool.isRequired,
+    PropTypes.shape(_fromPairs(Array.from(
+      {length: 5},
+      (unused, index) => [index + 1 + '', PropTypes.string.isRequired],
+    ))),
+  ]),
   onStarClick: PropTypes.func.isRequired,
   score: PropTypes.number.isRequired,
   size: PropTypes.number,
-  title: PropTypes.string,
+  title: PropTypes.oneOfType([
+    PropTypes.bool.isRequired,
+    PropTypes.string,
+  ]),
 }
 const FeedbackStars = React.memo(FeedbackStarsBase)
 

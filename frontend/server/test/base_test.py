@@ -10,11 +10,11 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Union
 import unittest
 from unittest import mock
 
-import flask
 import mongomock
 import requests_mock
+import werkzeug
 
-from bob_emploi.frontend.server import proto
+from bob_emploi.frontend.server import cache
 from bob_emploi.frontend.server import server
 
 
@@ -73,16 +73,11 @@ class ServerTestCase(unittest.TestCase):
         self.app = server.app.test_client()
         self.app_context = typing.cast(
             Callable[[], typing.ContextManager[None]], server.app.app_context)
-        proto.clear_mongo_fetcher_cache()
-        self._db = mongomock.MongoClient().get_database('test')
-        server.app.config['DATABASE'] = self._db
-        server._DB = self._db  # pylint: disable=protected-access
-        self._user_db = mongomock.MongoClient().get_database('user_test')
-        server.app.config['USER_DATABASE'] = self._user_db
-        server._USER_DB = self._user_db  # pylint: disable=protected-access
-        self._eval_db = mongomock.MongoClient().get_database('eval_test')
-        server._EVAL_DB = self._eval_db  # pylint: disable=protected-access
-        server.app.config['EVAL_DATABASE'] = self._eval_db
+        cache.clear()
+        patcher = mongomock.patch(on_new='create')
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self._db, self._user_db, self._eval_db = server.mongo.get_connections_from_env()
         server.jobs._JOB_GROUPS_INFO.reset_cache()  # pylint: disable=protected-access
         self._db.action_templates.insert_many([
             {
@@ -104,13 +99,9 @@ class ServerTestCase(unittest.TestCase):
                 'minSalary': 17400.0
             }
         })
-        server._clear_cache()  # pylint: disable=protected-access
-        self._logging = mock.patch(server.__name__ + '.logging', spec=True)
-        self._logging.start()
-
-    def tearDown(self) -> None:
-        super().tearDown()
-        self._logging.stop()
+        logging_patch = mock.patch(server.__name__ + '.logging', spec=True)
+        logging_patch.start()
+        self.addCleanup(logging_patch.stop)
 
     def authenticate_new_user_token(
             self, email: str = 'foo@bar.fr', first_name: str = 'Henry',
@@ -139,7 +130,8 @@ class ServerTestCase(unittest.TestCase):
     def create_guest_user(
             self, first_name: str = 'Henry',
             modifiers: Optional[List[Callable[[Dict[str, Any]], None]]] = None,
-            data: Optional[Dict[str, Any]] = None) -> Tuple[str, str]:
+            data: Optional[Dict[str, Any]] = None,
+            auth_data: Optional[Dict[str, Any]] = None) -> Tuple[str, str]:
         """Creates a new guest user.
 
         Args:
@@ -172,11 +164,12 @@ class ServerTestCase(unittest.TestCase):
             for modifier in modifiers:
                 modifier(data)
 
-        # Create guest user without data.
+        # Create guest user with only auth data.
         response = self.app.post(
-            '/api/user/authenticate', data=f'{{"firstName": "{first_name}"}}',
+            '/api/user/authenticate',
+            data=json.dumps({'firstName': first_name, 'userData': auth_data or {}}),
             content_type='application/json')
-        auth_response = json.loads(response.get_data(as_text=True))
+        auth_response = self.json_from_response(response)
         user_id = auth_response['authenticatedUser']['userId']
         auth_token = auth_response['authToken']
 
@@ -279,7 +272,7 @@ class ServerTestCase(unittest.TestCase):
                 pass
         self.fail('Could not create a user that matches the predicate')
 
-    def json_from_response(self, response: flask.Response) -> Dict[str, Any]:
+    def json_from_response(self, response: werkzeug.Response) -> Dict[str, Any]:
         """Parses the json returned in a response."""
 
         data_text = response.get_data(as_text=True)
@@ -300,6 +293,7 @@ class ServerTestCase(unittest.TestCase):
         """Get user's info directly from DB without calling any endpoint."""
 
         user_info = self._user_db.user.find_one({'_id': mongomock.ObjectId(user_id)})
+        assert user_info
         self.assertIn('_server', user_info)
         return {k: v for k, v in user_info.items() if not k.startswith('_')}
 

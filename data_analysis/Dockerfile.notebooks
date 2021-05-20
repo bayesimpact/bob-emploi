@@ -9,6 +9,7 @@ RUN pip install --upgrade \
   gensim \
   matplotlib-venn \
   nbformat \
+  plotly \
   qgrid \
   runipy \
   sas7bdat \

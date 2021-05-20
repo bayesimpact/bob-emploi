@@ -1,0 +1,4 @@
+{
+  "de {city_name}": {"en": "of {city_name}"},
+  "de {job_name}": {"en": "of {job_name}"}
+}

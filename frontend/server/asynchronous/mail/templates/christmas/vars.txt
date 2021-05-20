@@ -1,8 +1,0 @@
-couldFreelance
-emailInUrl
-firstName
-gender
-inCommuteCity
-inRelocateDepartement
-startedSearchingSince
-unsubscribeLink

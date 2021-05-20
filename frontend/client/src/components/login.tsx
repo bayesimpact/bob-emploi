@@ -10,30 +10,36 @@ import FacebookLogin, {ReactFacebookLoginInfo, ReactFacebookLoginProps} from 're
 // TODO(cyrille): Rather use useGoogleLogin hook.
 import GoogleLogin, {GoogleLoginResponse, GoogleLoginResponseOffline} from 'react-google-login'
 import {useTranslation} from 'react-i18next'
-import {connect, useDispatch, useSelector} from 'react-redux'
-import {RouteComponentProps, useHistory, useLocation, withRouter} from 'react-router'
+import {useDispatch, useSelector} from 'react-redux'
+import {useHistory, useLocation} from 'react-router'
 import {Link, LinkProps} from 'react-router-dom'
 
+import useFastForward from 'hooks/fast_forward'
 import {DispatchAllActions, RootState, askPasswordReset, changePassword, closeLoginModal,
   displayToasterMessage, emailCheck, facebookAuthenticateUser, googleAuthenticateUser,
   linkedInAuthenticateUser, loginUser, noOp, openLoginModal, openRegistrationModal,
   peConnectAuthenticateUser, registerNewUser, resetPassword, startAsGuest} from 'store/actions'
+import {getLanguage} from 'store/i18n'
+import isMobileVersion from 'store/mobile'
 import {parseQueryString, parsedValueFlattener} from 'store/parse'
-import {useSafeDispatch} from 'store/promise'
-import {getUniqueExampleEmail} from 'store/user'
+import {useAsynceffect, useSafeDispatch} from 'store/promise'
+import {getUniqueExampleEmail, useUserExample} from 'store/user'
 import {validateEmail} from 'store/validations'
 
-import {useFastForward} from 'components/fast_forward'
-import {Trans} from 'components/i18n'
-import {isMobileVersion} from 'components/mobile'
-import {Modal, ModalCloseButton} from 'components/modal'
-import {ButtonProps, Button, CircularProgress, IconInput, Inputable, LabeledToggle, Styles,
-  chooseImageVersion} from 'components/theme'
+import Button from 'components/button'
+import CircularProgress from 'components/circular_progress'
+import Trans from 'components/i18n_trans'
+import IconInput from 'components/icon_input'
+import {Inputable} from 'components/input'
+import LabeledToggle from 'components/labeled_toggle'
+import ModalCloseButton from 'components/modal_close_button'
+import {Modal} from 'components/modal'
+import {Styles} from 'components/theme'
 import {Routes} from 'components/url'
 import linkedInIcon from 'images/linked-in.png'
-import logoProductImage from 'images/bob-logo.svg'
+import logoProductImage from 'deployment/bob-logo.svg'
 import peConnectIcon from 'images/pole-emploi-connect.svg'
-import portraitCoverImage from 'images/catherine_portrait.jpg?multi&sizes[]=1440&sizes[]=600'
+import portraitCoverImage from 'images/catherine_portrait.jpg'
 
 
 // TODO(cyrille): Add 'pfccompetences', 'api_peconnect-competencesv2' once we have upgraded
@@ -47,13 +53,7 @@ const toLocaleLowerCase = (email: string): string => email.toLocaleLowerCase()
 
 const stopPropagation = (event: React.SyntheticEvent): void => event.stopPropagation()
 
-interface LoginConnectedProps {
-  isAskingForPasswordReset?: boolean
-  isAuthenticatingEmail?: boolean
-  isAuthenticatingOther?: boolean
-}
-
-interface LoginProps extends LoginConnectedProps {
+interface LoginProps {
   defaultEmail: string
   onLogin: (user: bayes.bob.User) => void
   onShowRegistrationFormClick: () => void
@@ -80,14 +80,23 @@ const lostPasswordLinkStyle: React.CSSProperties = {
 const LoginFormBase = (props: LoginProps): React.ReactElement => {
   const {
     defaultEmail,
-    isAskingForPasswordReset,
-    isAuthenticatingOther,
-    isAuthenticatingEmail,
     onLogin,
     onShowRegistrationFormClick,
     stateToStore,
     storedState,
   } = props
+
+  const isAskingForPasswordReset = useSelector(
+    ({asyncState: {isFetching}}: RootState): boolean => !!isFetching['RESET_USER_PASSWORD'],
+  )
+  const isAuthenticatingEmail = useSelector(
+    ({asyncState: {authMethod, isFetching}}: RootState): boolean =>
+      !!isFetching['EMAIL_CHECK'] || !!isFetching['AUTHENTICATE_USER'] && authMethod === 'password',
+  )
+  const isAuthenticatingOther = useSelector(
+    ({asyncState: {authMethod, isFetching}}: RootState): boolean =>
+      !!isFetching['AUTHENTICATE_USER'] && authMethod !== 'password',
+  )
 
   const [email, setEmail] = useState(defaultEmail)
   const [hashSalt, setHashSalt] = useState('')
@@ -102,44 +111,35 @@ const LoginFormBase = (props: LoginProps): React.ReactElement => {
     return !!((isTryingToResetPassword || password) && validateEmail(email))
   }, [email, isTryingToResetPassword, password])
 
-  const handleLogin = useCallback((event?: React.SyntheticEvent): void => {
+  const handleLogin = useCallback(async (event?: React.SyntheticEvent) => {
     if (event && event.preventDefault) {
       event.preventDefault()
     }
     if (!isFormValid) {
       return
     }
-    dispatch(emailCheck(email)).
-      then((response): bayes.bob.AuthResponse | void => {
-        if (response && response.hashSalt) {
-          setHashSalt(response.hashSalt)
-        }
-        return response
-      }).
-      then((response): bayes.bob.AuthResponse | void => {
-        if (!response) {
-          return response
-        }
-        if (response.isNewUser) {
-          // TODO: Emphasize to registration form if response.isNewUser
-          dispatch(displayToasterMessage(t("L'utilisateur n'existe pas.")))
-          return
-        }
-        // TODO: Use different API endpoints for login and registration.
-        dispatch(loginUser(email, password, hashSalt)).
-          then((response): bayes.bob.AuthResponse | void => {
-            if (response && response.authenticatedUser) {
-              onLogin(response.authenticatedUser)
-              // TODO: Take care of the else case when the authentication was
-              // not successful but we got back some new salt. (response.hashSalt)
-            }
-            return response
-          })
-        return response
-      })
+    const checkedEmail = await dispatch(emailCheck(email))
+    if (!checkedEmail) {
+      return
+    }
+    if (checkedEmail.hashSalt) {
+      setHashSalt(checkedEmail.hashSalt)
+    }
+    if (checkedEmail.isNewUser) {
+      // TODO: Emphasize to registration form if response.isNewUser
+      dispatch(displayToasterMessage(t("L'utilisateur n'existe pas.")))
+      return
+    }
+    // TODO: Use different API endpoints for login and registration.
+    const loggedIn = await dispatch(loginUser(email, password, hashSalt))
+    if (loggedIn && loggedIn.authenticatedUser) {
+      onLogin(loggedIn.authenticatedUser)
+      // TODO: Take care of the else case when the authentication was
+      // not successful but we got back some new salt. (response.hashSalt)
+    }
   }, [dispatch, email, hashSalt, isFormValid, onLogin, password, t])
 
-  const handleLostPasswordClick = useCallback((event?: React.SyntheticEvent): void => {
+  const handleLostPasswordClick = useCallback(async (event?: React.SyntheticEvent) => {
     if (event) {
       event.preventDefault()
     }
@@ -150,13 +150,9 @@ const LoginFormBase = (props: LoginProps): React.ReactElement => {
       setIsTryingToResetPassword(true)
       return
     }
-    dispatch(askPasswordReset(email)).
-      then((response): bayes.bob.AuthResponse | void => {
-        if (response) {
-          setPasswordRequestedEmail(email)
-          return response
-        }
-      })
+    if (await dispatch(askPasswordReset(email))) {
+      setPasswordRequestedEmail(email)
+    }
   }, [dispatch, email, t])
 
   const isMissingEmail = !email
@@ -225,19 +221,10 @@ const LoginFormBase = (props: LoginProps): React.ReactElement => {
 }
 LoginFormBase.propTypes = {
   defaultEmail: PropTypes.string,
-  isAskingForPasswordReset: PropTypes.bool,
-  isAuthenticatingEmail: PropTypes.bool,
-  isAuthenticatingOther: PropTypes.bool,
   onLogin: PropTypes.func.isRequired,
   onShowRegistrationFormClick: PropTypes.func.isRequired,
 }
-const LoginForm =
-  connect(({asyncState: {authMethod, isFetching}}: RootState): LoginConnectedProps => ({
-    isAskingForPasswordReset: isFetching['RESET_USER_PASSWORD'],
-    isAuthenticatingEmail:
-      isFetching['EMAIL_CHECK'] || isFetching['AUTHENTICATE_USER'] && authMethod === 'password',
-    isAuthenticatingOther: isFetching['AUTHENTICATE_USER'] && authMethod !== 'password',
-  }))(React.memo(LoginFormBase))
+const LoginForm = React.memo(LoginFormBase)
 
 
 interface ResetPasswordProps {
@@ -247,6 +234,13 @@ interface ResetPasswordProps {
   onLogin: (user: bayes.bob.User) => void
   resetToken?: string
   style?: React.CSSProperties
+}
+
+
+const buttonLinkStyle: React.CSSProperties = {
+  color: colors.DARK_BLUE,
+  padding: 0,
+  textDecoration: 'underline',
 }
 
 
@@ -272,14 +266,13 @@ const ResetPasswordFormBase = (props: ResetPasswordProps): React.ReactElement =>
       !!(isFetching['EMAIL_CHECK'] || isFetching['AUTHENTICATE_USER']),
   )
 
-  useEffect((): void => {
-    if (!resetToken && defaultEmail) {
-      dispatch(emailCheck(defaultEmail)).
-        then((response: bayes.bob.AuthResponse|void): void => {
-          if (response && response.hashSalt) {
-            setHashSalt(response.hashSalt)
-          }
-        })
+  useAsynceffect(async (checkIfCanceled) => {
+    if (resetToken || !defaultEmail) {
+      return
+    }
+    const checkedEmail = await dispatch(emailCheck(defaultEmail))
+    if (checkedEmail && checkedEmail.hashSalt && !checkIfCanceled()) {
+      setHashSalt(checkedEmail.hashSalt)
     }
   }, [defaultEmail, dispatch, resetToken])
 
@@ -287,7 +280,7 @@ const ResetPasswordFormBase = (props: ResetPasswordProps): React.ReactElement =>
     return !!(password && validateEmail(email) && (resetToken || oldPassword))
   }, [password, email, resetToken, oldPassword])
 
-  const handleResetPassword = useCallback((): void => {
+  const handleResetPassword = useCallback(async () => {
     if (!isFormValid) {
       return
     }
@@ -296,22 +289,19 @@ const ResetPasswordFormBase = (props: ResetPasswordProps): React.ReactElement =>
     }
 
     if (resetToken && password) {
-      dispatch(resetPassword(email, password, resetToken)).
-        then((response): void => {
-          if (response && response.authenticatedUser) {
-            onLogin(response.authenticatedUser)
-          }
-        })
+      const {authenticatedUser} = await dispatch(resetPassword(email, password, resetToken)) || {}
+      if (authenticatedUser) {
+        onLogin(authenticatedUser)
+      }
       return
     }
 
     if (oldPassword && hashSalt && password) {
-      dispatch(changePassword(email, oldPassword, hashSalt, password)).
-        then((response): void => {
-          if (response && response.isPasswordUpdated && response.authenticatedUser) {
-            onLogin(response.authenticatedUser)
-          }
-        })
+      const {authenticatedUser, isPasswordUpdated} =
+        await dispatch(changePassword(email, oldPassword, hashSalt, password)) || {}
+      if (isPasswordUpdated && authenticatedUser) {
+        onLogin(authenticatedUser)
+      }
     }
   }, [dispatch, isFormValid, email, hashSalt, oldPassword, onLogin, resetToken, password])
 
@@ -320,15 +310,14 @@ const ResetPasswordFormBase = (props: ResetPasswordProps): React.ReactElement =>
     handleResetPassword()
   }, [handleResetPassword])
 
-  const handleResendEmail = useCallback((): void => {
+  const handleResendEmail = useCallback(async (): Promise<void> => {
     if (!email) {
       return
     }
-    dispatch(askPasswordReset(email)).then((response): void => {
-      if (response) {
-        setPasswordResetRequestEmail(email)
-      }
-    })
+    const response = await dispatch(askPasswordReset(email))
+    if (response) {
+      setPasswordResetRequestEmail(email)
+    }
   }, [dispatch, email])
 
   if (hasTokenExpired) {
@@ -340,9 +329,11 @@ const ResetPasswordFormBase = (props: ResetPasswordProps): React.ReactElement =>
       <FormHeader title={t("Moyen d'authentification périmé")} />
       <Trans>
         Le lien que vous avez utilisé est trop vieux. Veuillez
-        vous <LoginLink visualElement="expired-resetToken">
+        vous <LoginLink visualElement="expired-resetToken" style={buttonLinkStyle}>
           reconnecter
-        </LoginLink> ou <a href="#" onClick={handleResendEmail}>cliquer ici</a> pour
+        </LoginLink> ou <button style={buttonLinkStyle} onClick={handleResendEmail}>
+          cliquer ici
+        </button> pour
         réinitialiser votre mot de passe.
       </Trans>
       {passwordResetRequestedEmail ? <Trans style={emailSentStyle}>
@@ -397,15 +388,7 @@ ResetPasswordFormBase.propTypes = {
 const ResetPasswordForm = React.memo(ResetPasswordFormBase)
 
 
-interface RegistrationConnectedProps {
-  defaultEmail: string
-  hasUser?: boolean
-  isAuthenticating: boolean
-  shouldRequestNames?: boolean
-}
-
-interface RegistrationProps extends RegistrationConnectedProps {
-  dispatch: DispatchAllActions
+interface RegistrationProps {
   onLogin: (user: bayes.bob.User) => void
   onShowLoginFormClick: () => void
   stateToStore: StoredState
@@ -422,51 +405,58 @@ const registrationBoxStyle: React.CSSProperties = {
 
 const RegistrationFormBase = (props: RegistrationProps): React.ReactElement => {
   const {
-    defaultEmail,
-    dispatch,
-    hasUser,
-    isAuthenticating,
     onLogin,
     onShowLoginFormClick,
-    shouldRequestNames,
     stateToStore,
     storedState,
   } = props
 
+  const dispatch = useDispatch<DispatchAllActions>()
+  const defaultEmail = useSelector(
+    ({app: {loginModal}}: RootState): string => loginModal?.defaultValues?.email || '',
+  )
+  const hasUser = useSelector(({user: {userId}}: RootState): boolean => !!userId)
+  const isAuthenticating = useSelector(
+    ({asyncState: {isFetching}}: RootState): boolean => !!isFetching['AUTHENTICATE_USER'],
+  )
+
   const [email, setEmail] = useState(defaultEmail)
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(!!hasUser)
-  const [lastName, setLastName] = useState('')
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
+  const [isFastForwarded, setIsFastForwarded] = useState(false)
 
   const {t} = useTranslation()
 
   const isFormValid = useMemo((): boolean => {
-    return !!(hasAcceptedTerms && password && validateEmail(email) &&
-      (!shouldRequestNames || (lastName && name)))
-  }, [shouldRequestNames, lastName, name, password, hasAcceptedTerms, email])
+    return !!(hasAcceptedTerms && password && validateEmail(email) && name)
+  }, [name, password, hasAcceptedTerms, email])
 
-  const handleRegister = useCallback((): void => {
+  const handleRegister = useCallback(async (): Promise<void> => {
     if (!isFormValid) {
       return
     }
-    dispatch(registerNewUser(email, password, name, lastName)).
-      then((response): bayes.bob.AuthResponse | void => {
-        if (!response) {
-          return response
-        }
-        // TODO: Handle this more explicitly after switch to two endpoints.
-        // User already exists
-        if (!response.authenticatedUser) {
-          dispatch(displayToasterMessage(t(
-            'Ce compte existe déjà, merci de vous connecter avec vos identifiants')))
-          onShowLoginFormClick()
-          return
-        }
-        onLogin(response.authenticatedUser)
-        return response
-      })
-  }, [email, lastName, name, password, isFormValid, dispatch, onLogin, onShowLoginFormClick, t])
+    const userData = {
+      isAlpha: isFastForwarded,
+      locale: getLanguage(),
+    }
+    const response = await dispatch(registerNewUser(email, password, name, userData))
+    if (!response) {
+      return response
+    }
+    // TODO: Handle this more explicitly after switch to two endpoints.
+    // User already exists
+    if (!response.authenticatedUser) {
+      dispatch(displayToasterMessage(t(
+        'Ce compte existe déjà, merci de vous connecter avec vos identifiants')))
+      onShowLoginFormClick()
+      return
+    }
+    onLogin(response.authenticatedUser)
+  }, [
+    email, name, password, isFastForwarded, isFormValid, dispatch, onLogin,
+    onShowLoginFormClick, t,
+  ])
 
   const handleToggleAcceptTerms = useCallback(
     (): void => setHasAcceptedTerms(!hasAcceptedTerms),
@@ -476,10 +466,11 @@ const RegistrationFormBase = (props: RegistrationProps): React.ReactElement => {
   const isMissingEmail = !email
   const isMissingPassword = !password
   const isMissingName = !name
-  const isMissingLastName = !name
-  const exampleFirstName = 'Angèle'
+
+  const {profile: {name: exampleFirstName}} = useUserExample()
 
   useFastForward((): void => {
+    setIsFastForwarded(true)
     if (isFormValid) {
       handleRegister()
       return
@@ -490,23 +481,17 @@ const RegistrationFormBase = (props: RegistrationProps): React.ReactElement => {
     if (isMissingPassword) {
       setPassword('password')
     }
-    // TODO(sil) Clean when launching Late Sign Up.
-    if (!shouldRequestNames && hasAcceptedTerms) {
-      return
-    }
-    setHasAcceptedTerms(true)
-    if (isMissingLastName) {
-      setLastName('Dupont')
+    if (!hasAcceptedTerms) {
+      setHasAcceptedTerms(true)
     }
     if (isMissingName) {
-      setName(t(exampleFirstName))
+      setName(exampleFirstName)
     }
   }, [
-    isMissingName, isMissingPassword, isMissingEmail, isMissingLastName, isFormValid,
-    handleRegister, hasAcceptedTerms, shouldRequestNames, t,
+    isMissingName, isMissingPassword, isMissingEmail, isFormValid,
+    handleRegister, hasAcceptedTerms, exampleFirstName,
   ])
 
-  // TODO(sil) Clean when launching Late Sign Up.
   return <form style={registrationBoxStyle} onSubmit={handleRegister}>
     <FormHeader
       title={t('Créer un compte')}
@@ -518,18 +503,11 @@ const RegistrationFormBase = (props: RegistrationProps): React.ReactElement => {
       stateToStore={stateToStore} storedState={storedState} onLogin={onLogin} isNewUser={true} />
 
     <FormSection title={t('Inscription par mot de passe')}>
-      {shouldRequestNames ? <React.Fragment>
-        <IconInput
-          iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
-          shouldFocusOnMount={true} autoComplete="given-name"
-          type="text" placeholder={t('Prénom')} value={name} iconComponent={AccountOutlineIcon}
-          onChange={setName} />
-        <IconInput
-          iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
-          type="text" placeholder={t('Nom')} value={lastName} iconComponent={AccountOutlineIcon}
-          onChange={setLastName} autoComplete="family-name"
-          style={{marginTop: 10}} />
-      </React.Fragment> : null}
+      <IconInput
+        iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
+        shouldFocusOnMount={true} autoComplete="given-name"
+        type="text" placeholder={t('Prénom')} value={name} iconComponent={AccountOutlineIcon}
+        onChange={setName} />
       <IconInput
         iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
         type="email" placeholder={t('Email')} value={email} iconComponent={EmailOutlineIcon}
@@ -572,28 +550,10 @@ const RegistrationFormBase = (props: RegistrationProps): React.ReactElement => {
   </form>
 }
 RegistrationFormBase.propTypes = {
-  defaultEmail: PropTypes.string.isRequired,
-  dispatch: PropTypes.func.isRequired,
-  hasUser: PropTypes.bool,
-  isAuthenticating: PropTypes.bool,
   onLogin: PropTypes.func.isRequired,
   onShowLoginFormClick: PropTypes.func.isRequired,
-  shouldRequestNames: PropTypes.bool,
 }
-const RegistrationForm = connect(({app, asyncState, user}: RootState):
-RegistrationConnectedProps => {
-  const {
-    profile: {name = undefined} = {},
-    userId = undefined,
-  } = user
-  const {email = ''} = app.loginModal && app.loginModal.defaultValues || {}
-  return {
-    defaultEmail: email,
-    hasUser: !!userId,
-    isAuthenticating: !!asyncState.isFetching['AUTHENTICATE_USER'],
-    shouldRequestNames: !name,
-  }
-})(React.memo(RegistrationFormBase))
+const RegistrationForm = React.memo(RegistrationFormBase)
 
 
 interface SectionProps {
@@ -646,7 +606,7 @@ const formHeaderContentStyle: React.CSSProperties = {
 }
 const formHeaderLinkStyle: React.CSSProperties = {
   color: colors.BOB_BLUE,
-  cursor: 'pointer',
+  padding: 0,
   textDecoration: 'underline',
 }
 
@@ -657,7 +617,7 @@ const FormHeaderBase = (props: HeaderProps): React.ReactElement => {
     <div style={headerHeadlineStyle}>{title}</div>
     {question && onClick && linkText ? <div style={formHeaderContentStyle}>
       <span>{question} </span>
-      <span onClick={onClick} style={formHeaderLinkStyle}>{linkText}</span>
+      <button onClick={onClick} style={formHeaderLinkStyle}>{linkText}</button>
     </div> : null}
   </div>
 }
@@ -726,17 +686,17 @@ const OAuth2ConnectLoginBase = (props: OAuth2Props): React.ReactElement => {
   const {children, authorizeEndpoint, authorizeParams, clientId, isNewUser: omittedIsNewUser, logo,
     onFailure, onSuccess, scopes, stateToStore, storedState, style, ...extraProps} = props
 
+  const {search} = useLocation()
+  const [initialSearch] = useState(search)
   useEffect((): void => {
-    // TODO(cyrille): Rather use withRouter
-    const {search} = window.location
-    if (!search || !storedState) {
+    if (!initialSearch || !storedState) {
       return
     }
     const {clientId: storedClientId, nonce} = storedState
     if (storedClientId !== clientId) {
       return
     }
-    const {code, error, error_description: errorDescription, state} = parse(search.slice(1))
+    const {code, error, error_description: errorDescription, state} = parse(initialSearch.slice(1))
     if (!nonce) {
       onFailure && onFailure(new Error(`Invalid state: "${state}".`))
       return
@@ -755,19 +715,19 @@ const OAuth2ConnectLoginBase = (props: OAuth2Props): React.ReactElement => {
     }
     const lastCode = parsedValueFlattener.last(code)
     lastCode && onSuccess && onSuccess({code: lastCode, nonce})
-  }, [clientId, onFailure, onSuccess, storedState])
+  }, [clientId, initialSearch, onFailure, onSuccess, storedState])
 
   const startSigninFlow = useCallback((): void => {
     const [state, {nonce}] = setStoredState({...stateToStore, clientId})
     const {host, protocol} = window.location
     const redirectUri = `${protocol}//${host}${Routes.ROOT}`
     const url = `${authorizeEndpoint}?${stringify({
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       client_id: clientId,
       nonce,
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line  camelcase
       redirect_uri: redirectUri,
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line  camelcase
       response_type: 'code',
       state,
       ...(scopes ? {scope: scopes.join(' ')} : {}),
@@ -787,7 +747,7 @@ const OAuth2ConnectLoginBase = (props: OAuth2Props): React.ReactElement => {
     width: 34,
   }
   return <button {...extraProps} onClick={startSigninFlow} style={buttonStyle} type="button">
-    <img style={imageStyle} src={logo} alt="Icône Pôle emploi" />
+    <img style={imageStyle} src={logo} alt="" />
     {children}
   </button>
 }
@@ -856,7 +816,7 @@ const LoginModalBase = (): React.ReactElement => {
     }
     const coverImageStyle: React.CSSProperties = {
       ...coverAll,
-      backgroundImage: `url(${chooseImageVersion(portraitCoverImage, isMobileVersion)})`,
+      backgroundImage: `url(${portraitCoverImage})`,
       backgroundPosition: 'center, center',
       backgroundRepeat: 'no-repeat',
       backgroundSize: 'cover',
@@ -882,7 +842,7 @@ const LoginModalBase = (): React.ReactElement => {
       <div style={coverImageStyle} />
       <div>
         <img
-          style={{height: 25, marginLeft: 60, marginTop: 30}}
+          style={{height: 35, marginLeft: 60, marginTop: 30}}
           src={logoProductImage} alt={config.productName} />
         <div style={portraitQuoteStyle}>
           <div style={{color: '#fff', fontStyle: 'italic', maxWidth: 360}}>
@@ -1074,7 +1034,7 @@ const StatefulFacebookLoginBase = (props: StatefulFacebookLoginProps): React.Rea
       return (): void => void 0
     }
     const timeout = window.setTimeout((): void => setStateKey(nextKey), 100)
-    return (): void => clearTimeout(timeout)
+    return (): void => window.clearTimeout(timeout)
   }, [nextKey, stateKey])
 
   const handleClick = useCallback((event: React.MouseEvent<HTMLDivElement>): void => {
@@ -1095,13 +1055,7 @@ const StatefulFacebookLoginBase = (props: StatefulFacebookLoginProps): React.Rea
 const StatefulFacebookLogin = React.memo(StatefulFacebookLoginBase)
 
 
-interface SocialButtonConnectedProps {
-  authMethod?: string
-  isAuthenticating?: boolean
-}
-
-interface SocialButtonProps extends SocialButtonConnectedProps {
-  dispatch: DispatchAllActions
+interface SocialButtonProps {
   isNewUser?: boolean
   onLogin: ((user: bayes.bob.User) => void)
   returningClientId?: string
@@ -1112,7 +1066,17 @@ interface SocialButtonProps extends SocialButtonConnectedProps {
 }
 
 const SocialLoginButtonsBase = (props: SocialButtonProps): React.ReactElement => {
-  const {authMethod, dispatch, isAuthenticating, isNewUser: wantsNewUser, onLogin} = props
+  const {isNewUser: wantsNewUser, onLogin} = props
+
+  const authMethod = useSelector(
+    ({asyncState: {authMethod}}: RootState): string|undefined => authMethod,
+  )
+  const isAuthenticating = useSelector(
+    ({asyncState: {isFetching}}: RootState): boolean =>
+      !!isFetching['EMAIL_CHECK'] || !!isFetching['AUTHENTICATE_USER'],
+  )
+
+  const dispatch = useDispatch<DispatchAllActions>()
 
   const {t} = useTranslation()
 
@@ -1133,12 +1097,14 @@ const SocialLoginButtonsBase = (props: SocialButtonProps): React.ReactElement =>
     onLogin(authenticatedUser)
   }, [dispatch, wantsNewUser, onLogin, t])
 
-  const handleFacebookLogin = useCallback((facebookAuth: ReactFacebookLoginInfo): void => {
-    dispatch(facebookAuthenticateUser(facebookAuth)).then(handleAuthResponse)
-  }, [dispatch, handleAuthResponse])
+  const handleFacebookLogin = useCallback(
+    async (facebookAuth: ReactFacebookLoginInfo): Promise<void> => {
+      const response = await dispatch(facebookAuthenticateUser(facebookAuth))
+      handleAuthResponse(response)
+    }, [dispatch, handleAuthResponse])
 
   const handleGoogleLogin = useCallback(
-    (googleResponse: GoogleLoginResponse|GoogleLoginResponseOffline): void => {
+    async (googleResponse: GoogleLoginResponse|GoogleLoginResponseOffline): Promise<void> => {
       const googleAuth = googleResponse as GoogleLoginResponse
       if (!googleAuth.getId) {
         throw new Error('Google Login offline response, this should never happen')
@@ -1152,7 +1118,8 @@ const SocialLoginButtonsBase = (props: SocialButtonProps): React.ReactElement =>
       //  - the URL of a profile picture: getImageUrl()
       const email = googleAuth && googleAuth.getBasicProfile().getEmail()
       if (email) {
-        dispatch(googleAuthenticateUser(googleAuth)).then(handleAuthResponse)
+        const response = await dispatch(googleAuthenticateUser(googleAuth))
+        handleAuthResponse(response)
       }
     },
     [dispatch, handleAuthResponse],
@@ -1166,12 +1133,15 @@ const SocialLoginButtonsBase = (props: SocialButtonProps): React.ReactElement =>
     dispatch(displayToasterMessage(error.message))
   }, [dispatch])
 
-  const handlePEConnectLogin = useCallback(({code, nonce}: {code: string; nonce: string}): void => {
-    dispatch(peConnectAuthenticateUser(code, nonce)).then(handleAuthResponse)
-  }, [dispatch, handleAuthResponse])
+  const handlePEConnectLogin = useCallback(
+    async ({code, nonce}: {code: string; nonce: string}): Promise<void> => {
+      const response = await dispatch(peConnectAuthenticateUser(code, nonce))
+      handleAuthResponse(response)
+    }, [dispatch, handleAuthResponse])
 
-  const handleLinkedinLogin = useCallback(({code}: {code: string}): void => {
-    dispatch(linkedInAuthenticateUser(code)).then(handleAuthResponse)
+  const handleLinkedinLogin = useCallback(async ({code}: {code: string}): Promise<void> => {
+    const response = await dispatch(linkedInAuthenticateUser(code))
+    handleAuthResponse(response)
   }, [dispatch, handleAuthResponse])
 
   const isGoogleAuthenticating = !!isAuthenticating && authMethod === 'google'
@@ -1192,7 +1162,7 @@ const SocialLoginButtonsBase = (props: SocialButtonProps): React.ReactElement =>
   const circularProgress = <CircularProgress
     size={23} style={circularProgressStyle} thickness={2} />
   return <div style={socialLoginBox}>
-    <StatefulFacebookLogin
+    {config.facebookSSOAppId ? <StatefulFacebookLogin
       appId={config.facebookSSOAppId} language="fr" isDisabled={isAuthenticating}
       callback={handleFacebookLogin}
       fields="email,name,picture,gender,birthday"
@@ -1202,16 +1172,16 @@ const SocialLoginButtonsBase = (props: SocialButtonProps): React.ReactElement =>
         // react-facebook-login expects a string. Beware on lib update.
         circularProgress as unknown as string :
         t('Se connecter avec {{service}}', {service: 'Facebook'})}
-      cssClass="login facebook-login" />
-    <GoogleLogin
+      cssClass="login facebook-login" /> : null}
+    {config.googleSSOClientId ? <GoogleLogin
       clientId={config.googleSSOClientId} disabled={isAuthenticating}
       onSuccess={handleGoogleLogin}
       // TODO(cyrille): Drop once https://github.com/anthonyjgrove/react-google-login/issues/333
       // is resolved.
       onAutoLoadFinished={noOp}
       onFailure={handleGoogleFailure}
-      render={MyGoogleButton} />
-    <OAuth2ConnectLogin
+      render={MyGoogleButton} /> : null}
+    {config.emploiStoreClientId ? <OAuth2ConnectLogin
       authorizeEndpoint="https://authentification-candidat.pole-emploi.fr/connexion/oauth2/authorize"
       scopes={PE_CONNECT_SCOPES}
       authorizeParams={{realm: '/individu'}} disabled={isAuthenticating}
@@ -1224,8 +1194,8 @@ const SocialLoginButtonsBase = (props: SocialButtonProps): React.ReactElement =>
         circularProgress : <Trans parent={null}>
         Se connecter avec {{service: 'pôle emploi'}}
         </Trans>}
-    </OAuth2ConnectLogin>
-    <OAuth2ConnectLogin
+    </OAuth2ConnectLogin> : null}
+    {config.linkedInClientId ? <OAuth2ConnectLogin
       clientId={config.linkedInClientId} disabled={isAuthenticating} stateToStore={stateToStore}
       authorizeEndpoint="https://www.linkedin.com/oauth/v2/authorization"
       scopes={LINKEDIN_SCOPES} storedState={storedState}
@@ -1235,55 +1205,25 @@ const SocialLoginButtonsBase = (props: SocialButtonProps): React.ReactElement =>
       className="login linkedin-login">
       {isAuthenticating && authMethod === 'linkedIn' ?
         circularProgress : <Trans parent={null}>Se connecter avec {{service: 'LinkedIn'}}</Trans>}
-    </OAuth2ConnectLogin>
+    </OAuth2ConnectLogin> : null}
   </div>
 }
 SocialLoginButtonsBase.propTypes = {
-  authMethod: PropTypes.string,
-  dispatch: PropTypes.func.isRequired,
-  isAuthenticating: PropTypes.bool,
   isNewUser: PropTypes.bool,
   onLogin: PropTypes.func.isRequired,
   style: PropTypes.object,
 }
-const SocialLoginButtons = connect(({asyncState: {authMethod, isFetching}}: RootState):
-SocialButtonConnectedProps => ({
-  authMethod,
-  isAuthenticating: isFetching['EMAIL_CHECK'] || isFetching['AUTHENTICATE_USER'],
-}))(SocialLoginButtonsBase)
+const SocialLoginButtons = React.memo(SocialLoginButtonsBase)
 
 
-interface LinkConfig {
-  email?: string
-  isSignUp?: boolean
-  style?: React.CSSProperties
-  visualElement: string
-}
-
-interface LinkConnectedProps {
-  isGuest?: boolean
-  isRegisteredUser?: boolean
-}
-
-interface LoginLinkProps extends LinkConfig, LinkConnectedProps, RouteComponentProps {
-  children: React.ReactNode
-  dispatch: DispatchAllActions
-  innerRef?: React.RefObject<HTMLAnchorElement>
-}
-
-const LoginLinkBase = (props: LoginLinkProps): React.ReactElement => {
-  const {
-    children,
-    dispatch,
-    email,
-    innerRef,
-    isGuest,
-    isRegisteredUser,
-    isSignUp,
-    location: {pathname},
-    style,
-    visualElement,
-  } = props
+const useLoginLink = (email: string|undefined, isSignUp: boolean, visualElement: string):
+{onClick: () => void; to: LinkProps['to']|null} => {
+  const dispatch = useDispatch<DispatchAllActions>()
+  const {pathname} = useLocation()
+  const hasUserId = useSelector(({user: {userId}}: RootState): boolean => !!userId)
+  const hasAccount = useSelector(({user: {hasAccount}}: RootState): boolean => !!hasAccount)
+  const isGuest = hasUserId && !hasAccount
+  const isRegisteredUser = hasUserId && hasAccount
 
   const handleClick = useCallback((): void => {
     if (isRegisteredUser) {
@@ -1315,40 +1255,85 @@ const LoginLinkBase = (props: LoginLinkProps): React.ReactElement => {
     }
     return null
   }, [isGuest, isRegisteredUser, isSignUp, pathname])
+  return {onClick: handleClick, to}
+}
 
-  const commonProps = useMemo((): Pick<LinkProps, 'children'|'onClick'|'style'> => ({
+
+interface LinkConfig {
+  email?: string
+  isSignUp?: boolean
+  style?: React.CSSProperties
+  visualElement: string
+}
+
+interface LoginLinkProps extends LinkConfig {
+  children: string
+  tabIndex?: number
+}
+
+interface InternalCommonProps {
+  children: string
+  onClick: () => void
+  style: React.CSSProperties
+  tabIndex?: number
+}
+
+const LoginLinkBase = (props: LoginLinkProps): React.ReactElement => {
+  const {
     children,
-    onClick: handleClick,
+    email,
+    isSignUp,
     style,
-  }), [children, handleClick, style])
+    tabIndex,
+    visualElement,
+  } = props
+
+  const {onClick, to} = useLoginLink(email, !!isSignUp, visualElement)
+
+  const commonProps = useMemo((): InternalCommonProps => ({
+    children,
+    onClick,
+    style: {
+      padding: 0,
+      ...style,
+    },
+    tabIndex,
+  }), [children, onClick, style, tabIndex])
   if (to) {
-    return <Link {...commonProps} innerRef={innerRef} to={to} />
+    return <Link {...commonProps} to={to} />
   }
-  return <a {...commonProps} href="#" ref={innerRef} />
+  return <button {...commonProps} />
 }
 LoginLinkBase.propTypes = {
   children: PropTypes.node,
-  dispatch: PropTypes.func.isRequired,
   email: PropTypes.string,
-  isGuest: PropTypes.bool,
-  isRegisteredUser: PropTypes.bool,
   isSignUp: PropTypes.bool,
   style: PropTypes.object,
   visualElement: PropTypes.string.isRequired,
 }
-const LoginLink = connect(({user: {hasAccount, userId}}: RootState): LinkConnectedProps => ({
-  isGuest: !!userId && !hasAccount,
-  isRegisteredUser: !!userId && !!hasAccount,
-}))(withRouter(React.memo(LoginLinkBase)))
+const LoginLink = React.memo(LoginLinkBase)
+
+
+type ButtonProps = React.ComponentProps<typeof Button>
 
 
 const LoginButtonBase = (props: LinkConfig & ButtonProps): React.ReactElement => {
-  const {children, email, isSignUp, style, visualElement, ...otherProps} = props
-  return <LoginLink {...{email, isSignUp, style, visualElement}}>
-    <Button type="deletion" {...otherProps}>{children}</Button>
-  </LoginLink>
+  const {children, email, isSignUp, style, tabIndex, visualElement, ...otherProps} = props
+  const {onClick, to} = useLoginLink(email, !!isSignUp, visualElement)
+  const buttonStyle = useMemo((): React.CSSProperties => (
+    style?.fontWeight ? {fontWeight: style.fontWeight} : {}
+  ), [style])
+  if (to) {
+    return <Link onClick={onClick} to={to} style={style} tabIndex={tabIndex}>
+      <Button type="deletion" {...otherProps} style={buttonStyle}>{children}</Button>
+    </Link>
+  }
+  return <Button
+    type="deletion" onClick={onClick} style={style} tabIndex={tabIndex} {...otherProps}>
+    {children}
+  </Button>
 }
 const LoginButton = React.memo(LoginButtonBase)
 
 
-export {LoginModal, LoginMethods, LoginLink, LoginButton, ResetPasswordForm}
+export {LoginModal, LoginMethods, LoginLink, LoginButton, ResetPasswordForm, useLoginLink}

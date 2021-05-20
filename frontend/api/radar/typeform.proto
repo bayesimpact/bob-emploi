@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package bayes.radar;
+
+// A photo, as fetched from Typeform. We only keep the relevant fields.
+// These can be fetched from https://api.typeform.com/forms/{form_id}/responses
+// See https://developer.typeform.com/responses/reference/retrieve-responses/#retrieve-responses
+message Photo {
+  google.protobuf.Timestamp submitted_at = 1;
+
+  // Values fetched from the query parameters for the form, so they are all typed as strings.
+  // They have been added by the bookmarklet, if found in i-milo.
+  HiddenFields hidden = 2;
+
+  // The actual results from the form. Answers may be of different type than 'choice',
+  // but not for our particular form.
+  repeated ChoiceAnswer answers = 3;
+}
+
+// See frontend/client/plugins/radar/src/imilo_to_radar.ts#TypeformFields for the underlying types.
+message HiddenFields {
+  string age = 1;
+  string counselor_email = 2;
+  string counselor_id = 3;
+  string current_policies = 4;
+  string dossier_id = 5;
+  string referent_id = 6;
+  string school_level = 7;
+  string structure_id = 8;
+}
+
+message ChoiceAnswer {
+    // A set of identifiers for the question for which this is an answer.
+    AnswerField field = 1;
+
+    // The actual response of the choice question.
+    Choice choice = 2;
+}
+
+message AnswerField {
+    // The identifier we're interested in. It's formated as `${domainId}-${questionId}`
+    string ref = 1;
+}
+
+message Choice {
+    // The only useful identifier for the choice answers. It's formated as `Niveau ${level}`.
+    string label = 1;
+}

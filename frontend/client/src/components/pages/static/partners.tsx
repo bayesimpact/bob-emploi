@@ -2,14 +2,17 @@ import PropTypes from 'prop-types'
 import React from 'react'
 import {useTranslation} from 'react-i18next'
 
+import ExternalLink from 'components/external_link'
 import {StaticPage, TitleSection} from 'components/static'
-import {ExternalLink, MAX_CONTENT_WIDTH} from 'components/theme'
+import {MAX_CONTENT_WIDTH} from 'components/theme'
 import adieImage from 'images/partners/adie.svg'
 import avrilImage from 'images/partners/avril.svg'
 import hanploiImage from 'images/partners/hanploi.png'
+import joobleImage from 'images/partners/jooble.jpg'
 import laBonneAlternanceImage from 'images/partners/la-bonne-alternance.png'
 import laBonneBoiteImage from 'images/partners/la-bonne-boite.jpg'
 import missionLocaleEpinaySurSeineImage from 'images/partners/mission-locale-epinay-sur-seine.png'
+import parcoursHandicapImage from 'images/partners/parcours-handicap.png'
 import sncImage from 'images/partners/snc.png'
 import tousBenevolesImage from 'images/partners/tous-benevoles.png'
 import viensVoirMonTafImage from 'images/partners/viens-voir-mon-taf.png'
@@ -66,6 +69,16 @@ const partners = [
     image: missionLocaleEpinaySurSeineImage,
     name: 'Mission locale Épinay-sur-Seine',
     url: 'http://www.miij.fr/',
+  },
+  {
+    image: joobleImage,
+    name: 'Jooble',
+    url: 'https://fr.jooble.org',
+  },
+  {
+    image: parcoursHandicapImage,
+    name: 'Mon parcours handicap',
+    url: 'https://www.monparcourshandicap.gouv.fr',
   },
 ]
 

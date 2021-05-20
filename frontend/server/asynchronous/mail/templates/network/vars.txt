@@ -1,8 +1,0 @@
-changeEmailSettingsUrl
-firstName
-frustration
-gender
-inTargetDomain
-jobInCity
-otherJobInCity
-statusUpdateUrl

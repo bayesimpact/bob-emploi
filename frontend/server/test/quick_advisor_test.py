@@ -1,10 +1,14 @@
 """Unit tests for the quick advisor part of bob_emploi.frontend.advisor module."""
 
 import json
+import os
 from typing import Any, Dict
 import unittest
+from unittest import mock
 
 from bob_emploi.frontend.server.test import base_test
+
+_FAKE_TRANSLATIONS_FILE = os.path.join(os.path.dirname(__file__), 'testdata/translations.json')
 
 
 class QuickAdvisorTest(base_test.ServerTestCase):
@@ -323,6 +327,7 @@ class QuickAdvisorTest(base_test.ServerTestCase):
             response,
         )
 
+    @mock.patch.dict(os.environ, {'I18N_TRANSLATIONS_FILE': _FAKE_TRANSLATIONS_FILE})
     def test_i18n(self) -> None:
         """Test a quick advice when setting the city field in English."""
 
@@ -332,13 +337,6 @@ class QuickAdvisorTest(base_test.ServerTestCase):
                 '69': 365,
             },
         })
-        self._db.translations.insert_many([
-            {
-                'string': 'Super, <strong>{count}</strong> personnes dans ce département ont déjà '
-                          'testé le diagnostic de Bob\xa0!',
-                'en': 'Great, <strong>{count}</strong> people have tested Bob in this area!',
-            }
-        ])
 
         response = self.json_from_response(self.app.post(
             f'/api/user/{self.user_id}/update-and-quick-diagnostic',
@@ -353,6 +351,42 @@ class QuickAdvisorTest(base_test.ServerTestCase):
                 'field': 'CITY_FIELD',
                 'comment': {'stringParts': [
                     'Great, ', '365', ' people have tested Bob in this area!',
+                ]},
+            }]},
+            response,
+        )
+
+    @mock.patch.dict(os.environ, {'I18N_TRANSLATIONS_FILE': _FAKE_TRANSLATIONS_FILE})
+    def test_i18n_employment_type_field(self) -> None:
+        """Test a quick advice when advising on employment type in English."""
+
+        self._db.local_diagnosis.insert_one({
+            '_id': '69:L1510',
+            'imt': {'employmentTypePercentages': [
+                {'employmentType': 'CDD_OVER_3_MONTHS', 'percentage': 45.9},
+                {'employmentType': 'INTERNSHIP', 'percentage': 38},
+                {'employmentType': 'INTERIM', 'percentage': 16.1},
+            ]}
+        })
+
+        user_info = self.get_user_info(self.user_id, self.auth_token)
+        user_info['profile']['locale'] = 'en'
+        user_info['projects'] = [{'city': {'departementId': '69'}}]
+        self._update_user(user_info)
+
+        response = self.json_from_response(self.app.post(
+            f'/api/user/{self.user_id}/update-and-quick-diagnostic',
+            data=json.dumps({'user': {'projects': [
+                {'targetJob': {'jobGroup': {'romeId': 'L1510'}}},
+            ]}}),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + self.auth_token}))
+        self.assertEqual(
+            {'comments': [{
+                'field': 'EMPLOYMENT_TYPE_FIELD',
+                'isBeforeQuestion': True,
+                'comment': {'stringParts': [
+                    'More than 45% of job postings are for a medium-term contract.',
                 ]},
             }]},
             response,

@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package bayes;
+option go_package="bayes.org/bob_emploi/frontend/api/boolean";
+
+enum OptionalBool {
+  UNKNOWN_BOOL = 0;
+  FALSE = 1;
+  TRUE = 2;
+}

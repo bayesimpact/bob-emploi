@@ -21,8 +21,7 @@ def _get_commuting_cities(
         target_city: geo_pb2.FrenchCity) -> Iterator[commute_pb2.CommutingCity]:
     # Get the reference offers per inhabitant.
     ref = next(
-        # TODO(cyrille): Replace with h.offers_per_inhabitant once it's been imported.
-        (h.offers / h.city.population
+        (h.offers_per_inhabitant
          for h in interesting_cities_for_rome
          if h.city.city_id == target_city.city_id and h.city.population), 0)
 
@@ -32,7 +31,7 @@ def _get_commuting_cities(
             continue
 
         try:
-            relative_offers = (hiring_city.offers / hiring_city.city.population) / ref
+            relative_offers = hiring_city.offers_per_inhabitant / ref
         except ZeroDivisionError:
             relative_offers = 0
 

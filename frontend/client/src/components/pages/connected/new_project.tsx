@@ -2,16 +2,16 @@
 import React, {useCallback, useEffect, useMemo, useRef} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useDispatch, useSelector} from 'react-redux'
-import {useParams} from 'react-router'
+import {useHistory, useLocation, useParams} from 'react-router'
 import {Redirect} from 'react-router-dom'
 
-import {DispatchAllActions, RootState, editFirstProject} from 'store/actions'
+import {DispatchAllActions, RootState, editFirstProject, onboardingPage} from 'store/actions'
 import {flattenProject} from 'store/project'
 
-import {isMobileVersion} from 'components/mobile'
-import {CircularProgress} from 'components/theme'
+import isMobileVersion from 'store/mobile'
+import CircularProgress from 'components/circular_progress'
 import {PageWithNavigationBar, Scrollable} from 'components/navigation'
-import {Routes} from 'components/url'
+import {NEW_PROJECT_ID, Routes} from 'components/url'
 import {useProjectOnboarding} from './profile/onboarding'
 
 
@@ -38,8 +38,10 @@ const NewProjectPage = (): React.ReactElement => {
     [existingProject],
   )
 
-  const {stepName} = useParams()
-  const {goBack, goNext, step, stepCount} = useProjectOnboarding(stepName)
+  const {stepName} = useParams<{stepName: string}>()
+  const history = useHistory()
+  const {pathname: url} = useLocation()
+  const {goBack, goNext, hasNextStep, step, stepCount} = useProjectOnboarding(stepName)
   const pageDom = useRef<Scrollable>(null)
   useEffect((): void => pageDom.current?.scrollTo(0), [stepName])
   const dispatch = useDispatch<DispatchAllActions>()
@@ -50,8 +52,9 @@ const NewProjectPage = (): React.ReactElement => {
     }
     const {type = undefined} = step || {}
     dispatch(editFirstProject(newProject, t, type))
+    dispatch(onboardingPage(url, {profile: userProfile}, newProject))
     goNext()
-  }, [dispatch, goNext, newProject, step, t])
+  }, [dispatch, goNext, newProject, step, t, url, userProfile])
 
   const handleBack = useCallback((): void => {
     if (!step) {
@@ -61,10 +64,20 @@ const NewProjectPage = (): React.ReactElement => {
     goBack?.()
   }, [goBack, step])
 
-  // Prevent people from manually going back and creating another project.
-  if (existingProject && !existingProject.isIncomplete) {
-    return <Redirect to={`${Routes.PROJECT_PAGE}/${existingProject.projectId}`} />
-  }
+  // Prevent people from manually going back and editing a complete project.
+  const completeProjectId = existingProject && !existingProject.isIncomplete ?
+    existingProject.projectId || NEW_PROJECT_ID : undefined
+  useEffect((): (() => void) => {
+    if (!completeProjectId) {
+      return () => void 0
+    }
+    const timeout = window.setTimeout(
+      () => history.push(`${Routes.PROJECT_PAGE}/${completeProjectId}`),
+      100,
+    )
+    return () => window.clearTimeout(timeout)
+  }, [completeProjectId, history])
+
   const spinnerBoxStyle = {
     alignItems: 'center',
     display: 'flex',
@@ -88,7 +101,7 @@ const NewProjectPage = (): React.ReactElement => {
       onSubmit={handleSubmit} profile={userProfile}
       onPreviousButtonClick={isMobileVersion ? undefined : handleBack}
       newProject={newProject} totalStepCount={stepCount}
-      stepNumber={stepNumber} t={t} />
+      stepNumber={stepNumber} t={t} isLastOnboardingStep={!hasNextStep} />
   }
   return <PageWithNavigationBar style={{backgroundColor: '#fff'}}
     onBackClick={isMobileVersion ? handleBack : undefined}

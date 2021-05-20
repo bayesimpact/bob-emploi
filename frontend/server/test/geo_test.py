@@ -5,7 +5,9 @@ from unittest import mock
 
 import mongomock
 
+from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.server import geo
+from bob_emploi.frontend.server import mongo
 
 
 class DepartementCase(unittest.TestCase):
@@ -13,7 +15,7 @@ class DepartementCase(unittest.TestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self._db = mongomock.MongoClient().test
+        self._db = mongo.NoPiiMongoDatabase(mongomock.MongoClient().test)
         self._db.departements.insert_many([
             {
                 '_id': '13',
@@ -85,6 +87,17 @@ class DepartementCase(unittest.TestCase):
         self.assertEqual('à Paris', geo.get_in_a_departement_text(self._db, '75'))
         self.assertEqual('dans les Bouches-du-Rhône', geo.get_in_a_departement_text(self._db, '13'))
         self.assertEqual('à la Réunion', geo.get_in_a_departement_text(self._db, '974'))
+
+    def test_get_in_a_departement_text_city_hint(self) -> None:
+        """Test get_in_a_departement_text func with a city hing."""
+
+        self.assertEqual(
+            'in Illinois',
+            geo.get_in_a_departement_text(self._db, '19', geo_pb2.FrenchCity(
+                departement_id='19',
+                departement_name='Illinois',
+                departement_prefix='in ',
+            )))
 
     def test_get_in_a_departement_text_missing_id(self) -> None:
         """Check get_in_a_departement_text on an unknown département."""

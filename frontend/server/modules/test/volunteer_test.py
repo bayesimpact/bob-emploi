@@ -1,6 +1,5 @@
 """Unit tests for the volunteer module."""
 
-import datetime
 import unittest
 
 from bob_emploi.frontend.server.test import base_test
@@ -34,9 +33,7 @@ class VolunteerAdviceTestCase(scoring_test.ScoringModelTestBase):
 
         persona = self._random_persona().clone()
         persona.project.city.departement_id = '75'
-        persona.project.job_search_length_months = 20
-        persona.project.job_search_started_at.FromDatetime(
-            persona.project.created_at.ToDatetime() - datetime.timedelta(days=610))
+        self._enforce_search_length_duration(persona.project, exact_months=20)
 
         score = self._score_persona(persona)
 
@@ -47,9 +44,7 @@ class VolunteerAdviceTestCase(scoring_test.ScoringModelTestBase):
 
         persona = self._random_persona().clone()
         persona.project.city.departement_id = '75'
-        persona.project.job_search_length_months = 1
-        persona.project.job_search_started_at.FromDatetime(
-            persona.project.created_at.ToDatetime() - datetime.timedelta(days=30.5))
+        self._enforce_search_length_duration(persona.project, exact_months=1)
 
         score = self._score_persona(persona)
 

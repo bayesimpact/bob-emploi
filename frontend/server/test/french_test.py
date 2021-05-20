@@ -1,6 +1,6 @@
 """Unit tests for the bob_emploi.frontend.french module."""
 
-import collections
+import typing
 import unittest
 
 from bob_emploi.frontend.server import french
@@ -108,8 +108,10 @@ class UpperFirstLetterTestCase(unittest.TestCase):
         self.assertEqual('', sentence)
 
 
-_CityPrefixTestCase = collections.namedtuple(
-    '_CityPrefixTestCase', ['description', 'city_name', 'expected'])
+class _CityPrefixTestCase(typing.NamedTuple):
+    description: str
+    city_name: str
+    expected: str
 
 
 class CityPrefixTestCase(unittest.TestCase):

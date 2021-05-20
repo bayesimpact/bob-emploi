@@ -1,4 +1,0 @@
-firstName
-gender
-statusUpdateUrl
-unsubscribeLink

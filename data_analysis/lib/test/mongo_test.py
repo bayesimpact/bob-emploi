@@ -13,9 +13,21 @@ from unittest import mock
 
 import mongomock
 import pymongo
+from pymongo import errors as pymongo_errors
+import requests_mock
 
 from bob_emploi.data_analysis.lib import mongo
 from bob_emploi.frontend.api import user_pb2
+
+_AType = typing.TypeVar('_AType')
+
+
+class _Devnull:
+    def write(self, *args: Any) -> None:
+        """Do not write anything."""
+
+
+_DEV_NULL = _Devnull()
 
 
 def _my_importer_func(arg1: Any) -> List[Dict[str, Any]]:
@@ -31,7 +43,7 @@ def _my_importer_func(arg1: Any) -> List[Dict[str, Any]]:
     return [{'arg1': arg1, 'dummy': 2}]
 
 
-@mock.patch(mongo.tqdm.__name__ + '.tqdm', new=lambda iterable: iterable)
+@mock.patch(mongo.__name__ + '._TQDM_OUTPUT', new=_DEV_NULL)
 @mock.patch('builtins.input', new=mock.MagicMock(return_value='Y'))
 @mock.patch(mongo.__name__ + '._MONGO_URL', 'mongodb://localhost/test')
 class ImporterMainTestCase(unittest.TestCase):
@@ -143,6 +155,97 @@ class ImporterMainTestCase(unittest.TestCase):
 
         self.assertEqual(0, len(list(self.db_client.test['my-collection'].find())))
 
+    def test_importer_collection_name(self) -> None:
+        """Test the importer_main getting the collection name."""
+
+        def import_func(collection_name: str) -> List[Dict[str, Any]]:
+            """Foo."""
+
+            return [{'dummy': 2, 'collection_name': collection_name}]
+
+        mongo.importer_main(
+            import_func, 'my-collection',
+            ['--mongo_collection', 'cli-name'],
+            out=self.output)
+
+        value = self.db_client.test['cli-name'].find_one()
+        assert value
+        del value['_id']
+        self.assertEqual({'collection_name': 'cli-name', 'dummy': 2}, value)
+
+    @mock.patch(
+        mongo.__name__ + '._SLACK_IMPORT_URL', 'https://slack.example.com/webhook')
+    @requests_mock.mock()
+    def test_fail_on_diff(self, mock_requests: requests_mock.Mocker) -> None:
+        """Test of the fail_on_diff flag."""
+
+        result = [{'dummy': 3, '_id': 'only-one'}]
+
+        def import_func() -> List[Dict[str, Any]]:
+            """Foo."""
+
+            return result
+
+        mock_requests.post('https://slack.example.com/webhook')
+
+        mongo.importer_main(import_func, 'my-collection', [], out=self.output)
+
+        self.assertEqual(1, mock_requests.call_count)
+
+        result[0]['dummy'] = 4
+
+        with self.assertRaises(ValueError):
+            mongo.importer_main(
+                import_func, 'my-collection',
+                ['--fail_on_diff'],
+                out=self.output)
+
+        self.assertEqual(2, mock_requests.call_count)
+        self.assertIn(
+            'There are some diffs to import.',
+            mock_requests.request_history[1].json()['attachments'][0]['text'])
+
+        self.assertEqual(1, self.db_client.test['my-collection'].count_documents({}))
+        value = self.db_client.test['my-collection'].find_one()
+        assert value
+        del value['_id']
+        self.assertEqual({'dummy': 3}, value, msg='Values should not have been updated')
+
+    @mock.patch(
+        mongo.__name__ + '._SLACK_IMPORT_URL', 'https://slack.example.com/webhook')
+    @requests_mock.mock()
+    def test_fail_on_diff_when_no_diff(self, mock_requests: requests_mock.Mocker) -> None:
+        """Test of the fail_on_diff flag when there are no diffs."""
+
+        result = [{'dummy': 3, '_id': 'only-one'}]
+
+        def import_func() -> List[Dict[str, Any]]:
+            """Foo."""
+
+            return result
+
+        mock_requests.post('https://slack.example.com/webhook')
+
+        mongo.importer_main(import_func, 'my-collection', [], out=self.output)
+
+        self.assertEqual(1, mock_requests.call_count)
+
+        mongo.importer_main(
+            import_func, 'my-collection',
+            ['--fail_on_diff'],
+            out=self.output)
+
+        self.assertEqual(2, mock_requests.call_count)
+        self.assertIn(
+            'The data is already up to date.',
+            mock_requests.request_history[1].json()['attachments'][0]['text'])
+
+        self.assertEqual(1, self.db_client.test['my-collection'].count_documents({}))
+        value = self.db_client.test['my-collection'].find_one()
+        assert value
+        del value['_id']
+        self.assertEqual({'dummy': 3}, value)
+
 
 class ParseArgsDocTestCase(unittest.TestCase):
     """Unit tests for parse_args_doc function."""
@@ -248,7 +351,7 @@ class ParseArgsDocTestCase(unittest.TestCase):
 
 
 @mock.patch('builtins.input', new=mock.MagicMock(return_value='Y'))
-@mock.patch(mongo.tqdm.__name__ + '.tqdm', new=lambda iterable: iterable)
+@mock.patch(mongo.__name__ + '._TQDM_OUTPUT', new=_DEV_NULL)
 @mock.patch(mongo.__name__ + '._MONGO_URL', 'mongodb://my-db_client-url/test')
 class ImporterTestCase(unittest.TestCase):
     """Unit tests for the Importer class."""
@@ -262,6 +365,7 @@ class ImporterTestCase(unittest.TestCase):
         flag_values.chunk_size = 10000
         flag_values.always_accept_diff = False
         flag_values.report_to_slack = False
+        flag_values.fail_on_diff = False
         self.output = io.StringIO()
         self.importer = mongo.Importer(flag_values, out=self.output)
         patcher = mongomock.patch(('my-db_client-url',))
@@ -333,7 +437,7 @@ class ImporterTestCase(unittest.TestCase):
         self.db_client.test.my_collec.insert_one({'_id': 'Previous data'})
 
         self.assertRaises(
-            pymongo.errors.PyMongoError,
+            pymongo_errors.PyMongoError,
             self.importer.import_in_collection,
             [{'_id': 'Foo'}, {'_id': 'Bar'}, {'_id': 'Foo'}],
             'my_collec')
@@ -357,12 +461,11 @@ class ImporterTestCase(unittest.TestCase):
 
         mock_input.return_value = 'N'
 
-        self.importer.import_in_collection(
-            [
-                {'_id': 'a', 'field1': 3},
-                {'_id': 'b', 'field1': 2018},
-                {'_id': 'd', 'field1': 5},
-            ], 'my_collec')
+        self.importer.import_in_collection([
+            {'_id': 'a', 'field1': 3},
+            {'_id': 'b', 'field1': 2018},
+            {'_id': 'd', 'field1': 5},
+        ], 'my_collec')
 
     def test_import_skip_diff_with_flag(self) -> None:
         """Test skipping the diff if the always_accept_diff flag is given."""
@@ -382,12 +485,11 @@ class ImporterTestCase(unittest.TestCase):
         mock_input.return_value = 'N'
 
         self.importer.flag_values.always_accept_diff = True
-        self.importer.import_in_collection(
-            [
-                {'_id': 'a', 'field1': 3},
-                {'_id': 'b', 'field1': 2018},
-                {'_id': 'd', 'field1': 5},
-            ], 'my_collec')
+        self.importer.import_in_collection([
+            {'_id': 'a', 'field1': 3},
+            {'_id': 'b', 'field1': 2018},
+            {'_id': 'd', 'field1': 5},
+        ], 'my_collec')
 
         doc_b = self.db_client.test.my_collec.find_one({'_id': 'b'})
         assert doc_b
@@ -395,27 +497,29 @@ class ImporterTestCase(unittest.TestCase):
         output = self.output.getvalue()
         self.assertEqual('Inserting all 3 objects at once.', output.strip())
 
-    @mock.patch(mongo.__name__ + '.requests.post')
     @mock.patch(
         mongo.__name__ + '._SLACK_IMPORT_URL', 'https://slack.example.com/webhook')
-    def test_import_and_report(self, mock_post: mock.MagicMock) -> None:
+    @requests_mock.mock()
+    def test_import_and_report(self, mock_requests: 'requests_mock._RequestObjectProxy') -> None:
         """Test sending slack report when importing."""
 
+        mock_requests.post('https://slack.example.com/webhook')
         collection_name = 'my_collec'
         self.importer.flag_values.mongo_collection = collection_name
         self.importer.flag_values.report_to_slack = True
         self.importer.import_in_collection(
             [{'_id': 'Foo'}, {'_id': 'Bar'}], collection_name)
 
-        mock_post.assert_called_once_with(
-            'https://slack.example.com/webhook',
-            json={
+        self.assertEqual(1, mock_requests.call_count)
+        self.assertEqual(
+            {
                 'attachments': [{
                     'mrkdwn_in': ['text'],
                     'title': 'Automatic import of my_collec',
                     'text': 'Inserting all 2 objects at once.\n'
                 }],
             },
+            mock_requests.request_history[0].json(),
         )
         output = self.output.getvalue()
         self.assertEqual('Inserting all 2 objects at once.', output.strip())
@@ -478,6 +582,56 @@ class ImporterTestCase(unittest.TestCase):
                 typing.cast(Dict[str, Any], self.db_client.test[name].find_one())['_id']
                 for name in archive_names
             ])
+
+    def test_import_iterator(self) -> None:
+        """Test importing an iterator with count estimate."""
+
+        self.importer.import_in_collection([
+            {'_id': 'a', 'field1': 3},
+            {'_id': 'b', 'field1': 2018},
+            {'_id': 'd', 'field1': 5},
+        ], 'my_collec', count_estimate=3)
+
+        # Check current data
+        self.assertEqual([
+            {'_id': 'a', 'field1': 3},
+            {'_id': 'b', 'field1': 2018},
+            {'_id': 'd', 'field1': 5},
+
+        ], list(self.db_client.test.my_collec.find()))
+
+    def test_import_batched_iterator(self) -> None:
+        """Test importing an iterator with count estimate larger than chunks."""
+
+        self.importer.flag_values.chunk_size = 10
+        self.importer.import_in_collection((
+            {'_id': str(i), 'field1': i}
+            for i in range(100)), 'my_collec', count_estimate=100)
+
+        # Check current data
+        self.assertEqual(100, self.db_client.test.my_collec.count_documents({}))
+
+    def test_import_batched_list(self) -> None:
+        """Test importing a list with length larger than chunks."""
+
+        self.importer.flag_values.chunk_size = 10
+        self.importer.import_in_collection([
+            {'_id': str(i), 'field1': i}
+            for i in range(100)], 'my_collec')
+
+        # Check current data
+        self.assertEqual(100, self.db_client.test.my_collec.count_documents({}))
+
+    def test_import_with_low_estimate(self) -> None:
+        """Test importing an iterator with more values than estimated."""
+
+        self.importer.flag_values.chunk_size = 10
+        self.importer.import_in_collection((
+            {'_id': str(i), 'field1': i}
+            for i in range(100)), 'my_collec', count_estimate=50)
+
+        # Check current data
+        self.assertEqual(100, self.db_client.test.my_collec.count_documents({}))
 
 
 class ProtoTestCase(unittest.TestCase):

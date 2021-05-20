@@ -9,6 +9,7 @@ from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import project_pb2
 
 
+# TODO(sil): Use proper translations for departement names when neeeded.
 @scoring_base.ScoringProject.cached('relocate')
 def _find_best_departements(unused_: Any, project: scoring_base.ScoringProject) \
         -> List[project_pb2.DepartementScore]:
@@ -20,7 +21,7 @@ def _find_best_departements(unused_: Any, project: scoring_base.ScoringProject) 
     if not own_departement_offers:
         return []
 
-    best_departements = project.job_group_info().best_departements
+    best_departements = project.job_group_info().departement_scores
 
     result: List[project_pb2.DepartementScore] = []
     for dep in itertools.islice(best_departements, 10):
@@ -29,8 +30,10 @@ def _find_best_departements(unused_: Any, project: scoring_base.ScoringProject) 
         offer_ratio = \
             dep.local_stats.imt.yearly_avg_offers_per_10_candidates / own_departement_offers
         result.append(project_pb2.DepartementScore(
-            name=geo.get_departement_name(project.database, dep.departement_id),
+            name=project.translate_string(
+                geo.get_departement_name(project.database, dep.departement_id)),
             offer_ratio=offer_ratio))
+
     return result
 
 
@@ -51,13 +54,13 @@ class _AdviceRelocateScoringModel(scoring_base.ModelBase):
         reasons = []
         if project.details.area_type < geo_pb2.COUNTRY:
             return scoring_base.NULL_EXPLAINED_SCORE
-        reasons.append(project.translate_string(
-            'vous nous avez dit être prêt%eFeminine à déménager'))
+        reasons.append(project.populate_template(project.translate_static_string(
+            'vous nous avez dit être prêt%eFeminine à déménager')))
 
         local_stats = project.local_diagnosis()
         if local_stats.imt.yearly_avg_offers_per_10_candidates and \
                 local_stats.num_less_stressful_departements:
-            reasons.append(project.translate_string(
+            reasons.append(project.translate_static_string(
                 "il y a beaucoup plus d'offres par habitants dans d'autres villes"))
             return scoring_base.ExplainedScore(2, reasons)
         return scoring_base.NULL_EXPLAINED_SCORE

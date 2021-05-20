@@ -1,21 +1,25 @@
-import i18next from 'i18next'
 import {parse} from 'query-string'
 import React, {Suspense, useCallback, useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import ReactDOM from 'react-dom'
 
-import {init as i18nInit, localizeOptions, prepareT} from 'store/i18n'
+import {cleanHtmlError, hasErrorStatus} from 'store/http'
+import {LocalizableString, init as i18nInit, localizeOptions, prepareT} from 'store/i18n'
+import isMobileVersion from 'store/mobile'
 
-import logoProductImage from 'images/bob-logo.svg'
+import logoProductImage from 'deployment/bob-logo.svg'
 
-import {Trans} from 'components/i18n'
-import {isMobileVersion} from 'components/mobile'
+import Button from 'components/button'
+import CheckboxList from 'components/checkbox_list'
+import FieldSet from 'components/field_set'
+import Trans from 'components/i18n_trans'
+import RadioGroup from 'components/radio_group'
 import {ShareModal} from 'components/share'
-import {Button, MIN_CONTENT_PADDING, RadioGroup} from 'components/theme'
-import {WaitingPage} from 'components/pages/waiting'
-import {CheckboxList, FieldSet} from 'components/pages/connected/form_utils'
+import {MIN_CONTENT_PADDING} from 'components/theme'
+import {Routes} from 'components/url'
+import WaitingPage from 'components/pages/waiting'
 
-require('styles/App.css')
+import 'styles/App.css'
 
 // TODO(cyrille): Report events to Amplitude.
 
@@ -23,6 +27,12 @@ require('styles/App.css')
 // i18next-extract-mark-ns-start statusUpdate
 
 i18nInit()
+
+
+interface LocalizableOption<T extends unknown> {
+  name: LocalizableString
+  value: T
+}
 
 
 const commonSituationOptions = [
@@ -38,7 +48,12 @@ const optionalBoolOptions = [
   {name: prepareT('non'), value: 'FALSE'},
 ] as const
 
-const FORM_OPTIONS = {
+const FORM_OPTIONS: {[page: string]: {
+  headerText: LocalizableString
+  seeking?: bayes.bob.SeekingStatus
+  seekingOptions: readonly LocalizableOption<bayes.bob.SeekingStatus>[]
+  situationOptions: readonly LocalizableOption<string>[]
+}} = {
   'en-recherche': {
     headerText: prepareT(
       "Merci de nous avoir donné des nouvelles, vous nous rendez un fier service\u00A0! J'ai " +
@@ -94,7 +109,7 @@ type Option<T> = {
 }
 
 
-const NEW_JOB_CONTRACT_TYPE_OPTIONS: readonly Option<bayes.bob.EmploymentType>[] = [
+const NEW_JOB_CONTRACT_TYPE_OPTIONS = [
   {name: prepareT('Un contrat de moins de 30 jours'), value: 'ANY_CONTRACT_LESS_THAN_A_MONTH'},
   {name: prepareT('Un CDD de 1 à 3 mois'), value: 'CDD_LESS_EQUAL_3_MONTHS'},
   {name: prepareT('Un CDD de plus de 3 mois'), value: 'CDD_OVER_3_MONTHS'},
@@ -128,7 +143,9 @@ const bobFeaturesThatHelpedOptions = [
 interface Params {
   page?: PageType
   params: {
+    // eslint-disable-next-line  camelcase
     can_tutoie?: string
+    employed?: 'True'|'False'
     gender?: bayes.bob.Gender
     hl?: string
     token?: string
@@ -149,15 +166,7 @@ function getParamsFromLocation({pathname, search}: Location): Params {
   }
 }
 
-function redirectToLandingPage(): void {
-  window.location.href = '/'
-}
-
 const {page, params, seeking: initialSeeking} = getParamsFromLocation(window.location)
-// TODO(pascal): Drop that after 2020-02-15
-if (params.can_tutoie && !params.hl) {
-  i18next.changeLanguage('fr@tu')
-}
 
 
 const headerStyle = {
@@ -191,11 +200,17 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
   const [bobFeaturesThatHelped, setBobFeaturesThatHelped] =
     useState<readonly bayes.bob.UsefulFeature[]>([])
   const [bobHasHelped, setBobHasHelped] = useState('')
-  const [isNewJob, setIsNewJob] = useState<bayes.bob.OptionalBool|undefined>(undefined)
+  const [isNewJob, setIsNewJob] = useState<bayes.OptionalBool|undefined>(undefined)
   const [isJobInDifferentSector, setIsJobInDifferentSector] =
-    useState<bayes.bob.OptionalBool|undefined>(undefined)
+    useState<bayes.OptionalBool|undefined>(undefined)
   const [newJobContractType, setNewJobContractType] =
     useState<bayes.bob.EmploymentType|undefined>(undefined)
+  const [hasSalaryIncreased, setHasSalaryIncreased] =
+    useState<bayes.OptionalBool|undefined>(undefined)
+  const [hasGreaterRole, setHasGreaterRole] =
+    useState<bayes.OptionalBool|undefined>(undefined)
+  const [hasBeenPromoted, setHasBeenPromoted] =
+    useState<bayes.OptionalBool|undefined>(undefined)
   const [seeking, setSeeking] = useState(initialSeeking)
   const [situation, setSituation] = useState('')
   const [isFormSent, setIsFormSent] = useState(false)
@@ -204,22 +219,17 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
   const [errorMessage, setErrorMessage] = useState<string|undefined>(undefined)
   const {t, t: translate} = useTranslation('statusUpdate')
 
-  const handleUpdateResponse = useCallback((response: Response): void => {
+  const handleUpdateResponse = useCallback(async (response: Response): Promise<void> => {
     setIsSendingUpdate(false)
-    if (response.status >= 400 || response.status < 200) {
-      response.text().then((errorMessage: string): void => {
-        const page = document.createElement('html')
-        page.innerHTML = errorMessage
-        const content = page.getElementsByTagName('P') as HTMLCollectionOf<HTMLElement>
-        setErrorMessage(content.length && content[0].textContent || page.textContent || undefined)
-      })
+    if (hasErrorStatus(response)) {
+      setErrorMessage(await cleanHtmlError(response))
       return
     }
     setIsFormSent(true)
     setIsSendingUpdate(false)
   }, [])
 
-  const handleUpdate = useCallback((): void => {
+  const handleUpdate = useCallback(async (): Promise<void> => {
     if (!bobHasHelped || !situation) {
       setIsValidated(true)
       return
@@ -230,29 +240,33 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
     const newStatus: bayes.bob.EmploymentStatus = {
       bobFeaturesThatHelped,
       bobHasHelped,
+      hasBeenPromoted,
+      hasGreaterRole,
+      hasSalaryIncreased,
       isJobInDifferentSector,
       isNewJob,
       newJobContractType,
       seeking,
       situation,
     }
-    fetch(`/api/employment-status/${user}`, {
+    const updateResponse = await fetch(`/api/employment-status/${user}`, {
       body: JSON.stringify(newStatus),
 
       headers: {'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json'},
       method: 'post',
-    }).then(handleUpdateResponse)
-  }, [bobFeaturesThatHelped, bobHasHelped, handleUpdateResponse, newJobContractType, seeking,
-    situation, isNewJob, isJobInDifferentSector])
+    })
+    handleUpdateResponse(updateResponse)
+  }, [bobFeaturesThatHelped, bobHasHelped, handleUpdateResponse, hasBeenPromoted, hasGreaterRole,
+    hasSalaryIncreased, newJobContractType, seeking, situation, isNewJob, isJobInDifferentSector])
   const {headerText, seekingOptions, situationOptions} = FORM_OPTIONS[page || 'mise-a-jour']
-  const {gender} = params
+  const {gender, employed: wasAlreadyEmployed} = params
   const localizedSeekingOptions = useMemo(
     (): readonly Option<bayes.bob.SeekingStatus>[] =>
-      localizeOptions<Option<bayes.bob.SeekingStatus>>(t, seekingOptions),
+      localizeOptions(t, seekingOptions),
     [seekingOptions, t],
   )
   const localizedSituationOptions = useMemo(
-    (): readonly Option<string>[] => localizeOptions<Option<string>>(t, situationOptions),
+    (): readonly Option<string>[] => localizeOptions(t, situationOptions),
     [situationOptions, t],
   )
   const localizedContractTypeOptions = useMemo(
@@ -272,7 +286,7 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
     [gender, t],
   )
   const localizedOptionalBoolOptions = useMemo(
-    (): readonly Option<bayes.bob.OptionalBool>[] =>
+    (): readonly Option<bayes.OptionalBool>[] =>
       localizeOptions(t, optionalBoolOptions),
     [t],
   )
@@ -311,13 +325,15 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
   }
   return <div style={pageStyle}>
     <header style={headerStyle}>
-      <img
-        style={{cursor: 'pointer', height: 30}} onClick={redirectToLandingPage}
-        src={logoProductImage} alt={config.productName} />
+      <a href={Routes.ROOT}>
+        <img
+          style={{height: 40}}
+          src={logoProductImage} alt={config.productName} />
+      </a>
     </header>
     <div style={containerStyle}>
       <div style={{fontSize: 16, margin: '40px 0 20px', maxWidth: 500}}>
-        {translate(headerText)}
+        {translate(...headerText)}
       </div>
       <div style={{maxWidth: 500}}>
         {seekingOptions.length ?
@@ -339,15 +355,28 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
             options={localizedSituationOptions}
             value={situation} />
         </FieldSet>
-        {isEmployedAndStoppedSeeking ? <FieldSet
-          label={t('Est-ce un nouvel emploi\u00A0?')}
-          isValidated={isValidated} isValid={!!isNewJob}>
-          <RadioGroup<bayes.bob.OptionalBool>
-            onChange={setIsNewJob}
-            options={localizedOptionalBoolOptions}
-            value={isNewJob}
-            childStyle={optionalChildStyle} />
-        </FieldSet> : null}
+        {isEmployedAndStoppedSeeking ? <React.Fragment>
+          <FieldSet
+            label={t('Est-ce un nouvel emploi\u00A0?')}
+            isValidated={isValidated} isValid={!!isNewJob}>
+            <RadioGroup<bayes.OptionalBool>
+              onChange={setIsNewJob}
+              options={localizedOptionalBoolOptions}
+              value={isNewJob}
+              childStyle={optionalChildStyle} />
+          </FieldSet>
+          <FieldSet
+            // TODO(cyrille): Consider limiting to people who ever had a job
+            // (kind !== FIND_A_FIRST_JOB).
+            label={t('Vos responsabilités ont-elles évolué depuis votre dernier emploi\u00A0?')}
+            isValidated={isValidated} isValid={!!hasGreaterRole}>
+            <RadioGroup<bayes.OptionalBool>
+              onChange={setHasGreaterRole}
+              options={localizedOptionalBoolOptions}
+              value={hasGreaterRole}
+              childStyle={optionalChildStyle} />
+          </FieldSet>
+        </React.Fragment> : null}
         {isEmployedAndStoppedSeeking && isNewJob === 'TRUE' ? <FieldSet
           label={t('Quel type de contrat avez-vous décroché\u00A0?')}
           isValidated={isValidated} isValid={!!newJobContractType}>
@@ -357,10 +386,30 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
             options={localizedContractTypeOptions}
             value={newJobContractType} />
         </FieldSet> : null}
+        {isEmployedAndStoppedSeeking && wasAlreadyEmployed === 'True' ? <React.Fragment>
+          <FieldSet
+            label={t('Avez-vous reçu une promotion\u00A0?')}
+            isValidated={isValidated} isValid={!!hasBeenPromoted}>
+            <RadioGroup<bayes.OptionalBool>
+              onChange={setHasBeenPromoted}
+              options={localizedOptionalBoolOptions}
+              value={hasBeenPromoted}
+              childStyle={optionalChildStyle} />
+          </FieldSet>
+          <FieldSet
+            label={t('Avez-vous reçu une augmentation salariale\u00A0?')}
+            isValidated={isValidated} isValid={!!hasSalaryIncreased}>
+            <RadioGroup<bayes.OptionalBool>
+              onChange={setHasSalaryIncreased}
+              options={localizedOptionalBoolOptions}
+              value={hasSalaryIncreased}
+              childStyle={optionalChildStyle} />
+          </FieldSet>
+        </React.Fragment> : null}
         {isEmployedAndStoppedSeeking && isNewJob === 'TRUE' ? <FieldSet
           label={t('Votre nouvel emploi est-il dans un secteur différent du précédent\u00A0?')}
           isValidated={isValidated} isValid={!!isJobInDifferentSector}>
-          <RadioGroup<bayes.bob.OptionalBool>
+          <RadioGroup<bayes.OptionalBool>
             onChange={setIsJobInDifferentSector}
             options={localizedOptionalBoolOptions}
             value={isJobInDifferentSector}

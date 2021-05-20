@@ -3,13 +3,16 @@
 import datetime
 import logging
 import re
-from typing import Any, Callable, List, Iterator, Tuple
+import typing
+from typing import Any, Callable, List, Iterator, Optional, Tuple
 
 from google.protobuf import message
 import mongomock
 
 from bob_emploi.data_analysis.i18n import translation
+from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import scoring
+from bob_emploi.frontend.server.mail.templates import mailjet_templates
 from bob_emploi.frontend.api import options_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
@@ -17,22 +20,32 @@ from bob_emploi.frontend.api import user_pb2
 
 # Regular expression to validate links, e.g http://bayesimpact.org. Keep in
 # sync with frontend/src/store/link.js.
-_LINK_REGEXP = re.compile(r'^[^/]+://[^/]*[^/.](?:/|$)')
+_LINK_REGEXP = re.compile(r'^[^/ ]+://[^/ ]*[^/. ](?:/|$)')
 
 # Matches a space at first or end of a line (in a possibly multiline string).
 _STRIPABLE_SPACE_REGEX = re.compile(r'(^ +| +$)', re.MULTILINE)
 
 # Matches a space that should be unbreakable in a French sentence.
-_SPACE_TO_MAKE_UNBREAKABLE_REGEX = re.compile(r'( )(?=[?;:!])')
+_FR_SPACE_TO_MAKE_UNBREAKABLE_REGEX = re.compile(r'( )(?=[?;:!])')
+
+# Matches a space that should not exist in an English sentence.
+_EN_EXTRA_SPACE_REGEX = re.compile(r'(\s)(?=[?;:!])')
 
 
 class FixableValueError(ValueError):
     """A value error reporting an error in a string with a way to fix that string."""
 
     def __init__(self, short_message: str, marked_value: str, fixed_value: str) -> None:
-        super().__init__(short_message)
+        super().__init__(
+            f'{short_message}\nErrors in string: {repr(marked_value)}\nFixed string: {fixed_value}')
+        self.short_message = short_message
         self.marked_value = marked_value
         self.fixed_value = fixed_value
+
+    def with_message(self, short_message: str) -> 'FixableValueError':
+        """Update the short message while keeping the values."""
+
+        return self.__class__(short_message, self.marked_value, self.fixed_value)
 
 
 def _get_all_values(field_value: Any, field_name: str) -> Iterator[Tuple[Any, str]]:
@@ -48,7 +61,7 @@ def _get_all_values(field_value: Any, field_name: str) -> Iterator[Tuple[Any, st
         yield value, f'{field_name}.{index:d}'
 
 
-class Checker(object):
+class Checker:
     """Base class for checkers.
 
     A checker is a simple wrapper for a function which takes a proto message as input and returns
@@ -59,7 +72,7 @@ class Checker(object):
     name: str = 'basic checker'
 
     # The actual checking function.
-    def check(self, unused_proto: message.Message) -> bool:
+    def check(self, unused_proto: message.Message, unused_locale: str) -> bool:
         """Whether the input proto passes the check or not.
 
         Raises:
@@ -73,7 +86,7 @@ class Checker(object):
             f'The checker "{self.name}" has no implementation for its check method.')
 
 
-class ValueChecker(object):
+class ValueChecker:
     """Base class for value checkers.
 
     A value checker is a simple wrapper for a function wich takes a single value as input and
@@ -83,7 +96,7 @@ class ValueChecker(object):
     # The name of the checker, for logging purposes.
     name: str = 'basic value checker'
 
-    def check_value(self, unused_value: Any) -> bool:
+    def check_value(self, unused_value: Any, unused_locale: str) -> bool:
         """Whether this specific value passes the check or not."""
 
         raise NotImplementedError(
@@ -94,13 +107,16 @@ class _AllStringFieldsChecker(Checker, ValueChecker):  # pylint: disable=abstrac
     """Abstract class to inherit when all string fields should be checked by the check_value method.
     """
 
-    def _check_value_augmented(self, field_value: Any, field: str) -> bool:
+    def _check_value_augmented(self, field_value: Any, field: str, locale: str) -> bool:
         try:
-            return self.check_value(field_value)
+            return self.check_value(field_value, locale)
+        except FixableValueError as err:
+            raise err.with_message(f'{err.short_message} in the field "{field}"')
         except ValueError as err:
+            # pylint: disable=raise-missing-from
             raise ValueError(f'{err!s} in the field "{field}"')
 
-    def check(self, proto: message.Message) -> bool:
+    def check(self, proto: message.Message, locale: str) -> bool:
         errors: List[ValueError] = []
         res = True
         for field in proto.DESCRIPTOR.fields_by_name:
@@ -108,10 +124,12 @@ class _AllStringFieldsChecker(Checker, ValueChecker):  # pylint: disable=abstrac
                 if not isinstance(value, str):
                     continue
                 try:
-                    res &= self._check_value_augmented(value, field_with_index)
+                    res &= self._check_value_augmented(value, field_with_index, locale=locale)
                 except ValueError as err:
                     errors.append(err)
         if errors:
+            if len(errors) == 1:
+                raise errors[0]
             raise ValueError('\n'.join(str(err) for err in errors))
         return res
 
@@ -121,11 +139,11 @@ class QuotesChecker(_AllStringFieldsChecker):
 
     name = 'quotes checker'
 
-    def check_value(self, field_value: str) -> bool:
+    def check_value(self, field_value: str, locale: str) -> bool:
         """Whether this specific value passes the check or not."""
 
         # TODO(cyrille): Check both errors and report one error only.
-        if '’' in field_value:
+        if '’' in field_value and locale.startswith('fr'):
             raise FixableValueError(
                 'Curly quotes ’ are not allowed',
                 field_value.replace('’', '**’**'),
@@ -138,12 +156,13 @@ class QuotesChecker(_AllStringFieldsChecker):
         return True
 
 
+# TODO(émilie): Run the locale-specific space-checker on natural language strings only.
 class SpacesChecker(_AllStringFieldsChecker):
     """Checking that imported string fields don't have strippable spaces."""
 
     name = 'spaces checker'
 
-    def check_value(self, field_value: str) -> bool:
+    def check_value(self, field_value: str, locale: str) -> bool:
         """Whether this specific value passes the check or not."""
 
         # TODO(cyrille): Check both errors and report one error only.
@@ -152,20 +171,34 @@ class SpacesChecker(_AllStringFieldsChecker):
                 'Extra spaces at the beginning or end',
                 _STRIPABLE_SPACE_REGEX.sub(r'**\1**', field_value),
                 _STRIPABLE_SPACE_REGEX.sub('', field_value))
-        # TODO(cyrille): Do this only for fr_FR locales.
-        if _SPACE_TO_MAKE_UNBREAKABLE_REGEX.search(field_value):
+        if '&nbsp;' in field_value:
+            raise FixableValueError(
+                '&nbsp; are not allowed',
+                field_value.replace('&nbsp;', '**&nbsp;**'),
+                field_value.replace('&nbsp;', ' '))
+        if '\u2028' in field_value:
+            raise FixableValueError(
+                'Unicode complex line breaks are not allowed',
+                field_value.replace('\u2028', '**\u2028**'),
+                field_value.replace('\u2028', '\n'))
+        if locale.startswith('fr') and _FR_SPACE_TO_MAKE_UNBREAKABLE_REGEX.search(field_value):
             raise FixableValueError(
                 'Breakable space before a French double punctuation mark.\n'
                 'Use "alt + shift + space" in Airtable to make a non-breakable space.',
-                _SPACE_TO_MAKE_UNBREAKABLE_REGEX.sub(r'**\1**', field_value),
-                _SPACE_TO_MAKE_UNBREAKABLE_REGEX.sub('\xa0', field_value))
+                _FR_SPACE_TO_MAKE_UNBREAKABLE_REGEX.sub(r'**\1**', field_value),
+                _FR_SPACE_TO_MAKE_UNBREAKABLE_REGEX.sub('\xa0', field_value))
+        if locale.startswith('en') and _EN_EXTRA_SPACE_REGEX.search(field_value):
+            raise FixableValueError(
+                'Space before an English double punctuation mark.',
+                _EN_EXTRA_SPACE_REGEX.sub(r'**\1**', field_value),
+                _EN_EXTRA_SPACE_REGEX.sub('', field_value))
         return True
 
 
 def _create_mock_scoring_project() -> scoring.ScoringProject:
     """Create a mock scoring_project."""
 
-    _db = mongomock.MongoClient().test
+    _db = mongo.NoPiiMongoDatabase(mongomock.MongoClient().test)
     _db.job_group_info.insert_one({
         '_id': 'A1234',
         'requirements': {
@@ -189,7 +222,7 @@ class MissingTemplateVarsChecker(ValueChecker):
     def __init__(self) -> None:
         self._scoring_project = _create_mock_scoring_project()
 
-    def check_value(self, field_value: str) -> bool:
+    def check_value(self, field_value: str, unused_locale: str) -> bool:
         """Whether this specific value passes the check or not.
 
         Raises:
@@ -212,7 +245,7 @@ class TemplateVarsChecker(Checker):
         self._filters_field = filters_field
 
     # TODO(cyrille): Check for %aRequiredDiploma too.
-    def check(self, proto: message.Message) -> bool:
+    def check(self, proto: message.Message, unused_locale: str) -> bool:
         """Whether the output dict passes the check or not."""
 
         for value, path, string_format in collect_formatted_strings(proto):
@@ -230,15 +263,29 @@ class TemplateVarsChecker(Checker):
         return True
 
 
-class TranslationChecker(ValueChecker):
+class TranslationChecker(Checker):
     """Checking that translatable sentences do have translations."""
 
     name = 'translation checker'
 
-    def __init__(self) -> None:
+    def __init__(self, namespace: str, id_field: Optional[str]) -> None:
         self._has_warned = False
+        self._namespace = namespace
+        self._id_field = id_field
 
-    def check_value(self, field_value: str) -> bool:
+    def check(self, proto: message.Message, unused_locale: str) -> bool:
+        """Whether the output dict passes the check or not."""
+
+        proto_id = getattr(proto, self._id_field) if self._id_field else None
+        for value, path, string_format in collect_formatted_strings(proto):
+            if string_format != options_pb2.NATURAL_LANGUAGE:
+                continue
+            if proto_id:
+                value = translation.create_translation_key(self._namespace, proto_id, path)
+            self._check_value(value)
+        return True
+
+    def _check_value(self, field_value: str) -> bool:
         """Whether this specific value passes the check or not.
 
         Raises:
@@ -277,7 +324,7 @@ class UrlChecker(ValueChecker):
 
     name = 'URL format checker'
 
-    def check_value(self, field_value: str) -> bool:
+    def check_value(self, field_value: str, unused_locale: str) -> bool:
         """Whether this specific value passes the check or not."""
 
         if not _LINK_REGEXP.match(field_value):
@@ -290,7 +337,7 @@ class ScorerChecker(ValueChecker):
 
     name = 'scorer checker'
 
-    def check_value(self, field_value: str) -> bool:
+    def check_value(self, field_value: str, unused_locale: str) -> bool:
         """Whether this specific value passes the check or not."""
 
         if not scoring.get_scoring_model(field_value):
@@ -304,7 +351,7 @@ class PartialSentenceChecker(ValueChecker):
 
     name = 'partial sentence checker'
 
-    def check_value(self, field_value: str) -> bool:
+    def check_value(self, field_value: str, unused_locale: str) -> bool:
         """Whether the field passes the check or not."""
 
         # TODO(cyrille): Check both errors and report one error only.
@@ -326,7 +373,7 @@ class ListOptionChecker(ValueChecker):
 
     name = 'list option checker'
 
-    def check_value(self, field_value: str) -> bool:
+    def check_value(self, field_value: str, unused_locale: str) -> bool:
         """Whether the field passes the check or not."""
 
         # TODO(cyrille): Check both errors and report one error only.
@@ -343,12 +390,60 @@ class ListOptionChecker(ValueChecker):
         return True
 
 
+class MarkupChecker(ValueChecker):
+    """Checks that the required value is using proper markup language."""
+
+    name = 'markup language checker'
+
+    def check_value(self, field_value: str, unused_locale: str) -> bool:
+        """Whether the field passes the check or not."""
+
+        if len(field_value.split('**')) % 2 == 0:
+            raise ValueError(f'The text has an odd number of **: {field_value}')
+        for paragraph in field_value.split('\n\n'):
+            if '\n' in paragraph:
+                raise ValueError(
+                    'The text is using a single line break in Markdown. Either use a double line '
+                    f'break to create a paragraph, or remove the line break: {field_value}')
+        return True
+
+
+class SingleLinerChecker(ValueChecker):
+    """Checks that the required value is on a single line."""
+
+    name = 'single liner checker'
+
+    def check_value(self, field_value: str, unused_locale: str) -> bool:
+        """Whether the field passes the check or not."""
+
+        if '\n' in field_value:
+            raise ValueError(f'This text shoud be on a single line: {field_value}')
+        return True
+
+
+class MailingCampaignChecker(ValueChecker):
+    """Checks that the required value is a valid mailing campaign ID."""
+
+    name = 'mailing campaign checker'
+
+    def check_value(self, field_value: str, locale: str) -> bool:
+        if field_value not in mailjet_templates.MAP:
+            raise ValueError(f'"{field_value}" is not a valid mailing campaign ID.')
+        # TODO(cyrille): check for fallback languages once they've been implemented.
+        if locale.startswith('fr') or locale in mailjet_templates.MAP[
+                typing.cast(mailjet_templates.Id, field_value)].get('i18n', {}):
+            return True
+        raise ValueError(
+            f'Mailing campaign "{field_value}" has not been translated to {locale}')
+
+
 # TODO(cyrille): Test this function for nested protos, or drop the TYPE_MESSAGE branch entirely.
 def collect_formatted_strings(
         proto: message.Message,
-        field_modifier: Callable[[str, str, 'options_pb2.StringFormat'], str] = lambda s, p, f: s,
+        field_modifier: Callable[[str, str, 'options_pb2.StringFormat.V'], str] =
+        lambda s, p, f: s,
         path: Tuple[str, ...] = ()) \
-        -> Iterator[Tuple[str, str, 'options_pb2.StringFormat']]:
+        -> Iterator[Tuple[str, str, 'options_pb2.StringFormat.V']]:
     """Iterate recursively through all fields of a proto message to find fields with
     specific string formats.
 

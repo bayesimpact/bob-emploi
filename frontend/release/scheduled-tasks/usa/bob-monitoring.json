@@ -1,0 +1,8 @@
+{
+  "Targets": [
+    {
+      "Arn": "arn:aws:lambda:us-east-1:951168128976:function:monitoring",
+      "Id": "Idee9daa87-6fcb-4440-b1a0-3ae2dc4d19bf"
+    }
+  ]
+}

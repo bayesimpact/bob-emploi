@@ -11,7 +11,7 @@ output=colorized
 # https://github.com/PyCQA/pylint/issues/1276 is solved.
 disable=I,R,no-member
 reports=no
-enable=useless-suppression
+enable=useless-suppression,useless-object-inheritance,no-else-return,no-else-raise
 
 [FORMAT]
 # Ignore any lines containing an URL longer than ~60 chars long.
@@ -21,7 +21,7 @@ ignore-long-lines=https?://\S{50}
 notes=FIXME,XXX
 string-quote=single-avoid-escape
 allowed-direct-imports=typing.{
-    AbstractSet,Any,Callable,Dict,Generator,ItemsView,Iterable,Iterator,KeysView,List,Literal,
+    AbstractSet,Any,Callable,Dict,Final,Generator,ItemsView,Iterable,Iterator,KeysView,List,Literal,
     Mapping,MutableMapping,NoReturn,Optional,Pattern,Sequence,Set,TextIO,Tuple,Type,TypedDict,Union},
     typing_extensions.Literal
 

@@ -4,13 +4,14 @@ import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
 import {getDateString} from 'store/french'
-import {prepareT} from 'store/i18n'
+import {LocalizableString, prepareT, prepareT as prepareTNoExtract} from 'store/i18n'
 
-import {Trans} from 'components/i18n'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import {RadiumExternalLink} from 'components/radium'
-import {GrowingNumber} from 'components/theme'
 import jobteaserImage from 'images/jobteaser-picto.png'
 import meetupImage from 'images/meetup-picto.png'
+import nationalCareerFairsImage from 'images/national-career-fairs-logo.png'
 import poleEmploiEventsImage from 'images/pole-emploi-evenements-picto.png'
 import poleEmploiImage from 'images/pee-picto.png'
 import recrutImage from 'images/recrut-picto.png'
@@ -19,33 +20,64 @@ import Picto from 'images/advices/picto-events.svg'
 import {MethodSuggestionList, CardProps, ToolCard, useAdviceData} from './base'
 
 
-const EVENT_TOOLS = [
+interface Tool {
+  countryId: string
+  href: string
+  imageSrc: string
+  title: LocalizableString
+}
+
+
+const EVENT_TOOLS: readonly Tool[] = ([
   {
+    countryId: 'fr',
     href: 'http://www.emploi-store.fr/portail/services/poleEmploiEvenements',
     imageSrc: poleEmploiEventsImage,
     title: prepareT('App Pôle emploi Évènements'),
   },
   {
+    countryId: 'fr',
     href: 'https://www.meetup.com/fr-FR/',
     imageSrc: meetupImage,
-    title: 'Meetup',
+    title: prepareTNoExtract('Meetup'),
   },
   {
+    countryId: 'fr',
     href: 'https://www.jobteaser.com/fr/events',
     imageSrc: jobteaserImage,
-    title: 'Jobteaser',
+    title: prepareTNoExtract('Jobteaser'),
   },
   {
+    countryId: 'fr',
     href: 'http://www.recrut.com/les_salons',
     imageSrc: recrutImage,
-    title: 'Recrut',
+    title: prepareTNoExtract('Recrut'),
   },
   {
+    countryId: 'fr',
     href: 'http://www.pole-emploi.fr/informations/en-region-@/region/?/evenements.html',
     imageSrc: poleEmploiImage,
     title: prepareT('Évènements régionaux'),
   },
-] as const
+  {
+    countryId: 'us',
+    href: 'https://www.nationalcareerfairs.com/',
+    imageSrc: nationalCareerFairsImage,
+    title: prepareTNoExtract('National Career Fairs'),
+  },
+  {
+    countryId: 'us',
+    href: 'https://www.meetup.com/en-US/',
+    imageSrc: meetupImage,
+    title: prepareTNoExtract('Meetup'),
+  },
+  {
+    countryId: 'uk',
+    href: 'https://www.meetup.com/en/',
+    imageSrc: meetupImage,
+    title: prepareTNoExtract('Meetup'),
+  },
+] as const).filter(({countryId}) => countryId === config.countryId)
 
 
 interface EventsListProps {
@@ -75,7 +107,7 @@ const EventsList = React.memo(EventsListBase)
 
 const EventsMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
   const {handleExplore, t, t: translate} = props
-  const {events} = useAdviceData<bayes.bob.Events>(props)
+  const {data: {events}, loading} = useAdviceData<bayes.bob.Events>(props)
   const hasEvents = !!(events && events.length)
   const eventBoxStyle = hasEvents && {marginTop: 20} || undefined
 
@@ -83,12 +115,15 @@ const EventsMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement
     <GrowingNumber number={EVENT_TOOLS.length} isSteady={true} />
     {' '}outils pour trouver des évènements
   </Trans>
+  if (loading) {
+    return loading
+  }
   return <div>
     {(hasEvents && events) ? <EventsList {...{events, handleExplore, t}} /> : null}
     <MethodSuggestionList title={methodTitle} style={eventBoxStyle}>
       {EVENT_TOOLS.map(({title, ...props}, index: number): ReactStylableElement =>
         <ToolCard {...props} key={index} onClick={handleExplore('tool')}>
-          {translate(title)}
+          {translate(...title)}
         </ToolCard>,
       )}
     </MethodSuggestionList>

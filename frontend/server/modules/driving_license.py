@@ -1,5 +1,6 @@
 """Module to advise the user to get their driving license."""
 
+from bob_emploi.frontend.api import boolean_pb2
 from bob_emploi.frontend.api import driving_license_pb2
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
@@ -29,7 +30,7 @@ def _score_and_explain_after_filters(project: scoring_base.ScoringProject) \
     once some prerequisite filters have been met.
     """
 
-    if project.user_profile.has_car_driving_license != project_pb2.FALSE:
+    if project.user_profile.has_car_driving_license != boolean_pb2.FALSE:
         return scoring_base.NULL_EXPLAINED_SCORE
     reasons = []
     license_required = next((
@@ -37,11 +38,11 @@ def _score_and_explain_after_filters(project: scoring_base.ScoringProject) \
         for license in project.job_group_info().requirements.driving_licenses
         if license.driving_license == job_pb2.CAR), 0)
     if license_required:
-        reasons.append(project.translate_string(
+        reasons.append(project.translate_static_string(
             'le permis est important dans votre métier'))
     score_modifier = 0
     if _license_helps_mobility(project.details):
-        reasons.append(project.translate_string(
+        reasons.append(project.translate_static_string(
             'le permis augmenterait votre mobilité'))
         score_modifier = 1
     if not reasons:

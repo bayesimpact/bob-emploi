@@ -19,10 +19,8 @@ const noOpTranslate = (text: string): string => text
 
 
 describe('Advice module', (): void => {
-  Object.keys(ADVICE_MODULES).forEach((adviceId): void => {
+  for (const [adviceId, advice] of Object.entries(ADVICE_MODULES)) {
     describe(`"${adviceId}"`, (): void => {
-      const advice = ADVICE_MODULES[adviceId]
-
       const {ExpandedAdviceCardContent} = advice
       const mockStore = configureStore([])
 
@@ -45,5 +43,5 @@ describe('Advice module', (): void => {
         </Provider>)
       })
     })
-  })
+  }
 })

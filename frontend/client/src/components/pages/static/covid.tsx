@@ -4,13 +4,18 @@ import React, {useCallback, useEffect, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {Link} from 'react-router-dom'
 
-import {Trans} from 'components/i18n'
+import Button from 'components/button'
+import ExternalLink from 'components/external_link'
+import Trans from 'components/i18n_trans'
+import Markdown from 'components/markdown'
 import {useRadium} from 'components/radium'
 import {StaticPage, TitleSection} from 'components/static'
-import {Button, ExternalLink, SmoothTransitions} from 'components/theme'
+import {SmoothTransitions} from 'components/theme'
 import {Routes} from 'components/url'
 import covidImage from 'images/covid.svg'
 
+
+const countryContext = {context: config.countryId}
 
 interface EmailExampleProps {
   children: string
@@ -25,7 +30,7 @@ const emailCardStyle: React.CSSProperties = {
   padding: '45px 75px',
 }
 const buttonStyle: React.CSSProperties = {
-  backgroundColor: colors.MINI_FOOTER_GREY,
+  backgroundColor: colors.FOOTER_GREY,
   boxShadow: 'none',
   color: colors.DARK_TWO,
   fontSize: 11,
@@ -44,7 +49,7 @@ const EmailExampleBase = (props: EmailExampleProps): React.ReactElement => {
       return (): void => void 0
     }
     const timeout = window.setTimeout((): void => setHasJustBeenCopied(false), 2000)
-    return (): void => clearTimeout(timeout)
+    return (): void => window.clearTimeout(timeout)
   }, [hasJustBeenCopied])
   const copiedStyle: React.CSSProperties = {
     color: colors.BOB_BLUE,
@@ -115,7 +120,7 @@ const quoteStyle: React.CSSProperties = {
   position: 'relative',
 }
 const quoteBorderStyle: React.CSSProperties = {
-  backgroundColor: colors.MINI_FOOTER_GREY,
+  backgroundColor: colors.FOOTER_GREY,
   height: '100%',
   left: -30,
   position: 'absolute',
@@ -171,8 +176,8 @@ const CovidPage = (): React.ReactElement => {
     page="covid-19" style={pageStyle} isChatButtonShown={true} isContentScrollable={false}
     isNavBarTransparent={true}>
     <TitleSection pageContent={{title: <Trans style={titleStyle}>
-      Poursuivre sa recherche<br />
-      pendant le confinement
+      Chercher un emploi<br />
+      pendant la crise du coronavirus
     </Trans>}} />
     <div style={contentStyle}>
       <img src={covidImage} style={coverImageStyle} alt="" />
@@ -180,7 +185,10 @@ const CovidPage = (): React.ReactElement => {
 
       <div style={tocStyle}>
         <TocLink href="#jobsearch">
-          {t('Comment avancer dans sa recherche pendant le confinement\u00A0?')}
+          {t('Comment avancer dans sa recherche tout en adoptant les gestes barrières\u00A0?')}
+        </TocLink>
+        <TocLink href="#jobgroup">
+          {t('Comment identifier les secteurs qui recrutent\u00A0?')}
         </TocLink>
         <TocLink href="#hiring">
           {t('Les recrutements ont-ils changé\u00A0?')}
@@ -194,26 +202,31 @@ const CovidPage = (): React.ReactElement => {
       </div>
 
       {hr}
-      <Trans style={{fontStyle: 'italic', margin: '40px auto', maxWidth: 650}}>
-        Alors que les déplacements et rencontres physiques entre personnes sont drastiquement
-        réduites, il nous semble d'autant plus important que les nouvelles technologies aident à
-        prendre le relai de la cohésion sociale et de continuer à faire avancer ceux qui en ont
-        besoin sur leur chemin vers l'emploi. {{productName: config.productName}} reste donc
-        totalement opérationnel durant les mesures de confinement.
-      </Trans>
-      {hr}
 
       <Trans style={headerStyle} id="jobsearch">
-        Comment avancer dans sa recherche pendant le confinement&nbsp;?
+        Comment avancer dans sa recherche tout en adoptant les gestes barrières&nbsp;?
       </Trans>
       <Trans style={pStyle}>
-        Si vous pouvez lire cette page, vous avez probablement accès à internet et pouvez faire bon
-        nombre de démarches via internet. Se renseigner sur un métier, préparer une candidature,
-        envoyer une lettre de motivation… tout cela peut se réaliser depuis chez soi. Même les
-        entretiens d'embauche peuvent se faire en ligne de nos jours&nbsp;! Si cela est nouveau pour
-        vous, {{productName: config.productName}} peut vous accompagner dans les différentes étapes
-        de votre recherche d'emploi tout en respectant les consignes de confinement du gouvernement.
+      Chercher via quelqu'un que vous connaissez est une méthode très efficace pour trouver un
+      emploi dans la plupart des métiers. On le sait grâce aux statistiques sur comment les gens
+      retrouvent un emploi. Mais pendant quelques temps encore, il peut arriver que vous rencontriez
+      des difficultés pour organiser un rendez-vous avec un contact, chez Pôle emploi, ou même pour
+      être reçu.e en entretien. On va tous devoir s'adapter.
       </Trans>
+      <div style={pStyle}>
+        <Markdown
+          // i18next-extract-mark-context-next-line ["uk", "us"]
+          isSingleLine={true} content={t(
+            'Si vous pouvez lire cette page, vous avez probablement accès à internet et ' +
+            'pouvez faire bon nombre de démarches via internet. Se renseigner sur un métier, ' +
+            'préparer une candidature, envoyer une lettre de motivation… tout cela peut se ' +
+            "réaliser depuis chez soi. Même les entretiens d'embauche peuvent se faire en " +
+            'ligne de nos jours\u00A0! Si cela est nouveau pour vous, ' +
+            '{{productName}} peut vous accompagner dans les différentes étapes ' +
+            "de votre recherche d'emploi en ligne.",
+            {productName: config.productName, ...countryContext},
+          )} />
+      </div>
       <div style={{margin: '30px auto', textAlign: 'center'}}>
         {/* TODO(sil): DRY this, here and in the landing page. */}
         <Link to={Routes.INTRO_PAGE}><Button type="validation">
@@ -222,8 +235,8 @@ const CovidPage = (): React.ReactElement => {
       </div>
       <Trans style={pStyle}>
         Dans un monde qui va très vite et où l'on vous pousse souvent à faire toujours plus,
-        toujours plus de candidatures, toujours plus vite, le confinement peut être l'occasion de
-        ralentir et de faire le point.
+        toujours plus de candidatures, toujours plus vite, cette période peut être l'occasion de
+        ralentir et de faire le point (si vous pouvez vous le permettre).
       </Trans>
       <Trans style={quoteStyle}>
         <div style={quoteBorderStyle} />
@@ -233,8 +246,9 @@ const CovidPage = (): React.ReactElement => {
       </Trans>
       <Trans style={pStyle}>
         Prendre le temps de mieux préparer votre projet professionnel et vos méthodes de recherche
-        est une très bonne utilisation de votre temps et pour cela vous n'avez pas besoin de sortir
-        de chez vous.
+        est une très bonne utilisation de votre temps. En une semaine, si vous arrivez à faire une
+        candidature soignée à un employeur sur lequel vous vous êtes renseigné, c'est plus efficace
+        que de poster 100 candidatures identiques sur les plateformes.
       </Trans>
       <div style={{margin: '30px auto', textAlign: 'center'}}>
         <Link to={Routes.INTRO_PAGE}><Button type="validation">
@@ -245,34 +259,113 @@ const CovidPage = (): React.ReactElement => {
       <Trans style={headerStyle}>
         Profitez-en pour faire une formation en ligne ou à distance
       </Trans>
-      <Trans style={pStyle}>
-        Ce temps où l'économie fonctionne au ralenti peut être l'occasion de suivre une formation ou
-        un cours en ligne. Pourquoi ne pas explorer ce domaine qui vous a toujours intrigué&nbsp;?
-        Vous pouvez par exemple suivre des formations d'informatique
-        sur <ExternalLink href="https://openclassrooms.com/">
-          OpenClassrooms
-        </ExternalLink>, ou suivre des cours sur <ExternalLink href="https://www.coursera.org/">
-          Coursera
-        </ExternalLink>, <ExternalLink href="https://www.fun-mooc.fr/">
-          France Université Numérique
-        </ExternalLink>, ou <ExternalLink href={t('https://fr.khanacademy.org/')}>
-          Khan Academy
-        </ExternalLink>. Certaines formations disponibles sur
-        votre <ExternalLink href="https://www.moncompteformation.gouv.fr/">
-          Compte Formation
-        </ExternalLink> peuvent également se faire en ligne.
+      <Trans style={quoteStyle}>
+        <div style={quoteBorderStyle} />
+        "En tant que cheffe d'entreprise, mon candidat idéal post-confinement, c'est quelqu'un
+        qui a profité de cette période pour se former à de nouvelles compétences."
       </Trans>
+      <div style={pStyle}>
+        <Markdown
+          // i18next-extract-mark-context-next-line ["uk", "us"]
+          isSingleLine={true} content={t(
+            "Ce temps où l'économie fonctionne au ralenti peut être l'occasion de suivre une " +
+            'formation ou un cours en ligne. Pourquoi ne pas explorer ce domaine qui vous a ' +
+            'toujours intrigué\u00A0? Vous pouvez par exemple suivre des formations ' +
+            "d'informatique sur [OpenClassrooms](https://openclassrooms.com), ou suivre des " +
+            'cours sur [Coursera](https://www.coursera.org), ' +
+            '[France Université Numérique](https://www.fun-mooc.fr), ou ' +
+            '[Khan Academy](https://fr.khanacademy.org). Certaines formations disponibles sur ' +
+            'votre [Compte Formation](https://www.moncompteformation.gouv.fr) peuvent égalemnent ' +
+            'se faire en ligne.',
+            countryContext,
+          )} />
+      </div>
+      <Trans style={pStyle}>
+        Si vous connaissez quelqu'un qui fait le métier que vous aimeriez faire, pourquoi ne pas lui
+        demander de vous recommander une formation qui pourrait augmenter vos chances&nbsp;?
+      </Trans>
+
+      <Trans style={headerStyle} id="jobgroup">
+        Comment identifier les secteurs qui recrutent&nbsp;?
+      </Trans>
+      <Trans style={pStyle}>
+        Comme tout est encore très récent, les données dont on dispose sur les secteurs qui
+        recrutent ou non sont encore très partielles. Cependant, voici quelques idées qui pourront
+        vous être utiles&nbsp;:
+      </Trans>
+
+      <div style={pStyle}>
+        <ul>
+          <Trans parent="li">
+            <strong>Suivre l'argent</strong><br />
+            Les secteurs qui ont dû accélérer leur activité
+            sont ceux qui auront le plus besoin de recruter. En particulier&nbsp;: l'agriculture,
+            l'action sociale, la santé. On parle aussi de l'immobilier et l'armée, avec une petite
+            reprise également dans la construction, l'éducation et la vente. (<ExternalLink
+              // i18next-extract-mark-context-next-line ["uk", "us"]
+              href={t(
+                'https://dares.travail-emploi.gouv.fr/IMG/pdf/dares_resultats_detailles_acemo-covid-17-04-2020.pdf',
+                countryContext,
+              )}>
+              source
+            </ExternalLink>)
+          </Trans>
+          <Trans parent="li">
+            <strong>Suivre les comportements</strong><br />
+            Achats en ligne, livraison, numérique... beaucoup de gens s'y sont mis pendant le
+            confinement. Il s'agit de nouvelles habitudes qui vont s'ancrer dans le quotidien. On
+            peut prévoir une forte activité, et donc des recrutements, dans les domaines du
+            e-commerce, de la logistique, ainsi que dans le numérique en général.
+          </Trans>
+          <Trans parent="li">
+            <strong>Suivre les tendances</strong><br />
+            En plus des tendances comportementales, des économistes prévoient des tendances de ce
+            sur quoi on va investir suite à la crise. Ces tendances peuvent vous aider à cibler vos
+            recherches. En parler dans une lettre de motivation et en entretien serait aussi une
+            bonne méthode pour démontrer que vous avez compris les enjeux de l'employeur&nbsp;:
+            <ul>
+              <Trans parent="li">
+                Digitalisation de services (&amp; services publics)
+              </Trans>
+              <Trans parent="li">
+                Aide aux communautés locales à accéder au numérique
+              </Trans>
+              <Trans parent="li">
+                Production alimentaire locale avec chaînes de production plus courtes
+              </Trans>
+              <Trans parent="li">
+                Investissement dans des projets avec des communautés de migrants qui seront
+                davantage marginalisés après la crise
+              </Trans>
+              <Trans parent="li">
+                Implémentation des mesures vertes aux niveaux national et local
+              </Trans>
+              <Trans parent="li">
+                L'économie sociale et solidaire, et les initiatives des entreprises
+              </Trans>
+              <Trans parent="li">
+                Revoir la qualité de vie au travail pour les travailleurs essentiels
+              </Trans>
+              <Trans parent="li">
+                Changements à l'urbanisme (distanciation physique durable&nbsp;?)
+              </Trans>
+              <Trans parent="li">
+                Repenser les évènements culturels et sportifs
+              </Trans>
+            </ul>
+          </Trans>
+        </ul>
+      </div>
 
       <Trans style={headerStyle} id="hiring">
         Les recrutements ont-ils changé&nbsp;?
       </Trans>
       <Trans style={pStyle}>
-        Il est encore trop tôt pour évaluer comment le confinement généralisé va affecter les
-        recrutements en France et dans le monde. Les conseils de {{productName: config.productName}}
-        {' '}utilisent notamment les statistiques publiées mensuellement par Pôle emploi et vont
-        donc s'ajuster au fur et à mesure que le marché de l'emploi change. Néanmoins nous
-        continuons nos recherches pour comprendre ces changements et ce qu'ils signifient dans votre
-        cas.
+        Il est encore trop tôt pour évaluer comment cette crise va affecter les recrutements en
+        France et dans le monde. Les conseils de {{productName: config.productName}} utilisent
+        notamment les statistiques publiées mensuellement par Pôle emploi et vont donc s'ajuster au
+        fur et à mesure que le marché de l'emploi change. Néanmoins nous continuons nos recherches
+        pour comprendre ces changements et ce qu'ils signifient dans votre cas.
       </Trans>
 
       <Trans style={headerStyle} id="examples">
@@ -281,34 +374,35 @@ const CovidPage = (): React.ReactElement => {
       <Trans style={pStyle}>
         Dans toutes vos communications "emploi"&nbsp;: candidature spontanée, lettre de motivation,
         email de relance, il est toujours important de personnaliser chaque message pour avoir plus
-        de chance de toucher son destinataire. En ces temps extraordinaires, il est tout aussi
+        de chance de toucher son destinataire. En ces temps incertains, il est tout aussi
         important d'adapter vos formulations en prenant en compte à la fois la situation générale
-        mais également la situation de votre interlocuteur. N'hésitez pas à vous tenir informer de
+        mais également la situation de votre interlocuteur. N'hésitez pas à vous tenir informé·e de
         la situation de l'entreprise dans laquelle vous candidatez en surveillant ses réseaux
-        sociaux et ses éventuelles communications concernant la poursuite de ses activités durant la
-        période de confinement.<br />
+        sociaux.<br />
         <br />
         Voici quelques exemples&nbsp;:
       </Trans>
       <EmailExample
         // i18next-extract-mark-context-next-line title
-        title={t('Candidature spontanée', {context: 'title'})}
+        title={t('Candidature spontanée (n\'oubliez pas de remplacer "votre entreprise" par le ' +
+          'nom de l\'entreprise)', {context: 'title'})}
       >{t(
-          "Bien que la France soit à l'arrêt, votre entreprise reste active et sa mission est " +
-          "toujours aussi importante. Penser à l'avenir de vos équipes est nécessaire, c'est " +
-          'pourquoi je vous contacte pour un poste de (...)',
+          'La mission de votre entreprise est particulièrement importante en ce temps de sortie ' +
+          'de crise. Penser à l\'avenir de vos équipes est nécessaire, c\'est pourquoi je vous ' +
+          'contacte pour un poste de (...)',
         )}</EmailExample>
       <EmailExample title={t('Email de relance')}>{t(
         'Quand je vous ai envoyé mon CV et ma lettre de motivation, il y a 2 semaines, ' +
-        "l'épidémie de Coronavirus était encore loin de nos préoccupations immédiates. " +
-        "Aujourd'hui c'est bien différent et pourtant je crois que votre besoin d'un·e (nom du " +
-        "poste) est toujours présent, c'est pourquoi je me permets de vous relancer afin de " +
-        "connaître l'actualité de cette offre.",
+        'l\'épidémie de Coronavirus était la préoccupation immédiate de tout le monde. ' +
+        'Aujourd\'hui nous sortons de cette situation et je crois que votre besoin d\'un·e ' +
+        '(nom du poste) est toujours présent, c\'est pourquoi je me permets de vous relancer ' +
+        'afin de connaître l\'actualité de cette offre.',
+        {context: 'gender'},
       )}</EmailExample>
       <EmailExample title={t('Proposition de vidéo conférence')}>{t(
-        "Bien qu'il soit impossible de se rencontrer en personne, je me tiens à votre " +
+        'Si vous préférez attendre avant de se rencontrer en personne, je me tiens à votre ' +
         'disposition pour un entretien en vidéo conférence, par exemple via le site ' +
-        'http://itshello.co/ qui permet de faire un entretien directement depuis votre ' +
+        'https://zoom.us/ qui permet de faire un entretien directement depuis votre ' +
         'navigateur. Si nous pouvons trouver un créneau pour se rencontrer, je vous enverrai un ' +
         'lien de connexion pour notre rendez-vous.',
       )}</EmailExample>
@@ -319,7 +413,9 @@ const CovidPage = (): React.ReactElement => {
       <Trans style={pStyle}>
         Si vous touchez l'allocation chômage de Pôle emploi, ces derniers ont annulé toutes les
         convocations et vous ne serez donc pas radié·e pour
-        non-présentation. <ExternalLink href="https://www.pole-emploi.fr/actualites/information-covid-19.html">
+        non-présentation. <ExternalLink href={t(
+          'https://www.pole-emploi.fr/actualites/a-laffiche/pole-emploi-face-a-la-crise-sani.html',
+          countryContext)}>
           Les agent·e·s de Pôle emploi se mobilisent
         </ExternalLink> et sont disponibles par téléphone au 3949 ou sur leur site internet.
       </Trans>

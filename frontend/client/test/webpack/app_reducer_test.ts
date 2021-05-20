@@ -45,6 +45,7 @@ describe('app reducer', (): void => {
           'unrelated-advice': [{actionId: 'no-change'}],
         },
       },
+      upskillingSections: {},
     }
     const newState = app(oldState, action)
     expect(newState.adviceTips).to.deep.equal({
@@ -84,6 +85,7 @@ describe('app reducer', (): void => {
         after: {},
         before: {},
       },
+      upskillingSections: {},
     } as const
     const newState = app(oldState, action)
     expect(newState.quickDiagnostic).to.deep.equal({
@@ -129,6 +131,7 @@ describe('app reducer', (): void => {
           },
         },
       },
+      upskillingSections: {},
     } as const
     const newState = app(oldState, action)
     expect(newState.quickDiagnostic).to.deep.equal({
@@ -156,6 +159,7 @@ describe('app reducer', (): void => {
           },
         },
       },
+      upskillingSections: {},
     } as const
     const action = {
       comment: {
@@ -181,6 +185,7 @@ describe('app reducer', (): void => {
   it('should mark comment as shown', (): void => {
     const oldState = {
       adviceData: {},
+      upskillingSections: {},
     }
     const action = {
       commentKey: 'coaching',

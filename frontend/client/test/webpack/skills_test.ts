@@ -1,5 +1,5 @@
 import {expect} from 'chai'
-import {AssetProp, assetProps} from 'store/skills'
+import {assetProps} from 'store/skills'
 
 // @ts-ignore
 import {SkillAsset} from 'api/skill'
@@ -14,10 +14,9 @@ describe('assetProps', (): void => {
   })
 
   it('gives consistent data for all assets and all users', (): void => {
-    describedAssets.map((asset): AssetProp => assetProps[asset]).
-      forEach(({icon, name}): void => {
-        expect(name).to.be.a('string').that.is.not.empty
-        expect(icon).not.to.be.undefined
-      })
+    for (const {icon, name} of Object.values(assetProps)) {
+      expect(name[0]).to.be.a('string').that.is.not.empty
+      expect(icon).not.to.be.undefined
+    }
   })
 })

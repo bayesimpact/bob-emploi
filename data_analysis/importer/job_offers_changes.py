@@ -32,7 +32,7 @@ _REQUIRED_FIELDS = frozenset([
 ])
 
 
-class _EvolutionCounter(object):
+class _EvolutionCounter:
 
     def __init__(self, last_year: int):
         self._last_year = last_year

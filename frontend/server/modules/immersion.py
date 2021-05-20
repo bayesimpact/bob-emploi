@@ -22,11 +22,12 @@ class _ImmersionMissionLocale(scoring_base.ModelBase):
         score: float = 2
 
         if project.details.network_estimate <= 2:
-            explanations.append(project.translate_string('ça vous aide à développer votre réseau'))
+            explanations.append(project.translate_static_string(
+                'ça vous aide à développer votre réseau'))
             score += .5
 
         if project.details.passionate_level >= project_pb2.PASSIONATING_JOB:
-            explanations.append(project.translate_string('ça montre votre motivation'))
+            explanations.append(project.translate_static_string('ça montre votre motivation'))
             score += .5
 
         return scoring_base.ExplainedScore(score, explanations)

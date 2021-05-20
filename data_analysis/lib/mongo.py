@@ -4,6 +4,7 @@ import argparse
 import collections
 import datetime
 import inspect
+import itertools
 import json
 import logging
 import os
@@ -11,16 +12,21 @@ import re
 import sys
 import time
 import typing
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Set, TextIO, \
-    Tuple, Type
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Mapping, NoReturn, Optional, \
+    Set, TextIO, Tuple, Type, Union
 
 import pymongo
 from pymongo import collection as pymongo_collection
+from pymongo import errors as pymongo_errors
 import requests
 import tqdm
 
 from google.protobuf import json_format
 from google.protobuf import message
+
+from bob_emploi.data_analysis.lib import batch
+
+_TQDM_OUTPUT = sys.stdout
 
 _GET_NOW = datetime.datetime.now
 
@@ -32,7 +38,7 @@ _MONGO_URL = os.getenv('MONGO_URL') or ''
 _SLACK_IMPORT_URL = os.getenv('SLACK_IMPORT_URL')
 
 JsonType = Dict[str, Any]
-_FlagableCallable = Callable[..., List[JsonType]]
+_FlagableCallable = Callable[..., Iterable[JsonType]]
 
 
 _T = typing.TypeVar('_T')
@@ -46,7 +52,7 @@ class InvalidValueError(typing.Generic[_T], ValueError):
         self.invalid_value = value
 
 
-class Importer(object):
+class Importer:
     """A helper to import data in a MongoDB collection."""
 
     def __init__(self, flags: argparse.Namespace, out: TextIO = sys.stdout) -> None:
@@ -67,16 +73,24 @@ class Importer(object):
 
     def import_in_collection(
             self,
-            items: List[JsonType],
+            items: Iterable[JsonType],
             collection_name: str,
+            count_estimate: Optional[int] = None,
             check_error: Optional[Exception] = None) -> None:
         """Import items in a MongoDB collection."""
 
         real_collection = self._collection_from_flags(collection_name)
         has_old_data = bool(real_collection.estimated_document_count())
 
-        if has_old_data:
-            has_diff_to_review, has_diff = self.print_diff(items, real_collection)
+        items_list: List[JsonType] = []
+        if count_estimate is None:
+            items_list = list(items)
+            total = len(items_list)
+        else:
+            total = count_estimate
+
+        if items_list and has_old_data:
+            has_diff_to_review, has_diff = self.print_diff(items_list, real_collection)
         else:
             has_diff_to_review, has_diff = False, True
 
@@ -86,6 +100,10 @@ class Importer(object):
         if not has_diff:
             return
 
+        if self.flag_values.fail_on_diff:
+            self._print_in_report('There are some diffs to import.')
+            raise ValueError('There are some diffs to import.')
+
         if has_diff_to_review and not self.approve_diff():
             return
 
@@ -94,7 +112,6 @@ class Importer(object):
         collection.drop()
         collection = collection.database.get_collection(collection.name)
         chunk_size = self.flag_values.chunk_size
-        total = len(items)
         try:
             # Splitting in chunk is only done to display progress, as pymongo
             # already cut it in small pieces:
@@ -102,18 +119,21 @@ class Importer(object):
             if not chunk_size or chunk_size >= total:
                 self._print_in_report(f'Inserting all {total:d} objects at once.')
                 try:
-                    collection.insert_many(items)
-                except pymongo.errors.BulkWriteError as error:
+                    all_items = list(items) if count_estimate else items_list
+                    collection.insert_many(all_items)
+                except pymongo_errors.BulkWriteError as error:
                     self._print_in_report(error.details)
                     raise
             else:
                 self._print_in_report(f'Inserting {total:d} objects in chunks of {chunk_size}')
-                for pos in tqdm.tqdm(range(0, total, chunk_size), file=sys.stdout):
-                    try:
-                        collection.insert_many(items[pos:pos + chunk_size])
-                    except pymongo.errors.BulkWriteError as error:
-                        self._print_in_report(error.details)
-                        raise
+                with tqdm.tqdm(None, total=total, file=_TQDM_OUTPUT) as progress_bar:
+                    for chunk in batch.batch_iterator(items, chunk_size):
+                        try:
+                            collection.insert_many(chunk)
+                            progress_bar.update(len(chunk))
+                        except pymongo_errors.BulkWriteError as error:
+                            self._print_in_report(error.details)
+                            raise
         except Exception:
             collection.drop()
             raise
@@ -275,11 +295,15 @@ def _arg_names(func: _FlagableCallable) -> Mapping[str, Any]:
     return inspect.signature(func).parameters
 
 
-def _define_flags_args(func: _FlagableCallable, parser: argparse.ArgumentParser) -> None:
+def _define_flags_args(
+        func: _FlagableCallable, parser: argparse.ArgumentParser,
+        extra_args: Mapping[str, str]) -> None:
     """Define string flags from the name and doc of a function's args."""
 
     args_doc = parse_args_doc(func.__doc__)
     for func_arg, param_obj in _arg_names(func).items():
+        if func_arg in extra_args:
+            continue
         has_default_val = param_obj.default != inspect.Parameter.empty
         parser.add_argument(
             f'--{func_arg}',
@@ -291,19 +315,25 @@ def _define_flags_args(func: _FlagableCallable, parser: argparse.ArgumentParser)
 _AType = typing.TypeVar('_AType')
 
 
-def _exec_from_flags(func: _FlagableCallable, flags: argparse.Namespace) -> List[JsonType]:
+def _exec_from_flags(
+        func: _FlagableCallable, flags: argparse.Namespace,
+        extra_args: Mapping[str, str]) -> Iterable[JsonType]:
     """Execute a function pulling arguments from flags."""
 
-    args: List[str] = []
+    kwargs: Dict[str, str] = {}
     for func_arg in _arg_names(func):
-        args.append(getattr(flags, func_arg))
-    return func(*args)
+        if func_arg in extra_args:
+            kwargs[func_arg] = extra_args[func_arg]
+            continue
+        kwargs[func_arg] = getattr(flags, func_arg)
+    return func(**kwargs)
 
 
 def importer_main(
         func: _FlagableCallable,
         collection_name: str,
         args: Optional[List[str]] = None,
+        count_estimate: Optional[int] = None,
         out: TextIO = sys.stdout) -> None:
     """Main function for an importer to MongoDB.
 
@@ -313,7 +343,7 @@ def importer_main(
       mongo.importer_main(csv2dicts, 'my-collection')
 
     Args:
-        func: the function that computes the list of dict to import in the
+        func: the function that computes the list (or iterator) of dicts to import in the
             MongoDB collection using arguments given by flags. The name and
             documentation of the args of this function are used to define
             flags. However those args can only be strings.
@@ -321,6 +351,10 @@ def importer_main(
             values.
         args: commandline args as a list of strings in the sys.argv format or
             None to use sys.argv (mostly to ease testing).
+        count_estimate: When the importer function outputs an iterator, this is an estimate of the
+            length of the iterator. If it's kept as None (default), the algorithm assumes that the
+            output can be handled as a list, so it allows diff with previous import, but forbids
+            streams of many documents.
 
     Flags:
         to_json: when this flag is used all the other mongo flags are ignored
@@ -332,9 +366,11 @@ def importer_main(
 
     logging.basicConfig(level='INFO')
 
+    extra_args = {'collection_name': collection_name}
+
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    _define_flags_args(func, parser)
+    _define_flags_args(func, parser, extra_args)
 
     parser.add_argument('--to_json', help='Path to the JSON file to save the data in.')
     parser.add_argument('--from_json', help='Path to the JSON file from which to read data.')
@@ -349,37 +385,92 @@ def importer_main(
     parser.add_argument(
         '--always_accept_diff', action='store_true',
         help='Skip asking validation of difference between an old and new dataset')
+    parser.add_argument(
+        '--fail_on_diff', action='store_true',
+        help='Fail if there are differences between the old and the new datasets')
+    parser.add_argument(
+        '--check-args', action='store_true', help='Only check that the args are valid.')
 
     flags = parser.parse_args(args)
+
+    if flags.check_args:
+        # The script was only called to check that the call above to parse_args did not fail.
+        return
+
+    if flags.mongo_collection:
+        extra_args['collection_name'] = flags.mongo_collection
 
     importer = Importer(flags, out=out)
     check_error: Optional[Exception] = None
 
     if flags.from_json:
         with open(flags.from_json) as input_file:
+            # TODO(cyrille): Fix data type to Iterable[JsonType].
             data = json.load(input_file)
     else:
         try:
-            data = _exec_from_flags(func, flags)
+            data = _exec_from_flags(func, flags, extra_args)
         except InvalidValueError as error:
             data = error.invalid_value
             check_error = error
 
     if flags.filter_ids:
         match_id = re.compile(flags.filter_ids)
-        data = [
+        data = (
             document for document in data
-            if match_id.match(document.get('_id', ''))]
+            if match_id.match(document.get('_id', '')))
 
     if flags.to_json:
         with open(flags.to_json, 'w') as output_file:
             json.dump(
                 data, output_file,
-                indent=1, sort_keys=True, ensure_ascii=False)
+                indent=1, sort_keys=True, ensure_ascii=False, cls=_IterEncoder)
             # End the file with a new line.
             output_file.write('\n')
     else:
-        importer.import_in_collection(data, collection_name, check_error)
+        importer.import_in_collection(data, collection_name, count_estimate, check_error)
+
+
+class _IterableAsList(List[_AType]):
+    """Used to trick JSON encoder (dump) into serializing iterators."""
+
+    # pylint: disable=super-init-not-called
+    def __init__(self, iterable: Iterable[_AType]) -> None:
+        self.iterator = iter(iterable)
+        try:
+            self.firstitem = next(self.iterator)
+            self.truthy = True
+        except StopIteration:
+            self.truthy = False
+
+    def __iter__(self) -> Iterator[_AType]:
+        if not self.truthy:
+            return iter([])
+        return itertools.chain([self.firstitem], self.iterator)
+
+    def __len__(self) -> NoReturn:
+        raise NotImplementedError('Iterable as list has unknown length')
+
+    def __getitem__(self, item: Union[int, slice]) -> NoReturn:
+        raise NotImplementedError('Iterable as list has no getitem')
+
+    def __setitem__(self, item: Union[int, slice], value: Any) -> NoReturn:
+        raise NotImplementedError('Iterable as list has no setitem')
+
+    def __bool__(self) -> bool:
+        return self.truthy
+
+
+class _IterEncoder(json.JSONEncoder):
+    """
+    JSON Encoder that encodes iterators as well.
+    Write directly to file to use minimal memory
+    """
+
+    def default(self, o: Any) -> Any:
+        if isinstance(o, collections.abc.Iterable):
+            return _IterableAsList(o)
+        return super().default(o)
 
 
 _ProtoType = typing.TypeVar('_ProtoType', bound=message.Message)
@@ -421,7 +512,7 @@ def parse_doc_to_proto(document: JsonType, proto_type: Type[_ProtoType]) -> _Pro
     for k in to_delete:
         del document[k]
     try:
-        json_format.Parse(json.dumps(document), proto)
+        json_format.ParseDict(document, proto)
     except json_format.ParseError as error:
         raise json_format.ParseError(
             f'Error while parsing item {id}: {error}\n{json.dumps(document, indent=2)}')
@@ -432,8 +523,8 @@ def _compute_diff(
         list_a: List[JsonType],
         list_b: List[JsonType],
         key: str = '_id') -> Dict[Any, Any]:
-    dict_a = collections.OrderedDict((value.get(key), value) for value in list_a)
-    dict_b = collections.OrderedDict((value.get(key), value) for value in list_b)
+    dict_a = collections.OrderedDict((str(value.get(key)), value) for value in list_a)
+    dict_b = collections.OrderedDict((str(value.get(key)), value) for value in list_b)
 
     return _compute_dict_diff(dict_a, dict_b)
 

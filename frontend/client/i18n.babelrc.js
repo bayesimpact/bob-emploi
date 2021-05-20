@@ -1,12 +1,11 @@
 const pluginConfig = {
-  customTransComponents: [['components/i18n', 'Trans']],
+  customTransComponents: [['components/i18n_trans', 'default']],
   defaultContexts: [''],
-  discardOldKeys: true,
   keySeparator: null,
   nsSeparator: null,
-  outputPath: 'src/translations/{{locale}}/{{ns}}.json',
+  outputPath: 'i18n/extract/{{ns}}.json',
   tFunctionNames: ['prepareT', 't'],
-  useI18nextDefaultValue: ['fr'],
+  useI18nextDefaultValue: true,
 }
 
 module.exports = {
@@ -19,6 +18,10 @@ module.exports = {
     {
       plugins: [['i18next-extract', {...pluginConfig, defaultNS: 'staticAdvice'}]],
       test: 'src/components/pages/static/static_advice/*',
+    },
+    {
+      plugins: [['i18next-extract', {...pluginConfig, defaultNS: 'opengraph'}]],
+      test: 'release/lambdas/opengraph_redirect.js',
     },
   ],
   plugins: [['i18next-extract', pluginConfig]],

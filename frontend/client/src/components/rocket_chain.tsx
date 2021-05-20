@@ -2,7 +2,7 @@ import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
 import rocketIcon from 'images/rocket.svg'
-import blackRocketIcon from 'images/rocket.svg?fill=#000'
+import blackRocketIcon from 'images/rocket.svg?fill=%23000'
 
 import {getRocketFromStars, MAX_NUMBER_ROCKETS} from 'store/advice'
 
@@ -34,21 +34,21 @@ interface SeveralRocketsProps {
 const SeveralRocketsBase: React.FC<SeveralRocketsProps> =
 (props: SeveralRocketsProps): React.ReactElement => {
   const {altText, rocketIcon, style, numRockets} = props
-  return <React.Fragment>{new Array(Math.floor(numRockets)).fill(undefined).
-    map((unused, index): React.ReactNode =>
+  return <React.Fragment>
+    {Array.from({length: Math.floor(numRockets)}, (unused, index): React.ReactNode =>
       <img
         src={rocketIcon}
         style={style}
         key={`rocket-${index}`}
         alt={altText}
       />,
-    )
-  }</React.Fragment>
+    )}
+  </React.Fragment>
 }
 const SeveralRockets = React.memo(SeveralRocketsBase)
 
 
-const RocketChainBase: React.FC<ChainProps> = (props: ChainProps): React.ReactElement => {
+const RocketChain: React.FC<ChainProps> = (props: ChainProps): React.ReactElement => {
   const {areEmptyRocketsShown, numStars, numRockets, rocketHeight = 25} = props
   const numFilledRockets = numRockets || getRocketFromStars(numStars || 0)
   const fillStyle = useMemo(() => ({height: rocketHeight}), [rocketHeight])
@@ -62,13 +62,12 @@ const RocketChainBase: React.FC<ChainProps> = (props: ChainProps): React.ReactEl
       numRockets={MAX_NUMBER_ROCKETS - numFilledRockets} /> : null}
   </React.Fragment>
 }
-RocketChainBase.propTypes = {
+RocketChain.propTypes = {
   areEmptyRocketsShown: PropTypes.bool,
   numRockets: PropTypes.number,
   numStars: PropTypes.number,
   rocketHeight: PropTypes.number,
 }
-const RocketChain = React.memo(RocketChainBase)
 
 
-export {RocketChain}
+export default React.memo(RocketChain)

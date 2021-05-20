@@ -2,38 +2,21 @@
 
 import collections
 import datetime
-import json
 import os
 import typing
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List
 import unittest
 from unittest import mock
 
 from google.protobuf import json_format
 import mongomock
-import requests
 import requests_mock
 
+from bob_emploi.common.python import now
+from bob_emploi.frontend.api import diagnostic_pb2
+from bob_emploi.frontend.api import boolean_pb2
 from bob_emploi.frontend.api import user_pb2
-from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server.asynchronous import sync_user_elasticsearch
-
-if typing.TYPE_CHECKING:
-    # TODO(pascal): Drop once requests_mock gets typed.
-    class _RequestsMock(typing.Protocol):
-
-        def get(  # pylint: disable=invalid-name
-                self, path: str, status_code: int = 200, text: str = '',
-                json: Any = None,  # pylint: disable=redefined-outer-name
-                headers: Optional[Dict[str, str]] = None) -> requests.Response:
-            """Decide what to do when a get request is sent."""
-
-        def post(  # pylint: disable=invalid-name
-                self, path: str, status_code: int = 200, text: str = '',
-                json: Any = None,  # pylint: disable=redefined-outer-name
-                headers: Optional[Dict[str, str]] = None,
-                request_headers: Optional[Dict[str, str]] = None) -> requests.Response:
-            """Decide what to do when a post request is sent."""
 
 
 @mock.patch(now.__name__ + '.get', new=lambda: datetime.datetime(2017, 11, 16))
@@ -43,7 +26,7 @@ class SyncTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        sync_user_elasticsearch.proto.clear_mongo_fetcher_cache()
+        sync_user_elasticsearch.proto.cache.clear()
         self._db = mongomock.MongoClient().test
         self._user_db = mongomock.MongoClient().test
         patcher = mock.patch(sync_user_elasticsearch.__name__ + '._USER_DB', new=self._user_db)
@@ -61,7 +44,7 @@ class SyncTestCase(unittest.TestCase):
         self.maxDiff = None  # pylint: disable=invalid-name
         self._user_db.user.insert_one({
             'profile': {
-                'canTutoie': True,
+                'locale': 'fr@tu',
                 'coachingEmailFrequency': 'EMAIL_MAXIMUM',
                 'email': 'pascal@corpet.net',
                 'gender': 'MASCULINE',
@@ -100,20 +83,40 @@ class SyncTestCase(unittest.TestCase):
                     {
                         'adviceId': 'life-balance',
                         'numStars': 1,
+                        'numExplorations': 2,
                         'status': 'ADVICE_READ',
                     },
                 ],
                 'feedback': {
                     'score': 5,
+                    'challengeAgreementScore': 1,
                 },
                 'diagnostic': {
                     'categoryId': 'stuck-market',
                 },
+                'originalSelfDiagnostic': {
+                    'status': 'KNOWN_SELF_DIAGNOSTIC',
+                    'categoryId': 'stuck-market',
+                },
+                'strategies': [
+                    {'strategyId': 'likeable-job'},
+                    {'strategyId': 'confidence-boost'},
+                ],
+                'openedStrategies': [
+                    {
+                        'startedAt': '2018-12-01T00:00:00Z',
+                        'reachedGoals': {'this goal': True, 'that goal': False},
+                        'strategyId': 'likeable-job',
+                    },
+                ],
             }],
             'employmentStatus': [{
                 'bobHasHelped': 'YES',
                 'bobRelativePersonalization': 12,
                 'createdAt': '2017-07-25T18:06:08Z',
+                'hasBeenPromoted': 'FALSE',
+                'hasGreaterRole': 'TRUE',
+                'hasSalaryIncreased': 'TRUE',
                 'otherCoachesUsed': ['PE_COUNSELOR_MEETING', 'MUTUAL_AID_ORGANIZATION'],
             }],
             'clientMetrics': {
@@ -151,14 +154,17 @@ class SyncTestCase(unittest.TestCase):
             'name': 'Lyon',
             'urbanContext': 2,
         })
-        user_id = str(self._user_db.user.find_one()['_id'])
+        db_user = self._user_db.user.find_one()
+        assert db_user
+        user_id = str(db_user['_id'])
 
         sync_user_elasticsearch.main(self.mock_elasticsearch, [
             '--registered-from', '2017-07',
             '--no-dry-run', '--disable-sentry'])
 
-        self.mock_elasticsearch.create.assert_called_once()
-        kwargs = self.mock_elasticsearch.create.call_args[1]
+        # TODO(cyrille): DRY with _compute_user_data.
+        self.mock_elasticsearch.update.assert_called_once()
+        kwargs = self.mock_elasticsearch.update.call_args[1]
         body = kwargs.pop('body')
         self.assertEqual(
             {
@@ -167,9 +173,14 @@ class SyncTestCase(unittest.TestCase):
                 'id': user_id,
             },
             kwargs)
+        doc = body.pop('doc')
+        self.assertEqual({
+            'doc_as_upsert': True
+        }, body)
         self.assertEqual(
             {
                 'randomGroup': .42,
+                'finishedOnboardingPercent': 100,
                 'profile': {
                     'ageGroup': 'D. 35-44',
                     'coachingEmailFrequency': 'EMAIL_MAXIMUM',
@@ -182,6 +193,7 @@ class SyncTestCase(unittest.TestCase):
                 },
                 'project': {
                     'advices': ['network'],
+                    'exploredAdvices': ['life-balance'],
                     'readAdvices': ['read-more', 'life-balance'],
                     'numAdvicesRead': 2,
                     'job_search_length_months': 4,
@@ -202,10 +214,21 @@ class SyncTestCase(unittest.TestCase):
                     },
                     'feedbackScore': 5,
                     'feedbackLoveScore': 1,
+                    'challengeAgreementScore': 0,
                     'minSalary': 45000,
                     'diagnostic': {
                         'categoryId': 'stuck-market',
-                    }
+                    },
+                    'originalSelfDiagnostic': {
+                        'categoryId': 'stuck-market',
+                        'isSameAsSelf': True,
+                        'status': 'KNOWN_SELF_DIAGNOSTIC',
+                    },
+                    'tocScore': 0,
+                    'ratioOpenedStrategies': .5,
+                    'openedStrategies': ['likeable-job'],
+                    'numStrategiesShown': 2,
+                    'hasReachedAStrategyGoal': True,
                 },
                 'registeredAt': '2017-07-15T18:06:08Z',
                 'employmentStatus': {
@@ -213,6 +236,9 @@ class SyncTestCase(unittest.TestCase):
                     'bobHasHelpedScore': 1,
                     'createdAt': '2017-07-25T18:06:08Z',
                     'daysSinceRegistration': 10,
+                    'hasBeenPromoted': 'FALSE',
+                    'hasGreaterRole': 'TRUE',
+                    'hasSalaryIncreased': 'TRUE',
                     'otherCoachesUsed': ['PE_COUNSELOR_MEETING', 'MUTUAL_AID_ORGANIZATION'],
                     'bobRelativePersonalization': 12,
                 },
@@ -220,6 +246,9 @@ class SyncTestCase(unittest.TestCase):
                     'focus-network': 'EMAIL_SENT_CLICKED',
                     'focus-spontaneous': 'EMAIL_SENT_OPENED',
                 },
+                'coachingEmailsSent': 2,
+                'coachingEmailsClicked': 1,
+                'coachingEmailsOpened': 2,
                 'clientMetrics': {
                     'firstSessionDurationSeconds': 250,
                     'isFirstSessionMobile': 'TRUE',
@@ -231,15 +260,12 @@ class SyncTestCase(unittest.TestCase):
                 'hasAccount': True,
                 'isHooked': True,
             },
-            json.loads(body))
+            doc)
 
     @mock.patch('logging.error')
-    @mock.patch(sync_user_elasticsearch.report.__name__ + '.setup_sentry_logging')
-    def test_report_sentry(self, mock_report: mock.MagicMock, mock_error: mock.MagicMock) \
+    def test_report_sentry(self, mock_error: mock.MagicMock) \
             -> None:
         """Test the error message if we forgot to set SENTRY reporting."""
-
-        mock_report.side_effect = ValueError
 
         sync_user_elasticsearch.main(
             self.mock_elasticsearch, ['--registered-from', '2017-07', '--no-dry-run'])
@@ -260,8 +286,9 @@ class SyncTestCase(unittest.TestCase):
             '--registered-from', '2017-07',
             '--no-dry-run', '--disable-sentry'])
 
-        self.mock_elasticsearch.create.assert_called_once()
-        body = json.loads(self.mock_elasticsearch.create.call_args[1]['body'])
+        # TODO(cyrille): DRY with _compute_user_data.
+        self.mock_elasticsearch.update.assert_called_once()
+        body = self.mock_elasticsearch.update.call_args[1]['body']['doc']
         city = body['project']['city']
         del city['regionName']
         del city['urbanScore']
@@ -287,7 +314,7 @@ class SyncTestCase(unittest.TestCase):
         'ELASTICSEARCH_URL': 'http://elastic-dev:9200',
         'AWS_CONTAINER_CREDENTIALS_RELATIVE_URI': '/get-my-credentials',
     })
-    def test_es_client_from_env_aws_in_docker(self, mock_requests: '_RequestsMock') -> None:
+    def test_es_client_from_env_aws_in_docker(self, mock_requests: 'requests_mock.Mocker') -> None:
         """Get an Elasticsearch client for a task running in AWS ECS Docker."""
 
         mock_requests.get(
@@ -324,6 +351,50 @@ class SyncTestCase(unittest.TestCase):
         http_auth = client.transport.kwargs['http_auth']
         self.assertFalse(http_auth)
 
+    def test_create_index(self) -> None:
+        """Create ES index if it doesn't already exist."""
+
+        self.mock_elasticsearch.indices.exists.return_value = False
+        sync_user_elasticsearch.main(self.mock_elasticsearch, [
+            '--registered-from', '2017-07',
+            '--index', 'bobusers',
+            '--no-dry-run', '--disable-sentry'])
+        self.assertFalse(self.mock_elasticsearch.indices.delete.called)
+        self.mock_elasticsearch.indices.create.assert_called_once_with(index='bobusers')
+
+    def test_update_index(self) -> None:
+        """No ES index operation if index already exists."""
+
+        self.mock_elasticsearch.indices.exists.return_value = True
+        sync_user_elasticsearch.main(self.mock_elasticsearch, [
+            '--registered-from', '2017-07',
+            '--index', 'bobusers',
+            '--no-dry-run', '--disable-sentry'])
+        self.assertFalse(self.mock_elasticsearch.indices.delete.called)
+        self.assertFalse(self.mock_elasticsearch.indices.create.called)
+
+    def test_force_recreate(self) -> None:
+        """ES drops index and recreates it at start."""
+
+        called_indices_methods: List[str] = []
+
+        def _save_called_func(method_name: str) -> Callable[[str], None]:
+
+            def _side_effect(index: str) -> None:  # pylint: disable=unused-argument
+                called_indices_methods.append(method_name)
+                return None
+            return _side_effect
+        self.mock_elasticsearch.indices.exists.return_value = True
+        self.mock_elasticsearch.indices.delete.side_effect = _save_called_func('delete')
+        self.mock_elasticsearch.indices.create.side_effect = _save_called_func('create')
+        sync_user_elasticsearch.main(self.mock_elasticsearch, [
+            '--registered-from', '2017-07',
+            '--index', 'bobusers',
+            '--force-recreate', '--no-dry-run', '--disable-sentry'])
+        self.mock_elasticsearch.indices.delete.assert_called_once_with(index='bobusers')
+        self.mock_elasticsearch.indices.create.assert_called_once_with(index='bobusers')
+        self.assertEqual(['delete', 'create'], called_indices_methods)
+
     def _compute_user_data(self, user: user_pb2.User) -> Dict[str, Any]:
         if not user.HasField('registered_at'):
             user.registered_at.GetCurrentTime()
@@ -332,8 +403,8 @@ class SyncTestCase(unittest.TestCase):
         sync_user_elasticsearch.main(self.mock_elasticsearch, [
             '--registered-from', '2017-07',
             '--no-dry-run', '--disable-sentry'])
-        kwargs = self.mock_elasticsearch.create.call_args[1]
-        return typing.cast(Dict[str, Any], json.loads(kwargs.pop('body')))
+        kwargs = self.mock_elasticsearch.update.call_args[1]
+        return typing.cast(Dict[str, Any], kwargs.pop('body')['doc'])
 
     def test_infinite_salary(self) -> None:
         """Test that infinite salaries are not kept."""
@@ -378,48 +449,160 @@ class SyncTestCase(unittest.TestCase):
             {'A. -18', 'B. 18-24', 'C. 25-34', 'D. 35-44', 'E. 45-54', 'F. 55-64', 'G. 65+'},
             set(age_group_counts.keys()))
 
-    def _compute_user_data_for_nps(self, responded_at: datetime.datetime, score: int) \
-            -> Dict[str, Any]:
+    def _compute_user_data_for_nps(
+            self, responded_at: datetime.datetime, score: int,
+            has_actions_idea: 'boolean_pb2.OptionalBool.V',
+            self_diagnostic: diagnostic_pb2.SelfDiagnostic) -> Dict[str, Any]:
         user = user_pb2.User()
+        project = user.projects.add()
+        project.original_self_diagnostic.CopyFrom(diagnostic_pb2.SelfDiagnostic(
+            status=diagnostic_pb2.KNOWN_SELF_DIAGNOSTIC, category_id='stuck-market'))
+        project.diagnostic.CopyFrom(
+            diagnostic_pb2.Diagnostic(category_id='stuck-market'))
         response = user.net_promoter_score_survey_response
         response.responded_at.FromDatetime(responded_at)
+        response.has_actions_idea = has_actions_idea
+        response.nps_self_diagnostic.CopyFrom(self_diagnostic)
         response.score = score
         return self._compute_user_data(user)
 
     def test_nps_best_score(self) -> None:
         """Test NPS best score."""
 
-        data = self._compute_user_data_for_nps(datetime.datetime(2018, 11, 20, 18, 29), 10)
+        data = self._compute_user_data_for_nps(
+            datetime.datetime(2018, 11, 20, 18, 29), 10, boolean_pb2.FALSE,
+            diagnostic_pb2.SelfDiagnostic(status=diagnostic_pb2.UNKNOWN_SELF_DIAGNOSTIC))
         self.assertEqual(
-            {'score': 10, 'time': '2018-11-20T18:29:00Z', 'loveScore': 1},
+            {
+                'hasActionsIdea': 'FALSE',
+                'selfDiagnostic': {
+                    'status': 'UNKNOWN_SELF_DIAGNOSTIC',
+                },
+                'score': 10,
+                'time': '2018-11-20T18:29:00Z',
+                'loveScore': 1,
+            },
             data.get('nps_response'))
 
     def test_nps_medium_score(self) -> None:
         """Test NPS medium score."""
 
-        data = self._compute_user_data_for_nps(datetime.datetime(2018, 11, 20, 18, 29), 7)
+        data = self._compute_user_data_for_nps(
+            datetime.datetime(2018, 11, 20, 18, 29), 7, boolean_pb2.FALSE,
+            diagnostic_pb2.SelfDiagnostic(status=diagnostic_pb2.UNKNOWN_SELF_DIAGNOSTIC))
         self.assertEqual(
-            {'score': 7, 'time': '2018-11-20T18:29:00Z', 'loveScore': 0},
+            {
+                'hasActionsIdea': 'FALSE',
+                'selfDiagnostic': {
+                    'status': 'UNKNOWN_SELF_DIAGNOSTIC',
+                },
+                'score': 7,
+                'time': '2018-11-20T18:29:00Z',
+                'loveScore': 0,
+            },
             data.get('nps_response'))
 
     def test_nps_bad_score(self) -> None:
         """Test NPS bad score."""
 
-        data = self._compute_user_data_for_nps(datetime.datetime(2018, 11, 20, 18, 29), 0)
+        data = self._compute_user_data_for_nps(
+            datetime.datetime(2018, 11, 20, 18, 29), 0, boolean_pb2.FALSE,
+            diagnostic_pb2.SelfDiagnostic(status=diagnostic_pb2.UNKNOWN_SELF_DIAGNOSTIC))
         self.assertEqual(
-            {'score': 0, 'time': '2018-11-20T18:29:00Z', 'loveScore': -1},
+            {
+                'hasActionsIdea': 'FALSE',
+                'selfDiagnostic': {
+                    'status': 'UNKNOWN_SELF_DIAGNOSTIC',
+                },
+                'score': 0,
+                'time': '2018-11-20T18:29:00Z',
+                'loveScore': -1,
+            },
             data.get('nps_response'))
 
     @mock.patch('logging.warning')
     def test_nps_crazy_score(self, mock_warning: mock.MagicMock) -> None:
         """NPS crazy score."""
 
-        data = self._compute_user_data_for_nps(datetime.datetime(2018, 11, 20, 18, 29), 200)
+        data = self._compute_user_data_for_nps(
+            datetime.datetime(2018, 11, 20, 18, 29), 200, boolean_pb2.FALSE,
+            diagnostic_pb2.SelfDiagnostic(status=diagnostic_pb2.UNKNOWN_SELF_DIAGNOSTIC))
         self.assertEqual(
-            {'score': 200, 'time': '2018-11-20T18:29:00Z'},
+            {
+                'hasActionsIdea': 'FALSE',
+                'selfDiagnostic': {
+                    'status': 'UNKNOWN_SELF_DIAGNOSTIC',
+                },
+                'score': 200,
+                'time': '2018-11-20T18:29:00Z',
+            },
             data.get('nps_response'))
 
         mock_warning.assert_called_once_with('Cannot convert nps_score %s', 200)
+
+    def test_nps_self_diagnostic_category(self) -> None:
+        """Test NPS self diagnostic with category Id."""
+
+        data = self._compute_user_data_for_nps(
+            datetime.datetime(2018, 11, 20, 18, 29), 0, boolean_pb2.TRUE,
+            diagnostic_pb2.SelfDiagnostic(
+                status=diagnostic_pb2.KNOWN_SELF_DIAGNOSTIC, category_id='missing-diploma'))
+        self.assertEqual(
+            {
+                'hasActionsIdea': 'TRUE',
+                'selfDiagnostic': {
+                    'categoryId': 'missing-diploma',
+                    'hasChanged': 'changed_to_other',
+                    'status': 'KNOWN_SELF_DIAGNOSTIC',
+                },
+                'score': 0,
+                'time': '2018-11-20T18:29:00Z',
+                'loveScore': -1,
+            },
+            data.get('nps_response'))
+
+    # TODO(cyrille): Restrict type for `field` and `value`.
+    def _compute_user_data_for_nps_res(self, field: str, value: int) -> Dict[str, Any]:
+        user = user_pb2.User()
+        project = user.projects.add()
+        project.original_self_diagnostic.CopyFrom(diagnostic_pb2.SelfDiagnostic(
+            status=diagnostic_pb2.KNOWN_SELF_DIAGNOSTIC, category_id='stuck-market'))
+        project.diagnostic.category_id = 'stuck-market'
+        response = user.net_promoter_score_survey_response
+        response.responded_at.FromDatetime(datetime.datetime(2018, 11, 20, 18, 29))
+        response.has_actions_idea = boolean_pb2.TRUE
+        setattr(response, field, value)
+        response.nps_self_diagnostic.CopyFrom(diagnostic_pb2.SelfDiagnostic(
+            status=diagnostic_pb2.KNOWN_SELF_DIAGNOSTIC, category_id='missing-diploma'))
+        response.score = 0
+        return self._compute_user_data(user)
+
+    def test_nps_local_market_estimate(self) -> None:
+        """Test NPS local market estimate."""
+
+        data = self._compute_user_data_for_nps_res(
+            'local_market_estimate', user_pb2.LOCAL_MARKET_GOOD)
+        self.assertEqual(
+            'LOCAL_MARKET_GOOD', data.get('nps_response', {}).get('localMarketEstimate'))
+
+    def test_nps_bob_relative_personalization(self) -> None:
+        """Test NPS bob relative personalization."""
+
+        data = self._compute_user_data_for_nps_res('bob_relative_personalization', 10)
+        self.assertEqual('Equally', data.get('nps_response', {}).get('bobRelativePersonalization'))
+
+    def test_nps_user_informed_about_career_options(self) -> None:
+        """Test NPS user informed about career options."""
+
+        data = self._compute_user_data_for_nps_res('user_informed_about_career_options', 1)
+        self.assertEqual(
+            'No change', data.get('nps_response', {}).get('userInformedAboutCareerOptions'))
+
+    def test_nps_product_usability_score(self) -> None:
+        """Test NPS product usability score."""
+
+        data = self._compute_user_data_for_nps_res('product_usability_score', 1)
+        self.assertEqual('Very poor', data.get('nps_response', {}).get('productUsabilityScore'))
 
     def test_nps_request(self) -> None:
         """NPS request computation."""
@@ -550,7 +733,18 @@ class SyncTestCase(unittest.TestCase):
             },
             {k: v for k, v in data.get('project', {}).items() if k.startswith('feedback')})
 
-        mock_warning.assert_called_once_with('Cannot convert feedback_score %s', 51)
+        mock_warning.assert_called_with('Cannot convert feedback_score %s', 51)
+
+    def test_with_domain_info(self) -> None:
+        """Gives the job domain from database when available."""
+
+        self._db.job_group_info.insert_one({'_id': 'J1234', 'domain': 'Médecine et Santé'})
+        user = user_pb2.User()
+        project = user.projects.add()
+        project.target_job.job_group.rome_id = 'J1234'
+        data = self._compute_user_data(user)
+        self.assertEqual(
+            'Médecine et Santé', data.get('project', {}).get('targetJob', {}).get('domain'))
 
 
 if __name__ == '__main__':

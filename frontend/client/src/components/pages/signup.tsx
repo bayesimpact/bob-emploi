@@ -8,14 +8,14 @@ import {DispatchAllActions, RootState, closeLoginModal, loginUserFromToken, open
   openRegistrationModal} from 'store/actions'
 import {parseQueryString} from 'store/parse'
 
-import {Trans} from 'components/i18n'
+import Trans from 'components/i18n_trans'
 import {LoginButton, LoginMethods} from 'components/login'
-import {isMobileVersion} from 'components/mobile'
-import {ModalCloseButton} from 'components/modal'
+import isMobileVersion from 'store/mobile'
+import ModalCloseButton from 'components/modal_close_button'
 import {Routes, SIGNUP_HASH} from 'components/url'
 import bobHeadImage from 'images/bob-head.svg'
 
-import {WaitingPage} from './waiting'
+import WaitingPage from './waiting'
 
 
 const SignUpPageBase = (): React.ReactElement => {
@@ -150,7 +150,7 @@ const SignUpBannerBase = (props: BannerProps): React.ReactElement|null => {
     return null
   }
 
-  return <div style={bannerStyle}>
+  return <aside style={bannerStyle}>
     <ModalCloseButton onClick={handleClose} style={closeStyle} />
     {isMobileVersion ? null :
       <img src={bobHeadImage} alt="" style={{marginLeft: 32, width: 56}} />}
@@ -165,8 +165,7 @@ const SignUpBannerBase = (props: BannerProps): React.ReactElement|null => {
       type="navigation" isRound={true} visualElement="diagnostic">
       {t('Créer mon compte')}
     </LoginButton>
-  </div>
-
+  </aside>
 }
 SignUpBannerBase.propTypes = {
   onClose: PropTypes.func,

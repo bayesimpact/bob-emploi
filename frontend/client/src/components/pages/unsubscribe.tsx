@@ -3,18 +3,20 @@ import React, {Suspense, useCallback, useEffect, useState} from 'react'
 import ReactDOM from 'react-dom'
 import {useTranslation} from 'react-i18next'
 
+import {cleanHtmlError, hasErrorStatus} from 'store/http'
 import {init as i18nInit, localizeOptions} from 'store/i18n'
 import {parseQueryString} from 'store/parse'
 import {useCancelablePromises} from 'store/promise'
 import {COACHING_EMAILS_OPTIONS} from 'store/user'
 
-import {Trans} from 'components/i18n'
-import {Button, SmoothTransitions} from 'components/theme'
-import {Select} from 'components/pages/connected/form_utils'
-import {WaitingPage} from 'components/pages/waiting'
-import logoProductImage from 'images/bob-logo.svg'
+import Button from 'components/button'
+import Trans from 'components/i18n_trans'
+import Select from 'components/select'
+import {SmoothTransitions} from 'components/theme'
+import WaitingPage from 'components/pages/waiting'
+import logoProductImage from 'deployment/bob-logo.svg'
 
-require('styles/App.css')
+import 'styles/App.css'
 
 
 i18nInit()
@@ -30,9 +32,7 @@ const UnsubscribePageBase = (): React.ReactElement => {
   const [params] = useState(
     window.location.search ? parseQueryString(window.location.search.slice(1)) : {},
   )
-  // TODO(pascal): Drop the use of email after 2018-09-01, until then we need
-  // to keep it as the link is used in old emails.
-  const {auth = '', email = '', user = ''} = params
+  const {auth = '', user = ''} = params
   const [coachingEmailFrequency, setCoachingEmailFrequency] =
     useState(params.coachingEmailFrequency as bayes.bob.EmailFrequency|undefined)
   const cancelOnUnmount = useCancelablePromises()
@@ -42,82 +42,71 @@ const UnsubscribePageBase = (): React.ReactElement => {
       return (): void => void 0
     }
     const timeout = window.setTimeout((): void => setIsUpdated(false), 5000)
-    return (): void => clearTimeout(timeout)
+    return (): void => window.clearTimeout(timeout)
   }, [isUpdated])
 
   const handleCancel = useCallback((): void => {
     window.location.href = '/'
   }, [])
 
-  const handleDeletionResponse = useCallback((response: Response): void => {
-    if (response.status >= 400 || response.status < 200) {
-      cancelOnUnmount(response.text()).then((errorMessage: string): void => {
-        const page = document.createElement('html')
-        page.innerHTML = errorMessage
-        const content = page.getElementsByTagName('P')
-        setIsDeleting(false)
-        setErrorMessage(
-          content.length && (content[0] as HTMLElement).textContent || page.textContent || '',
-        )
-      })
+  const handleDeletionResponse = useCallback(async (response: Response): Promise<void> => {
+    if (hasErrorStatus(response)) {
+      setErrorMessage(await cancelOnUnmount(cleanHtmlError(response)))
+      setIsDeleting(false)
       return
     }
     setIsDeleting(false)
     setIsDeleted(true)
   }, [cancelOnUnmount])
 
-  const handleDelete = useCallback((): void => {
+  const handleDelete = useCallback(async (): Promise<void> => {
     setIsDeleting(true)
     setErrorMessage('')
-    cancelOnUnmount(fetch('/api/user', {
-      body: JSON.stringify({profile: {email}, userId: user}),
-      headers: {
-        'Authorization': `Bearer ${auth}`,
-        'Content-Type': 'application/json',
-      },
-      method: 'delete',
-    })).then(handleDeletionResponse).catch((): void => {
+    try {
+      const deletionResponse = await cancelOnUnmount(fetch('/api/user', {
+        body: JSON.stringify({userId: user}),
+        headers: {
+          'Authorization': `Bearer ${auth}`,
+          'Content-Type': 'application/json',
+        },
+        method: 'delete',
+      }))
+      handleDeletionResponse(deletionResponse)
+    } catch {
       setIsDeleting(false)
       setErrorMessage(t('La suppression a échoué'))
-    })
-  }, [auth, email, user, cancelOnUnmount, handleDeletionResponse, t])
+    }
+  }, [auth, user, cancelOnUnmount, handleDeletionResponse, t])
 
   const handleCoachingEmailFrequencyChange =
-  useCallback((newFrequency: bayes.bob.EmailFrequency): void => {
+  useCallback(async (newFrequency: bayes.bob.EmailFrequency): Promise<void> => {
     if (newFrequency === coachingEmailFrequency) {
       return
     }
     setErrorMessage('')
     setIsUpdating(true)
     setCoachingEmailFrequency(newFrequency)
-
-    cancelOnUnmount(fetch(`/api/user/${user}/settings`, {
-      body: JSON.stringify({coachingEmailFrequency: newFrequency}),
-      headers: {
-        'Authorization': `Bearer ${auth}`,
-        'Content-Type': 'application/json',
-      },
-      method: 'post',
-    })).then((response): void => {
-      if (response.status >= 400 || response.status < 200) {
-        response.text().then((errorMessage: string): void => {
-          const page = document.createElement('html')
-          page.innerHTML = errorMessage
-          const content = page.getElementsByTagName('P')
-          setIsUpdating(false)
-          setCoachingEmailFrequency(coachingEmailFrequency)
-          setErrorMessage(
-            content.length && (content[0] as HTMLElement).textContent || page.textContent || '',
-          )
-        })
+    try {
+      const response = await cancelOnUnmount(fetch(`/api/user/${user}/settings`, {
+        body: JSON.stringify({coachingEmailFrequency: newFrequency}),
+        headers: {
+          'Authorization': `Bearer ${auth}`,
+          'Content-Type': 'application/json',
+        },
+        method: 'post',
+      }))
+      if (hasErrorStatus(response)) {
+        setErrorMessage(await cleanHtmlError(response))
+        setIsUpdating(false)
+        setCoachingEmailFrequency(coachingEmailFrequency)
         return
       }
       setIsUpdated(true)
-      setIsUpdating(false)
-    }).catch((): void => {
-      setIsUpdating(false)
+    } catch {
       setErrorMessage(t('La mise à jour a échoué'))
-    })
+    } finally {
+      setIsUpdating(false)
+    }
   }, [auth, cancelOnUnmount, coachingEmailFrequency, user, t])
 
   const headerStyle = {
@@ -129,9 +118,11 @@ const UnsubscribePageBase = (): React.ReactElement => {
     width: '100%',
   }
   const header = <header style={headerStyle}>
-    <img
-      style={{cursor: 'pointer', height: 30}} onClick={handleCancel}
-      src={logoProductImage} alt={config.productName} />
+    <a href="/">
+      <img
+        style={{height: 40}}
+        src={logoProductImage} alt={config.productName} />
+    </a>
   </header>
 
   const containerStyle: React.CSSProperties = {

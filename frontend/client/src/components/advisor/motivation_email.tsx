@@ -1,10 +1,10 @@
 import PropTypes from 'prop-types'
 import React from 'react'
 
-import {getEmailTemplates} from 'store/french'
+import {getEmailTemplates} from 'store/i18n'
 
-import {Trans} from 'components/i18n'
-import {GrowingNumber} from 'components/theme'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import Picto from 'images/advices/picto-motivation-email.svg'
 
 import {CardProps, EmailTemplate, MethodSuggestionList} from './base'
@@ -19,7 +19,7 @@ const MotivationEmail = (props: CardProps): React.ReactElement => {
   </Trans>
   return <MethodSuggestionList title={title}>
     {templates.map((template, index): ReactStylableElement => <EmailTemplate
-      onContentShown={handleExplore('template')} isMethodSuggestion={true}
+      onContentShown={handleExplore('template')}
       {...template} key={`template-${index}`} />)}
   </MethodSuggestionList>
 }

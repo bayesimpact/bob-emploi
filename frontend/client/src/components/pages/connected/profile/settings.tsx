@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types'
-import React, {useCallback, useState} from 'react'
+import React, {useCallback, useEffect, useState} from 'react'
 import {useSelector} from 'react-redux'
 import {useTranslation} from 'react-i18next'
 
@@ -8,13 +8,15 @@ import {DispatchAllActions, RootState, commentIsShown, emailCheck,
 import {localizeOptions} from 'store/i18n'
 import {useSafeDispatch} from 'store/promise'
 import {COACHING_EMAILS_OPTIONS, ORIGIN_OPTIONS, getUniqueExampleEmail,
-  userExample} from 'store/user'
+  useUserExample} from 'store/user'
 import {validateEmail} from 'store/validations'
 
-import {Trans} from 'components/i18n'
+import FieldSet from 'components/field_set'
+import Trans from 'components/i18n_trans'
+import Input from 'components/input'
+import LabeledToggle from 'components/labeled_toggle'
 import {LoginLink} from 'components/login'
-import {FieldSet, Select} from 'components/pages/connected/form_utils'
-import {Input, LabeledToggle} from 'components/theme'
+import Select from 'components/select'
 
 import {OnboardingCommentContent, ProfileStepProps, Step, useProfileChangeCallback,
   useProfileUpdater} from './step'
@@ -35,7 +37,7 @@ const fieldsRequired = {
 } as const
 
 
-const SettingsStepBase = (props: ProfileStepProps): React.ReactElement => {
+const SettingsStep = (props: ProfileStepProps): React.ReactElement => {
   const {isShownAsStepsDuringOnboarding, onBack, onChange, onSubmit, profile, profile: {
     coachingEmailFrequency,
     email: profileEmail,
@@ -56,7 +58,7 @@ const SettingsStepBase = (props: ProfileStepProps): React.ReactElement => {
   const isFormValid = areFieldsSet && (
     coachingEmailFrequency === 'EMAIL_NONE' || validateEmail(email))
 
-  const handleSubmit = useCallback((): void => {
+  const handleSubmit = useCallback(async (): Promise<void> => {
     if (!isFormValid) {
       return
     }
@@ -64,18 +66,19 @@ const SettingsStepBase = (props: ProfileStepProps): React.ReactElement => {
       submitFields()
       return
     }
-    dispatch(emailCheck(email)).then((response): void => {
-      if (!response) {
-        return
-      }
-      if (!response.isNewUser) {
-        setIsEmailAlreadyUsed(true)
-        return
-      }
-      dispatch(silentlyRegisterUser(email)).then(submitFields)
-    })
+    const checkedEmail = await dispatch(emailCheck(email))
+    if (!checkedEmail) {
+      return
+    }
+    if (!checkedEmail.isNewUser) {
+      setIsEmailAlreadyUsed(true)
+      return
+    }
+    await dispatch(silentlyRegisterUser(email))
+    submitFields()
   }, [coachingEmailFrequency, dispatch, email, isFormValid, profileEmail, submitFields])
 
+  const userExample = useUserExample()
   const fastForward = useCallback((): void => {
     if (isFormValid) {
       handleSubmit()
@@ -87,13 +90,14 @@ const SettingsStepBase = (props: ProfileStepProps): React.ReactElement => {
       profileDiff.origin = userExample.profile.origin
     }
     if (!coachingEmailFrequency) {
-      profileDiff.coachingEmailFrequency = userExample.profile.coachingEmailFrequency
+      profileDiff.coachingEmailFrequency = config.isCoachingEnabled ?
+        userExample.profile.coachingEmailFrequency : 'EMAIL_NONE'
     }
     if ((coachingEmailFrequency || profileDiff.coachingEmailFrequency) !== 'EMAIL_NONE' && !email) {
       setEmail(getUniqueExampleEmail())
     }
     onChange?.({profile: profileDiff})
-  }, [coachingEmailFrequency, email, handleSubmit, isFormValid, onChange, origin])
+  }, [coachingEmailFrequency, email, handleSubmit, isFormValid, onChange, origin, userExample])
 
   const handleEmailChange = useCallback((email: string): void => {
     setEmail(email.toLocaleLowerCase())
@@ -102,6 +106,12 @@ const SettingsStepBase = (props: ProfileStepProps): React.ReactElement => {
 
   const handleCoachingEmailFrequencyChange =
     useProfileChangeCallback('coachingEmailFrequency', profile, onChange)
+
+  useEffect((): void => {
+    if (!config.isCoachingEnabled) {
+      handleCoachingEmailFrequencyChange('EMAIL_NONE')
+    }
+  }, [handleCoachingEmailFrequencyChange])
 
   const handleOriginChange = useProfileChangeCallback('origin', profile, onChange)
 
@@ -198,11 +208,11 @@ const SettingsStepBase = (props: ProfileStepProps): React.ReactElement => {
   }
 
   // Keep in sync with 'isValid' props from list of fieldset below.
-  const checks = [
+  const checks = config.isCoachingEnabled ? [
     origin,
     coachingEmailFrequency,
     coachingEmailFrequency === 'EMAIL_NONE' || validateEmail(email) && !isEmailAlreadyUsed,
-  ]
+  ] : [origin]
   const title = isShownAsStepsDuringOnboarding ?
     t('{{productName}} et vous', {productName: config.productName}) :
     t('Notifications & coaching')
@@ -223,10 +233,10 @@ const SettingsStepBase = (props: ProfileStepProps): React.ReactElement => {
         placeholder={t('choisissez une option')} />
     </FieldSet>}
     {isShownAsStepsDuringOnboarding ? null : renderNotificationsFieldSet()}
-    {checks[0] ? renderCoachingDetails() : null}
+    {config.isCoachingEnabled && checks[0] ? renderCoachingDetails() : null}
   </Step>
 }
-SettingsStepBase.propTypes = {
+SettingsStep.propTypes = {
   hasSeenComment: PropTypes.shape({
     coaching: PropTypes.bool,
     email: PropTypes.bool,
@@ -240,7 +250,6 @@ SettingsStepBase.propTypes = {
   }).isRequired,
   t: PropTypes.func.isRequired,
 }
-const SettingsStep = React.memo(SettingsStepBase)
 
 
-export {SettingsStep}
+export default React.memo(SettingsStep)

@@ -1,8 +1,9 @@
 import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useState} from 'react'
 
-import {isMobileVersion} from 'components/mobile'
-import {OutsideClickHandler} from './theme'
+import isMobileVersion from 'store/mobile'
+
+import OutsideClickHandler from 'components/outside_click_handler'
 
 
 // Hook to handle a queue of items. Items are queued at render time and the queue is popped by
@@ -45,7 +46,7 @@ interface SnackbarProps {
 }
 
 
-const SnackbarBase = (props: SnackbarProps): React.ReactElement => {
+const Snackbar = (props: SnackbarProps): React.ReactElement => {
   const {onHide, snack, style, timeoutMillisecs, ...otherProps} = props
   const [isVisible, setIsVisible] = useState(!!snack)
   const [visibleSnack, nextSnack] = useQueue(snack)
@@ -65,7 +66,7 @@ const SnackbarBase = (props: SnackbarProps): React.ReactElement => {
     }
     const timeout = window.setTimeout(hide, timeoutMillisecs)
     return (): void => {
-      clearTimeout(timeout)
+      window.clearTimeout(timeout)
     }
   }, [hide, isVisible, timeoutMillisecs])
 
@@ -119,13 +120,12 @@ const SnackbarBase = (props: SnackbarProps): React.ReactElement => {
     </div>
   </OutsideClickHandler>
 }
-SnackbarBase.propTypes = {
+Snackbar.propTypes = {
   onHide: PropTypes.func.isRequired,
   snack: PropTypes.node,
   style: PropTypes.object,
   timeoutMillisecs: PropTypes.number.isRequired,
 }
-const Snackbar = React.memo(SnackbarBase)
 
 
-export {Snackbar}
+export default React.memo(Snackbar)

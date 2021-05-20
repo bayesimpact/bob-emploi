@@ -8,6 +8,7 @@ import "bob_emploi/frontend/api/stats.proto";
 import "bob_emploi/frontend/api/user.proto";
 
 package bayes.bob;
+option go_package="bayes.org/bob_emploi/frontend/api/use_case";
 
 message UseCasePools {
   // A sorted list of use case groups. The ones available in the db to be fetch.
@@ -142,7 +143,7 @@ message UseCaseDistribution {
 
   // The ordered list of categories that was used to determine the distribution. This field might be
   // empty if we assume the recipient is already aware of it.
-  repeated DiagnosticCategory categories = 4;
+  repeated DiagnosticMainChallenge categories = 4;
 }
 
 message UseCaseExamples {
@@ -168,7 +169,7 @@ message LaborStatsData {
 // diagnostic categories.
 message UseCasesDistributionRequest {
   // A BobMind represented as an ordered list of categories with their filters.
-  repeated DiagnosticCategory categories = 1;
+  repeated DiagnosticMainChallenge categories = 1;
 
   // Maximum number of use cases to consider. Defaults to 400.
   uint32 max_use_cases = 2;

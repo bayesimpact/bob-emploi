@@ -7,9 +7,53 @@ Each plugin has the same structure as the core app, with `cfg` and `src` folders
 
 ## Configuration
 
-The configuration can extend the base config, in particular `entrypoints`, `colors`, and `const` and `const_dist`.
+The configuration can extend the base config, in particular `entrypoints`, `colors`, and `const`.
 
-Entrypoints are not namespaced, and their route in the dev server are not prefixed either, so you should be careful not to use an entrypoint with a rewrite overlapping an existing one.
+### Entrypoints
+
+Entrypoints are not namespaced, and their route in the dev server are not prefixed either, so you should be careful not to use an entrypoint with a rewrite overlapping an existing one. However, their `entry` is relative to the plugin folder, so you may use `./src/entry`, for instance.
+
+### Loaders
+
+For plugins to add content to entrypoints from `core` or other plugins, you can add loaders. In the `src/loaders` subfolder of a plugin, Bob framework will load modules in Webpack with the name of the entrypoint. For instance when loading or compiling the core `nps` entrypoint, Bob will also load modules from `plugins/*/src/loaders/nps` if they exist. Note that those loaders export are not used, so they need to have side effects.
+
+### Colors
+
+You may create a plugin-specific `colors.json5`, which will allow your plugin to use specific colors.
+
+If colors have the same name in core and the plugin, priorities are as follows (latter source will override former ones):
+
+- core colors (i.e. from cfg/colors.json5)
+- plugin colors (e.g. from plugins/jobflix/cfg/colors.json5)
+- deployment colors (e.g. from cfg/deployments/fr.json5#colors)
+
+#### Typing
+
+For the colors to be properly typed, you need to go through the following steps:
+
+- Add a `custom.d.ts` file in your plugin
+- Add a `tsconfig.json` file at the root of the plugin folder that includes (at least) the core `custom.d.ts` and the one you just created
+- Add a conversion of the `colors.json5` file to json in `frontend/client/entrypoint.sh` (replacing the variables with what you see fit):
+```bash
+    npx json5 plugins/$PLUGIN_NAME/cfg/colors.json5 > /tmp/bob_emploi/${PLUGIN_NAME}_colors.json
+```
+- Add the following lines in the newly created `custom.d.ts`:
+```typescript
+    type PluginColors = {[name in keyof typeof import('/tmp/bob_emploi/${PLUGIN_NAME}_colors.json')]: ConfigColor}
+    interface Colors extends CoreColors, PluginColors {}
+```
+
+### Constants
+
+Constants (available inside the code from `config.constantName`) can be found in 5 different files:
+
+- `cfg/const.json5` has all the production constants for the core
+- `cfg/deployments/$deployment.json5` has all the deployment-specific (fr, usa, uk) constants for the core
+- `plugins/$PLUGIN_NAME/cfg/const.json5` has all the production constants for the plugin (no need to create it if you don't have any plugin-specific constants)
+- `cfg/deployments/environment/$environment.js` has all the environment-specific (in dev or demo) constants for the core (that should apply for the plugins too)
+- `plugins/$PLUGIN_NAME/cfg/deployments/$deployment.js` has all the environment-specific (in dev or demo) constants for the plugin
+
+The constants are added in that order, so if a constant name has different values in different files, the last one in this list will be used.
 
 ## Sources
 
@@ -32,3 +76,9 @@ For translation, you may use the string extraction process already in place in t
 ## Plugin selection
 
 You can choose to use only specific plugins by putting them as a comma separated list in the `BOB_PLUGINS` environment variable.
+
+## Tests
+
+If you have tests for your plugin, that need to be run in a webpack environment, create a `test/loadtests.ts` file in your plugin folder, as a test entry.
+
+To test only some plugins, run `npm run test -- my-plugin my-other-plugin`. To watch tests for a given plugin, run `BOB_PLUGIN_TEST=my-plugin npm run test:watch`.

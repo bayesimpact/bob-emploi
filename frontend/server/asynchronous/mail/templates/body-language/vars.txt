@@ -1,5 +1,0 @@
-changeEmailSettingsUrl
-firstName
-gender
-statusUpdateUrl
-worstFrustration

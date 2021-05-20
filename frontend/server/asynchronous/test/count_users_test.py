@@ -26,6 +26,7 @@ class CountUsersTestCase(unittest.TestCase):
         self.addCleanup(patcher.stop)
         self._user_db.user.insert_many([
             {
+                'profile': {'name': 'Pascal'},
                 'projects': [{
                     'city': {
                         'departementId': '69',
@@ -43,6 +44,7 @@ class CountUsersTestCase(unittest.TestCase):
                 }],
             },
             {
+                'profile': {'name': 'Pascal'},
                 'projects': [{
                     'city': {
                         'departementId': '61',
@@ -89,7 +91,8 @@ class CountUsersTestCase(unittest.TestCase):
                     'weeklyApplicationsEstimate': 'SOME',
                     'totalInterviewCount': 1,
                     'passionateLevel': 'ALIMENTARY_JOB',
-                    'jobSearchLengthMonths': 14,
+                    'jobSearchStartedAt': '2018-08-01T12:20:11Z',
+                    'createdAt': '2019-10-01T12:20:11Z',
                 }],
             },
             {
@@ -115,6 +118,22 @@ class CountUsersTestCase(unittest.TestCase):
                 'projects': [],
             },
         ])
+        self._user_db.user.insert_many([
+            {'profile': {'name': 'Pascal'}, 'projects': [{}]}
+            for unused_i in range(148)
+        ])
+        self._user_db.user.insert_many([
+            {'profile': {'name': 'Cyrille'}, 'projects': [{}]}
+            for unused_i in range(70)
+        ])
+        self._user_db.user.insert_many([
+            {'profile': {'name': 'REDACTED'}, 'projects': [{}]}
+            for unused_i in range(50)
+        ])
+        # One user with 50 projects, only counts for once.
+        self._user_db.user.insert_one({'profile': {'name': 'Sil'}, 'projects': [
+            {} for unused_i in range(50)
+        ]})
 
     def test_main(self) -> None:
         """Test main."""
@@ -122,8 +141,7 @@ class CountUsersTestCase(unittest.TestCase):
         count_users.main()
         result = self._db.user_count.find_one({'_id': ''})
         self.assertTrue(result)
-        result_proto = typing.cast(
-            stats_pb2.UsersCount, proto.create_from_mongo(result, stats_pb2.UsersCount))
+        result_proto = proto.create_from_mongo(result, stats_pb2.UsersCount)
         self.assertEqual(2, result_proto.departement_counts['69'])
         self.assertEqual(1, result_proto.departement_counts['64'])
         self.assertEqual(2, result_proto.job_group_counts['A1235'])
@@ -142,7 +160,10 @@ class CountUsersTestCase(unittest.TestCase):
                 stats_pb2.PassionLevelCount(passionate_level=project_pb2.LIFE_GOAL_JOB, count=1),
                 stats_pb2.PassionLevelCount(passionate_level=project_pb2.ALIMENTARY_JOB, count=2)
             ],
-            sorted(result_proto.passion_level_counts[1].level_counts, key=lambda a: a.count))
+            sorted(
+                result_proto.passion_level_counts[1].level_counts,
+                key=lambda a: typing.cast(stats_pb2.PassionLevelCount, a).count))
+        self.assertEqual({'Pascal': .75, 'Cyrille': .25}, result_proto.frequent_firstnames)
 
     def test_update(self) -> None:
         """Ensure updating overrides previous values."""
@@ -153,8 +174,7 @@ class CountUsersTestCase(unittest.TestCase):
         count_users.main()
         result = self._db.user_count.find_one({'_id': ''})
         self.assertTrue(result)
-        result_proto = typing.cast(
-            stats_pb2.UsersCount, proto.create_from_mongo(result, stats_pb2.UsersCount))
+        result_proto = proto.create_from_mongo(result, stats_pb2.UsersCount)
         self.assertFalse(result_proto.departement_counts)
         self.assertFalse(result_proto.job_group_counts)
 

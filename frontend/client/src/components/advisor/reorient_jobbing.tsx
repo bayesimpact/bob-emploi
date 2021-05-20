@@ -3,28 +3,33 @@ import PropTypes from 'prop-types'
 
 import {inDepartement} from 'store/french'
 
-import {Trans} from 'components/i18n'
-import {DataSource, GrowingNumber} from 'components/theme'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import Picto from 'images/advices/picto-reorient-jobbing.svg'
 
-import {CardProps, JobSuggestion, MethodSuggestionList, useAdviceData} from './base'
+import {CardProps, JobSuggestion, useAdviceData, ReorientSection} from './base'
 
 
 const emptyArray = [] as const
-type JobSuggestionProps = GetProps<typeof JobSuggestion>
+type JobSuggestionProps = React.ComponentProps<typeof JobSuggestion>
 
 
 const ReorientJobbing = (props: CardProps): React.ReactElement|null => {
   const {handleExplore, project: {city}, t} = props
-  const {reorientJobbingJobs = emptyArray} = useAdviceData<bayes.bob.JobbingReorientJobs>(props)
+  const {data: {reorientJobbingJobs = emptyArray}, loading} =
+    useAdviceData<bayes.bob.JobbingReorientJobs>(props)
   const allJobs = useMemo(
     (): readonly React.ReactElement<JobSuggestionProps>[] => reorientJobbingJobs.slice(0, 6).
       map((job, index): React.ReactElement<JobSuggestionProps> => <JobSuggestion
-        isMethodSuggestion={true} key={`job-${index}`} job={job} onClick={handleExplore('job')} />),
+        key={`job-${index}`} job={job} onClick={handleExplore('job')} />),
     [handleExplore, reorientJobbingJobs],
   )
-
-  const inYourDepartement = city && inDepartement(city) || t('dans votre département')
+  const items = useMemo(
+    (): React.ReactElement<JobSuggestionProps>[] =>
+      [<JobSuggestion isCaption={true} key="jobs-caption" />, ...allJobs],
+    [allJobs],
+  )
+  const inYourDepartement = city && inDepartement(city, t) || t('dans votre département')
 
   const title = <React.Fragment>
     <Trans parent={null} t={t} count={allJobs.length}>
@@ -33,14 +38,13 @@ const ReorientJobbing = (props: CardProps): React.ReactElement|null => {
     </Trans>
     *
   </React.Fragment>
-  const footer = <DataSource style={{margin: 0}}>IMT 2017 / Pôle emploi</DataSource>
-  return <MethodSuggestionList title={title} footer={footer}>
-    {[<JobSuggestion
-      isNotClickable={true}
-      isMethodSuggestion={true}
-      isCaption={true}
-      key="jobs-caption" />].concat(allJobs)}
-  </MethodSuggestionList>
+  if (loading) {
+    return loading
+  }
+  return <ReorientSection
+    title={title}
+    isNotClickable={true}
+    items={items} />
 }
 ReorientJobbing.propTypes = {
   handleExplore: PropTypes.func.isRequired,

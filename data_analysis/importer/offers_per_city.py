@@ -160,7 +160,7 @@ def extract_offers_per_cities(
                     })
 
         job_group_to_kept_cities[job_group] = sorted(
-            kept_cities, key=lambda k: k['offersPerInhabitant'], reverse=True)
+            kept_cities, key=lambda k: typing.cast(float, k['offersPerInhabitant']), reverse=True)
 
     return [
         {'_id': job_group_id, 'hiringCities': job_group_weighted_cities}

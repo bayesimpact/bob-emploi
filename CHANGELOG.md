@@ -1,5 +1,408 @@
 This is a detailed changelog of past Bob product releases. For a high level non-technical view of the project history, see [HISTORY.md](HISTORY.md).
 
+# 2021-05-19_00
+
+- Fix the deep URLs in the Eval tool.
+- Update the NPS form.
+- Prepare a page with the list of coaching emails sent to the user.
+- Improve logging to Amplitude for the Convince flow.
+
+Deployed on Wed, 19 May 2021 10:17:11 +0000
+
+# 2021-05-11_01
+
+- Update loading page
+- Many improvements and fixes to get the continuous deployment to work
+
+Deployed on Tue, 11 May 2021 15:59:34 +0000
+
+# 2021-05-04_00 (Auto-release)
+
+- More translations
+- Clean Code, Bug Fixes, Documentation, ...
+
+Deployed on Wed, 05 May 2021 09:29:06 +0000
+
+# 2021-04-27_00 (Auto-release)
+
+- Add partners
+- Clean Code, Bug Fixes, ...
+
+Deployed on Thu, 29 Apr 2021 10:00:07 +0000
+
+# 2021-04-21_00
+
+- Activate self diagnostic in the intro (and remove from onboarding)
+- Add a challenge agreement report, Drop daily stars rating
+- Correct UI bugs
+- Internal developments: auto release notes,...
+- Move A-Li images to its plugin. (#15500)
+
+Deployed on Wed, 21 Apr 2021 08:34:38 +0000
+
+# 2021-04-20_00
+
+- Update landing page
+- Prepare self diagnostic in intro
+- Clean Code, Bug Fixes, ...
+
+Deployed on Tue, 20 Apr 2021 10:06:18 +0000
+
+# 2021-04-14_01
+
+- Update transparency numbers
+- Activate convince page for all the users
+- Clean code (old route names, move FR code to deployment, whitelist / blacklist, svg issues...)
+- Upgrade libs (eslint, google-auth, protobuf, amplitude, sinon, i18next, pylint)
+
+Deployed on Wed, 14 Apr 2021 11:30:47 +0000
+
+# 2021-03-30_00
+
+- Logs for the new onboarding 
+- User script to delete inactive users 
+- Coaching email randomness balanced by the frequency 
+- (under the hood) new Theory of Change implementation 
+- Lib upgrade (unicorn v29+, elasticsearch 7.12, google-auth 1.28, pycodestyle 2.7, pyjson5 1.5) 
+- Fixes (symlinks)
+
+Deployed on Wed, 31 Mar 2021 08:31:14 +0000
+
+# 2021-03-12_01
+
+* Revamp the self diagnostic question in the onboarding (move towards the end, and use buttons instead of radio group)
+* Show the main challenges in the loading page
+* Change the coaching system so that it uses more serendipity and can be configured to favor started or recommended strategies
+* Document properly the Bob API
+
+Deployed on Fri, 12 Mar 2021 14:14:12 +0000
+
+# 2021-03-03_00
+
+* Fix an i18n bug in advice modules
+* Radar: launch the real Typeform
+* Radar: generate mock data to show what the Dashboard looks like
+* Prepare for guided serendipity in coaching emails
+* Lib upgrade (Webpack 5)
+* Some accessibility fixes
+
+Deployed on Wed, 03 Mar 2021 10:05:37 +0000
+
+# 2021-02-16_00
+
+- Many UI fixes in Jobflix
+- I18n fix for coaching emails
+
+Deployed on Tue, 16 Feb 2021 14:15:32 +0000
+
+# 2021-02-12_00
+
+- Mobile UI for Jobflix
+- Clean Code, Bug Fixes, A11y, ...
+
+Deployed on Fri, 12 Feb 2021 10:47:53 +0000
+
+# 2021-02-02_02
+
+* Jobflix recommendations improvements.
+* Add a menu to Jobflix to lead to Bayes Impact website.
+* Make it possible to force sending emails from Debug modal and Eval tool.
+* Radar bookmarklet first implementation (tool to survey Milo)
+* Document our coaching email API
+
+Deployed on Wed, 03 Feb 2021 08:03:26 +0000
+
+# 2021-01-22_00
+
+- Jobflix improvments (UI / standalone)
+- API cleaning and documentation
+- Statistics update
+- An unknown covid risky job is considered as safe / good job
+- a11y corrections
+- Clean code, bugfixes
+
+Deployed on Fri, 22 Jan 2021 10:58:26 +0000
+
+# 2021-01-15_01
+
+- Add an API for full diagnostic + solutions 
+- Jobflix updates
+- Training method for UK
+- Clean Code, A11y, Small Fixes, ...
+
+Deployed on Mon, 18 Jan 2021 09:58:32 +0000
+
+# 2021-01-08_00
+
+- Add sectors in jobflix
+- Add covid-related info
+
+Deployed on Mon, 11 Jan 2021 13:49:43 +0000
+
+# 2021-01-05_01
+
+* Small improvements and fixes for the Upskilling tool.
+* Prepare a new method for Covid-safe jobs.
+
+Deployed on Wed, 06 Jan 2021 07:00:04 +0000
+
+# 2020-12-23_04
+
+- Small improvments in the Jobs Explorer
+- Covid-related content
+- Clean Code, Small Fixes, ...
+
+Deployed on Thu, 24 Dec 2020 12:52:17 +0000
+
+# 2020-12-22_01
+
+- Small changes in Jobs explorer
+- A11y updates
+- Fetch trainings for UK
+- Clean Code, Bug Fixes, ...
+
+Deployed on Tue, 22 Dec 2020 16:41:51 +0000
+
+# 2020-12-18_02
+
+* Final binary release to launch Jobs Explorer for the "undefined-project" category.
+
+Deployed on Fri, 18 Dec 2020 20:53:02 +0000
+
+# 2020-12-18_00
+
+* Prepare the redirection from "undefined-project" category to the new Jobs Explorer
+* Improve the Jobs Explorer (almost ready to launch).
+
+Deployed on Fri, 18 Dec 2020 13:23:15 +0000
+
+# 2020-12-16_00
+
+* A new category for COVID-19 affected jobs and occupations (for UK mostly).
+* Jobs Explorer in progress (under the hood)
+* Fallback on translated strings of broader locales if they exists (en_UK => en, fr@tu => fr)
+
+Deployed on Wed, 16 Dec 2020 14:21:04 +0000
+
+# 2020-12-08_00
+
+- Better a11y compatibility
+- (under the hood) Job explorer
+- (under the hood) Prepare for a Covid-Risk main challenge
+
+Deployed on Tue, 08 Dec 2020 13:57:34 +0000
+
+# 2020-12-01_00
+
+- Update numbers on transparency page
+- UK updates
+- Clean Code, A11y, Bugfix (auth password reset)
+- Upgrades (React v17+, ...)
+
+Deployed on Wed, 02 Dec 2020 09:46:10 +0000
+
+# 2020-11-25_01
+
+- Translate some emails for UK
+- Small changes in UI for English
+- Clean Code, Bug Fixes, ...
+
+Deployed on Wed, 25 Nov 2020 23:30:53 +0000
+
+Deployed on Fri, 04 Dec 2020 11:11:01 +0000
+
+# 2020-11-23_00
+
+- A-Li logging improvements and uses City suggest.
+- Fixes for content post-covid
+- Add Automation Risk in the stats page (UK data only for now).
+- Add a longer NPS survey (UK only).
+- Translate the eval tool
+- Small enhancements for a11y and i18n
+- Use fake first names when creating use cases
+
+Deployed on Mon, 23 Nov 2020 16:11:20 +0000
+
+# 2020-11-10_00
+
+- Add frustrations about foreign background
+
+Deployed on Thu, 12 Nov 2020 14:05:06 +0000
+
+# - Translation update and process - Bug Fixes, Clean Code...
+
+Deployed on Mon, 09 Nov 2020 14:09:31 +0000
+
+# 2020-11-02_00
+
+- USA/UK-specific content
+- Better analytics and privacy
+- Translation process
+- Clean Code, Bug Fixes, ...
+
+Deployed on Tue, 03 Nov 2020 07:43:37 +0000
+
+# 2020-10-30_00
+
+- Bob+Human
+- i18n : fr@tu mails, translations processes changes
+- Clean code
+
+# 2020-10-14_00
+
+- UK-specific content
+- Update some coaching emails, with translations
+- Bug Fixes, Clean Code, ...
+
+Deployed on Wed, 14 Oct 2020 13:41:04 +0000
+
+# 2020-10-07_01
+
+- USA/UK-specific content
+- Better analytics and privacy
+- Clean Code, Bug Fixes, ...
+
+Deployed on Wed, 07 Oct 2020 12:46:25 +0000
+
+# 2020-09-28_00
+
+- Improvements for Bob US/UK (content mostly).
+- Prepare an mailing to Bob users for upskilling research and another one to tell them about the Switch grant.
+- Small fixes and improvements.
+- Stop using cookies for Google Analytics (privacy improvement).
+
+Deployed on Mon, 28 Sep 2020 09:23:36 +0000
+
+# 2020-09-22_01
+
+- English fixes and improvements.
+- Bob US fixes (diplomas, map).
+- Fix bug where methods are loading forever.
+- Improve analytics for Bob US
+
+Deployed on Tue, 22 Sep 2020 11:02:06 +0000
+
+# 2020-09-14_02
+
+- Some fixes in English content.
+- Connect users coming from mavoie.org
+- More a11y fixes.
+- Prepare a campaign to survey our users about upskilling.
+- Many fixes in CI/CD pipelines
+
+Deployed on Tue, 15 Sep 2020 10:45:03 +0000
+
+# 2020-09-07_01
+
+- Fix login and analytics for Bob US
+- Some accessibiity fixes
+
+Deployed on Wed, 09 Sep 2020 09:28:35 +0000
+
+# 2020-09-02_00
+
+Many small fixes and features for Bob US and the English translations:
+- Dynamic text translation fixes.
+- Enable coaching emails for English
+- Drop the gender question when using English. (#12948)
+- Update the options of some questions in Bob US
+
+- Add an info note about why we ask about sex/gender.
+
+Deployed on Wed, 02 Sep 2020 15:43:01 +0000
+
+# 2020-08-28_00
+
+- Preparing the US soft launch
+- Clean Code, Bug Fixes, ...
+- Prepare some coaching emails for the US
+
+Deployed on Mon, 31 Aug 2020 08:00:30 +0000
+
+# 2020-08-18_01
+
+- Some US-specific translations
+- Allow emails to be translated
+- Clean Code, Bug Fixes, ...
+
+Deployed on Wed, 19 Aug 2020 07:44:14 +0000
+
+# 2020-07-30_01
+
+- Update questions in employment survey
+- Prepare translations for focus emails
+- Clean Code, DevOps updates, ...
+
+Deployed on Thu, 30 Jul 2020 15:49:16 +0000
+
+# 2020-07-13_00
+
+- Coaching: clean up some emails and prepare prioritization of emails per user
+- Small privacy fix (no emails in logs)
+- Prepare the client to be different for Bob US and Bob FR
+
+Deployed on Wed, 15 Jul 2020 13:58:27 +0000
+
+# 2020-07-01_01
+
+- [Data US/UK] Use UK and US cities for the respective deployments.
+- [Data US/UK] Use the deployment, not the translation to define the right job suggest index.
+- Extended auth validity from 2 hours to 2 days
+- Updated covid page (after lockdown)
+- Changes on focus emails, mailjet
+- Code cleaning + demo, deployments, build, linter improvements
+
+Deployed on Wed, 01 Jul 2020 14:51:54 +0000
+
+# 2020-06-25_00
+
+- Revamp of the evaluation process (ElasticSearch fix)
+- Use an English job suggest in English
+- Update metrics and people pages
+- Code cleaning, dependencies upgrade
+
+Deployed on Thu, 25 Jun 2020 14:29:22 +0000
+
+# 2020-06-11_00
+
+- Fix phrasing in internal report of coaching emails send report
+- Fix image in English landing page.
+- Small fixes in various advice modules.
+
+Deployed on Thu, 11 Jun 2020 15:03:59 +0000
+
+# 2020-05-28_00
+
+- Evaluation: new questions and logging.
+- More translations.
+- Bug fix.
+
+Deployed on Fri, 29 May 2020 08:57:57 +0000
+
+# 2020-05-20_03
+
+* Fix a crash when using fr@tu locale.
+
+Deployed on Wed, 20 May 2020 19:23:37 +0000
+
+# 2020-05-20_02
+
+* Improve translation of demo user.
+* More analytics for ALi
+* More questions in NPS
+* Under the hood: Plugable.
+
+Deployed on Wed, 20 May 2020 12:06:55 +0000
+
+# 2020-05-20_01
+
+* Improve translation of demo user.
+* More analytics for ALi
+* More questions in NPS
+* Under the hood: Plugable.
+
+Deployed on Wed, 20 May 2020 11:58:24 +0000
+
 # 2020-04-22_00
 
 - Start revamping the evaluation by asking the user for a self diagnostic.

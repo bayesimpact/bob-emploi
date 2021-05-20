@@ -1,0 +1,124 @@
+O*NET-SOC Code	Element ID	Element Name	Scale ID	Category	Data Value	N	Standard Error	Lower CI Bound	Upper CI Bound	Recommend Suppress	Date	Domain Source
+11-1011.00	2.D.1	Required Level of Education	RL	1	0.00	27	0.00	n/a	n/a	N	07/2014	Incumbent
+11-1011.00	2.D.1	Required Level of Education	RL	2	0.00	27	0.00	n/a	n/a	N	07/2014	Incumbent
+11-1011.00	2.D.1	Required Level of Education	RL	3	0.00	27	0.00	n/a	n/a	N	07/2014	Incumbent
+11-1011.00	2.D.1	Required Level of Education	RL	4	6.05	27	4.43	1.28	24.19	N	07/2014	Incumbent
+11-1011.00	2.D.1	Required Level of Education	RL	5	4.23	27	4.27	0.50	27.80	N	07/2014	Incumbent
+11-1011.00	2.D.1	Required Level of Education	RL	6	21.61	27	9.79	7.76	47.47	N	07/2014	Incumbent
+11-1011.00	2.D.1	Required Level of Education	RL	7	13.66	27	8.42	3.52	40.70	N	07/2014	Incumbent
+11-1011.00	2.D.1	Required Level of Education	RL	8	25.83	27	11.34	9.35	54.03	N	07/2014	Incumbent
+11-1011.00	2.D.1	Required Level of Education	RL	9	19.23	27	16.21	2.71	67.05	Y	07/2014	Incumbent
+11-1011.00	2.D.1	Required Level of Education	RL	10	0.00	27	0.00	n/a	n/a	N	07/2014	Incumbent
+11-1011.00	2.D.1	Required Level of Education	RL	11	9.39	27	6.68	2.02	34.26	N	07/2014	Incumbent
+11-1011.00	2.D.1	Required Level of Education	RL	12	0.00	27	0.00	n/a	n/a	N	07/2014	Incumbent
+11-1011.00	3.A.1	Related Work Experience	RW	1	0.00	27	0.00	n/a	n/a	N	07/2014	Incumbent
+11-1011.00	3.A.1	Related Work Experience	RW	2	0.00	27	0.00	n/a	n/a	N	07/2014	Incumbent
+11-1011.00	3.A.1	Related Work Experience	RW	3	0.00	27	0.00	n/a	n/a	N	07/2014	Incumbent
+11-1011.00	3.A.1	Related Work Experience	RW	4	0.00	27	0.00	n/a	n/a	N	07/2014	Incumbent
+11-1011.00	3.A.1	Related Work Experience	RW	5	0.00	27	0.00	n/a	n/a	N	07/2014	Incumbent
+11-1011.00	3.A.1	Related Work Experience	RW	6	5.55	27	5.48	0.68	33.52	N	07/2014	Incumbent
+11-1011.00	3.A.1	Related Work Experience	RW	7	12.75	27	8.16	3.13	39.76	N	07/2014	Incumbent
+11-1011.00	3.A.1	Related Work Experience	RW	8	9.17	27	5.63	2.46	28.82	N	07/2014	Incumbent
+11-1011.00	3.A.1	Related Work Experience	RW	9	28.17	27	11.44	10.93	55.63	N	07/2014	Incumbent
+11-1011.00	3.A.1	Related Work Experience	RW	10	12.63	27	7.39	3.52	36.41	N	07/2014	Incumbent
+11-1011.00	3.A.1	Related Work Experience	RW	11	31.74	27	9.93	15.34	54.40	N	07/2014	Incumbent
+11-1011.00	3.A.2	On-Site or In-Plant Training	PT	1	26.49	27	13.04	8.34	58.81	N	07/2014	Incumbent
+11-1011.00	3.A.2	On-Site or In-Plant Training	PT	2	3.24	27	3.28	0.39	22.32	N	07/2014	Incumbent
+11-1011.00	3.A.2	On-Site or In-Plant Training	PT	3	13.64	27	7.30	4.23	36.07	N	07/2014	Incumbent
+11-1011.00	3.A.2	On-Site or In-Plant Training	PT	4	0.43	27	0.45	0.05	3.55	N	07/2014	Incumbent
+11-1011.00	3.A.2	On-Site or In-Plant Training	PT	5	5.55	27	5.48	0.68	33.52	N	07/2014	Incumbent
+11-1011.00	3.A.2	On-Site or In-Plant Training	PT	6	19.36	27	9.34	6.56	45.07	N	07/2014	Incumbent
+11-1011.00	3.A.2	On-Site or In-Plant Training	PT	7	7.83	27	4.83	2.10	25.15	N	07/2014	Incumbent
+11-1011.00	3.A.2	On-Site or In-Plant Training	PT	8	13.85	27	8.54	3.56	41.17	N	07/2014	Incumbent
+11-1011.00	3.A.2	On-Site or In-Plant Training	PT	9	9.61	27	8.11	1.54	41.99	N	07/2014	Incumbent
+11-1011.00	3.A.3	On-the-Job Training	OJ	1	36.53	27	11.81	16.81	62.12	N	07/2014	Incumbent
+11-1011.00	3.A.3	On-the-Job Training	OJ	2	9.55	27	6.47	2.22	32.97	N	07/2014	Incumbent
+11-1011.00	3.A.3	On-the-Job Training	OJ	3	12.50	27	8.23	2.96	40.14	N	07/2014	Incumbent
+11-1011.00	3.A.3	On-the-Job Training	OJ	4	2.89	27	2.95	0.34	20.49	N	07/2014	Incumbent
+11-1011.00	3.A.3	On-the-Job Training	OJ	5	14.38	27	7.08	4.89	35.40	N	07/2014	Incumbent
+11-1011.00	3.A.3	On-the-Job Training	OJ	6	12.08	27	6.06	4.08	30.74	N	07/2014	Incumbent
+11-1011.00	3.A.3	On-the-Job Training	OJ	7	7.83	27	4.83	2.10	25.15	N	07/2014	Incumbent
+11-1011.00	3.A.3	On-the-Job Training	OJ	8	4.23	27	4.27	0.50	27.80	N	07/2014	Incumbent
+11-1011.00	3.A.3	On-the-Job Training	OJ	9	0.00	27	0.00	n/a	n/a	N	07/2014	Incumbent
+11-1011.03	2.D.1	Required Level of Education	RL	1	0.00	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	2.D.1	Required Level of Education	RL	2	0.00	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	2.D.1	Required Level of Education	RL	3	0.00	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	2.D.1	Required Level of Education	RL	4	0.00	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	2.D.1	Required Level of Education	RL	5	3.85	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	2.D.1	Required Level of Education	RL	6	42.31	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	2.D.1	Required Level of Education	RL	7	19.23	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	2.D.1	Required Level of Education	RL	8	30.77	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	2.D.1	Required Level of Education	RL	9	0.00	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	2.D.1	Required Level of Education	RL	10	3.85	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	2.D.1	Required Level of Education	RL	11	0.00	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	2.D.1	Required Level of Education	RL	12	0.00	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.1	Related Work Experience	RW	1	0.00	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.1	Related Work Experience	RW	2	0.00	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.1	Related Work Experience	RW	3	0.00	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.1	Related Work Experience	RW	4	0.00	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.1	Related Work Experience	RW	5	0.00	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.1	Related Work Experience	RW	6	3.85	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.1	Related Work Experience	RW	7	19.23	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.1	Related Work Experience	RW	8	15.38	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.1	Related Work Experience	RW	9	26.92	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.1	Related Work Experience	RW	10	15.38	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.1	Related Work Experience	RW	11	19.23	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.2	On-Site or In-Plant Training	PT	1	15.38	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.2	On-Site or In-Plant Training	PT	2	26.92	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.2	On-Site or In-Plant Training	PT	3	3.85	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.2	On-Site or In-Plant Training	PT	4	3.85	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.2	On-Site or In-Plant Training	PT	5	11.54	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.2	On-Site or In-Plant Training	PT	6	7.69	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.2	On-Site or In-Plant Training	PT	7	11.54	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.2	On-Site or In-Plant Training	PT	8	19.23	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.2	On-Site or In-Plant Training	PT	9	0.00	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.3	On-the-Job Training	OJ	1	3.85	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.3	On-the-Job Training	OJ	2	19.23	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.3	On-the-Job Training	OJ	3	15.38	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.3	On-the-Job Training	OJ	4	11.54	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.3	On-the-Job Training	OJ	5	15.38	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.3	On-the-Job Training	OJ	6	7.69	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.3	On-the-Job Training	OJ	7	7.69	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.3	On-the-Job Training	OJ	8	15.38	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1011.03	3.A.3	On-the-Job Training	OJ	9	3.85	26	n/a	n/a	n/a	n/a	07/2013	Occupational Expert
+11-1021.00	2.D.1	Required Level of Education	RL	1	0.00	55	0.00	n/a	n/a	N	07/2015	Incumbent
+11-1021.00	2.D.1	Required Level of Education	RL	2	15.20	55	5.68	6.90	30.24	N	07/2015	Incumbent
+11-1021.00	2.D.1	Required Level of Education	RL	3	9.00	55	7.37	1.60	37.56	N	07/2015	Incumbent
+11-1021.00	2.D.1	Required Level of Education	RL	4	19.18	55	6.91	8.85	36.70	N	07/2015	Incumbent
+11-1021.00	2.D.1	Required Level of Education	RL	5	8.59	55	4.24	3.09	21.71	N	07/2015	Incumbent
+11-1021.00	2.D.1	Required Level of Education	RL	6	29.29	55	9.64	14.01	51.29	N	07/2015	Incumbent
+11-1021.00	2.D.1	Required Level of Education	RL	7	14.58	55	7.77	4.66	37.35	N	07/2015	Incumbent
+11-1021.00	2.D.1	Required Level of Education	RL	8	0.80	55	0.81	0.10	5.89	N	07/2015	Incumbent
+11-1021.00	2.D.1	Required Level of Education	RL	9	3.37	55	3.20	0.48	20.02	N	07/2015	Incumbent
+11-1021.00	2.D.1	Required Level of Education	RL	10	0.00	55	0.00	n/a	n/a	N	07/2015	Incumbent
+11-1021.00	2.D.1	Required Level of Education	RL	11	0.00	55	0.00	n/a	n/a	N	07/2015	Incumbent
+11-1021.00	2.D.1	Required Level of Education	RL	12	0.00	55	0.00	n/a	n/a	N	07/2015	Incumbent
+11-1021.00	3.A.1	Related Work Experience	RW	1	1.08	54	1.10	0.14	7.86	N	07/2015	Incumbent
+11-1021.00	3.A.1	Related Work Experience	RW	2	0.00	54	0.00	n/a	n/a	N	07/2015	Incumbent
+11-1021.00	3.A.1	Related Work Experience	RW	3	0.00	54	0.00	n/a	n/a	N	07/2015	Incumbent
+11-1021.00	3.A.1	Related Work Experience	RW	4	0.00	54	0.00	n/a	n/a	N	07/2015	Incumbent
+11-1021.00	3.A.1	Related Work Experience	RW	5	5.09	54	4.58	0.80	26.38	N	07/2015	Incumbent
+11-1021.00	3.A.1	Related Work Experience	RW	6	11.27	54	5.06	4.40	25.96	N	07/2015	Incumbent
+11-1021.00	3.A.1	Related Work Experience	RW	7	22.06	54	8.78	9.23	44.07	N	07/2015	Incumbent
+11-1021.00	3.A.1	Related Work Experience	RW	8	24.36	54	9.00	10.78	46.18	N	07/2015	Incumbent
+11-1021.00	3.A.1	Related Work Experience	RW	9	8.65	54	4.52	2.92	22.95	N	07/2015	Incumbent
+11-1021.00	3.A.1	Related Work Experience	RW	10	13.04	54	6.68	4.39	32.85	N	07/2015	Incumbent
+11-1021.00	3.A.1	Related Work Experience	RW	11	14.44	54	7.77	4.57	37.32	N	07/2015	Incumbent
+11-1021.00	3.A.2	On-Site or In-Plant Training	PT	1	6.82	54	3.77	2.18	19.41	N	07/2015	Incumbent
+11-1021.00	3.A.2	On-Site or In-Plant Training	PT	2	27.29	54	9.39	12.69	49.24	N	07/2015	Incumbent
+11-1021.00	3.A.2	On-Site or In-Plant Training	PT	3	12.03	54	7.51	3.19	36.20	N	07/2015	Incumbent
+11-1021.00	3.A.2	On-Site or In-Plant Training	PT	4	15.58	54	6.95	6.01	34.74	N	07/2015	Incumbent
+11-1021.00	3.A.2	On-Site or In-Plant Training	PT	5	16.76	54	7.80	6.16	38.20	N	07/2015	Incumbent
+11-1021.00	3.A.2	On-Site or In-Plant Training	PT	6	11.53	54	5.41	4.31	27.40	N	07/2015	Incumbent
+11-1021.00	3.A.2	On-Site or In-Plant Training	PT	7	4.83	54	2.73	1.52	14.30	N	07/2015	Incumbent
+11-1021.00	3.A.2	On-Site or In-Plant Training	PT	8	4.84	54	4.14	0.83	23.57	N	07/2015	Incumbent
+11-1021.00	3.A.2	On-Site or In-Plant Training	PT	9	0.31	54	0.32	0.04	2.36	N	07/2015	Incumbent
+11-1021.00	3.A.3	On-the-Job Training	OJ	1	3.68	54	2.99	0.70	17.16	N	07/2015	Incumbent
+11-1021.00	3.A.3	On-the-Job Training	OJ	2	24.78	54	7.86	12.39	43.42	N	07/2015	Incumbent
+11-1021.00	3.A.3	On-the-Job Training	OJ	3	8.56	54	3.74	3.47	19.61	N	07/2015	Incumbent
+11-1021.00	3.A.3	On-the-Job Training	OJ	4	18.25	54	6.91	8.11	36.11	N	07/2015	Incumbent
+11-1021.00	3.A.3	On-the-Job Training	OJ	5	30.95	54	8.09	17.34	48.93	N	07/2015	Incumbent
+11-1021.00	3.A.3	On-the-Job Training	OJ	6	6.28	54	4.98	1.21	26.78	N	07/2015	Incumbent
+11-1021.00	3.A.3	On-the-Job Training	OJ	7	2.68	54	2.18	0.51	12.86	N	07/2015	Incumbent
+11-1021.00	3.A.3	On-the-Job Training	OJ	8	4.50	54	4.12	0.68	24.39	N	07/2015	Incumbent
+11-1021.00	3.A.3	On-the-Job Training	OJ	9	0.31	54	0.32	0.04	2.36	N	07/2015	Incumbent

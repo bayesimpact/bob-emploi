@@ -1,0 +1,156 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package bayes.radar;
+
+// Fields copied from the typeform results, for filtering capabilities.
+message FiltersExport {
+  uint32 age = 1;
+  string counselor_id = 3;
+  repeated string current_policies = 4;
+  string dossier_id = 5;
+  string referent_id = 6;
+  string school_level = 7;
+  string structure_id = 8;
+  string departement_id = 9;
+  string structure_name = 10;
+}
+
+// A message to make domain-related graphs in Kibana.
+// Each message represents, for a given user and domain, the time elapsed between
+// the start of the experiment and the time when the user is considered autonomous in that domain.
+// In the final export, there should be one document for each domain and user, whether they ever
+// reach autonomy in that domain or not.
+message DomainExport {
+
+  FiltersExport filters = 1;
+
+  // The specific domain this document refers to, in French: e.g. Emploi, Logement.
+  string domain = 9;
+
+  // How long it's been between the start of the experiment (= first photo) and the first
+  // "autonomous" photo. Autonomy in a domain is considered reached once at least two of the skills
+  // are at level 4 in a given photo.
+  // A value of 1000 means never autonomous (in the observed timeframe).
+  // Note that autonomy at the second photo (= first photo with info) would give here a value of 0.
+  // So one can read this value by: 0 if user is already autonomous, or number of months since the
+  // beginning of the experiment.
+  // WARNING: this definition may change later on.
+  uint32 autonomous_after_months = 10;
+
+  // How long it's been between the start of the experiment and the first "mobilized" photo. At
+  // least 2 levels of the domain must be >= 3.
+  uint32 mobilized_after_months = 14;
+
+  // How long it's been between the start of the experiment and the first "knowledgeable" photo. At
+  // least 2 levels of the domain must be >= 2.
+  uint32 knowledgeable_after_months = 15;
+
+  // How long it's been between the start of the experiment and the first "interested" photo. At
+  // least 2 levels of the domain must be >= 2.
+  uint32 interested_after_months = 16;
+
+  // The time when the user started the experiment. This might be the first time a photo is ever
+  // taken of them, or when they were added to the experiment (either at the sampling stage or when
+  // the user registers to MiLo).
+  google.protobuf.Timestamp started_at = 11;
+
+  // The score for the given user in the specific domain at the first taken photo.
+  // Autonomy score is the sum of the different levels in each skill.
+  uint32 start_autonomy_score = 12;
+  // The progress the user has made towards autonomy in the domain. It may only be positive.
+  uint32 autonomy_score_delta = 13;
+}
+
+// A message to make skill-related graphs in Kibana.
+// Each message represents, for a given user, domain and skill, the time elapsed between
+// the start of the experiment and the time when the user is considered autonomous in that skill.
+// In the final export, there should be one document for each domain, skill and user, whether they
+// ever reach autonomy in that skill or not.
+message SkillExport {
+
+  FiltersExport filters = 1;
+
+  // The specific domain this document refers to, in French: e.g. Emploi, Logement.
+  string domain = 9;
+
+  // The specific skill this document refers to, in French: e.g. Acteurs, Outils.
+  string skill = 2;
+
+  // How long it's been between the start of the experiment (= first photo) and the first
+  // "autonomous" photo. Autonomy in a domain is considered reached once at least two of the skills
+  // are at level 4 in a given photo.
+  // A value of 1000 means never autonomous (in the observed timeframe).
+  // Note that autonomy at the second photo (= first photo with info) would give here a value of 0.
+  // So one can read this value by: 0 if user is already autonomous, or number of months since the
+  // beginning of the experiment.
+  // WARNING: this definition may change later on.
+  uint32 autonomous_after_months = 10;
+
+  // The time when the user started the experiment. This might be the first time a photo is ever
+  // taken of them, or when they were added to the experiment (either at the sampling stage or when
+  // the user registers to MiLo).
+  google.protobuf.Timestamp started_at = 11;
+
+  // The score for the given user in the specific domain and skill at the first taken photo.
+  // Autonomy score can range fromm 1 to 4.
+  uint32 start_autonomy_score = 12;
+  // The progress the user has made towards autonomy in the domain and skill. It may only be
+  // positive.
+  uint32 autonomy_score_delta = 13;
+}
+
+// A message to have a count of autonomous domains for a user for graphs in Kibana.
+// There should be one message for each photo of each user.
+message PhotoExport {
+
+  FiltersExport filters = 1;
+
+  // The number of domains that are considered autonomous after the specified duration.
+  uint32 domains_count = 9;
+  // The number of domains in which the user has acquired autonomy since the first photo.
+  uint32 new_domains_count = 12;
+
+  // How long it's been between the start of the experiment (= first photo) and the time where the
+  // specified number of domains are autonomous.
+  uint32 autonomous_after_months = 10;
+
+  // Whether this is the first photo for a user: reference when the young person first joined the
+  // experiment.
+  bool is_first_photo = 13;
+
+  // Index of the photo. 1 based.
+  int32 photo_index = 15;
+
+  // Whether this is the latest photo for a user.
+  bool is_latest_photo = 14;
+
+  // The date of the first photo we had from this user.
+  google.protobuf.Timestamp started_at = 11;
+
+  // The date of the photo itself.
+  google.protobuf.Timestamp submitted_at = 16;
+}
+
+// A message to count the achievement that the MiLo scored: there should be one for each young
+// jobseeker in each domain, and each threshold they might have (if they start at level 3, then
+// they can only achieve going to level 4, whereas if they start at 0 then can have 4 different
+// achievements).
+message DomainAchievement {
+
+  FiltersExport filters = 1;
+
+  // The specific domain this document refers to, in French: e.g. Emploi, Logement.
+  string domain = 9;
+
+  // The achievement this document refers to, in French: e.g. Autonomie, Mobilisation.
+  string achievement = 10;
+
+  // 1 if the jobseeker succeeded (ended up higher than the threshold in their last photo). 0
+  // otherwise.
+  int32 score = 12;
+
+  // The date of the first photo we had from this user.
+  google.protobuf.Timestamp started_at = 11;
+}

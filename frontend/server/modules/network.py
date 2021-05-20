@@ -42,7 +42,8 @@ class _ImproveYourNetworkScoringModel(scoring_base.ModelBase):
         return network_pb2.ContactLeads(leads=[
             network_pb2.ContactLead(
                 name=project.populate_template(project.translate_string(template.name)),
-                email_example=project.populate_template(template.email_template),
+                email_example=project.populate_template(
+                    project.translate_string(template.email_template)),
                 contact_tip=project.translate_string(template.contact_tip))
             for template in sorted_leads
         ])

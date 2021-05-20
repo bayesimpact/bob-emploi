@@ -54,7 +54,7 @@ if [ -z "$OS_PASSWORD" ]; then
   echo "* Go to https://www.ovh.com/manager/cloud and select: Servers -> OpenStack"
   echo "* Create an user if you do not have any, and copy the password"
   echo "* Click on the little wrench and select 'Downloading an Openstack configuration file'"
-  echo "* Select 'GRA1 - Gravelines'"
+  echo "* Select 'GRA - Gravelines'"
   echo "* Source this file to export the OpenStack environment variables, it will ask for your password."
   exit 3
 fi
@@ -87,7 +87,7 @@ if ! swift list > /dev/null 2>&1; then
   echo "* Go to https://www.ovh.com/manager/cloud and select: Servers -> OpenStack"
   echo "* Create an user if you do not have any, and copy the password"
   echo "* Click on the little wrench and select 'Downloading an Openstack configuration file'"
-  echo "* Select 'GRA1 - Gravelines'"
+  echo "* Select 'GRA - Gravelines'"
   echo "* Source this file to export the OpenStack environment variables, it will ask for your password."
   exit 7
 fi
@@ -98,9 +98,9 @@ if ! pip show python-keystoneclient > /dev/null; then
   exit 8
 fi
 
-if [ -z "$GITHUB_TOKEN" ]; then
+if [ "$CI" ] && [ -z "$GITHUB_TOKEN" ]; then
   echo_error 'Setup GITHUB_TOKEN env variable to get `hub` to work.'
-  echo '* If trying to deploy from Circle CI, use the bob-emploi GitHub user.'
+  echo '* Use one from the bob-emploi GitHub user.'
   echo '* Create one on https://github.com/settings/tokens'
   exit 9
 fi
@@ -117,6 +117,11 @@ readonly DOCKER_SERVER_IMAGE="bayesimpact/$DOCKER_SERVER_REPO:$DOCKER_TAG"
 readonly DOCKER_CLIENT_IMAGE="bayesimpact/$DOCKER_CLIENT_REPO:$DOCKER_TAG"
 readonly ECS_FAMILY="frontend-flask"
 readonly ECS_SERVICE="flask-lb"
+# TODO(cyrille): Get those from cloudformation somehow.
+readonly US_AWS_REGION="us-east-1"
+readonly US_ECS_CLUSTER="bob-us-ECSCluster-Edamal28jXOS"
+readonly US_ECS_FAMILY="bob-frontend-server"
+readonly US_ECS_SERVICE="bob-us-ECSService-MN39WAE8W7QK"
 # Our OpenStack container, see
 # https://www.ovh.com/manager/cloud/index.html#/iaas/pci/project/7b9ade05d5f84f719adc2cbc76c07eec/storage
 readonly OPEN_STACK_CONTAINER="PE Static Assets"
@@ -156,60 +161,105 @@ if [ -z "$(grep "^." $RELEASE_NOTES)" ]; then
   exit 12
 fi
 
-# Deploying the server.
-echo_info 'Creating a new task definition…'
-# Do not print sensitive info from AWS.
-readonly CURRENT_SETTINGS=${-}
-set +x
-readonly PREVIOUS_DOCKER_SERVER_IMAGE=$(
-  aws ecs describe-task-definition --task-definition $ECS_FAMILY | \
-    python3 -c "import sys, json; containers = json.load(sys.stdin)['taskDefinition']['containerDefinitions']; print(containers[0]['image'])")
+function count_deployments()
+{
+  aws ecs describe-services --services $@ | \
+    jq '.services[0].deployments|length'
+}
 
-if [ "$PREVIOUS_DOCKER_SERVER_IMAGE" == "$DOCKER_SERVER_IMAGE" ]; then
-  echo_info 'The server is already deployed.'
-else
-  readonly CONTAINERS_DEFINITION=$(
-    aws ecs describe-task-definition --task-definition $ECS_FAMILY | \
-      python3 -c "import sys, json; containers = json.load(sys.stdin)['taskDefinition']['containerDefinitions']; containers[0]['environment'] = [dict(env_var, value='prod.$TAG') if env_var['name'] == 'SERVER_VERSION' else env_var for env_var in containers[0]['environment']]; containers[0]['image'] = '$DOCKER_SERVER_IMAGE'; print(json.dumps(containers))")
+function wait_for_deployment()
+{
+  while [ "$(count_deployments $@)" != "1" ]; do
+    printf .
+    sleep 10
+  done
+}
+
+function deploy_server() {
+  local FAMILY="$1"
+  local SERVICE="$2"
+  local CLUSTER="${3:-default}"
+  local REGION="${4:-eu-west-3}"
+  local SERVER_TAG="${6:-prod.$TAG}"
+  local OUTPUT_REGION="${6:-$REGION}"
+  # Deploying the server.
+  echo_info 'Creating a new task definition…'
+  # Do not print sensitive info from AWS.
+  local CURRENT_SETTINGS=${-}
+  set +x
+  local PREVIOUS_DOCKER_CONFIG=$(
+    aws ecs describe-task-definition --task-definition $FAMILY --region $REGION | \
+      jq '.taskDefinition | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+  local PREVIOUS_DOCKER_SERVER_IMAGE=$(jq -r '.containerDefinitions[0].image' <<< "$PREVIOUS_DOCKER_CONFIG")
+
+  if [ "$PREVIOUS_DOCKER_SERVER_IMAGE" == "$DOCKER_SERVER_IMAGE" ]; then
+    echo_info 'The server is already deployed.'
+    return
+  fi
+
+  local NEW_DOCKER_CONFIG=$(
+    jq --arg version "$SERVER_TAG" --arg new_image "$DOCKER_SERVER_IMAGE" \
+      '.containerDefinitions[0].image=$new_image | .containerDefinitions[0].environment |= map(select(.name=="SERVER_VERSION").value = $version)' <<< "$PREVIOUS_DOCKER_CONFIG")
 
   if [ -z "$DRY_RUN" ]; then
-    aws ecs register-task-definition --family=$ECS_FAMILY --container-definitions "$CONTAINERS_DEFINITION" > /dev/null
-    if [ -n "$ALTERNATE_AWS_REGION" ]; then
-      aws ecs register-task-definition --family=$ECS_FAMILY --container-definitions "$CONTAINERS_DEFINITION" --region="$ALTERNATE_AWS_REGION" > /dev/null
-    fi
+    aws ecs register-task-definition --region=$OUTPUT_REGION --family=$FAMILY \
+      --cli-input-json "$NEW_DOCKER_CONFIG" > /dev/null
   fi
   set -$CURRENT_SETTINGS
 
   echo_info 'Rolling out the new task definition…'
   if [ -z "$DRY_RUN" ]; then
-    aws ecs update-service --service=$ECS_SERVICE --task-definition=$ECS_FAMILY > /dev/null
-    if [ -n "$ALTERNATE_AWS_REGION" ]; then
-      aws ecs update-service --service=$ECS_SERVICE --task-definition=$ECS_FAMILY --region="$ALTERNATE_AWS_REGION" > /dev/null
-    fi
-
-    function count_deployments()
-    {
-      aws ecs describe-services --services $ECS_SERVICE "$@" | \
-        python3 -c "import sys, json; deployments = json.load(sys.stdin)['services'][0]['deployments']; print(len(deployments))"
-    }
-
-    function wait_for_deployment()
-    {
-      while [ "$(count_deployments "$@")" != "1" ]; do
-        printf .
-        sleep 10
-      done
-    }
-
-    wait_for_deployment
-    if [ -n "$ALTERNATE_AWS_REGION" ]; then
-      wait_for_deployment --region="$ALTERNATE_AWS_REGION"
-    fi
+    aws ecs update-service --service=$SERVICE --task-definition=$FAMILY --cluster=$CLUSTER --region=$OUTPUT_REGION > /dev/null
   fi
+}
 
-  echo_success 'Server deployed!'
+# Deploying the tagged version by updating the corresponding parameter in the CloudFormation stack.
+# TODO(cyrille): Use cloudformation/deploy_parameter.sh script.
+function deploy_stack_server {
+  # Change set must only have alphanumeric characters or dashes.
+  local CHANGE_SET_NAME=$(sed s'/[^-a-zA-Z0-9]/-/g' <<< "deploy-$TAG")
+  local NEW_PARAMETERS="$(
+    aws cloudformation describe-stacks $@ |
+    jq '.Stacks[0].Parameters' |
+    jq 'map(del(.ParameterValue)|.UsePreviousValue=true)' |
+    jq --arg docker_tag "$DOCKER_TAG" 'map(select(.ParameterKey == "FlaskDockerTag") = (.ParameterValue = $docker_tag|del(.UsePreviousValue)))'
+  )"
+
+  echo_info 'Rolling out the new task definition…'
+  aws cloudformation create-change-set --change-set-name "$CHANGE_SET_NAME" --use-previous-template $@ --parameters "$NEW_PARAMETERS"
+  if [ -z "$DRY_RUN" ]; then
+    aws cloudformation wait change-set-create-complete --change-set-name "$CHANGE_SET_NAME" $@
+    aws cloudformation execute-change-set --change-set-name "$CHANGE_SET_NAME" $@
+  fi
+}
+
+# TODO(cyrille): Drop since unused.
+deploy_server $ECS_FAMILY $ECS_SERVICE
+if [ -n "$ALTERNATE_AWS_REGION" ]; then
+  deploy_server $ECS_FAMILY $ECS_SERVICE default eu-west-3 "prod.$TAG" $ALTERNATE_AWS_REGION
 fi
 
+# TODO(cyrille): Use __bob_stack_params
+readonly DEPLOYABLE_STACKS="$(jq -r '.[]|select(.deprecatedFor | not)|.stackId,.region' "$DIRNAME/stack_deployments.json")"
+echo "$DEPLOYABLE_STACKS" | while read stack_name; do
+  read region
+  deploy_stack_server --stack-name "$stack_name" --region "$region"
+done
+
+if [ -z "$DRY_RUN" ]; then
+  wait_for_deployment $ECS_SERVICE
+  if [ -n "$ALTERNATE_AWS_REGION" ]; then
+    wait_for_deployment $ECS_FAMILY --region $ALTERNATE_AWS_REGION
+  fi
+fi
+echo_success "Server deployed for bob_fr!"
+echo "$DEPLOYABLE_STACKS" | while read stack_name; do
+  read region
+  if [ -z "$DRY_RUN" ]; then
+    aws cloudformation wait stack-update-complete --stack-name "$stack_name" --region "$region"
+  fi
+  echo_success "Server deployed for $stack_name!"
+done
 
 # Deploying the client.
 
@@ -238,9 +288,12 @@ rm -r $TMP_TAR_FILE
 
 echo_info 'Uploading files to the OpenStack container and S3 bucket…'
 pushd $TMP_DIR
+rm -r *Demo
 if [ -z "$DRY_RUN" ]; then
   swift upload "$OPEN_STACK_CONTAINER" --skip-identical *
   aws s3 cp "$(pwd)" "s3://$S3_BUCKET/" --recursive
+else
+  ls -R .
 fi
 popd
 
@@ -258,21 +311,17 @@ fi
 # TODO(cyrille): Add release info to Sentry, with sourcemap url.
 
 # Ping Slack to say the deployment is done.
-readonly SLACK_MESSAGE=$(mktemp)
 readonly ROLLBACK_COMMAND=\`"frontend/release/deploy.sh $PREVIOUS_RELEASE"\`
-python3 -c "import json
-release_notes = open('$RELEASE_NOTES', 'r').read()
-slack_message = {'text': 'A new version of Bob has been deployed ($TAG).\n%s\nTo rollback run: $ROLLBACK_COMMAND' % release_notes}
-with open('$SLACK_MESSAGE', 'w') as slack_message_file:
-  json.dump(slack_message, slack_message_file)"
+readonly SLACK_MESSAGE=$(jq -R --slurp --arg tag "$TAG" --arg rollback "$ROLLBACK_COMMAND" \
+  '{text: "A new version of Bob has been deployed (\($tag)).\n\(.)\nTo rollback run: \($rollback)"}' \
+  $RELEASE_NOTES)
 if [ -z "$DRY_RUN" ]; then
-  wget -o /dev/null -O /dev/null --post-file=$SLACK_MESSAGE "$SLACK_INTEGRATION_URL"
+  wget -o /dev/null -O /dev/null --post-data="$SLACK_MESSAGE" "$SLACK_INTEGRATION_URL"
 else
   echo 'Would send the following message to Slack:'
-  cat $SLACK_MESSAGE
+  echo "$SLACK_MESSAGE"
   echo ''
 fi
-rm -f $SLACK_MESSAGE
 rm -f $RELEASE_NOTES
 
 echo_success "Success!"

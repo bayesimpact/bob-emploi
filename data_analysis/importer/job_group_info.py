@@ -27,23 +27,22 @@ import pandas
 import pymongo
 
 from bob_emploi.data_analysis.importer import airtable_to_protos
+from bob_emploi.data_analysis.lib import job_airtable
 from bob_emploi.data_analysis.lib import cleaned_data
+from bob_emploi.data_analysis.lib import market_score_derivatives
 from bob_emploi.data_analysis.lib import mongo
 from bob_emploi.data_analysis.lib import rome_genderization
+from bob_emploi.data_analysis.lib import usa_cleaned_data
 
-_APPLICATION_MODE_PROTO_FIELDS = {
-    'R1': 'PLACEMENT_AGENCY',
-    'R2': 'PERSONAL_OR_PROFESSIONAL_CONTACTS',
-    'R3': 'SPONTANEOUS_APPLICATION',
-    'R4': 'OTHER_CHANNELS',
-}
 _JOB_PROTO_JSON_FIELDS = [
     'name', 'masculineName', 'feminineName', 'codeOgr']
-AIRTABLE_API_KEY = os.getenv('AIRTABLE_API_KEY')
+AIRTABLE_API_KEY = os.getenv('AIRTABLE_API_KEY', '')
 USERS_MONGO_URL = os.getenv('USERS_MONGO_URL')
 
 
+# TODO(cyrille): Add domain from ROME letter prefix.
 def make_dicts(
+        *,
         rome_csv_pattern: str,
         job_requirements_json: str,
         job_application_complexity_json: str,
@@ -57,7 +56,12 @@ def make_dicts(
         imt_market_score_csv: str,
         jobboards_airtable: Optional[str] = None,
         skills_for_future_airtable: Optional[str] = None,
-        specific_to_job_airtable: Optional[str] = None) \
+        specific_to_job_airtable: Optional[str] = None,
+        brookings_json: Optional[str] = None,
+        soc_2010_xls: Optional[str] = None,
+        soc_isco_crosswalk_xls: Optional[str] = None,
+        rome_isco_crosswalk_xlsx: Optional[str] = None,
+        trainings_csv: Optional[str] = None) \
         -> List[Dict[str, Any]]:
     """Import job info in MongoDB.
 
@@ -93,6 +97,11 @@ def make_dicts(
             of the skills for the future.
         specific_to_job_airtable: the base ID and the table name joined by a ':' of the Airtable
             of the specific to job pieces advice.
+        brookings_json: path to a JSON file with data from Brookings report for automation risk.
+        soc_2010_xls: path to an XLS file with the names of US SOC 2010 groups.
+        soc_isco_crosswalk_xls: path to an XLS file of the crosswalk btw US SOC 2010 and ISCO-08.
+        rome_isco_crosswalk_xlsx: path to an XLSX file of the crosswalk btw ROME and ISCO-08.
+        trainings_csv: path to a CSV with trainings data.
     Returns:
         A list of dict that maps the JSON representation of JobGroup protos.
     """
@@ -110,8 +119,7 @@ def make_dicts(
         ref_filename=rome_csv_pattern.format('referentiel_env_travail'))
     handcrafted_assets = _load_assets_from_airtable(*handcrafted_assets_airtable.split(':'))
     sector_domains = _load_domains_from_airtable(*domains_airtable.split(':'))
-    info_by_prefix = _load_prefix_info_from_airtable(
-        job_groups.index, *info_by_prefix_airtable.split(':'))
+    info_by_prefix = _load_prefix_info_from_airtable(job_groups.index, info_by_prefix_airtable)
     application_modes = _get_application_modes(
         application_mode_csv, rome_fap_crosswalk_txt)
     fap_growth_2012_2022 = pandas.read_csv(fap_growth_2012_2022_csv)
@@ -120,7 +128,7 @@ def make_dicts(
     skills_for_future_by_rome = _load_items_from_airtable(
         'Skill', job_groups.index, skills_for_future_airtable, 'rome_prefixes')
     specific_to_job_by_rome = _load_items_from_airtable(
-        'DynamicAdvice', job_groups.index, specific_to_job_airtable, 'for-job-group')
+        'DynamicAdvice', job_groups.index, specific_to_job_airtable, 'fr:for-job-group')
     users_highest_degrees = _load_highest_degrees_from_mongo()
 
     # Genderize names.
@@ -196,14 +204,38 @@ def make_dicts(
     job_groups.loc[job_groups.growth20122022 == 0, 'growth20122022'] = .000001
     job_groups['growth20122022'].fillna(0, inplace=True)
 
+    # Add automation risk.
+    if brookings_json and soc_2010_xls and soc_isco_crosswalk_xls and rome_isco_crosswalk_xlsx:
+        job_groups['automationRisk'] = _get_automation_risk(
+            brookings_json=brookings_json,
+            soc_2010_xls=soc_2010_xls,
+            soc_isco_crosswalk_xls=soc_isco_crosswalk_xls,
+            rome_isco_crosswalk_xlsx=rome_isco_crosswalk_xlsx,
+        ).mul(100).round(0).astype(int)
+        # Mark 0 values as 1, as 0 means undefined.
+        job_groups.loc[job_groups['automationRisk'] == 0, 'automationRisk'] = 1
+        job_groups['automationRisk'].fillna(0, inplace=True)
+
     # Add best departements.
-    job_groups['departementScores'] = _get_less_stressful_departements_count(imt_market_score_csv)
+    market_scores = cleaned_data.market_scores(filename=imt_market_score_csv)
+    market_scores = market_scores[market_scores.AREA_TYPE_CODE == 'D'].\
+        reset_index().\
+        drop(['market_score', 'yearly_avg_offers_denominator', 'AREA_TYPE_CODE'], axis='columns').\
+        rename({
+            'departement_id': 'district_id',
+            'rome_id': 'job_group',
+            'yearly_avg_offers_per_10_candidates': 'market_score',
+        }, axis='columns')
+    job_groups['departementScores'] = market_score_derivatives.get_less_stressful_districts(
+        market_scores)
     # Fill NaN with empty [].
     job_groups['departementScores'] = job_groups.departementScores.apply(
         lambda s: s if isinstance(s, list) else [])
+    # TODO(cyrille): Drop this, once we're sure it's no more used in server.
     job_groups['bestDepartements'] = job_groups.departementScores.apply(lambda ds: ds[:11])
 
     # Add national market score.
+    # TODO(cyrille): Add this in market_score_derivatives.
     job_groups['nationalMarketScore'] = _get_national_market_scores(imt_market_score_csv)
     job_groups['nationalMarketScore'].fillna(0, inplace=True)
 
@@ -230,6 +262,20 @@ def make_dicts(
         # Fill NaN with empty [].
         job_groups['userDegrees'] = job_groups.userDegrees.apply(
             lambda d: d if isinstance(d, list) else [])
+
+    # Add training data.
+    if trainings_csv:
+        trainings = pandas.read_csv(trainings_csv)
+        job_groups['trainingCount'] = trainings.groupby('formation.proximiteRomes.code')\
+            .apply(_count_trainings)
+        job_groups['trainingCount'] = job_groups.trainingCount.apply(
+            lambda counts: counts if isinstance(counts, dict) else {})
+
+    # Add no-requirement flag.
+    job_groups['hasAnyRequirements'] = cleaned_data.jobs_without_qualifications(
+        filename=rome_csv_pattern.format('item_arborescence'))\
+        .no_requirements.map(lambda unused: 'FALSE')
+    job_groups['hasAnyRequirements'].fillna('TRUE', inplace=True)
 
     # Set index as field.
     job_groups.index.name = 'romeId'
@@ -405,7 +451,7 @@ _AIRTABLE_ASSET_TO_PROTO_FIELD = {
 _MARKDOWN_LIST_LINE_REGEXP = re.compile(r'^\* [A-ZÀÉÇÊ]|^  \* ')
 
 
-def _load_asset_from_airtable(airtable_fields: Dict[str, Any]) -> Tuple[str, Dict[str, str]]:
+def _load_asset_from_airtable(airtable_fields: Mapping[str, Any]) -> Tuple[str, Dict[str, str]]:
     assets: Dict[str, str] = {}
     errors: List[ValueError] = []
     for proto_name, airtable_name in _AIRTABLE_ASSET_TO_PROTO_FIELD.items():
@@ -434,8 +480,7 @@ def _assert_markdown_list(value: str) -> str:
 
 
 def _load_prefix_info_from_airtable(
-        job_groups: Iterable[str], base_id: str, table: str, view: Optional[str] = None) \
-        -> pandas.DataFrame:
+        job_groups: Iterable[str], info_by_prefix_airtable: str) -> pandas.DataFrame:
     """Load info by prefix from AirTable.
 
     Args:
@@ -446,48 +491,23 @@ def _load_prefix_info_from_airtable(
         A pandas DataFrame keyed by job group with the fields.
     """
 
-    if not AIRTABLE_API_KEY:
-        raise ValueError(
-            'No API key found. Create an airtable API key at '
-            'https://airtable.com/account and set it in the AIRTABLE_API_KEY '
-            'env var.')
-    columns = {
-        'hasFreelancers': False,
-        'inAWorkplace': 'dans une entreprise',
-        'inDomain': '',
-        'likeYourWorkplace': 'comme la vôtre',
-        'placePlural': 'des entreprises',
-        'preferredApplicationMedium': 'UNKNOWN_APPLICATION_MEDIUM',
-        'whatILoveAbout': '',
-        'toTheWorkplace': "à l'entreprise",
-        'whySpecificCompany': 'vous vous reconnaissez dans leurs valeurs',
-        'atVariousCompanies': '',
-        'whatILoveAboutFeminine': '',
-    }
-    info = pandas.DataFrame(index=job_groups, columns=columns.keys())
-
-    client = airtable.Airtable(base_id, AIRTABLE_API_KEY)
-    sorted_records = sorted(
-        client.iterate(table, view=view),
-        key=lambda record: str(record['fields'].get('rome_prefix')))
-    for record in sorted_records:
-        fields = record['fields']
-        rome_prefix = fields.get('rome_prefix')
-        if not rome_prefix:
-            continue
-        for column in columns:
-            if column not in fields:
-                continue
-            field_value = fields[column]
-            if isinstance(field_value, str):
-                info.loc[info.index.str.startswith(rome_prefix), column] = field_value.strip()
-            else:
-                info.loc[info.index.str.startswith(rome_prefix), column] = field_value
-
-    for column, default_value in columns.items():
-        info[column].fillna(default_value, inplace=True)
-
-    return info
+    return job_airtable.load_prefixed_info(
+        job_groups, info_by_prefix_airtable, job_group_id_field='rome_prefix',
+        columns={
+            'covidRisk': 0,
+            'domain': '',
+            'hasFreelancers': False,
+            'inAWorkplace': 'dans une entreprise',
+            'inDomain': '',
+            'likeYourWorkplace': 'comme la vôtre',
+            'placePlural': 'des entreprises',
+            'preferredApplicationMedium': 0,
+            'whatILoveAbout': '',
+            'toTheWorkplace': "à l'entreprise",
+            'whySpecificCompany': 'vous vous reconnaissez dans leurs valeurs',
+            'atVariousCompanies': '',
+            'whatILoveAboutFeminine': '',
+        })
 
 
 def _load_items_from_airtable(
@@ -521,23 +541,12 @@ def _load_items_from_airtable(
 
 def _get_application_modes(application_mode_csv: str, rome_fap_crosswalk_txt: str) \
         -> pandas.DataFrame:
-    modes = pandas.read_csv(application_mode_csv)
     rome_fap_mapping = cleaned_data.rome_fap_mapping(
         filename=rome_fap_crosswalk_txt)
-
-    app_modes_map = modes.sort_values('RECRUT_PERCENT', ascending=False).\
-        groupby('FAP_CODE').apply(_get_app_modes_perc)
+    app_modes_map = cleaned_data.fap_application_modes(filename=application_mode_csv)
     application_modes = rome_fap_mapping.fap_codes.apply(
         lambda faps: {fap: app_modes_map[fap] for fap in faps if fap in app_modes_map})
     return application_modes
-
-
-def _get_app_modes_perc(fap_modes: pandas.DataFrame) -> Dict[str, Any]:
-    return {
-        'modes': [
-            {'mode': _APPLICATION_MODE_PROTO_FIELDS[row.APPLICATION_TYPE_CODE],
-             'percentage': row.RECRUT_PERCENT}
-            for row in fap_modes.itertuples()]}
 
 
 def _get_growth_2012_2022(fap_growth: pandas.DataFrame, rome_fap_crosswalk_txt: str) \
@@ -595,6 +604,34 @@ def _load_highest_degrees_from_mongo() -> pandas.Series:
         }},
     ])
     return pandas.Series({r['_id']: r['degrees'] for r in all_users})
+
+
+def _get_automation_risk(
+        brookings_json: str,
+        soc_2010_xls: str,
+        soc_isco_crosswalk_xls: str,
+        rome_isco_crosswalk_xlsx: str) -> pandas.Series:
+    soc_isco = usa_cleaned_data.us_soc2010_isco08_mapping(filename=soc_isco_crosswalk_xls)
+    rome_isco = cleaned_data.rome_isco08_mapping(filename=rome_isco_crosswalk_xlsx)
+    rome_to_soc = pandas.merge(
+        rome_isco.reset_index(),
+        soc_isco.reset_index(),
+        on='isco08_code', how='left')
+    brookings = usa_cleaned_data.us_automation_brookings(
+        filename=brookings_json, soc_filename=soc_2010_xls)
+    rome_automation = rome_to_soc.set_index('rome_id').us_soc2010.map(brookings.automation_risk)\
+        .rename('automation_risk').reset_index()
+    return rome_automation.groupby('rome_id').automation_risk.mean().dropna()
+
+
+def _count_trainings(trainings: pandas.DataFrame) -> Dict[str, int]:
+    counts = {
+        'veryShortTrainings': int((trainings.duration < 120).sum()),
+        'shortTrainings': int(((trainings.duration >= 120) & (trainings.duration < 720)).sum()),
+        'longTrainings': int((trainings.duration > 720).sum()),
+        'openTrainings': int(trainings['formation.specificCondition'].isnull().sum()),
+    }
+    return {key: value for key, value in counts.items() if value}
 
 
 if __name__ == '__main__':

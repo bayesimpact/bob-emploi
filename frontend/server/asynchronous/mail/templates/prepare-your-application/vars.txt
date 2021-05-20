@@ -1,8 +1,0 @@
-changeEmailSettingsUrl
-deepLinkMotivationEmailUrl
-firstName
-gender
-hasInterviewFrustration
-hasSelfConfidenceFrustration
-loginUrl
-statusUpdateUrl

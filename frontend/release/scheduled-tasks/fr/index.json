@@ -1,0 +1,116 @@
+{
+  "Rules": [
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/collect-strings-translation",
+      "Description": "Automate strings collect for translation.",
+      "EventBusName": "default",
+      "Name": "collect-strings-translation",
+      "ScheduleExpression": "rate(24 hours)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/count-users",
+      "Description": "Count users by departement and ROME and populate the user_count table in mongo",
+      "EventBusName": "default",
+      "Name": "count-users",
+      "ScheduleExpression": "rate(30 days)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-adie-events",
+      "Description": "Automate ADIE events import.",
+      "EventBusName": "default",
+      "Name": "import-adie-events",
+      "ScheduleExpression": "rate(7 days)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-job-group-info",
+      "Description": "Automate Job Group Info import.",
+      "EventBusName": "default",
+      "Name": "import-job-group-info",
+      "ScheduleExpression": "rate(30 days)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-local-diagnosis",
+      "Description": "Automate local diagnostic import.",
+      "EventBusName": "default",
+      "Name": "import-local-diagnosis",
+      "ScheduleExpression": "rate(30 days)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-local-missions",
+      "Description": "Automate local diagnostic import.",
+      "EventBusName": "default",
+      "Name": "import-local-missions",
+      "ScheduleExpression": "rate(7 days)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-mailjet-translations",
+      "Description": "Import mailjet translations",
+      "EventBusName": "default",
+      "Name": "import-mailjet-translations",
+      "ScheduleExpression": "rate(24 hours)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-online-salons",
+      "Description": "Automate local diagnostic import.",
+      "EventBusName": "default",
+      "Name": "import-online-salons",
+      "ScheduleExpression": "rate(7 days)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-reorient-jobbing",
+      "Description": "Automate Reorient Jobbing import.",
+      "EventBusName": "default",
+      "Name": "import-reorient-jobbing",
+      "ScheduleExpression": "rate(30 days)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-volunteering-missions",
+      "Description": "Automate volunteering missions import.",
+      "EventBusName": "default",
+      "Name": "import-volunteering-missions",
+      "ScheduleExpression": "rate(7 days)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-workup-events",
+      "Description": "Automate Workup events import.",
+      "EventBusName": "default",
+      "Name": "import-workup-events",
+      "ScheduleExpression": "rate(7 days)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/open-job-groups",
+      "Description": "Automate Open Data export of our Job Groups info.",
+      "EventBusName": "default",
+      "Name": "open-job-groups",
+      "ScheduleExpression": "rate(30 days)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/report-feedbacks-weekly",
+      "Description": "Send a weekly report about feedback from our users, coming from NPS and RER.",
+      "EventBusName": "default",
+      "Name": "report-feedbacks-weekly",
+      "ScheduleExpression": "cron(30 12 ? * FRI *)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/sync-amplitude",
+      "Description": "Sync MongoDB users with Amplitude",
+      "EventBusName": "default",
+      "Name": "sync-amplitude",
+      "ScheduleExpression": "rate(1 hour)",
+      "State": "ENABLED"
+    }
+  ]
+}

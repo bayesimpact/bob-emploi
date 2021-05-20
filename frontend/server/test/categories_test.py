@@ -14,7 +14,7 @@ from bob_emploi.frontend.server.test import base_test
 
 
 class FindWhatYouLikeTestCase(filters_test.FilterTestBase):
-    """Tests for the category filter for users that should find what they like."""
+    """Tests for the main challenge filter for users that should find what they like."""
 
     model_id = 'category-find-what-you-like'
 
@@ -166,7 +166,7 @@ class FindWhatYouLikeTestCase(filters_test.FilterTestBase):
 
 
 class MissingDiplomaTestCase(filters_test.FilterTestBase):
-    """Tests for the category filter for users that should find what they like."""
+    """Tests for the main challenge filter for users that should find what they like."""
 
     model_id = 'category-missing-diploma'
 
@@ -250,12 +250,12 @@ class MissingDiplomaTestCase(filters_test.FilterTestBase):
 
 
 @mock.patch(auth.__name__ + '._ADMIN_AUTH_TOKEN', 'ze-admin-token')
-class CategoryRelevanceTest(base_test.ServerTestCase):
-    """Test the relevance of categories."""
+class MainChallengeRelevanceTest(base_test.ServerTestCase):
+    """Test the relevance of main challenges."""
 
-    def _get_categories_relevance(self, use_case_json: Dict[str, Any]) -> Dict[str, str]:
+    def _get_challenges_relevance(self, use_case_json: Dict[str, Any]) -> Dict[str, str]:
         response = self.app.post(
-            '/api/eval/use-case/categories',
+            '/api/eval/use-case/main-challenges',
             data=json.dumps(use_case_json), headers={'Authorization': 'ze-admin-token'})
         return {
             category['categoryId']: category.get('relevance')
@@ -265,7 +265,7 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
     def test_stuck_in_village(self) -> None:
         """Check stuck-in-village various relevances."""
 
-        self._db.diagnostic_category.insert_many([
+        self._db.diagnostic_main_challenges.insert_many([
             {
                 'categoryId': 'stuck-in-village',
                 'relevanceScoringModel': 'constant(0)',
@@ -277,20 +277,20 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
             'useCaseId': '2019-01-20_00',
             'userData': {'projects': [{}], 'profile': {'gender': 'FEMININE'}},
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'stuck-in-village': 'NEEDS_ATTENTION'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'stuck-in-village': 'NEEDS_ATTENTION'}, main_challenges)
 
         use_case_json = {
             'useCaseId': '2019-01-20_00',
             'userData': {'projects': [{}], 'profile': {'gender': 'MASCULINE'}},
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'stuck-in-village': 'NOT_RELEVANT'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'stuck-in-village': 'NOT_RELEVANT'}, main_challenges)
 
     def test_custom_relevance_scoring_model(self) -> None:
         """Check relevances using a custom scoring model."""
 
-        self._db.diagnostic_category.insert_many([
+        self._db.diagnostic_main_challenges.insert_many([
             {
                 'categoryId': 'custom',
                 'filters': ['for-women'],
@@ -306,8 +306,8 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
                 'profile': {'gender': 'FEMININE'},
             },
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'custom': 'NEEDS_ATTENTION'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'custom': 'NEEDS_ATTENTION'}, main_challenges)
 
         # Does not match the filter but matches the relevance scoring model.
         use_case_json = {
@@ -317,8 +317,8 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
                 'profile': {'gender': 'MASCULINE'},
             },
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'custom': 'RELEVANT_AND_GOOD'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'custom': 'RELEVANT_AND_GOOD'}, main_challenges)
 
         # Does not match the filter nor the relevance scoring model.
         use_case_json = {
@@ -328,13 +328,13 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
                 'profile': {'gender': 'MASCULINE'},
             },
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'custom': 'NOT_RELEVANT'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'custom': 'NOT_RELEVANT'}, main_challenges)
 
     def test_custom_relevance_neutral(self) -> None:
         """Check neutral relevances using a custom scoring model."""
 
-        self._db.diagnostic_category.insert_many([
+        self._db.diagnostic_main_challenges.insert_many([
             {
                 'categoryId': 'custom',
                 'filters': ['for-women'],
@@ -347,21 +347,21 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
             'useCaseId': '2019-01-20_00',
             'userData': {'projects': [{}], 'profile': {'gender': 'FEMININE'}},
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'custom': 'NEEDS_ATTENTION'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'custom': 'NEEDS_ATTENTION'}, main_challenges)
 
         # Does not match the filter but matches the relevance scoring model.
         use_case_json = {
             'useCaseId': '2019-01-20_00',
             'userData': {'projects': [{}], 'profile': {'gender': 'MASCULINE'}},
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'custom': 'NEUTRAL_RELEVANCE'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'custom': 'NEUTRAL_RELEVANCE'}, main_challenges)
 
     def test_enhance_methods_to_interview(self) -> None:
         """Check enhance-method-to-interview various relevances."""
 
-        self._db.diagnostic_category.insert_many([
+        self._db.diagnostic_main_challenges.insert_many([
             {
                 'categoryId': 'enhance-methods-to-interview',
                 'relevanceScoringModel': 'relevance-enhance-methods',
@@ -373,15 +373,15 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
             'useCaseId': '2019-01-20_00',
             'userData': {'projects': [{}], 'profile': {'gender': 'FEMININE'}},
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'enhance-methods-to-interview': 'NEEDS_ATTENTION'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'enhance-methods-to-interview': 'NEEDS_ATTENTION'}, main_challenges)
 
         use_case_json = {
             'useCaseId': '2019-01-20_00',
             'userData': {'projects': [{'jobSearchHasNotStarted': True}]},
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'enhance-methods-to-interview': 'NEUTRAL_RELEVANCE'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'enhance-methods-to-interview': 'NEUTRAL_RELEVANCE'}, main_challenges)
 
         use_case_json = {
             'useCaseId': '2019-01-20_00',
@@ -390,13 +390,13 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
                 'jobSearchStartedAt': '2019-01-12T12:12:12Z',
             }]},
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'enhance-methods-to-interview': 'RELEVANT_AND_GOOD'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'enhance-methods-to-interview': 'RELEVANT_AND_GOOD'}, main_challenges)
 
     def test_stuck_market(self) -> None:
         """Check stuck-market various relevances."""
 
-        self._db.diagnostic_category.insert_one({
+        self._db.diagnostic_main_challenges.insert_one({
             'categoryId': 'stuck-market',
             'relevanceScoringModel': 'relevance-market-stress',
             'filters': ['for-women'],
@@ -412,15 +412,15 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
             'useCaseId': '2019-01-20_00',
             'userData': {'projects': [{}], 'profile': {'gender': 'FEMININE'}},
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'stuck-market': 'NEEDS_ATTENTION'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'stuck-market': 'NEEDS_ATTENTION'}, main_challenges)
 
         use_case_json = {
             'useCaseId': '2019-01-20_00',
             'userData': {'projects': [{'jobSearchHasNotStarted': True}]},
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'stuck-market': 'NEUTRAL_RELEVANCE'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'stuck-market': 'NEUTRAL_RELEVANCE'}, main_challenges)
 
         use_case_json = {
             'useCaseId': '2019-01-20_00',
@@ -429,13 +429,13 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
                 'targetJob': {'jobGroup': {'romeId': 'D1201'}},
             }]},
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'stuck-market': 'RELEVANT_AND_GOOD'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'stuck-market': 'RELEVANT_AND_GOOD'}, main_challenges)
 
     def test_find_what_you_like(self) -> None:
         """Check find-what-you-like various relevances."""
 
-        self._db.diagnostic_category.insert_one({
+        self._db.diagnostic_main_challenges.insert_one({
             'categoryId': 'find-what-you-like',
             'filters': ['for-women'],
             'relevanceScoringModel': 'relevance-find-what-you-like',
@@ -451,22 +451,22 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
             'useCaseId': '2019-01-20_00',
             'userData': {'projects': [{}], 'profile': {'gender': 'FEMININE'}},
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'find-what-you-like': 'NEEDS_ATTENTION'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'find-what-you-like': 'NEEDS_ATTENTION'}, main_challenges)
 
         use_case_json = {
             'useCaseId': '2019-01-20_00',
             'userData': {'projects': [{'passionate_level': 'LIKEABLE_JOB'}]},
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'find-what-you-like': 'NEUTRAL_RELEVANCE'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'find-what-you-like': 'NEUTRAL_RELEVANCE'}, main_challenges)
 
         use_case_json = {
             'useCaseId': '2019-01-20_00',
             'userData': {'projects': [{'passionate_level': 'PASSIONATING_JOB'}]},
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'find-what-you-like': 'RELEVANT_AND_GOOD'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'find-what-you-like': 'RELEVANT_AND_GOOD'}, main_challenges)
 
         use_case_json = {
             'useCaseId': '2019-01-20_00',
@@ -476,13 +476,13 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
                 'targetJob': {'jobGroup': {'romeId': 'A1234'}},
             }]},
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'find-what-you-like': 'NEUTRAL_RELEVANCE'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'find-what-you-like': 'NEUTRAL_RELEVANCE'}, main_challenges)
 
     def test_search_methods(self) -> None:
         """Check search-methods various relevances."""
 
-        self._db.diagnostic_category.insert_many([
+        self._db.diagnostic_main_challenges.insert_many([
             {
                 'categoryId': 'enhance-methods-to-interview',
                 'relevanceScoringModel': 'relevance-enhance-methods',
@@ -494,15 +494,15 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
             'useCaseId': '2019-01-20_00',
             'userData': {'projects': [{}], 'profile': {'gender': 'FEMININE'}},
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'enhance-methods-to-interview': 'NEEDS_ATTENTION'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'enhance-methods-to-interview': 'NEEDS_ATTENTION'}, main_challenges)
 
         use_case_json = {
             'useCaseId': '2019-01-20_00',
             'userData': {'projects': [{'jobSearchHasNotStarted': True}]},
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'enhance-methods-to-interview': 'NEUTRAL_RELEVANCE'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'enhance-methods-to-interview': 'NEUTRAL_RELEVANCE'}, main_challenges)
 
         use_case_json = {
             'useCaseId': '2019-01-20_00',
@@ -511,36 +511,36 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
                 'jobSearchStartedAt': '2019-01-12T12:12:12Z',
             }]},
         }
-        categories = self._get_categories_relevance(use_case_json)
-        self.assertEqual({'enhance-methods-to-interview': 'RELEVANT_AND_GOOD'}, categories)
+        main_challenges = self._get_challenges_relevance(use_case_json)
+        self.assertEqual({'enhance-methods-to-interview': 'RELEVANT_AND_GOOD'}, main_challenges)
 
-    def test_master_category(self) -> None:
-        """Check that a master category forces other categories to be irrelevant."""
+    def test_master_main_challenge(self) -> None:
+        """Check that a master main challenge forces other main chalenges to be irrelevant."""
 
-        self._db.diagnostic_category.insert_many([
+        self._db.diagnostic_main_challenges.insert_many([
             {
-                'categoryId': 'attention-needed-category',
+                'categoryId': 'attention-needed-challenge',
                 'relevanceScoringModel': 'relevance-enhance-methods',
                 'filters': ['for-women'],
             },
             {
-                'categoryId': 'all-good-category',
+                'categoryId': 'all-good-challenge',
                 'relevanceScoringModel': 'constant(3)',
                 'filters': ['not-for-women'],
             },
             {
-                'categoryId': 'master-category',
+                'categoryId': 'master-challenge',
                 'isLastRelevant': True,
                 'relevanceScoringModel': 'relevance-enhance-methods',
                 'filters': ['for-women'],
             },
             {
-                'categoryId': 'thus-neutral-category',
+                'categoryId': 'thus-neutral-challenge',
                 'relevanceScoringModel': 'relevance-enhance-methods',
                 'filters': ['for-women'],
             },
             {
-                'categoryId': 'good-to-neutral-category',
+                'categoryId': 'good-to-neutral-challenge',
                 'relevanceScoringModel': 'constant(3)',
                 'filters': ['not-for-women'],
             }
@@ -550,28 +550,28 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
             'useCaseId': '2019-01-20_00',
             'userData': {'projects': [{}], 'profile': {'gender': 'FEMININE'}},
         }
-        categories = self._get_categories_relevance(use_case_json)
+        main_challenges = self._get_challenges_relevance(use_case_json)
         self.assertEqual(
             {
-                'all-good-category': 'RELEVANT_AND_GOOD',
-                'attention-needed-category': 'NEEDS_ATTENTION',
-                'master-category': 'NEEDS_ATTENTION',
-                'thus-neutral-category': 'NEUTRAL_RELEVANCE',
-                'good-to-neutral-category': 'NEUTRAL_RELEVANCE',
-            }, categories)
+                'all-good-challenge': 'RELEVANT_AND_GOOD',
+                'attention-needed-challenge': 'NEEDS_ATTENTION',
+                'master-challenge': 'NEEDS_ATTENTION',
+                'thus-neutral-challenge': 'NEUTRAL_RELEVANCE',
+                'good-to-neutral-challenge': 'NEUTRAL_RELEVANCE',
+            }, main_challenges)
 
-    def test_master_category_without_attention(self) -> None:
-        """Check that a neutral master category can't neutralize other categories."""
+    def test_master_main_challenge_without_attention(self) -> None:
+        """Check that a neutral master challenge can't neutralize other main challenges."""
 
-        self._db.diagnostic_category.insert_many([
+        self._db.diagnostic_main_challenges.insert_many([
             {
-                'categoryId': 'master-category',
+                'categoryId': 'master-challenge',
                 'isLastRelevant': True,
                 'relevanceScoringModel': 'relevance-enhance-methods',
                 'filters': ['for-driver'],
             },
             {
-                'categoryId': 'thus-neutral-category',
+                'categoryId': 'thus-neutral-challenge',
                 'relevanceScoringModel': 'relevance-enhance-methods',
                 'filters': ['for-women'],
             },
@@ -581,25 +581,25 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
             'useCaseId': '2019-01-20_00',
             'userData': {'projects': [{}], 'profile': {'gender': 'FEMININE'}},
         }
-        categories = self._get_categories_relevance(use_case_json)
+        main_challenges = self._get_challenges_relevance(use_case_json)
         self.assertEqual(
             {
-                'master-category': 'NEUTRAL_RELEVANCE',
-                'thus-neutral-category': 'NEEDS_ATTENTION',
-            }, categories)
+                'master-challenge': 'NEUTRAL_RELEVANCE',
+                'thus-neutral-challenge': 'NEEDS_ATTENTION',
+            }, main_challenges)
 
     def test_master_category_on_irrelevant(self) -> None:
-        """Check that a master category can't make an irrelevant category neutral."""
+        """Check that a master main challenge can't make an irrelevant challenge neutral."""
 
-        self._db.diagnostic_category.insert_many([
+        self._db.diagnostic_main_challenges.insert_many([
             {
-                'categoryId': 'master-category',
+                'categoryId': 'master-challenge',
                 'isLastRelevant': True,
                 'relevanceScoringModel': 'constant(0)',
                 'filters': ['not-for-women'],
             },
             {
-                'categoryId': 'not-relevant-category',
+                'categoryId': 'not-relevant-challenge',
                 'relevanceScoringModel': 'constant(0)',
                 'filters': ['for-women'],
             },
@@ -609,25 +609,25 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
             'useCaseId': '2019-01-20_00',
             'userData': {'projects': [{}], 'profile': {'gender': 'MASCULINE'}},
         }
-        categories = self._get_categories_relevance(use_case_json)
+        main_challenges = self._get_challenges_relevance(use_case_json)
         self.assertEqual(
             {
-                'master-category': 'NEEDS_ATTENTION',
-                'not-relevant-category': 'NOT_RELEVANT',
-            }, categories)
+                'master-challenge': 'NEEDS_ATTENTION',
+                'not-relevant-challenge': 'NOT_RELEVANT',
+            }, main_challenges)
 
     def test_master_category_on_no_relevance_model(self) -> None:
-        """Check that a master category make category without relevant model neutral."""
+        """Check that a master main challenge make challenges without relevant model neutral."""
 
-        self._db.diagnostic_category.insert_many([
+        self._db.diagnostic_main_challenges.insert_many([
             {
-                'categoryId': 'master-category',
+                'categoryId': 'master-challenge',
                 'isLastRelevant': True,
                 'relevanceScoringModel': 'constant(0)',
                 'filters': ['for-women'],
             },
             {
-                'categoryId': 'no-relevance-category',
+                'categoryId': 'no-relevance-challenge',
                 'filters': ['not-for-women'],
             },
         ])
@@ -636,12 +636,12 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
             'useCaseId': '2019-01-20_00',
             'userData': {'projects': [{}], 'profile': {'gender': 'FEMININE'}},
         }
-        categories = self._get_categories_relevance(use_case_json)
+        main_challenges = self._get_challenges_relevance(use_case_json)
         self.assertEqual(
             {
-                'master-category': 'NEEDS_ATTENTION',
-                'no-relevance-category': 'NEUTRAL_RELEVANCE',
-            }, categories)
+                'master-challenge': 'NEEDS_ATTENTION',
+                'no-relevance-challenge': 'NEUTRAL_RELEVANCE',
+            }, main_challenges)
 
 
 if __name__ == '__main__':

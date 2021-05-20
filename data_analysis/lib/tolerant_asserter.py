@@ -6,7 +6,7 @@ from typing import Any, Callable, List
 import unittest
 
 
-class TolerantAsserter(object):
+class TolerantAsserter:
     """An asserter that refrains itself for some time before raising errors.
 
     It works as a wrapper around another asserter and catches N AssertionError.
@@ -47,8 +47,7 @@ class TolerantAsserter(object):
             except AssertionError as error:
                 if self._tolerance < len(self._errors):
                     raise
-                else:
-                    self._errors.append(error)
+                self._errors.append(error)
         return _wrapped_method
 
     def assert_exact_tolerance(self) -> None:
@@ -62,9 +61,8 @@ class TolerantAsserter(object):
                 errors_message = '\n'.join(str(e) for e in self._errors)
                 raise AssertionError(
                     f'NO TOLERANCE!, we should raise all the following:\n{errors_message}')
-            else:
-                raise AssertionError(
-                    "NO TOLERANCE! you don't need this wrapper anymore")
+            raise AssertionError(
+                "NO TOLERANCE! you don't need this wrapper anymore")
 
         if self._tolerance > len(self._errors):
             raise AssertionError(

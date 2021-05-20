@@ -1,9 +1,9 @@
 """Module to score the language requirements of a project."""
 
 import typing
-from typing import Iterable, List, Optional
+from typing import Dict, Iterable, Iterator, Mapping, List, Optional, Tuple
 
-from bob_emploi.frontend.api import project_pb2
+from bob_emploi.frontend.api import boolean_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import scoring_base
 
@@ -28,7 +28,7 @@ _JOBS_REQUIREMENTS: Iterable[_LanguageRequirement] = (
     # Administrative jobs.
     _LanguageRequirement(
         rome_prefixes=[
-            'M1607', 'M1604', 'M1501', 'M1605', 'M1203', 'M1025', 'M1502', 'M1602', 'M1607',
+            'M1607', 'M1604', 'M1501', 'M1605', 'M1203', 'M1025', 'M1502', 'M1602',
             'M1608', 'M1609', 'M1601',
         ],
         is_spoken_required=True,
@@ -47,12 +47,23 @@ _JOBS_REQUIREMENTS: Iterable[_LanguageRequirement] = (
 )
 
 
-# TODO(pascal): Make sure that there are no conflicts (a job in several requirements).
-_JOBS_REQUIREMENTS_BY_PREFIX = {
-    prefix: requirement
+def _ensure_no_prefix_conflicts(items: Iterator[Tuple[str, _LanguageRequirement]]) \
+        -> Mapping[str, _LanguageRequirement]:
+    result: Dict[str, _LanguageRequirement] = {}
+    for prefix, requirement in items:
+        for existing_prefix in result:
+            if existing_prefix.startswith(prefix) or prefix.startswith(existing_prefix):
+                raise ValueError(
+                    f'Conflict: several requirements for jobs {existing_prefix} or {prefix}')
+        result[prefix] = requirement
+    return result
+
+
+_JOBS_REQUIREMENTS_BY_PREFIX = _ensure_no_prefix_conflicts(
+    (prefix, requirement)
     for requirement in _JOBS_REQUIREMENTS
     for prefix in requirement.rome_prefixes
-}
+)
 
 
 def _get_job_requirements(rome_id: str) -> _LanguageRequirement:
@@ -105,11 +116,11 @@ class _MissingLanguage(scoring_base.ModelBase):
         # Check that the user speaks at least one of the required languages.
         for lang in lang_requirements:
             knowledge = lang_knowledge.get(lang, _UNKNOWN_LANG)
-            if knowledge.has_spoken_knowledge == project_pb2.UNKNOWN_BOOL:
+            if knowledge.has_spoken_knowledge == boolean_pb2.UNKNOWN_BOOL:
                 # No clue about their level.
                 missing_fields.add(f'profile.languages.{lang}.hasSpokenKnowledge')
                 continue
-            if knowledge.has_spoken_knowledge == project_pb2.TRUE:
+            if knowledge.has_spoken_knowledge == boolean_pb2.TRUE:
                 # User has at least one required spoken language.
                 missing_fields = set()
                 break
@@ -148,14 +159,14 @@ class _MissingJobLanguage(scoring_base.ModelBase):
         for lang in lang_requirements:
             knowledge = lang_knowledge.get(lang, _UNKNOWN_LANG)
             if project_requirements.is_spoken_required:
-                if knowledge.has_spoken_knowledge == project_pb2.FALSE:
+                if knowledge.has_spoken_knowledge == boolean_pb2.FALSE:
                     return 3
-                if knowledge.has_spoken_knowledge == project_pb2.UNKNOWN_BOOL:
+                if knowledge.has_spoken_knowledge == boolean_pb2.UNKNOWN_BOOL:
                     missing_fields.add(f'profile.languages.{lang}.hasSpokenKnowledge')
             if project_requirements.is_written_required:
-                if knowledge.has_written_knowledge == project_pb2.FALSE:
+                if knowledge.has_written_knowledge == boolean_pb2.FALSE:
                     return 3
-                if knowledge.has_written_knowledge == project_pb2.UNKNOWN_BOOL:
+                if knowledge.has_written_knowledge == boolean_pb2.UNKNOWN_BOOL:
                     missing_fields.add(f'profile.languages.{lang}.hasWrittenKnowledge')
         if missing_fields:
             raise scoring_base.NotEnoughDataException(
@@ -184,3 +195,5 @@ class _LanguageRelevance(scoring_base.ModelBase):
 scoring_base.register_model('for-missing-language', _MissingLanguage())
 scoring_base.register_model('for-missing-job-language', _MissingJobLanguage())
 scoring_base.register_model('language-relevance', _LanguageRelevance())
+scoring_base.register_model('for-foreign-language', scoring_base.BaseFilter(
+    lambda project: user_pb2.LANGUAGE in project.user_profile.frustrations))

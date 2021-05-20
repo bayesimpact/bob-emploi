@@ -1,0 +1,8 @@
+{
+  "From": "Joanna de {{var:productName}} <joanna@bob-emploi.fr>",
+  "Reply-To": "",
+  "ReplyEmail": "",
+  "SenderEmail": "joanna@bob-emploi.fr",
+  "SenderName": "Joanna de {{var:productName}}",
+  "Subject": "Vous êtes accompagné{% if var:gender:\"\" == \"FEMININE\" %}e{% endif %} par Bob"
+}

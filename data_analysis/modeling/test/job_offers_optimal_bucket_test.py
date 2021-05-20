@@ -1,13 +1,18 @@
 """Unit tests for the job_offers_optimal_buckets module."""
 
-import collections
+import typing
+from typing import Iterable
 import unittest
 
 import pandas
 
 from bob_emploi.data_analysis.modeling import job_offers_optimal_buckets
 
-_TestCase = collections.namedtuple('TestCase', ['name', 'offers', 'expected'])
+
+class _TestCase(typing.NamedTuple):
+    name: str
+    offers: Iterable[int]
+    expected: Iterable[str]
 
 
 class BucketsTestCase(unittest.TestCase):

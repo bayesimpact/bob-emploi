@@ -2,45 +2,56 @@ import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
 import React, {useCallback, useMemo} from 'react'
 
-import {getEmailTemplates, inDepartement} from 'store/french'
+import {inDepartement} from 'store/french'
+import {getEmailTemplates} from 'store/i18n'
 import {missionLocaleUrl} from 'store/job'
 
-import {Trans} from 'components/i18n'
-import {ExternalLink, GrowingNumber} from 'components/theme'
+import ExternalLink from 'components/external_link'
+import GrowingNumber from 'components/growing_number'
+import Trans from 'components/i18n_trans'
 import Picto from 'images/advices/picto-driving-license.svg'
 import missionLocaleImage from 'images/missions-locales-logo.png'
 
-import {AdviceSuggestionList, CardProps, useAdviceData, EmailTemplate, ExpandableAction,
+import {CardProps, useAdviceData, EmailTemplate, ExpandableAction, MethodSuggestionList,
   ToolCard} from './base'
 
 
 interface ExploreOnClickProps {
   children: React.ReactNode
   handleExplore: CardProps['handleExplore']
-  link?: string
+  href?: string
   style?: React.CSSProperties
   visualElement: string
 }
 
 
 const ExploreOnClickBase = (props: ExploreOnClickProps): React.ReactElement => {
-  const {children, handleExplore, link, visualElement, ...otherProps} = props
-  const onClick = useCallback((): void => {
-    if (!link) {
+  const {children, handleExplore, href, visualElement, ...otherProps} = props
+  const onClick = useCallback((event: React.MouseEvent): void => {
+    if (!href) {
       return
     }
+    event.preventDefault()
     handleExplore(visualElement)()
-    window.open(link, '_blank')
-  }, [handleExplore, link, visualElement])
-  return <div onClick={onClick} {...otherProps}>
+    window.open(href, '_blank')
+  }, [handleExplore, href, visualElement])
+  return <a href={href} onClick={onClick} {...otherProps}>
     {children}
-  </div>
+  </a>
 }
 const ExploreOnClick = React.memo(ExploreOnClickBase)
 
 
 const emptyArray = [] as const
 const emptyObject = {} as const
+
+
+const itemStyle: React.CSSProperties = {
+  alignItems: 'center',
+  color: 'inherit',
+  display: 'flex',
+  textDecoration: 'inherit',
+} as const
 
 
 const DrivingLicenseEuro = (props: CardProps): React.ReactElement => {
@@ -51,7 +62,7 @@ const DrivingLicenseEuro = (props: CardProps): React.ReactElement => {
     project: {city = emptyObject, city: {departementName = ''} = {}},
     t,
   } = props
-  const {missionLocale, partnerBanks, schoolListLink, schools = emptyArray} =
+  const {data: {missionLocale, partnerBanks, schoolListLink, schools = emptyArray}, loading} =
     useAdviceData<bayes.bob.OneEuroProgram>(props)
   const isMinor = (yearOfBirth && (new Date().getFullYear() - yearOfBirth) < 18) || false
 
@@ -95,10 +106,6 @@ const DrivingLicenseEuro = (props: CardProps): React.ReactElement => {
     if (!schoolListLink && !schools.length) {
       return null
     }
-    const itemStyle = {
-      alignItems: 'center',
-      display: 'flex',
-    }
     const inDepartment = city && inDepartement(city, t) || t('dans votre département')
     return <ExpandableAction key="finding-school"
       contentName={t('la liste des auto-écoles')}
@@ -109,23 +116,23 @@ const DrivingLicenseEuro = (props: CardProps): React.ReactElement => {
           Nous avons trouvé <GrowingNumber style={{fontWeight: 'bold'}}
             number={schools.length} isSteady={true} /> auto-école agréée près de chez vous
         </Trans> : t('Nous avons trouvé la liste des auto-écoles agréées près de chez vous')}
-        <AdviceSuggestionList style={{marginTop: 10}}>
+        <MethodSuggestionList style={{marginTop: 10}}>
           {[
             ...schools.map(
               ({address, link, name}: bayes.bob.DrivingSchool, index: number):
               ReactStylableElement =>
                 <ExploreOnClick
-                  handleExplore={handleExplore} link={link} visualElement="school"
+                  handleExplore={handleExplore} href={link} visualElement="school"
                   style={itemStyle} key={`school-${index}`}>
-                  <div style={{marginRight: 10, width: 200}}>
+                  <span style={{marginRight: 10, width: 200}}>
                     {name}
-                  </div>
-                  <div>{address}</div>
+                  </span>
+                  <span>{address}</span>
                 </ExploreOnClick>,
             ),
             schoolListLink ? <ExploreOnClick
               key="finding-more-schools" style={itemStyle} handleExplore={handleExplore}
-              link={schoolListLink} visualElement="more schools">
+              href={schoolListLink} visualElement="more schools">
               {schools.length ?
                 t(
                   "Plus d'auto-écoles agréées pour le permis à 1\u00A0€ {{inDepartment}}",
@@ -134,11 +141,11 @@ const DrivingLicenseEuro = (props: CardProps): React.ReactElement => {
                   Accédez à la liste des auto-écoles agréées pour le permis à
                   1&nbsp;€ {{inDepartment}}
                 </Trans>}
-              <div style={{flex: 1}} />
+              <span style={{flex: 1}} />
               <ChevronRightIcon style={{fill: colors.CHARCOAL_GREY, width: 20}} />
             </ExploreOnClick> : null,
           ]}
-        </AdviceSuggestionList>
+        </MethodSuggestionList>
       </div>
     </ExpandableAction>
   }, [city, handleExplore, schoolListLink, schools, t])
@@ -151,7 +158,7 @@ const DrivingLicenseEuro = (props: CardProps): React.ReactElement => {
         fontStyle: 'italic',
         fontWeight: 'normal',
       }
-      const missionLocaleLink = missionLocaleUrl(missionLocale, departementName)
+      const missionLocaleLink = missionLocaleUrl(t, missionLocale, departementName)
       return <ExpandableAction
         key="documents"
         onContentShown={handleExplore('documentation-minor')}
@@ -267,6 +274,10 @@ const DrivingLicenseEuro = (props: CardProps): React.ReactElement => {
     color: colors.COOL_GREY,
     fontSize: '.9em',
     fontStyle: 'italic',
+  }
+
+  if (loading) {
+    return loading
   }
 
   return <div style={{fontSize: 16}}>
