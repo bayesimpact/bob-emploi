@@ -7,6 +7,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           reusable: true
+          version: 19.03.13
       - run:
           name: Figure out which Docker services we should run CI for
           command: |
