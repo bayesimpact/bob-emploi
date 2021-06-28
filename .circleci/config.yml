@@ -13,23 +13,21 @@ jobs:
           command: |
             ./should_run_ci.sh "$CIRCLE_BRANCH" "$CIRCLE_TAG"
             ./should_run_slow_tests.sh
-      - run:
-          name: Drop the override used for dev, and use Docker tags specific to this build
-          command: |
-            rm docker-compose.override.yml
-            sed -i -e 's/image: \([^:]*\)$/image: \1:build-'$CIRCLE_BUILD_NUM'/' docker-compose.yml
+            echo "DOCKER_TAG=build-$CIRCLE_BUILD_NUM" > .env
+            echo "GIT_SHA1=$CIRCLE_SHA1" >> .env
       - run:
           name: Build Docker images
           command: |
-            test -e skip-frontend || GIT_SHA1=$CIRCLE_SHA1 docker-compose build --pull frontend-db frontend-flask
+            test -e skip-frontend || docker-compose build --pull frontend-db frontend-flask
       - run:
           name: Test and lint frontend server
           command: |
             test -e skip-frontend || {
+              export $(xargs -a .env)
               docker-compose build --pull frontend-flask-test
               # The image for the frontend-flask-test built above is named
-              # bayesimpact/bob-emploi-frontend-server-test:build-$CIRCLE_BUILD_NUM
-              docker create --name frontend-coverage-$CIRCLE_BUILD_NUM bayesimpact/bob-emploi-frontend-server-test:build-$CIRCLE_BUILD_NUM
+              # bayesimpact/bob-emploi-frontend-server-test:$DOCKER_TAG
+              docker create --name frontend-coverage-$CIRCLE_BUILD_NUM bayesimpact/bob-emploi-frontend-server-test:$DOCKER_TAG
               docker cp frontend-coverage-$CIRCLE_BUILD_NUM:/work/cover /tmp/frontend-coverage
               docker rm frontend-coverage-$CIRCLE_BUILD_NUM
             }
@@ -41,10 +39,11 @@ jobs:
           name: Test and lint data-analysis
           command: |
               test -e skip-data-analysis || {
+                export $(xargs -a .env)
                 docker-compose build --pull data-analysis-prepare
                 # The image for the data-analysis-prepare built above is named
-                # docker.bayesimpact.org/bob-emploi/data-analysis-prepare:build-$CIRCLE_BUILD_NUM
-                docker create --name data-analysis-prepare-$CIRCLE_BUILD_NUM docker.bayesimpact.org/bob-emploi/data-analysis-prepare:build-$CIRCLE_BUILD_NUM
+                # docker.bayesimpact.org/bob-emploi/data-analysis-prepare:$DOCKER_TAG
+                docker create --name data-analysis-prepare-$CIRCLE_BUILD_NUM docker.bayesimpact.org/bob-emploi/data-analysis-prepare:$DOCKER_TAG
                 docker cp data-analysis-prepare-$CIRCLE_BUILD_NUM:/work/cover /tmp/data-analysis-coverage
                 docker rm data-analysis-prepare-$CIRCLE_BUILD_NUM
               }
