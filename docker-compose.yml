@@ -1,7 +1,7 @@
 version: "3.4"
 services:
   data-analysis-notebook:
-    image: docker.bayesimpact.org/bob-emploi/notebooks
+    image: docker.bayesimpact.org/bob-emploi/notebooks:${DOCKER_TAG:-latest}
     build:
       context: data_analysis
       dockerfile: Dockerfile.notebooks
@@ -18,7 +18,7 @@ services:
       DATA_FOLDER: '/home/jovyan/data'
       CUSTOM_DISPLAY_URL: 'http://localhost:8888'
   data-analysis-prepare:
-    image: docker.bayesimpact.org/bob-emploi/data-analysis-prepare
+    image: docker.bayesimpact.org/bob-emploi/data-analysis-prepare:${DOCKER_TAG:-latest}
     build:
       args:
         - SKIP_TEST
@@ -40,7 +40,7 @@ services:
     ports:
       - "27016:27017"
   frontend-dev: &dev
-    image: bayesimpact/bob-emploi-dev
+    image: bayesimpact/bob-emploi-dev:${DOCKER_TAG:-latest}
     build:
       context: .
       dockerfile: frontend/client/Dockerfile
@@ -57,7 +57,7 @@ services:
       BOB_DEPLOYMENT:
       BOB_PLUGINS:
   frontend-test:
-    image: bayesimpact/bob-emploi-test
+    image: bayesimpact/bob-emploi-test:${DOCKER_TAG:-latest}
     build:
       context: .
       dockerfile: frontend/client/Dockerfile
@@ -80,7 +80,7 @@ services:
       args:
         - AIRTABLE_API_KEY
         - GIT_SHA1
-    image: bayesimpact/bob-emploi-frontend-server
+    image: bayesimpact/bob-emploi-frontend-server:${DOCKER_TAG:-latest}
     environment:
       BOB_PLUGINS:
       MONGO_URL:
@@ -109,7 +109,7 @@ services:
       context: .
       dockerfile: frontend/server/Dockerfile
       target: test
-    image: bayesimpact/bob-emploi-frontend-server-test
+    image: bayesimpact/bob-emploi-frontend-server-test:${DOCKER_TAG:-latest}
     environment:
       MONGO_URL: 'mongodb://frontend-db/test'
       DEBUG: '1'
