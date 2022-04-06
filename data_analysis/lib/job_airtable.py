@@ -1,7 +1,7 @@
 """Easy access to our job Airtables for data analysis."""
 
 import os
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Iterable, Optional
 
 from airtable import airtable
 import pandas
@@ -9,7 +9,7 @@ import pandas
 
 def load_prefixed_info(
         job_groups: Iterable[str], airtable_ids: str, *,
-        job_group_id_field: str, columns: Dict[str, Any]) \
+        job_group_id_field: str, columns: dict[str, Any]) \
         -> pandas.DataFrame:
     """Load job group info by prefix from AirTable.
 

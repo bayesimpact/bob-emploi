@@ -4,7 +4,7 @@ import i18next from 'i18next'
 import {genderizeJob, getIMTURL, getJobSearchURL, getApplicationModes,
   getJobPlacesFromDepartementStats, getApplicationModeText, getPEJobBoardURL,
   getMostlyRequiredDiploma} from 'store/job'
-import {jobFromSuggestion} from 'components/suggestions'
+import {jobFromSuggestion} from 'components/job_input'
 
 // @ts-ignore
 import {ApplicationMode} from 'api/job_pb'

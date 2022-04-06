@@ -4,14 +4,15 @@ import {useTranslation} from 'react-i18next'
 import ReactDOM from 'react-dom'
 
 import {cleanHtmlError, hasErrorStatus} from 'store/http'
-import {LocalizableString, init as i18nInit, localizeOptions, prepareT} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {init as i18nInit, localizeOptions, prepareT} from 'store/i18n'
 import isMobileVersion from 'store/mobile'
 
-import logoProductImage from 'deployment/bob-logo.svg'
+import logoProductImage from 'deployment/bob-logo.svg?fill=%23fff'
 
 import Button from 'components/button'
 import CheckboxList from 'components/checkbox_list'
-import FieldSet from 'components/field_set'
+import FieldSet, {OneField} from 'components/field_set'
 import Trans from 'components/i18n_trans'
 import RadioGroup from 'components/radio_group'
 import {ShareModal} from 'components/share'
@@ -29,6 +30,7 @@ import 'styles/App.css'
 i18nInit()
 
 
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-constraint
 interface LocalizableOption<T extends unknown> {
   name: LocalizableString
   value: T
@@ -337,7 +339,7 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
       </div>
       <div style={{maxWidth: 500}}>
         {seekingOptions.length ?
-          <FieldSet
+          <OneField
             label={t("Êtes-vous toujours à la recherche d'un emploi\u00A0?")}
             isValidated={isValidated} isValid={!!seeking}>
             <RadioGroup<bayes.bob.SeekingStatus>
@@ -345,8 +347,8 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
               style={{flexDirection: 'column'}}
               options={localizedSeekingOptions}
               value={seeking} />
-          </FieldSet> : null}
-        <FieldSet
+          </OneField> : null}
+        <OneField
           label={t("Quelle est votre situation aujourd'hui\u00A0?")}
           isValidated={isValidated} isValid={!!situation}>
           <RadioGroup<string>
@@ -354,9 +356,9 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
             style={{flexDirection: 'column'}}
             options={localizedSituationOptions}
             value={situation} />
-        </FieldSet>
+        </OneField>
         {isEmployedAndStoppedSeeking ? <React.Fragment>
-          <FieldSet
+          <OneField
             label={t('Est-ce un nouvel emploi\u00A0?')}
             isValidated={isValidated} isValid={!!isNewJob}>
             <RadioGroup<bayes.OptionalBool>
@@ -364,8 +366,8 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
               options={localizedOptionalBoolOptions}
               value={isNewJob}
               childStyle={optionalChildStyle} />
-          </FieldSet>
-          <FieldSet
+          </OneField>
+          <OneField
             // TODO(cyrille): Consider limiting to people who ever had a job
             // (kind !== FIND_A_FIRST_JOB).
             label={t('Vos responsabilités ont-elles évolué depuis votre dernier emploi\u00A0?')}
@@ -375,9 +377,9 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
               options={localizedOptionalBoolOptions}
               value={hasGreaterRole}
               childStyle={optionalChildStyle} />
-          </FieldSet>
+          </OneField>
         </React.Fragment> : null}
-        {isEmployedAndStoppedSeeking && isNewJob === 'TRUE' ? <FieldSet
+        {isEmployedAndStoppedSeeking && isNewJob === 'TRUE' ? <OneField
           label={t('Quel type de contrat avez-vous décroché\u00A0?')}
           isValidated={isValidated} isValid={!!newJobContractType}>
           <RadioGroup<bayes.bob.EmploymentType>
@@ -385,9 +387,9 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
             style={{flexDirection: 'column'}}
             options={localizedContractTypeOptions}
             value={newJobContractType} />
-        </FieldSet> : null}
+        </OneField> : null}
         {isEmployedAndStoppedSeeking && wasAlreadyEmployed === 'True' ? <React.Fragment>
-          <FieldSet
+          <OneField
             label={t('Avez-vous reçu une promotion\u00A0?')}
             isValidated={isValidated} isValid={!!hasBeenPromoted}>
             <RadioGroup<bayes.OptionalBool>
@@ -395,8 +397,8 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
               options={localizedOptionalBoolOptions}
               value={hasBeenPromoted}
               childStyle={optionalChildStyle} />
-          </FieldSet>
-          <FieldSet
+          </OneField>
+          <OneField
             label={t('Avez-vous reçu une augmentation salariale\u00A0?')}
             isValidated={isValidated} isValid={!!hasSalaryIncreased}>
             <RadioGroup<bayes.OptionalBool>
@@ -404,9 +406,9 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
               options={localizedOptionalBoolOptions}
               value={hasSalaryIncreased}
               childStyle={optionalChildStyle} />
-          </FieldSet>
+          </OneField>
         </React.Fragment> : null}
-        {isEmployedAndStoppedSeeking && isNewJob === 'TRUE' ? <FieldSet
+        {isEmployedAndStoppedSeeking && isNewJob === 'TRUE' ? <OneField
           label={t('Votre nouvel emploi est-il dans un secteur différent du précédent\u00A0?')}
           isValidated={isValidated} isValid={!!isJobInDifferentSector}>
           <RadioGroup<bayes.OptionalBool>
@@ -414,8 +416,8 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
             options={localizedOptionalBoolOptions}
             value={isJobInDifferentSector}
             childStyle={optionalChildStyle} />
-        </FieldSet> : null}
-        <FieldSet
+        </OneField> : null}
+        <OneField
           label={t(
             '{{productName}} vous a-t-il apporté un plus dans votre recherche\u00A0?',
             {productName: config.productName},
@@ -426,9 +428,9 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
             style={{flexDirection: 'column'}}
             options={localizedBobHasHelpedOptions}
             value={bobHasHelped} />
-        </FieldSet>
+        </OneField>
         {isHowProductHelpedQuestionShown ? <FieldSet
-          label={t(
+          legend={t(
             'Comment {{productName}} vous a-t-il aidé·e\u00A0?',
             {context: gender, productName: config.productName},
           )}>

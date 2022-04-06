@@ -83,6 +83,8 @@ message AuthUserData {
   MaVoieInfo ma_voie = 5;
 
   SelfDiagnostic original_self_diagnostic = 6;
+
+  bool is_action_plan_enabled = 7;
 }
 
 message AuthResponse {
@@ -158,4 +160,13 @@ message AuthTokens {
 
   // An URL to reset the user's password.
   string reset_url = 13;
+
+  // A token to see coaching emails content.
+  string emails = 14;
+
+  // A token allowing to update one's answer to the First Followup Survey.
+  string ffs = 15;
+
+  // An URL to udpate the user's answer to the First Followup Survey.
+  string ffs_url = 16;
 }

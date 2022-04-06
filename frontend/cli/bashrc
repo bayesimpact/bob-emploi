@@ -1,7 +1,8 @@
 # Bash functions that makes it easier to use the command line to interface with
 # Bob frontend.
 
-BOB_ROOT_FOLDER="$(realpath $(dirname "${BASH_SOURCE[0]}")/../..)"
+
+export BOB_ROOT_FOLDER="$(realpath $(dirname "${BASH_SOURCE[0]}")/../..)"
 
 function __bob_get_stack {
   jq --arg deployment "$1" '.[] | select(.deployment == $deployment)' "$BOB_ROOT_FOLDER/frontend/release/stack_deployments.json" |
@@ -38,6 +39,15 @@ function bob_stack_var {
   aws cloudformation describe-stacks $(__bob_stack_params $deployment) |
     jq -r --arg param "$param" '.Stacks[].Parameters[]|select(.ParameterKey == $param).ParameterValue'
 }
+
+function bob_stack_vars {
+  local deployment
+  deployment=$1
+  param=$2
+  aws cloudformation describe-stacks $(__bob_stack_params $deployment) |
+    jq '[.Stacks[].Parameters[]|{(.ParameterKey): .ParameterValue}]|add'
+}
+
 function __bob_stack_var_complete {
   local available_stack_vars cur
   cur=${COMP_WORDS[COMP_CWORD]}
@@ -81,8 +91,12 @@ function bob-dc {
   else
     local translation_locales="en"
   fi
+  if [ -z "$BOB_PLUGINS" ]; then
+    BOB_PLUGINS="$(json5 "$BOB_ROOT_FOLDER/frontend/client/cfg/deployments/$deployment.json5" | jq -r '.plugins[]' | tr $'\n' ',')"
+  fi
   (
     export BOB_DEPLOYMENT=$deployment
+    export BOB_PLUGINS
     export MONGO_URL=${MONGO_URL:-"$(bob_prod_var "$deployment" MONGO_URL)"}
     export IMPORTER_MONGO_URL=${IMPORTER_MONGO_URL:-"$(bob_importer_var "$deployment" MONGO_URL)"}
     export REQUIRED_LOCALES=${REQUIRED_LOCALES:-"$translation_locales"}
@@ -139,15 +153,17 @@ function _ecs_var_from_json {
 # You need to have awscli and jq installed, as well have read access to the
 # prod configuration.
 function bob_prod_var {
-  local container region definition
+  local container region definition deployment stack_id
   region="$(__bob_get_stack_region $1)"
   if [ "$region" ]; then
+    deployment=$1
     shift
   else
     region="$(__bob_get_stack_region fr)"
+    deployment=fr
   fi
-  # Keep those in sync with cloudformation.json
-  definition=bob-frontend-server
+  stack_id="$(__bob_get_stack "$deployment" | jq -r '.stackId')"
+  definition="${stack_id}-frontend-server"
   container=flask
   aws ecs describe-task-definition --region "$region" --task-definition "$definition" | _ecs_var_from_json "$container" "$@"
 }
@@ -156,14 +172,7 @@ function bob_prod_var {
 #
 # You need to have ssh access to the demo server.
 function bob_demo_var {
-  if [ "$(__bob_get_stack_region $1)" ]; then
-    local prefix_option="--prefix $1"
-    shift
-  elif [[ "$1" == "fr" ]]; then
-    shift
-  fi
-  # TODO(cyrille): Drop the -T if https://github.com/docker/compose/issues/5696 ever gets fixed.
-  ssh bob-demo.bayes.org 'bash --login -c "cd ../pascal && docker-compose exec -T frontend-demo-runner python demos.py '$1' '$prefix_option'"'
+  python3 "$BOB_ROOT_FOLDER/frontend/cli/demo_var.py" "$@"
 }
 
 function _multiple_ecs_vars {
@@ -186,28 +195,34 @@ function _multiple_ecs_vars {
 # You need to have awscli and jq installed, as well have read access to the
 # prod configuration.
 function bob_prod_vars {
-  local container region definition
+  local container region definition deployment stack_id
   region="$(__bob_get_stack_region $1)"
   (
     if [ "$region" ]; then
+      deployment=$1
       export AWS_DEFAULT_REGION=$region
       shift
+    else
+      deployment=fr
     fi
-    # Keep in sync with cloudformation.json
-    _multiple_ecs_vars bob-frontend-server flask $@
+    stack_id="$(__bob_get_stack "$deployment" | jq -r '.stackId')"
+    _multiple_ecs_vars ${stack_id}-frontend-server flask $@
   )
 }
 
 function bob_importer_var {
-  local container region definition
+  local container region definition deployment stack_id
   region="$(__bob_get_stack_region $1)"
   if [ "$region" ]; then
+    deployment=$1
     shift
   else
     region="$(__bob_get_stack_region fr)"
+    deployment=fr
   fi
+  stack_id="$(__bob_get_stack "$deployment" | jq -r '.stackId')"
   # Keep those in sync with cloudformation.json
-  definition=bob-data-importer
+  definition=${stack_id}-data-importer
   container=importer
   aws ecs describe-task-definition --region "$region" --task-definition "$definition" | _ecs_var_from_json "$container" "$@"
 }

@@ -1,10 +1,10 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
-import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
 import {getDateString} from 'store/french'
-import {LocalizableString, prepareT, prepareT as prepareTNoExtract} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {prepareT, prepareT as prepareTNoExtract} from 'store/i18n'
 
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
@@ -17,7 +17,8 @@ import poleEmploiImage from 'images/pee-picto.png'
 import recrutImage from 'images/recrut-picto.png'
 import Picto from 'images/advices/picto-events.svg'
 
-import {MethodSuggestionList, CardProps, ToolCard, useAdviceData} from './base'
+import type {CardProps} from './base'
+import {MethodSuggestionList, ToolCard, useAdviceData} from './base'
 
 
 interface Tool {
@@ -31,53 +32,66 @@ interface Tool {
 const EVENT_TOOLS: readonly Tool[] = ([
   {
     countryId: 'fr',
-    href: 'http://www.emploi-store.fr/portail/services/poleEmploiEvenements',
+    href: 'http://www.emploi-store.fr/portail/services/poleEmploiEvenements', // checkURL
     imageSrc: poleEmploiEventsImage,
     title: prepareT('App Pôle emploi Évènements'),
   },
   {
     countryId: 'fr',
-    href: 'https://www.meetup.com/fr-FR/',
+    href: 'https://www.meetup.com/fr-FR/', // checkURL
     imageSrc: meetupImage,
     title: prepareTNoExtract('Meetup'),
   },
   {
     countryId: 'fr',
-    href: 'https://www.jobteaser.com/fr/events',
+    href: 'https://www.jobteaser.com/fr/events', // checkURL
     imageSrc: jobteaserImage,
     title: prepareTNoExtract('Jobteaser'),
   },
   {
     countryId: 'fr',
-    href: 'http://www.recrut.com/les_salons',
+    href: 'http://www.recrut.com/les_salons', // checkURL
     imageSrc: recrutImage,
     title: prepareTNoExtract('Recrut'),
   },
   {
     countryId: 'fr',
-    href: 'http://www.pole-emploi.fr/informations/en-region-@/region/?/evenements.html',
+    href: 'http://www.pole-emploi.fr/informations/en-region-@/region/?/evenements.html', // checkURL
     imageSrc: poleEmploiImage,
     title: prepareT('Évènements régionaux'),
   },
   {
-    countryId: 'us',
-    href: 'https://www.nationalcareerfairs.com/',
+    countryId: 'usa',
+    href: 'https://www.nationalcareerfairs.com/', // checkURL
     imageSrc: nationalCareerFairsImage,
     title: prepareTNoExtract('National Career Fairs'),
   },
   {
-    countryId: 'us',
-    href: 'https://www.meetup.com/en-US/',
+    countryId: 'usa',
+    href: 'https://www.meetup.com/en-US/', // checkURL
     imageSrc: meetupImage,
     title: prepareTNoExtract('Meetup'),
   },
   {
     countryId: 'uk',
-    href: 'https://www.meetup.com/en/',
+    href: 'https://www.meetup.com/en/', // checkURL
     imageSrc: meetupImage,
     title: prepareTNoExtract('Meetup'),
   },
 ] as const).filter(({countryId}) => countryId === config.countryId)
+
+
+const NETWORKING_INTROS: readonly LocalizableString[] = [
+  prepareT("Savez-vous ce qui est prévu pour la suite de l'événement\u00A0?"),
+  prepareT("Connaissez-vous l'organisateur depuis longtemps\u00A0?"),
+  prepareT("Que pensez-vous de l'organisation\u00A0?"),
+  prepareT("Qu'est-ce que cette conférence vous inspire pour votre activité\u00A0?"),
+  prepareT("Comment avez-vous trouvé l'intervenante\u00A0?"),
+  prepareT("Qu'avez-vous pensé des thèmes abordés\u00A0?"),
+  prepareT('Comment avez-vous entendu parler de cet événement\u00A0?'),
+  prepareT("Qu'est-ce qui vous a fait venir\u00A0?"),
+  prepareT("Participez-vous souvent à ce genre d'événement\u00A0?"),
+]
 
 
 interface EventsListProps {
@@ -97,11 +111,6 @@ const EventsListBase: React.FC<EventsListProps> =
         {...event} key={event.link} onClick={handleExplore('event')} t={t} />)}
     </MethodSuggestionList>
   }
-EventsListBase.propTypes = {
-  events: PropTypes.arrayOf(PropTypes.object.isRequired).isRequired,
-  handleExplore: PropTypes.func.isRequired,
-  t: PropTypes.func.isRequired,
-}
 const EventsList = React.memo(EventsListBase)
 
 
@@ -120,7 +129,12 @@ const EventsMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement
   }
   return <div>
     {(hasEvents && events) ? <EventsList {...{events, handleExplore, t}} /> : null}
-    <MethodSuggestionList title={methodTitle} style={eventBoxStyle}>
+    <MethodSuggestionList title={<Trans t={t}>
+      <GrowingNumber number={NETWORKING_INTROS.length} /> questions pour lancer la conversation
+    </Trans>} isNotClickable={true} style={eventBoxStyle}>
+      {NETWORKING_INTROS.map((intro, index) => <div key={index}>{translate(...intro)}</div>)}
+    </MethodSuggestionList>
+    <MethodSuggestionList title={methodTitle} style={{marginTop: 20}}>
       {EVENT_TOOLS.map(({title, ...props}, index: number): ReactStylableElement =>
         <ToolCard {...props} key={index} onClick={handleExplore('tool')}>
           {translate(...title)}
@@ -128,10 +142,6 @@ const EventsMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement
       )}
     </MethodSuggestionList>
   </div>
-}
-EventsMethod.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(EventsMethod)
 
@@ -169,15 +179,6 @@ const EventBase: React.FC<EventProps> = (props: EventProps): React.ReactElement 
     <span>{startDate && getDateString(startDate, t)}</span>
     <ChevronRightIcon style={chevronStyle} />
   </RadiumExternalLink>
-}
-EventBase.propTypes = {
-  filters: PropTypes.arrayOf(PropTypes.string.isRequired),
-  link: PropTypes.string.isRequired,
-  organiser: PropTypes.string.isRequired,
-  startDate: PropTypes.string.isRequired,
-  style: PropTypes.object,
-  t: PropTypes.func.isRequired,
-  title: PropTypes.string.isRequired,
 }
 const Event = React.memo(EventBase)
 

@@ -1,11 +1,11 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
 import Picto from 'images/advices/picto-reorient-to-close-job.svg'
 
-import {CardProps, JobSuggestion, useAdviceData, ReorientSection} from './base'
+import type {CardProps} from './base'
+import {JobSuggestion, useAdviceData, ReorientSection} from './base'
 
 
 const emptyArray = [] as const
@@ -20,7 +20,7 @@ const getSectionItems = (
 
 const ReorientToCloseJobs = (props: CardProps): React.ReactElement => {
   const {data: adviceData, loading} = useAdviceData<bayes.bob.ReorientCloseJobs>(props)
-  const {handleExplore, profile: {gender}, project: {city}, t} = props
+  const {handleExplore, profile, profile: {gender}, project: {city}, t} = props
   const {closeJobs = emptyArray, evolutionJobs = emptyArray} = adviceData
   const areCloseJobShown = closeJobs.length > 1
   const titleEvolutionSection = <Trans t={t} parent={null} count={evolutionJobs.length}>
@@ -42,22 +42,14 @@ const ReorientToCloseJobs = (props: CardProps): React.ReactElement => {
   return <div>
     <ReorientSection
       title={titleCloseSection}
-      items={getSectionItems(closeJobs, city, gender, handleExplore('close job'))} />
+      items={getSectionItems(closeJobs, city, gender, handleExplore('close job'))}
+      profile={profile} />
     <ReorientSection
       title={titleEvolutionSection}
       items={getSectionItems(evolutionJobs, city, gender, handleExplore('evolution job'))}
-      style={style} />
+      style={style}
+      profile={profile} />
   </div>
-}
-ReorientToCloseJobs.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-  profile: PropTypes.shape({
-    gender: PropTypes.string,
-  }).isRequired,
-  project: PropTypes.shape({
-    city: PropTypes.object,
-  }).isRequired,
-  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(ReorientToCloseJobs)
 

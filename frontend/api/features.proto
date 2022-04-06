@@ -1,0 +1,197 @@
+syntax = "proto3";
+
+package bayes.bob;
+option go_package="bayes.org/bob_emploi/frontend/api/features";
+
+enum BinaryExperiment {
+  NOT_IN_EXPERIMENT = 0;
+
+  // The experiment is active for this user.
+  ACTIVE = 1;
+
+  // The user is in a control group: the experiment is not active.
+  CONTROL = 2;
+}
+
+// This message can only be modified server-side to decide to enable features
+// that are still in development or in test to some users. See
+// http://go/bob:feature-flags-design.
+//
+// Each feature flag should follow the guidelines:
+//  - Do not use is_ or has_ prefix, as this is by design a list of features
+//    where each field means "is this feature enabled".
+//  - The name is specific to the feature added.
+//  - The comment describes precisely what is being developped.
+//  - The comment includes the date for when this feature started to be
+//    implemented.
+// Next ID: 36
+message Features {
+  // Email notifications can be sent to any user that has checked some days
+  // in profile.email_days. The feature here is for users that we opted-in
+  // email notifications automatically. The name is a bit generic because of
+  // historical reasons (when we started, only the users that we opted-in were
+  // able to recieve notifications).
+  // Started: 2016-11-23.
+  bool email_notifications = 1;
+
+  // Ablation experiment for the "I did this action" button.
+
+  // In the Action Modal, make the "I did this" button discreet.
+  // Started: 2016-12-01.
+  // Stopped: 2016-12-08.
+  bool action_done_button_discreet = 7 [deprecated = true];
+
+  // Control group for the above experiment (regular green button shown).
+  // Started: 2016-12-01.
+  // Stopped: 2016-12-08.
+  bool action_done_button_control = 8 [deprecated = true];
+
+  // Whether we integrate La Bonne Boite results directly into our application.
+  // Started: 2016-12-06.
+  // Unused so stopped: 2017-10-25.
+  BinaryExperiment lbb_integration = 9 [deprecated = true];
+
+  // This is not really an experiment but rather a marker for users for which
+  // we have disabled all emailDays because they were not reading their emails.
+  bool auto_stop_emails = 13;
+
+  // Whether we show the "Advisor" UX to the user.
+  // Graduated for new users: 2016-01-23.
+  // All users after 2017-04-01 had it ACTIVE, and no users was in CONTROL. So
+  // in 2018-06 we reversed the logic and assigned all (old) users that were
+  // undefined to CONTROL and switched the new users not to have anything.
+  BinaryExperiment advisor = 14 [deprecated = true];
+
+  // Enable all alpha features (usually for devs and/or user tests).
+  bool alpha = 15;
+
+  // Enable specific Pôle Emploi counselor features.
+  bool pole_emploi = 20;
+
+  // Whether the user should receive the Net Promoter Score email.
+  // DEPRECATED: Use registered_at and sent_emails fields instead.
+  // TODO(pascal): Clean that up.
+  NPSEmailStatus net_promoter_score_email = 16 [deprecated = true];
+
+  // Whether we send advice by email to this user.
+  // All users after 2017-06-01 had it ACTIVE, and no users was in CONTROL. So
+  // in 2018-06 we reversed the logic and assigned all (old) users that were
+  // undefined to CONTROL and switched the new users to use undefined.
+  BinaryExperiment advisor_email = 17 [deprecated = true];
+
+  // Whether the user switched from mashup to advisor.
+  bool switched_from_mashup_to_advisor = 19;
+
+  // Whether the user will see all advices. We use this feature only as a debug tool to be able to
+  // see all advices at once. It will not be used for regular users.
+  bool all_modules = 21;
+
+  // Whether we show the new Assessment page.
+  // DEPRECATED: All users have it, since we're retiring the old bob score.
+  // TODO(cyrille): Clean it up.
+  BinaryExperiment assessment = 22 [deprecated = true];
+
+  // Whether to exclude this user when computing analytics.
+  bool exclude_from_analytics = 23;
+
+  // Whether we show the new Workbench flow. The user must select a list of
+  // advice card they want to work that arrive on their workbench.
+  // Started: 2017-11-27.
+  // Stopped: 2017-01-01. Dropped the experiment entirely but start the
+  // workbench again without any experiment.
+  BinaryExperiment workbench = 24 [deprecated = true];
+
+  // Users we want to follow on the long term.
+  bool follow_up_long_term = 25;
+
+  // Whether we show Bob as a talking person in the onboarding.
+  // Started 2018-01-29.
+  BinaryExperiment bob_talks = 26;
+
+  // Whether the user comes from #BobAction workflow. This is set when users in #BobAction click
+  // on the link "I don't want to help, I want to be helped".
+  // BinaryExperiment is needed to use the 'activate' GET parameter on landing page.
+  // Started 2018-04-27.
+  BinaryExperiment from_bob_action = 27;
+
+  // Whether the user cannot access all features before they get "Bob Points".
+  // Points can be earned by sharing, rating the app or exploring it. See the
+  // whole design at http://go/bob:points.
+  // Started: 2018-09-03
+  // Stopped: 2018-09-27. Dropped the experiment entirely, and abort gamification.
+  BinaryExperiment bob_points = 28 [deprecated = true];
+
+  // Whether the user comes from the unregistered experiment for quick diagnostic.
+  // Quick Diagnostic allows to get a diagnostic on local market without registering a user.
+  // Registered users who participated to the experiment before registering are tracked here.
+  // Tried for a little while but never fully launched.
+  // Stopped: 2018-03-12. Dropped the experiment entirely, and abort quick diagnostic.
+  BinaryExperiment quick_diagnostic = 29 [deprecated = false];
+
+  // Whether we show the UI with the first version of strategies. Note that the
+  // CONTROL users are actually past users to whom we would have shown the UI.
+  // Started: estimated 2019-01-30
+  // Stopped 2019-03-29: Now use only strat_two flag.
+  BinaryExperiment strat_one = 30 [deprecated = true];
+
+  // Whether we show the UI with the second version of strategies, including a
+  // clear Bob think. Note that the CONTROL users are actually past users to
+  // whom we would have shown the UI.
+  // TODO(pascal): Add a start date when ready.
+  BinaryExperiment strat_two = 31;
+
+  // Whether it's possible for the user to set their job as unknown in the project definition.
+  // Started: 2021-01-15 (for UK only).
+  // Ended: 2021-07-28 (disabled in UK)
+  // Started: 2021-12-01 (for action plan).
+  bool job_unknown_disabled = 32;
+
+  // Whether we show the UI for self diagnostic at the end of the onboarding (ACTIVE), or near
+  // the beginning (CONTROL).
+  // Started: 2021-03-10
+  // Ended 2021-04-27: New users now have the diagnostic near the beginning.
+  BinaryExperiment late_self_diagnostic = 33;
+
+  // Whether we show a different UX helping users create an action plan (before we would focus
+  // on the diagnostic then present our content as part of strategies and methods to browse).
+  // Started: around 2021-11 on FR, 2022-01 for other deployments, not enabled on Skillup.
+  BinaryExperiment action_plan = 34;
+
+  // Whether we show a UX with 2-columns actions list for the page allowing users to select
+  // all actions as part of a strategy.
+  // users that are not part of the ACTIVE experiment (former users + CONTROL users) see
+  // the strategy page with a Bob talk and a single column action list.
+  // Started: 2022-04-05. It's possible the launch is pushed back a few days.
+  BinaryExperiment two_columns_actions_strat_page = 35;
+}
+
+message ExperimentRollouts {
+  // Experiment rollouts keyed by feature ID (snake case, e.g. "action_plan").
+  map<string, ExperimentRollout> experiments = 1;
+}
+
+message ExperimentRollout {
+  // Percentage (0 to 100) of new users to set in the control group.
+  float new_users_in_control = 1;
+
+  // Percentage (0 to 100) of new users to set in the test group.
+  float new_users_in_active = 2;
+
+  // Percentage (0 to 100) of existing unassigned users to set in the control group.
+  float unassigned_users_in_control = 3;
+
+  // Percentage (0 to 100) of existing unassigned users to set in the active group.
+  float unassigned_users_in_active = 4;
+}
+
+// Status of the email sent to user to compute the Net Promoter Score.
+enum NPSEmailStatus {
+  // User was created before the NPS experiment was ever started.
+  BEFORE_NPS_EXPERIMENT = 0;
+
+  // User has been created recently and did not receive any NPS email yet.
+  NPS_EMAIL_PENDING = 1;
+
+  // We sent the NPS email to the user.
+  NPS_EMAIL_SENT = 2;
+}

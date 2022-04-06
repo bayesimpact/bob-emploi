@@ -1,0 +1,13 @@
+{
+  "baseUrl": "https://www.bob-emploi.fr",
+  "changeEmailSettingsUrl": "https://www.bob-emploi.fr",
+  "firstName": "Mathieu",
+  "frustration": "MOTIVATION",
+  "gender": "MASCULINE",
+  "inTargetDomain": "en informatique",
+  "jobInCity": "ingénieur logiciel à Lyon",
+  "otherJobInCity": "coiffeur à Marseille",
+  "productLogoUrl": "https://t.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
+  "productName": "Bob",
+  "statusUpdateUrl": "https://www.bob-emploi.fr"
+}

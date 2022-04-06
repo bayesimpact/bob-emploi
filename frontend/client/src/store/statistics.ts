@@ -1,6 +1,10 @@
 // Helper elements for statistics.
+import type {TFunction} from 'i18next'
+import i18next from 'i18next'
+import _memoize from 'lodash/memoize'
 
-import {prepareT} from 'store/i18n'
+import {getFieldsTranslator, prepareT} from 'store/i18n'
+import VAEFrench from 'store/data/vae.json'
 
 // Our data is updated monthly so it's 2 weeks old in average.
 const dataSourceYear = new Date(Date.now() - 14 * 24 * 3600 * 1000).getFullYear()
@@ -24,4 +28,18 @@ readonly bayes.bob.PassionLevelCount[]|undefined => {
   return undefined
 }
 
-export {bobSourceText, dataSourceYear, getSearchLenghtCounts}
+
+interface VAEStat {
+  name: string
+  romeIds: readonly string[]
+  vaeRatioInDiploma: number
+}
+
+export const vaeI18nFields = ['name'] as const
+
+const getTranslatedVAEStats = _memoize((translate: TFunction): VAEStat[] =>
+  VAEFrench.map(getFieldsTranslator(translate, vaeI18nFields, 'vae')),
+(): string => i18next.language)
+
+
+export {bobSourceText, dataSourceYear, getSearchLenghtCounts, getTranslatedVAEStats}

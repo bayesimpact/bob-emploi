@@ -1,17 +1,21 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 import Storage from 'local-storage-fallback'
-import {useMemo} from 'react'
+import {useMemo, useState} from 'react'
 import {useSelector} from 'react-redux'
 import {useTranslation} from 'react-i18next'
 
-import {RootState} from 'store/actions'
+import type {RootState} from 'store/actions'
+import {getAuthTokens, useDispatch} from 'store/actions'
 import {convertFromProtoPost} from 'store/api'
 import {parseQueryString} from 'store/parse'
+import {useAsynceffect} from 'store/promise'
 
-import {DEGREE_OPTIONS} from 'deployment/profile_options'
-import {sampleCities, sampleJobs} from 'deployment/user_examples'
+import {DEGREE_OPTIONS, RACE_OPTIONS as DEPLOYMENT_RACE_OPTIONS} from 'deployment/profile_options'
+import {sampleCities, sampleFrustrations, sampleProfile, sampleProject,
+  sampleJobs, sampleUsersPerDiagnostic} from 'deployment/user_examples'
 
-import {LocalizableString, WithLocalizableName, prepareT} from './i18n'
+import type {LocalizableString, WithLocalizableName} from './i18n'
+import {prepareT} from './i18n'
 import {PROJECT_EXPERIENCE_OPTIONS, PROJECT_LOCATION_AREA_TYPE_OPTIONS, PROJECT_PASSIONATE_OPTIONS,
   SENIORITY_OPTIONS, TRAINING_FULFILLMENT_ESTIMATE_OPTIONS} from './project'
 
@@ -141,13 +145,13 @@ const FRUSTRATION_OPTIONS: readonly FrustrationOption[] = ([
   },
   {
     isCountryDependent: true,
-    // i18next-extract-mark-context-next-line ["fr", "uk", "us"]
+    // i18next-extract-mark-context-next-line ["fr", "uk", "usa"]
     name: prepareT('Mon niveau en **français**'),
     value: 'LANGUAGE',
   },
   {
     isCountryDependent: true,
-    // i18next-extract-mark-context-next-line ["fr", "uk", "us"]
+    // i18next-extract-mark-context-next-line ["fr", "uk", "usa"]
     name: prepareT('Mes qualifications ne sont **pas reconnues en France**'),
     value: 'FOREIGN_QUALIFICATIONS',
   },
@@ -183,53 +187,6 @@ const FRUSTRATION_OPTIONS: readonly FrustrationOption[] = ([
   },
 ] as const).filter(({value}) => !config.frustrationOptionsExcluded.includes(value))
 
-
-export const personalizationsPredicates = {
-  GRADUATE: ({highestDegree}: bayes.bob.UserProfile): boolean =>
-    highestDegree === 'LICENCE_MAITRISE' || highestDegree === 'DEA_DESS_MASTER_PHD',
-  NETWORK_SCORE_1: (profile: bayes.bob.UserProfile, {networkEstimate}: bayes.bob.Project):
-  boolean => networkEstimate === 1,
-  NETWORK_SCORE_2: (profile: bayes.bob.UserProfile, {networkEstimate}: bayes.bob.Project):
-  boolean => networkEstimate === 2,
-  NETWORK_SCORE_3: (profile: bayes.bob.UserProfile, {networkEstimate}: bayes.bob.Project):
-  boolean => networkEstimate === 3,
-  SAME_JOB: (profile: bayes.bob.UserProfile, {previousJobSimilarity}: bayes.bob.Project): boolean =>
-    previousJobSimilarity !== 'NEVER_DONE',
-} as const
-type Personalization = keyof typeof personalizationsPredicates
-type PersonalizationPredicate =
-  (profile: bayes.bob.UserProfile, project: bayes.bob.Project) => boolean
-
-type ProjectPredicate = (project: bayes.bob.Project) => boolean
-export const filterPredicatesMatch: {[K in download.ClientFilter]: ProjectPredicate} = {
-  'for-experienced(2)': ({seniority}: bayes.bob.Project): boolean => seniority === 'EXPERT' ||
-    seniority === 'SENIOR' || seniority === 'INTERMEDIARY',
-  'for-experienced(6)': ({seniority}: bayes.bob.Project): boolean =>
-    seniority === 'EXPERT' || seniority === 'SENIOR',
-}
-
-function isEmailTemplatePersonalized(
-  personalisations: readonly string[],
-  profile: bayes.bob.UserProfile, project: bayes.bob.Project): boolean {
-  // Check that personalization is not directly a frustration.
-  const isFrustration = profile.frustrations?.some(
-    (frustration): boolean => personalisations.includes(frustration))
-  if (isFrustration) {
-    return true
-  }
-
-  return personalisations.
-    map((p: string): PersonalizationPredicate|undefined =>
-      personalizationsPredicates[p as Personalization]).
-    some(predicate => predicate?.(profile, project))
-}
-
-function projectMatchAllFilters(
-  project: bayes.bob.Project, filters?: readonly download.ClientFilter[],
-): boolean {
-  return !(filters || []).
-    some((filter: download.ClientFilter): boolean => !filterPredicatesMatch[filter](project))
-}
 
 // A function that returns a description for a degree.
 // If no degree, we do not return any a description.
@@ -271,6 +228,22 @@ const FAMILY_SITUATION_OPTIONS: readonly LocalizedSelectOption<bayes.bob.FamilyS
   {name: prepareT('En couple sans enfant'), value: 'IN_A_RELATIONSHIP'},
   {name: prepareT('Parent en couple'), value: 'FAMILY_WITH_KIDS'},
   {name: prepareT('Parent célibataire'), value: 'SINGLE_PARENT_SITUATION'},
+]
+
+const RACE_OPTIONS: readonly LocalizedSelectOption<string>[] = config.isRaceEnabled ? [
+  ...DEPLOYMENT_RACE_OPTIONS,
+  {name: prepareT('ne pas répondre'), value: ''},
+] : []
+
+
+const CUSTOM_GENDER = 'CUSTOM' as const
+
+const CUSTOM_GENDER_OPTIONS: readonly LocalizedSelectOption<string>[] = [
+  {name: prepareT('gender:FEMALE'), value: 'FEMALE'},
+  {name: prepareT('gender:MALE'), value: 'MALE'},
+  {name: prepareT('gender:NON_BINARY'), value: 'NON_BINARY'},
+  {name: prepareT('ne pas répondre'), value: 'DECLINE_TO_ANSWER'},
+  {name: prepareT('décrire moi même'), value: CUSTOM_GENDER},
 ]
 
 
@@ -338,8 +311,7 @@ function translateJob(translate: TFunction, job: typeof sampleJobs[number]): bay
   }
 }
 
-
-const getUserFormUrl = ((): (() => bayes.bob.User) => {
+const getUserFromUrl = ((): (() => bayes.bob.User) => {
   let userFromURL: bayes.bob.User = {}
   async function fetchUserFromUrl(search: string): Promise<void> {
     if (!search) {
@@ -352,9 +324,12 @@ const getUserFormUrl = ((): (() => bayes.bob.User) => {
     if (user.startsWith('{')) {
       try {
         userFromURL = JSON.parse(user) as bayes.bob.User
-      } catch {
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.log(`Error while parsing userExample from URL: ${error}`)
         return
       }
+      return
     }
     const userParsed = await convertFromProtoPost('user', user)
     if (userParsed) {
@@ -402,37 +377,60 @@ type PopulatedUser = bayes.bob.User & {
 
 function getUserExample(isRandom: boolean, translate: TFunction): PopulatedUser {
   const t = translate
-  const userFromURL = getUserFormUrl()
+  const userFromURL = getUserFromUrl()
+  const diagnosticFromURL = userFromURL.projects?.[0]?.diagnostic?.categoryId
+  const userFromDiagnostic =
+    diagnosticFromURL && sampleUsersPerDiagnostic[diagnosticFromURL] || undefined
+  const translatedUserFromDiagnostic = userFromDiagnostic && {
+    ...userFromDiagnostic,
+    projects: userFromDiagnostic.projects?.map((project): bayes.bob.Project => {
+      if (!project.targetJob) {
+        return project as bayes.bob.Project
+      }
+      return {
+        ...project,
+        targetJob: translateJob(translate, project.targetJob),
+      }
+    }),
+  }
   return {
     profile: {
       coachingEmailFrequency: pickRandom(COACHING_EMAILS_OPTIONS).value,
-      familySituation: pickRandom(FAMILY_SITUATION_OPTIONS).value,
-      frustrations: FRUSTRATION_OPTIONS.map(({value}) => value).filter(() => Math.random() > .5),
+      familySituation: sampleProfile.familySituation || pickRandom(FAMILY_SITUATION_OPTIONS).value,
+      frustrations: FRUSTRATION_OPTIONS.map(({value}) => value).filter((value) =>
+        (sampleFrustrations?.includes(value))
+          || Math.random() > .5),
       gender: isRandom ? pickRandom(['FEMININE', 'MASCULINE']) : 'FEMININE',
       hasCarDrivingLicense: pickRandom(['TRUE', 'FALSE']),
-      highestDegree: isRandom ? pickRandom(DEGREE_OPTIONS).value : 'BAC_BACPRO',
+      highestDegree: isRandom ? pickRandom(DEGREE_OPTIONS).value :
+        sampleProfile.highestDegree || 'BAC_BACPRO',
       name: t('Angèle'),
       origin: pickRandom(ORIGIN_OPTIONS).value,
-      yearOfBirth: isRandom ? Math.round(1950 + 50 * Math.random()) : 1995,
+      yearOfBirth: isRandom ? Math.round(1950 + 50 * Math.random()) :
+        sampleProfile.yearOfBirth || 1995,
+      ...translatedUserFromDiagnostic?.profile,
       ...userFromURL.profile,
     },
     projects: [{
       areaType: isRandom ? pickRandom(PROJECT_LOCATION_AREA_TYPE_OPTIONS).value : 'COUNTRY',
       city: isRandom ? pickRandom(sampleCities) : sampleCities[0],
-      employmentTypes: ['CDI'],
-      jobSearchStartedAt: new Date(Date.now() - MILLIS_IN_MONTH * 6).toISOString(),
+      employmentTypes: sampleProject.employmentTypes || ['CDI'],
+      jobSearchStartedAt: sampleProject.jobSearchStartedAt ||
+        new Date(Date.now() - MILLIS_IN_MONTH * 6).toISOString(),
       kind: 'FIND_A_NEW_JOB',
       minSalary: 21_500,
-      networkEstimate: Math.floor(Math.random() * 3) + 1,
+      networkEstimate: sampleProject.networkEstimate || Math.floor(Math.random() * 3) + 1,
       passionateLevel: isRandom ? pickRandom(PROJECT_PASSIONATE_OPTIONS).value : 'PASSIONATING_JOB',
-      previousJobSimilarity: pickRandom(PROJECT_EXPERIENCE_OPTIONS).value,
-      seniority: pickRandom(SENIORITY_OPTIONS).value,
+      previousJobSimilarity: sampleProject.previousJobSimilarity ||
+        pickRandom(PROJECT_EXPERIENCE_OPTIONS).value,
+      seniority: sampleProject.seniority || pickRandom(SENIORITY_OPTIONS).value,
       targetJob: translateJob(translate, isRandom ? pickRandom(sampleJobs) : sampleJobs[0]),
       totalInterviewCount: isRandom ? (Math.floor(Math.random() * 22) || -1) : -1,
       trainingFulfillmentEstimate: pickRandom(TRAINING_FULFILLMENT_ESTIMATE_OPTIONS).value,
       weeklyApplicationsEstimate: 'SOME',
       weeklyOffersEstimate: 'DECENT_AMOUNT',
-      workloads: ['FULL_TIME'],
+      workloads: sampleProject.workloads || ['FULL_TIME'],
+      ...translatedUserFromDiagnostic?.projects?.[0],
       ...userFromURL.projects?.[0],
     }],
   }
@@ -484,52 +482,61 @@ function addProjectIds(user: bayes.bob.User): bayes.bob.User {
   }
 }
 
-
-// To setup the convince page demo:
-//    localStorage.setItem('convincePageDev', '1')
-// then refresh the page.
-const isConvincePageDevActivated = !!Storage.getItem('convincePageDev')
-if (isConvincePageDevActivated) {
-  // eslint-disable-next-line no-console
-  console.log(
-    'Convince Page Dev is activated. ' +
-    'To disable run: localStorage.removeItem("convincePageDev") and refresh.')
-}
-
-
-// Main feature flag for the Convince Page sprint.
-// TODO(émilie): Delete useAlwaysConvincePage when launched.
-function useAlwaysConvincePage(): boolean {
-  return true
-}
-
-// To setup the selfDiagnostic in intro demo:
-//    localStorage.setItem('selfDiagIntroDev', '1')
-// then refresh the page.
-const isSelfDiagnosticInIntro = !!Storage.getItem('selfDiagIntroDev')
-if (isSelfDiagnosticInIntro) {
-  // eslint-disable-next-line no-console
-  console.log(
-    'Self diagnostic in intro Dev is activated. ' +
-    'To disable run: localStorage.removeItem("selfDiagIntroDev") and refresh.')
-}
-
 // Main feature flag for self diagnostic moved into the intro.
 // TODO(émilie): Delete when released.
 function useSelfDiagnosticInIntro(): boolean {
   const lateSelfDiagnostic = useSelector(
-    ({user: {featuresEnabled}}: {user: bayes.bob.User}) => featuresEnabled?.lateSelfDiagnostic)
-  return lateSelfDiagnostic !== 'ACTIVE'
+    ({user: {featuresEnabled}}: RootState) => featuresEnabled?.lateSelfDiagnostic)
+  return !useActionPlan() && lateSelfDiagnostic !== 'ACTIVE'
 }
 
 const useEmailsInProfile = (): boolean =>
-  useSelector(({user: {featuresEnabled: {alpha} = {}}}: RootState) => !!alpha)
+  useSelector(
+    ({user: {featuresEnabled: {alpha} = {}, profile: {coachingEmailFrequency} = {}}}: RootState) =>
+      !!alpha && !!coachingEmailFrequency && coachingEmailFrequency !== 'EMAIL_NONE')
 
+const useAuthTokens = (userId?: string): bayes.bob.AuthTokens|undefined => {
+  const dispatch = useDispatch()
+  const [authTokens, setAuthTokens] = useState<bayes.bob.AuthTokens|undefined>()
+  useAsynceffect(async (checkIfCanceled): Promise<void> => {
+    if (userId) {
+      const authTokens = await dispatch(getAuthTokens())
+      if (!checkIfCanceled()) {
+        setAuthTokens(authTokens || undefined)
+      }
+    }
+  }, [dispatch, userId])
+  return authTokens
+}
+
+// Main feature flag for the UX being about creating an action plan.
+function useActionPlan(): boolean {
+  const hasFlag = useSelector(
+    ({app: {experiments}, user: {featuresEnabled: {actionPlan} = {}}}: RootState) =>
+      experiments?.includes('actionPlan') || actionPlan === 'ACTIVE')
+  return config.isActionPlanEnabled || hasFlag
+}
+
+function useIsComingFromUnemploymentAgency(): boolean {
+  const source = useSelector(
+    ({app: {initialUtm}, user: {origin}}: RootState) => origin?.source || initialUtm?.source)
+  return source === 'dwp'
+}
+
+// Feature flag for the strategy page when selecting actions.
+function useHasTwoColumnsActionsStratPage(): boolean {
+  return useSelector(({user: {featuresEnabled: {twoColumnsActionsStratPage} = {}}}: RootState) =>
+    twoColumnsActionsStratPage === 'ACTIVE')
+}
+
+export {DEGREE_OPTIONS} from 'deployment/profile_options'
 export {
   getUserFrustrationTags, USER_PROFILE_FIELDS, increaseRevision,
   userAge, getHighestDegreeDescription, keepMostRecentRevision, useEmailsInProfile,
-  FAMILY_SITUATION_OPTIONS, DEGREE_OPTIONS, ORIGIN_OPTIONS, isEmailTemplatePersonalized,
-  projectMatchAllFilters, COACHING_EMAILS_OPTIONS, GENDER_OPTIONS, useUserExample,
+  FAMILY_SITUATION_OPTIONS, ORIGIN_OPTIONS,
+  COACHING_EMAILS_OPTIONS, GENDER_OPTIONS, useUserExample,
   getUniqueExampleEmail, getJobSearchLengthMonths, getUserLocale, isAdvisorUser,
-  useGender, addProjectIds, FRUSTRATION_OPTIONS, useAlwaysConvincePage, useSelfDiagnosticInIntro,
+  useGender, addProjectIds, FRUSTRATION_OPTIONS, useSelfDiagnosticInIntro, useAuthTokens,
+  RACE_OPTIONS, CUSTOM_GENDER_OPTIONS, CUSTOM_GENDER, useActionPlan, getUserExample,
+  useHasTwoColumnsActionsStratPage, useIsComingFromUnemploymentAgency,
 }

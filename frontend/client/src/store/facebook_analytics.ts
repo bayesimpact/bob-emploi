@@ -1,7 +1,7 @@
 import _mapValues from 'lodash/mapValues'
-import {AnyAction, Middleware, MiddlewareAPI} from 'redux'
+import type {AnyAction, Middleware, MiddlewareAPI} from 'redux'
 
-import {AllActions, DispatchAllActions, RootState} from './actions'
+import type {AllActions, DispatchAllActions, RootState} from './actions'
 
 /* eslint-disable unicorn/no-abusive-eslint-disable */
 // Code from https://developers.facebook.com/docs/ads-for-websites/pixel-events/v2.12

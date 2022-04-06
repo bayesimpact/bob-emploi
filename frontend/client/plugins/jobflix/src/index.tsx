@@ -1,16 +1,17 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 import React from 'react'
 import ReactDOMServer from 'react-dom/server'
 
-import {init as i18nInit} from 'store/i18n'
+import i18nInit from 'store/static_i18n?static'
 
+import favicon from 'plugin/deployment/favicon'
 import WaitingPage from './components/pages/waiting'
-import favicon from './images/favicon.ico'
 
 const Template = ({t}: {t: TFunction}): React.ReactElement => {
+  // i18next-extract-mark-context-next-line ["career", "promising-job"]
   const description = t(
     'Découvrez les meilleures carrières dans votre département avec {{productName}}.',
-    {productName: config.productName},
+    {context: config.goalWordingContext, productName: config.productName},
   )
   return <html lang={config.defaultLang.replace('_', '-').replace(/-UK$/, '-GB')}>
     <head>
@@ -18,10 +19,7 @@ const Template = ({t}: {t: TFunction}): React.ReactElement => {
       <meta charSet="utf-8" />
       <title>{config.productName}</title>
       <meta httpEquiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-      <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-        id="viewport" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <meta property="og:type" content="website" />
       <meta property="og:title" content={config.productName} />
       <meta property="og:description" name="description" content={description} />
@@ -39,10 +37,5 @@ const Template = ({t}: {t: TFunction}): React.ReactElement => {
 }
 
 
-async function renderTemplate(): Promise<string> {
-  const t = await i18nInit({isStatic: true})
-  return '<!doctype html>' + ReactDOMServer.renderToString(<Template t={t} />)
-}
-
-
-export default renderTemplate
+export default async (): Promise<string> =>
+  '<!doctype html>' + ReactDOMServer.renderToString(<Template t={await i18nInit()} />)

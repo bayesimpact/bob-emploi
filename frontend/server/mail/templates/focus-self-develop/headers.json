@@ -1,5 +1,8 @@
 {
-  "From": "Margaux <margaux@bob-emploi.fr>",
+  "From": "Pascal de Bob <pascal@bob-emploi.fr>",
   "Reply-To": "",
+  "ReplyEmail": "",
+  "SenderEmail": "pascal@bob-emploi.fr",
+  "SenderName": "Pascal de Bob",
   "Subject": "Qu'est-ce qui vous donne de l'énergie, {{var:firstName:\"Elise\"}} ?"
 }

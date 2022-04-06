@@ -2,21 +2,10 @@ FROM jupyter/scipy-notebook:latest
 
 USER root
 
-RUN pip install --upgrade \
-  airtable \
-  brewer2mpl \
-  distance \
-  gensim \
-  matplotlib-venn \
-  nbformat \
-  plotly \
-  qgrid \
-  runipy \
-  sas7bdat \
-  scrapy \
-  termcolor \
-  xlrd \
-  xmltodict && \
+COPY notebooks/requirements.txt requirements.txt
+# TODO(pascal): Drop build-essential, once gensim releases a python 3.9 wheel.
+RUN apt update -qqy && apt install -qqy build-essential && \
+  pip install --upgrade -r requirements.txt && \
   echo "fr_FR.UTF-8 UTF-8" >> /etc/locale.gen && \
   locale-gen && \
   su -c "/opt/conda/bin/ipython profile create" jovyan && \

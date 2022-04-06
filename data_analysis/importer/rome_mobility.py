@@ -19,7 +19,7 @@ You can try it out on a local instance:
 
 import locale
 import typing
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable
 
 import pandas
 
@@ -34,7 +34,7 @@ locale.setlocale(locale.LC_TIME, 'fr_FR.utf8')
 MOBILITY_TYPES = {'1': discovery_pb2.CLOSE, '2': discovery_pb2.EVOLUTION}
 
 
-def csv2dicts(rome_csv_pattern: str) -> List[Dict[str, Any]]:
+def csv2dicts(rome_csv_pattern: str) -> list[dict[str, Any]]:
     """Import the ROME mobility data in MongoDB.
 
     We group the mobility data as JobGroups (we find a set of similar jobs
@@ -93,7 +93,7 @@ def csv2dicts(rome_csv_pattern: str) -> List[Dict[str, Any]]:
     return dataframe2dicts(mobility)
 
 
-def dataframe2dicts(mobility: pandas.DataFrame) -> List[Dict[str, Any]]:
+def dataframe2dicts(mobility: pandas.DataFrame) -> list[dict[str, Any]]:
     """Convert a pandas DataFrame with the ROME mobility data to MongoDB dicts.
 
     We group the mobility data as JobGroups (we find a set of similar jobs
@@ -109,10 +109,10 @@ def dataframe2dicts(mobility: pandas.DataFrame) -> List[Dict[str, Any]]:
         mobility.source_job.notnull(), other=mobility.source_job_group)
 
     return typing.cast(
-        List[Dict[str, Any]], mobility.groupby('source').apply(_mobility_to_groups).tolist())
+        list[dict[str, Any]], mobility.groupby('source').apply(_mobility_to_groups).tolist())
 
 
-def _mobility_to_groups(mobility: pandas.DataFrame) -> Dict[str, Any]:
+def _mobility_to_groups(mobility: pandas.DataFrame) -> dict[str, Any]:
     _id = mobility.source.iloc[0]
     groups = []
 
@@ -138,7 +138,7 @@ def _mobility_to_groups(mobility: pandas.DataFrame) -> Dict[str, Any]:
     return {'_id': _id, 'jobGroups': groups}
 
 
-def _group_jobs_as_samples(jobs: pandas.DataFrame) -> Dict[str, Any]:
+def _group_jobs_as_samples(jobs: pandas.DataFrame) -> dict[str, Any]:
     samples = jobs[[
         'target_job', 'target_job_name', 'target_job_masculine_name',
         'target_job_feminine_name']]
@@ -156,12 +156,12 @@ def _group_jobs_as_samples(jobs: pandas.DataFrame) -> Dict[str, Any]:
     }}
 
 
-def _sample_jobs(num_samples: int) -> Callable[[pandas.DataFrame], List[Dict[str, Any]]]:
-    def _sampling(jobs: pandas.DataFrame) -> List[Dict[str, Any]]:
+def _sample_jobs(num_samples: int) -> Callable[[pandas.DataFrame], list[dict[str, Any]]]:
+    def _sampling(jobs: pandas.DataFrame) -> list[dict[str, Any]]:
         if len(jobs.index) > num_samples:
             jobs = jobs.sample(n=num_samples)
         jobs = jobs[['codeOgr', 'name', 'masculineName', 'feminineName']]
-        return typing.cast(List[Dict[str, Any]], jobs.to_dict('records'))
+        return typing.cast(list[dict[str, Any]], jobs.to_dict('records'))
     return _sampling
 
 

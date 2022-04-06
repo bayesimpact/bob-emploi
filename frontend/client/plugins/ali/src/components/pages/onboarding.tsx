@@ -1,19 +1,21 @@
 import {ConnectedRouter, connectRouter, routerMiddleware} from 'connected-react-router'
-import {History, createBrowserHistory} from 'history'
+import type {History} from 'history'
+import {createBrowserHistory} from 'history'
 import Storage from 'local-storage-fallback'
 import {composeWithDevTools} from 'redux-devtools-extension'
 import React, {useEffect, useMemo, useState} from 'react'
-import {hot} from 'react-hot-loader/root'
 import {connect, Provider, useDispatch, useSelector} from 'react-redux'
-import {RouteComponentProps} from 'react-router'
+import type {RouteComponentProps} from 'react-router'
 import {Redirect, Route, Switch} from 'react-router-dom'
-import {Store, createStore, applyMiddleware, combineReducers} from 'redux'
+import type {Store} from 'redux'
+import {createStore, applyMiddleware, combineReducers} from 'redux'
 import thunk from 'redux-thunk'
 import sha1 from 'sha1'
 
 import createAmplitudeMiddleware from 'store/amplitude'
 import {getJsonFromStorage} from 'store/app_reducer'
-import createSentryMiddleware from 'store/sentry'
+import {init as i18nInit} from 'store/i18n'
+import createSentryEnhancer from 'store/sentry'
 
 import {useTitleUpdate} from 'components/navigation'
 import Snackbar from 'components/snackbar'
@@ -23,14 +25,17 @@ import HubPage from './hub'
 import LandingPage from './landing'
 import QuestionPage from './question'
 import UserLandingPage from './user_landing'
-import {AnswerType} from '../answers'
-import QUESTIONS_TREE, {Question, TopicId} from '../questions_tree'
-import {Action, AppState, DispatchActions, Logger, MiniRootState, Routes,
-  TopicPriority, UserState} from '../../store'
+import type {AnswerType} from '../answers'
+import type {Question, TopicId} from '../questions_tree'
+import QUESTIONS_TREE from '../questions_tree'
+import type {Action, AppState, DispatchActions, MiniRootState, TopicPriority,
+  UserState} from '../../store'
+import {Logger, Routes} from '../../store'
 import ThankYouPage from './thank_you'
 
 import '../../styles/mini.css'
 
+i18nInit({react: {useSuspense: false}})
 
 type ConnectedQuestionPageProps = {question?: undefined} | Question & {
   answer?: AnswerType
@@ -179,8 +184,10 @@ const MiniOnboardingPageBase = (): React.ReactElement => {
       <Route path={Routes.HUB_PAGE} component={HubPage} />
       <Route path={Routes.PRIORITY_PATH} component={ConnectedPriorityQuestionPage} />
       <Route path={Routes.QUESTION_PATH} component={ConnectedQuestionPage} />
-      <Redirect to={hasSeenLanding ? isUserSupervised ?
-        Routes.HUB_PAGE : Routes.USER_LANDING_PAGE : Routes.LANDING_PAGE} />
+      <Route>
+        <Redirect to={hasSeenLanding ? isUserSupervised ?
+          Routes.HUB_PAGE : Routes.USER_LANDING_PAGE : Routes.LANDING_PAGE} />
+      </Route>
     </Switch>
   </div>
 }
@@ -193,9 +200,8 @@ const initialUserState: UserState = {
   isUserSupervised: !!Storage.getItem(`${STORAGE_PREFIX}isUserSupervised`),
   orgInfo: {
     advisor: Storage.getItem(`${STORAGE_PREFIX}advisor`) || '',
-    city: getJsonFromStorage(`${STORAGE_PREFIX}city`) || {},
     email: Storage.getItem(`${STORAGE_PREFIX}email`) || '',
-    milo: Storage.getItem(`${STORAGE_PREFIX}milo`) || '',
+    milo: getJsonFromStorage(`${STORAGE_PREFIX}milo`) || {},
   },
   priorities: {},
 }
@@ -247,6 +253,8 @@ function userReducer(state: UserState = initialUserState, action: Action): UserS
       // See README.md#analytics for the design of the user ID.
       return {
         ...state,
+        // TODO(pascal): Remove if https://github.com/sindresorhus/eslint-plugin-unicorn/issues/1112 get fixed.
+        // eslint-disable-next-line unicorn/consistent-destructuring
         userId: state.userId || sha1(Math.random() + ''),
       }
     case 'MINI_UPDATE_ORG_INFO':
@@ -300,6 +308,8 @@ function appReducer(state: AppState = initialAppState, action: Action): AppState
     case 'MINI_DISPLAY_TOASTER_MESSAGE': {
       return {
         ...state,
+        // TODO(pascal): Remove if https://github.com/sindresorhus/eslint-plugin-unicorn/issues/1112 get fixed.
+        // eslint-disable-next-line unicorn/consistent-destructuring
         errorMessage: action.error,
       }
     }
@@ -339,12 +349,10 @@ const App = (): React.ReactElement => {
     }), config.aliAmplitudeToken)
     // Enable devTools middleware.
     const finalCreateStore = composeWithDevTools(applyMiddleware(
-      // sentryMiddleware needs to be first to correctly catch exception down the line.
-      createSentryMiddleware(),
       thunk,
       amplitudeMiddleware,
       routerMiddleware(history),
-    ))(createStore)
+    ), createSentryEnhancer())(createStore)
 
     // Create the store that will be provided to connected components via Context.
     const store = finalCreateStore(
@@ -373,4 +381,4 @@ const App = (): React.ReactElement => {
 }
 
 
-export default hot(React.memo(App))
+export default React.memo(App)

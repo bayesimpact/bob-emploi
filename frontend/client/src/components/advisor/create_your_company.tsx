@@ -1,6 +1,5 @@
-import {TFunction} from 'i18next'
-import PropTypes from 'prop-types'
-import React, {useMemo, useState, useCallback} from 'react'
+import type {TFunction} from 'i18next'
+import React from 'react'
 
 import {inCityPrefix} from 'store/french'
 
@@ -10,15 +9,18 @@ import ExternalLink from 'components/external_link'
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
 import Markdown from 'components/markdown'
-import {RadiumDiv} from 'components/radium'
 import {TestimonialCard} from 'components/testimonials'
-import UpDownIcon from 'components/up_down_icon'
 import Picto from 'images/advices/picto-create-your-company.svg'
 
-import {CardProps, MethodSection, MethodSuggestionList, useAdviceData} from './base'
+import type {CardProps} from './base'
+import {ExpandableAction, MethodSection, MethodSuggestionList, useAdviceData} from './base'
 
 
 const emptyArray = [] as const
+
+const noMarginStyle: React.CSSProperties = {
+  margin: 0,
+}
 
 
 interface TestimonialsProps extends CardProps {
@@ -33,21 +35,18 @@ const testimonialsStyle: React.CSSProperties = {
 }
 
 const Testimonials: React.FC<TestimonialsProps> =
-(props: TestimonialsProps): React.ReactElement|null => {
+(props: TestimonialsProps): React.ReactElement => {
   const {
     t,
     testimonials,
   } = props
-  if (!testimonials.length) {
-    return null
-  }
   const numTestimonials = testimonials.length
   const title = <Trans parent={null} count={numTestimonials} t={t}>
     <GrowingNumber number={numTestimonials} /> histoire de personne avec un parcours proche du vôtre
     qui s'est lancée.
   </Trans>
 
-  const testimonialFooter = <Trans parent={null} t={t}>
+  const testimonialFooter = <Trans parent="p" t={t} style={noMarginStyle}>
     <img src={adieLogo} style={{height: 20, marginRight: 10}} alt="logo adie" />
     Découvrir l'accompagnement gratuit proposé par <ExternalLink
       key="see-more" style={{color: colors.BOB_BLUE, textDecoration: 'initial'}}
@@ -104,7 +103,7 @@ const EventsBase: React.FC<EventsProps> = (props: EventsProps): React.ReactEleme
     <GrowingNumber style={{fontWeight: 'bold'}} number={events.length} isSteady={true} />
     {' '}évènement {{inCity: renderLocation(city, t)}} pour les "entrepreneurs de demain"
   </Trans>
-  const footer = <Trans parent={null} t={t}>
+  const footer = <Trans parent="p" t={t} style={noMarginStyle}>
     <img src={adieLogo} style={{height: 20, marginRight: 10}} alt="logo adie" />
     Voir tous les évènements sur <ExternalLink
       style={seeAllLinkStyle} onClick={handleExplore('events')}
@@ -123,22 +122,30 @@ const Events = React.memo(EventsBase)
 
 
 const CreateYourCompany: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
+  const {t} = props
   const {data: adviceData, loading} = useAdviceData<bayes.bob.CreateCompanyExpandedData>(props)
   const {relatedTestimonials: {testimonials = emptyArray} = {}} = adviceData
+  const hasTestimonials = !!testimonials.length
   if (loading) {
     return loading
   }
   return <div>
-    <Testimonials {...props} testimonials={testimonials} />
+    {hasTestimonials ? <Testimonials {...props} testimonials={testimonials} /> : <Markdown
+      content={
+        // i18next-extract-mark-context-next-line ["fr", "uk", "usa"]
+        t("Lorsque vous essayez de trouver votre propre idée d'entreprise, posez-vous les " +
+        'questions suivantes\u00A0:\n' +
+        '* Quel problème résout-il\u00A0?\n' +
+        '* A qui profitera votre solution\u00A0?\n' +
+        '* Pourquoi votre solution est-elle meilleure que les alternatives\u00A0?\n' +
+        "* Comment s'inscrit-il dans l'air du temps\u00A0?\n" +
+        '* Quelles mesures pouvez-vous prendre pour protéger votre idée\u00A0?\n\n' +
+        'Vous trouverez ' +
+        '[ici](https://www.pole-emploi.fr/candidat/je-creereprends-une-entreprise.html#) de ' +
+        'nombreuses ressources pour vous lancer.', {context: config.countryId})} />}
     <Events
-      style={testimonials ? {marginTop: 20} : {}} {...props} adviceData={adviceData} />
+      style={hasTestimonials ? {marginTop: 20} : {}} {...props} adviceData={adviceData} />
   </div>
-}
-CreateYourCompany.propTypes = {
-  backgroundColor: PropTypes.string,
-  handleExplore: PropTypes.func.isRequired,
-  project: PropTypes.object.isRequired,
-  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(CreateYourCompany)
 
@@ -148,51 +155,26 @@ interface EventProps extends bayes.bob.Event {
   style?: React.CSSProperties
 }
 
-const titleStyle = {
+const titleStyle: React.CSSProperties = {
   alignItems: 'center',
   display: 'flex',
-  minHeight: 48,
+  fontWeight: 'normal',
+  marginRight: '1em',
 }
 
 const EventBase: React.FC<EventProps> = (props: EventProps): React.ReactElement => {
-  const {cityName, description, onClick, style, timingText, title} = props
-  const [isExpanded, setIsExpanded] = useState(false)
+  const {cityName, description, onClick, timingText, title, style} = props
 
-  const handleClick = useCallback((): void => {
-    setIsExpanded(wasExpanded => !wasExpanded)
-    if (!isExpanded) {
-      onClick && onClick()
-    }
-  }, [isExpanded, onClick])
-
-  const containerStyle: React.CSSProperties = useMemo(() => ({
-    ...style,
-    alignItems: 'stretch',
-    flexDirection: 'column',
-  }), [style])
-  return <RadiumDiv style={containerStyle} onClick={handleClick}>
-    <div style={titleStyle}>
-      {title}
-      <span style={{flex: 1}} />
+  return <ExpandableAction
+    title={<span style={titleStyle}>
+      <span style={{flex: 1}}>{title}</span>
       {cityName ? <strong style={{marginRight: '1em'}}>{cityName} </strong> : null}
       <span style={{fontWeight: 500}}> {timingText}</span>
-      <UpDownIcon
-        icon="chevron"
-        isUp={isExpanded}
-      />
-    </div>
-    {isExpanded ? <div style={{fontWeight: 'normal'}}>
+    </span>} onContentShown={onClick} style={style}>
+    <div style={{fontWeight: 'normal'}}>
       <Markdown content={description} />
-    </div> : null}
-  </RadiumDiv>
-}
-EventBase.propTypes = {
-  cityName: PropTypes.string,
-  description: PropTypes.string,
-  onClick: PropTypes.func.isRequired,
-  style: PropTypes.object,
-  timingText: PropTypes.string,
-  title: PropTypes.string.isRequired,
+    </div>
+  </ExpandableAction>
 }
 const Event = React.memo(EventBase)
 

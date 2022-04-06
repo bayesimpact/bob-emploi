@@ -1,7 +1,7 @@
 """Generate a list of young people, with their Radar photos."""
 
 import datetime
-from typing import List, Tuple
+from typing import Tuple
 
 import numpy as np
 
@@ -62,7 +62,7 @@ def _add_answers_to_photo(
 
 def _generate_full_photo(
         user_id: str, photo_month: Tuple[int, int],
-        previous_photos: List[typeform_pb2.Photo],
+        previous_photos: list[typeform_pb2.Photo],
         config: radar_config.Config) -> typeform_pb2.Photo:
     full_photo = typeform_pb2.Photo()
     try:
@@ -88,14 +88,14 @@ def _generate_full_photo(
     return full_photo
 
 
-def generate_all_photos(size: int, config: radar_config.Config) -> List[typeform_pb2.Photo]:
+def generate_all_photos(size: int, config: radar_config.Config) -> list[typeform_pb2.Photo]:
     """
     Generate fake photos for a given number of users.
 
     Each user has 3 photos with user situation and form answers.
     """
 
-    all_photos: List[typeform_pb2.Photo] = []
+    all_photos: list[typeform_pb2.Photo] = []
     for num in range(size):
         for photo_month in _PHOTO_MONTH_TO_DISTRIBUTION:
             if np.random.uniform(0, 1) < _DROP_OFF:

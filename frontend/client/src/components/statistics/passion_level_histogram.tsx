@@ -1,7 +1,8 @@
 import React from 'react'
 import {useTranslation} from 'react-i18next'
 
-import {LocalizableString, prepareT} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {prepareT} from 'store/i18n'
 import {bobSourceText} from 'store/statistics'
 
 import DataSource from 'components/data_source'

@@ -8,18 +8,14 @@ docker-compose run --rm -e ALGOLIA_API_KEY=<the key> \
     bob_emploi/data_analysis/importer/french_city_suggest.py
 """
 
-import json
 import os
 from os import path
-import sys
-import time
 import typing
-from typing import Any, Dict, List, Optional, TextIO
+from typing import Any, Optional
 
-from algoliasearch import exceptions
-from algoliasearch import search_client
 import pandas
 
+from bob_emploi.data_analysis.lib import algolia
 from bob_emploi.data_analysis.lib import cleaned_data
 
 
@@ -28,7 +24,7 @@ def prepare_cities(
         stats_filename: Optional[str] = None,
         urban_entities_filename: Optional[str] = None,
         transport_scores_filename: Optional[str] = None) \
-        -> List[Dict[str, Any]]:
+        -> list[dict[str, Any]]:
     """Prepare cities for upload to Algolia.
 
     Args:
@@ -70,14 +66,22 @@ def prepare_cities(
     if stats_filename:
         city_stats = pandas.read_csv(
             stats_filename,
-            sep=',', header=None, usecols=[8, 10, 14],
-            names=['zipCode', 'city_id', 'population'],
-            dtype={'zipCode': str, 'city_id': str, 'population': int})
+            sep=',', header=None, usecols=[8, 10, 14, 19, 20],
+            names=['zipCode', 'city_id', 'population', 'longitude', 'latitude'],
+            dtype={
+                'zipCode': str,
+                'city_id': str,
+                'population': int,
+                'latitude': float,
+                'longitude': float,
+            })
         city_stats.set_index('city_id', inplace=True)
         cities = cities.join(city_stats)
         cities.zipCode.fillna('', inplace=True)
         cities.population.fillna(0, inplace=True)
-        useful_columns.extend(['zipCode', 'population'])
+        cities.latitude.fillna(0, inplace=True)
+        cities.longitude.fillna(0, inplace=True)
+        useful_columns.extend(['zipCode', 'population', 'latitude', 'longitude'])
 
     # cityId is the ID used throughout the app.
     cities['cityId'] = cities['objectID']
@@ -99,37 +103,26 @@ def prepare_cities(
         useful_columns.append('transport')
 
     return typing.cast(
-        List[Dict[str, Any]], cities.sort_index()[useful_columns].to_dict(orient='records'))
+        list[dict[str, Any]], cities.sort_index()[useful_columns].to_dict(orient='records'))
 
 
-def upload(batch_size: int = 5000, data_folder: str = 'data', out: TextIO = sys.stdout) -> None:
+def upload(batch_size: int = 5000, data_folder: str = 'data') -> None:
     """Upload French city suggestions to Algolia index."""
 
+    api_key = os.environ.get('ALGOLIA_API_KEY')
+    if not api_key:
+        raise ValueError('Need a valid Algolia API key. Please set ALGOLIA_API_KEY.')
     suggestions = prepare_cities(
         data_folder,
         path.join(data_folder, 'geo/french_cities.csv'),
         path.join(data_folder, 'geo/french_urban_entities.xls'),
         path.join(data_folder, 'geo/ville-ideale-transports.html'))
-    client = search_client.SearchClient.create(
-        os.environ.get('ALGOLIA_APP_ID', 'K6ACI9BKKT'),
-        os.environ.get('ALGOLIA_API_KEY'))
-    index_name = os.environ.get('ALGOLIA_CITIES_INDEX', 'cities')
-    cities_index = client.init_index(index_name)
-    tmp_index_name = f'{index_name}_{round(time.time())}'
-    tmp_cities_index = client.init_index(tmp_index_name)
-
-    try:
-        tmp_cities_index.set_settings(cities_index.get_settings())
-        # TODO(pascal): Add synonyms if we start having some.
-        for start in range(0, len(suggestions), batch_size):
-            tmp_cities_index.add_objects(suggestions[start:start + batch_size])
-
-        # OK we're ready finally replace the index.
-        client.move_index(tmp_index_name, index_name)
-    except exceptions.AlgoliaException:
-        tmp_cities_index.delete()
-        out.write(json.dumps(suggestions[:10], indent=2))
-        raise
+    algolia.upload(
+        suggestions,
+        app_id=os.environ.get('ALGOLIA_APP_ID', 'K6ACI9BKKT'),
+        api_key=api_key,
+        index=os.environ.get('ALGOLIA_CITIES_INDEX', 'cities'),
+        batch_size=batch_size)
 
 
 if __name__ == '__main__':

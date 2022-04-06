@@ -1,3 +1,4 @@
+import _uniqueId from 'lodash/uniqueId'
 import HelpCircleIcon from 'mdi-react/HelpCircleIcon'
 import React, {useEffect, useMemo, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
@@ -7,6 +8,7 @@ import {SmoothTransitions} from 'components/theme'
 
 
 interface Props {
+  'aria-describedby'?: string
   children: React.ReactNode
   style?: React.CSSProperties
   tooltipWidth: number
@@ -14,10 +16,13 @@ interface Props {
 
 
 const InformationIcon = (props: Props): React.ReactElement => {
-  const {children, style, tooltipWidth} = props
-  const {t} = useTranslation()
+  const {'aria-describedby': ariaDescribedby, children, style, tooltipWidth} = props
+  const {t} = useTranslation('components')
   const [delta, setDelta] = useState(0)
-  const {isShown, containerProps, tooltipProps, triggerProps} = useTooltip()
+  const {isShown, containerProps, tooltipProps, triggerProps} = useTooltip({
+    'aria-describedby': ariaDescribedby,
+    'isTriggeredByClick': true,
+  })
   const finalStyle = useMemo((): React.CSSProperties => ({
     height: 16,
     verticalAlign: 'middle',
@@ -25,7 +30,7 @@ const InformationIcon = (props: Props): React.ReactElement => {
   }), [style])
   const toolTipStyle: React.CSSProperties = {
     alignItems: 'center',
-    bottom: 'calc(100% + 5px)',
+    bottom: '100%',
     display: 'flex',
     flexDirection: 'column',
     left: '50%',
@@ -40,6 +45,7 @@ const InformationIcon = (props: Props): React.ReactElement => {
     borderRadius: 2,
     color: '#fff',
     fontStyle: 'italic',
+    margin: 0,
     padding: '8px 16px 8px 14px',
     textAlign: 'center',
     transform: `translate(${delta}px)`,
@@ -65,15 +71,17 @@ const InformationIcon = (props: Props): React.ReactElement => {
       setDelta(-left + 20)
     }
   }, [isShown])
+  const contentId = useMemo(_uniqueId, [])
 
-  return <span {...containerProps} style={{position: 'relative'}}>
-    <HelpCircleIcon
-      style={finalStyle} aria-label={t("Plus d'information")} {...triggerProps} />
+  return <div {...containerProps} style={{display: 'inline', padding: 5, position: 'relative'}}>
+    <button aria-label={t("Plus d'information")} {...triggerProps} style={finalStyle}>
+      <HelpCircleIcon aria-hidden={true} focusable={false} size={16} />
+    </button>
     <div style={toolTipStyle} ref={tooltipRef} {...tooltipProps}>
-      <div style={childrenStyle}>{children}</div>
+      <p style={childrenStyle} id={contentId}>{children}</p>
       <div style={tooltipTailStyle} />
     </div>
-  </span>
+  </div>
 }
 
 

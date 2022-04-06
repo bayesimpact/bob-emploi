@@ -233,6 +233,7 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
             'name': 'Jugement et prise de décision',
             'description': 'long description',
             'rome_prefixes': 'D13, F12, H25, I11, N13, N42, C11, C12, C13, C14, C15, D11, D12, E11',
+            'soc_prefixes_us': '11-1011, 11-1021, 11-2011, 11-2021',
         })
         advice_airtable.create('specific_to_job', {
             'id': 'baker',
@@ -300,9 +301,11 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
             1, job_group_protos['L1102'].automation_risk, msg='0 risk')
 
         self.assertEqual(1, job_group_protos['A1201'].training_count.very_short_trainings)
-        self.assertEqual(0, job_group_protos['L1301'].training_count.very_short_trainings)
-        self.assertEqual(2, job_group_protos['L1301'].training_count.short_trainings)
-        self.assertEqual(0, job_group_protos['L1301'].training_count.long_trainings)
+        culture_counts = job_group_protos['L1301'].training_count
+        self.assertEqual(0, culture_counts.very_short_trainings)
+        self.assertEqual(2, culture_counts.short_trainings)
+        self.assertEqual(0, culture_counts.long_trainings)
+        self.assertEqual(1, culture_counts.online_trainings)
 
         # Check that values can be json dumped, otherwise the diff will fail.
         for value in collection:

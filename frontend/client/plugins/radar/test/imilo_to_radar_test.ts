@@ -12,11 +12,11 @@ describe('getTypeformFields', () => {
       fullSchoolLevel: {code: 'VB'},
       id: 99_999,
       identity: {birthDate: `18/05/${thisYear - 25}`},
-      structure: 510,
+      structure: 7709,
     }, {
       email: 'cyrille@bayes.org',
       id: 12_345,
-    }, [
+    }, [{id: 510}], [
       {
         policy: {name: 'Garantie Jeunes'},
         status: 'RUNNING',

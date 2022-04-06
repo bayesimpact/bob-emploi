@@ -3,17 +3,18 @@ import React, {useCallback, useImperativeHandle, useLayoutEffect, useRef, useSta
 import {useTranslation} from 'react-i18next'
 
 import Button from 'components/button'
-import Trans from 'components/i18n_trans'
-import Input, {Inputable} from 'components/input'
+import type {Inputable} from 'components/input'
+import Input from 'components/input'
 
 type Style = React.CSSProperties | undefined
 
 
-const splitMarginsStyle = (style?: Style): [Style, Style] => {
+const splitExternalStyle = (style?: Style): [Style, Style] => {
   if (!style) {
     return [style, style]
   }
   const {
+    alignSelf,
     margin,
     marginBottom,
     marginLeft,
@@ -22,7 +23,7 @@ const splitMarginsStyle = (style?: Style): [Style, Style] => {
     ...otherStyleProps
   } = style
   return [
-    {margin, marginBottom, marginLeft, marginRight, marginTop},
+    {alignSelf, margin, marginBottom, marginLeft, marginRight, marginTop},
     otherStyleProps,
   ]
 }
@@ -54,10 +55,10 @@ const clearButtonStyle: React.CSSProperties = {
 
 const ValidateInput = (props: Props, ref: React.Ref<Inputable>): React.ReactElement => {
   const {style, defaultValue, onChange, ...otherProps} = props
-  const [marginsStyle, otherStyle] = splitMarginsStyle(style)
+  const [externalStyle, otherStyle] = splitExternalStyle(style)
   const [value, setValue] = useState('')
   const input = useRef<Inputable>(null)
-  const {t} = useTranslation()
+  const {t} = useTranslation('components')
 
   useImperativeHandle(ref, (): Inputable => ({
     blur: (): void => input.current?.blur(),
@@ -84,13 +85,16 @@ const ValidateInput = (props: Props, ref: React.Ref<Inputable>): React.ReactElem
     input.current?.focus()
   }, [onChange])
 
-  return <form style={{...marginsStyle, position: 'relative'}} onSubmit={handleSubmit}>
+  return <form style={{...externalStyle, position: 'relative'}} onSubmit={handleSubmit}>
     <Input style={otherStyle} {...otherProps} ref={input} value={value} onChange={setValue} />
     {value !== defaultValue ? <Button
-      style={buttonStyle} onClick={handleValidate} isRound={true}>
-      <Trans parent={null}>Valider</Trans>
-    </Button> : value ? <button onClick={clear} style={clearButtonStyle} aria-label={t('Effacer')}>
-      <CloseIcon />
+      style={buttonStyle} onClick={handleValidate} isRound={true}
+      aria-describedby={otherProps['aria-labelledby']}>
+      {t('Valider')}
+    </Button> : value ? <button
+      onClick={clear} style={clearButtonStyle} aria-label={t('Effacer')} type="button"
+      aria-describedby={otherProps['aria-labelledby']}>
+      <CloseIcon aria-hidden={true} />
     </button> : null}
   </form>
 }

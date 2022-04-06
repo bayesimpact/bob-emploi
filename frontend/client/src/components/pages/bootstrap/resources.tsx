@@ -2,28 +2,29 @@ import _groupBy from 'lodash/groupBy'
 import _pick from 'lodash/pick'
 import PrinterIcon from 'mdi-react/PrinterIcon'
 import {stringify} from 'query-string'
-import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useDispatch, useSelector} from 'react-redux'
 import {Link} from 'react-router-dom'
 
 import useMedia from 'hooks/media'
-import {BootstrapState, DispatchBootstrapActions, computeAdvicesForProject} from 'store/actions'
-import {ValidAdvice, getAdviceShortTitle, getAdviceTheme, getAdviceTitle,
-  isValidAdvice} from 'store/advice'
-import {translatedResourceThemes} from 'store/i18n'
+import type {BootstrapState, DispatchBootstrapActions} from 'store/actions'
+import {computeAdvicesForProject} from 'store/actions'
+import type {ValidAdvice} from 'store/advice'
+import {getAdviceShortTitle, getAdviceTheme, getAdviceTitle, isValidAdvice,
+  translatedResourceThemes} from 'store/advice'
 import {parseQueryString} from 'store/parse'
 import {useAsynceffect} from 'store/promise'
 
-import {AdvicePicto, AdviceCard as BaseAdviceCard,
-  ExpandedAdviceCardProps} from 'components/advisor'
+import type {ExpandedAdviceCardProps} from 'components/advisor'
+import {AdvicePicto, AdviceCard as BaseAdviceCard} from 'components/advisor'
 import CheckboxList from 'components/checkbox_list'
 import LabeledToggle from 'components/labeled_toggle'
 import {useModal} from 'components/modal'
 import {StatisticsSections} from 'components/pages/connected/project/statistics'
-import {SelectOption} from 'components/select'
-import {CitySuggest, JobSuggest} from 'components/suggestions'
+import type {SelectOption} from 'components/select'
+import CityInput from 'components/city_input'
+import JobInput from 'components/job_input'
 import {MAX_CONTENT_WIDTH} from 'components/theme'
 import UpDownIcon from 'components/up_down_icon'
 import {Routes} from 'components/url'
@@ -191,7 +192,7 @@ const ResourcesPage = (): React.ReactElement => {
     }
   }, [cityId, dispatch, jobId, user])
 
-  const handleCityChange = useCallback((city: bayes.bob.FrenchCity|null): void => {
+  const handleCityChange = useCallback((city?: bayes.bob.FrenchCity): void => {
     const {cityId: newCityId = undefined} = city || {}
     if (!newCityId || newCityId === cityId) {
       return
@@ -199,7 +200,7 @@ const ResourcesPage = (): React.ReactElement => {
     dispatch({city, type: 'SET_CITY'})
   }, [dispatch, cityId])
 
-  const handleJobChange = useCallback((job: bayes.bob.Job|null): void => {
+  const handleJobChange = useCallback((job?: bayes.bob.Job): void => {
     const {codeOgr: newJobId = undefined} = job || {}
     if (!newJobId || newJobId === jobId) {
       return
@@ -259,11 +260,12 @@ const ResourcesPage = (): React.ReactElement => {
     {isForPrint ? null : <nav style={navStyle}>
       <img src={logoProductWhiteImage} alt={config.productName} style={logoStyle} />
       <div style={searchBarStyle} className="no-hover no-focus">
-        <JobSuggest value={targetJob} onChange={handleJobChange} placeholder={t('métier')} />
-        <CitySuggest value={city} onChange={handleCityChange} placeholder={t('ville')} />
+        <JobInput value={targetJob} onChange={handleJobChange} placeholder={t('métier')} />
+        <CityInput value={city} onChange={handleCityChange} placeholder={t('ville')} />
         {/* TODO(pascal): Check with John for a better UI. */}
         {isUserDefined ? <button
-          style={statsPageLink} onClick={areStatsShown ? hideStatsPage : showStatsPage}>
+          style={statsPageLink} onClick={areStatsShown ? hideStatsPage : showStatsPage}
+          type="button">
           {areStatsShown ? t('Voir les conseils') : t('Voir les stats')}
         </button> : null}
       </div>
@@ -291,7 +293,7 @@ const ResourcesPage = (): React.ReactElement => {
                   <h3 style={themeTitleStyle}>{themeNames[theme]}</h3>
                   {methodGroups[theme].map((advice: ValidAdvice) =>
                     <AdviceCard
-                      style={methodStyle} project={project} t={t}
+                      style={methodStyle} project={project}
                       onSelect={onSelect}
                       isSelected={selectedMethods.includes(advice)}
                       key={advice.adviceId} advice={advice} />)}
@@ -371,7 +373,7 @@ const AdviceCardBase = (props: CardProps): React.ReactElement => {
         </div>
         {isForPrint ? null : <React.Fragment>
           <div style={{flex: 1}} />
-          <button style={{flex: 'none', fontWeight: 'bold'}}>{t('Voir plus')}</button>
+          <button style={{flex: 'none', fontWeight: 'bold'}} type="button">{t('Voir plus')}</button>
           <UpDownIcon size={24} icon="chevron" isUp={isExpanded} style={{flex: 'none'}} />
         </React.Fragment>}
       </header>
@@ -382,13 +384,6 @@ const AdviceCardBase = (props: CardProps): React.ReactElement => {
       type="checkbox" label={t('Imprimer')} style={checkboxStyle}
       isSelected={isSelected} onClick={toggleSelected} />}
   </div>
-}
-AdviceCardBase.propTypes = {
-  advice: PropTypes.shape({
-    adviceId: PropTypes.string.isRequired,
-  }).isRequired,
-  style: PropTypes.object,
-  t: PropTypes.func.isRequired,
 }
 const AdviceCard = React.memo(AdviceCardBase)
 

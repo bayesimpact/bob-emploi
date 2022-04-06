@@ -1,9 +1,10 @@
 import * as Sentry from '@sentry/browser'
-import i18n, {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
+import i18n from 'i18next'
 import _memoize from 'lodash/memoize'
 
-import {LocalizableString, combineTOptions, prepareT,
-  prepareT as prepareTNoExtract} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {combineTOptions, prepareT, prepareT as prepareTNoExtract} from 'store/i18n'
 
 
 // Module to help with phrasing French sentences.

@@ -1,37 +1,33 @@
-import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
-import ReactMarkdown, {ReactMarkdownOptions} from 'react-markdown'
+import type {ReactMarkdownProps} from 'react-markdown/lib/complex-types'
+import type {Options as ReactMarkdownOptions} from 'react-markdown'
+import ReactMarkdown from 'react-markdown'
 
 import ExternalLink from 'components/external_link'
 
 
-export interface MarkdownRendererProps {
-  node?: unknown
-  nodeKey?: string
-}
+type PropsHelper<Element extends React.ElementType> =
+  React.ComponentPropsWithoutRef<Element> & ReactMarkdownProps
 
-// TODO(cyrille): Find a cleaner way to define this.
-type MarkdownParagraphRendererProps = React.HTMLProps<HTMLDivElement> & MarkdownRendererProps
+export type MarkdownParagraphRendererProps = PropsHelper<'p'>
+
+const oneLineParagraphStyle: React.CSSProperties = {
+  display: 'block',
+}
 
 const SingleLineParagraphBase: React.FC<MarkdownParagraphRendererProps> =
 ({
   node: unusedNode,
-  nodeKey: unusedNodeKey,
-  value: unusedValue,
   ...otherProps
 }: MarkdownParagraphRendererProps):
-React.ReactElement => <div {...otherProps} />
+React.ReactElement => <span style={oneLineParagraphStyle} {...otherProps} />
 const SingleLineParagraph = React.memo(SingleLineParagraphBase)
 
 
-interface MarkdownLinkProps extends
-  React.ComponentProps<typeof ExternalLink>, MarkdownRendererProps {
-  value?: unknown
-}
+export type MarkdownLinkProps = PropsHelper<'a'>
 
 
-const MarkdownLinkBase =
-({node: unusedNode, nodeKey: unusedNodeKey, value: unusedValue, ...linkProps}: MarkdownLinkProps):
+const MarkdownLinkBase = ({node: unusedNode, ...linkProps}: MarkdownLinkProps):
 // eslint-disable-next-line jsx-a11y/anchor-has-content
 React.ReactElement|null => <ExternalLink {...linkProps} />
 const MarkdownLink = React.memo(MarkdownLinkBase)
@@ -56,11 +52,6 @@ const Markdown: React.FC<Props> = (props: Props): React.ReactElement|null => {
   return <ReactMarkdown components={allComponents} {...extraProps}>
     {content}
   </ReactMarkdown>
-}
-Markdown.propTypes = {
-  components: PropTypes.object,
-  content: PropTypes.string,
-  isSingleLine: PropTypes.bool,
 }
 
 

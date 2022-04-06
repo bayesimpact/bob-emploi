@@ -1,36 +1,20 @@
+/*
+ * Download translations from Airtable and save them into files, as expected by i18next.
+ */
 import Airtable from 'airtable'
 import {promises as fs} from 'fs'
 import path from 'path'
 import _keyBy from 'lodash/keyBy'
-import _pickBy from 'lodash/pickBy'
 import stringify from 'json-stable-stringify'
 import {fileURLToPath} from 'url'
 
+import type {ContextDict, Translation, TranslationDict} from './import_translations'
+import {aggregateContexts,
+  translateNamespace as syncTranslateNamespace} from './import_translations'
 /* eslint-disable no-console */
 
 const isDryRun = !!process.env.DRY_RUN
 const skipMissingTranslations = !process.env.FAIL_ON_MISSING_TRANSLATIONS
-
-const raiseForMissingKey = (key: string): void => {
-  const err = `Missing a translation for ${key}`
-  console.log(err)
-  if (!skipMissingTranslations && !isDryRun) {
-    throw new Error(err)
-  }
-}
-
-interface Translation {
-  readonly string: string
-  readonly [lang: string]: string
-}
-
-interface TranslationDict {
-  [key: string]: Translation
-}
-
-interface ContextDict {
-  readonly [key: string]: readonly string[]
-}
 
 let translationsCache: Promise<TranslationDict> | undefined
 
@@ -56,28 +40,8 @@ function getContexts(): Promise<ContextDict> {
   if (contextsCache) {
     return contextsCache
   }
-  async function contextsGetter(): Promise<ContextDict> {
-    const translations = await getTranslations()
-    const contextDict: {[key: string]: string[]} = {}
-    for (const key of Object.keys(translations)) {
-      const parts = key.split('_')
-      for (const [index] of parts.entries()) {
-        if (!index) {
-          continue
-        }
-        const key = parts.slice(0, index).join('_')
-        const contextDictKey = contextDict[key] || []
-        contextDict[key] = contextDictKey
-        for (const [splitIndex] of parts.entries()) {
-          if (splitIndex < index) {
-            continue
-          }
-          contextDictKey.push(parts.slice(0, splitIndex + 1).join('_'))
-        }
-      }
-    }
-    return contextDict
-  }
+  const contextsGetter = async (): Promise<ContextDict> =>
+    aggregateContexts(await getTranslations())
   const futureContexts = contextsGetter()
   contextsCache = futureContexts
   return futureContexts
@@ -88,65 +52,11 @@ function resetCache(): void {
   translationsCache = undefined
 }
 
-
-const AUTHORIZED_EMPTY = new Set([
-  // This option is unused in English.
-  'CAP - BEP',
-  // It's not necessary to have an equivalent for degree options.
-  'Bac+2', 'Bac+3', 'Bac+5 et plus',
-  // We don't have an equivalent of this video in English.
-  'https://www.youtube.com/embed/mMBCNR9uIpE',
-])
-
-async function translate(
-  lang: string, strings: readonly string[], namespace: string,
-): Promise<Record<string, string>> {
-  const translations = await getTranslations()
-  const allContexts = await getContexts()
-  const translated: Record<string, string> = {}
-  const namespacePrefix = namespace + ':'
-  for (const key of strings) {
-    const translationsForKey = translations[namespacePrefix + key] || translations[key]
-    if (!translationsForKey) {
-      if (AUTHORIZED_EMPTY.has(key)) {
-        if (lang === 'en') {
-          translated[key] = ''
-        }
-        continue
-      }
-      raiseForMissingKey(key)
-      continue
-    }
-    const translatedKey = translationsForKey[lang] || ''
-    if (translatedKey) {
-      translated[key] = translatedKey
-    }
-    const contextsForKey = allContexts[namespacePrefix + key] || allContexts[key]
-    if (contextsForKey) {
-      for (const keyWithContext of contextsForKey) {
-        const translationsForKeyWithContext = translations[keyWithContext]
-        if (!translationsForKeyWithContext) {
-          continue
-        }
-        const translatedKeyWithContext = translationsForKeyWithContext[lang] || ''
-        if (translatedKeyWithContext) {
-          if (keyWithContext.startsWith(namespacePrefix)) {
-            translated[keyWithContext.slice(namespacePrefix.length)] = translatedKeyWithContext
-          } else {
-            translated[keyWithContext] = translatedKeyWithContext
-          }
-        }
-      }
-    }
-  }
-  return translated
-}
-
 async function ensureDirExists(dir: string): Promise<void> {
   try {
     await fs.mkdir(dir, {recursive: true})
   } catch (error) {
-    if (error.code !== 'EEXIST') {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
       throw error
     }
   }
@@ -157,27 +67,11 @@ async function translateNamespace(
 ): Promise<void> {
   const jsonContent = await fs.readFile(inputFile, {encoding: 'utf8'})
   const i18nextDict = JSON.parse(jsonContent)
-  const translatedDicts = await Promise.all(
-    languages.map(async (lang: string): Promise<[string, Record<string, string>]> =>
-      [lang, await translate(lang, Object.keys(i18nextDict), namespace)]))
-  const translatedDictsMap = Object.fromEntries(translatedDicts)
-
-  // Drop the keys for which the translation is the same in a fallback language or key.
-  for (const lang of [...languages].sort().reverse()) {
-    const languageParts = lang.split(/[@_]/)
-    const fallbackLang = languageParts[0]
-    if (fallbackLang && languageParts.length > 1) {
-      translatedDictsMap[lang] = _pickBy(
-        translatedDictsMap[lang],
-        (value: string, key: string) => (translatedDictsMap[fallbackLang][key] || key) !== value,
-      )
-    } else {
-      translatedDictsMap[lang] = _pickBy(
-        translatedDictsMap[lang],
-        (value: string, key: string) => key !== value,
-      )
-    }
-  }
+  const translatedDictsMap = syncTranslateNamespace(
+    i18nextDict, namespace, languages,
+    await getTranslations(), await getContexts(),
+    !skipMissingTranslations && !isDryRun,
+  )
 
   if (isDryRun) {
     return

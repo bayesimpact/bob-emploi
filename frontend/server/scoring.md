@@ -48,6 +48,7 @@ category-missing-diploma
 category-search-methods
 for-active-search
 for-application(2)
+for-army-veteran
 for-autonomous
 for-big-city-inhabitant(100000)
 for-company-creator
@@ -183,6 +184,7 @@ training-fullfillment-score
 /^for-many-interviews\(([0-9]+)\)$/
 /^for-old\(([0-9]+)\)$/
 /^for-passionate\((\w+)\)$/
+/^for-region\((.*)\)$/
 /^for-stressed-market\(10\/([0-9]+)\)$/
 /^for-young\(([0-9]+)\)$/
 /^not-(.*)$/

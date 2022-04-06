@@ -1,6 +1,5 @@
 import CheckboxBlankOutlineIcon from 'mdi-react/CheckboxBlankOutlineIcon'
 import CheckboxMarkedOutlineIcon from 'mdi-react/CheckboxMarkedOutlineIcon'
-import PropTypes from 'prop-types'
 import React, {useEffect, useMemo, useState} from 'react'
 import {useDispatch, useSelector} from 'react-redux'
 import {useLocation} from 'react-router'
@@ -23,10 +22,13 @@ import yesImage from '../../images/yes.png'
 import yesClearlyImage from '../../images/yes-clearly.png'
 
 import Button from '../button'
-import POSSIBLE_ANSWERS, {AnswerType, QuestionType} from '../answers'
-import QUESTIONS_TREE, {Question, Topic} from '../questions_tree'
+import type {AnswerType, QuestionType} from '../answers'
+import POSSIBLE_ANSWERS from '../answers'
+import type {Question, Topic} from '../questions_tree'
+import QUESTIONS_TREE from '../questions_tree'
 import SaveButton from '../save_button'
-import {DispatchActions, MiniRootState, Routes, TopicPriority, UserState,
+import type {DispatchActions, MiniRootState, TopicPriority, UserState} from '../../store'
+import {Routes,
   makeUrlUser} from '../../store'
 
 
@@ -201,20 +203,6 @@ const BilanCardBase = (props: BilanCardProps): React.ReactElement => {
     <NoteLines count={2} style={{padding: '0 1.25em'}} />
   </div>
 }
-BilanCardBase.propTypes = {
-  answers: PropTypes.object.isRequired,
-  priority: PropTypes.oneOf([false, true, 'later']),
-  style: PropTypes.object,
-  topic: PropTypes.shape({
-    color: PropTypes.string.isRequired,
-    image: PropTypes.string.isRequired,
-    questions: PropTypes.arrayOf(PropTypes.shape({
-      type: PropTypes.oneOf(['yes/no', 'confidence', 'levels']).isRequired,
-      url: PropTypes.string.isRequired,
-    }).isRequired).isRequired,
-    title: PropTypes.string.isRequired,
-  }).isRequired,
-}
 const BilanCard = React.memo(BilanCardBase)
 
 
@@ -238,10 +226,6 @@ const NoteLinesBase = (props: NoteLinesProps): React.ReactElement => {
       (unused, index): React.ReactNode => <div style={lineStyle} key={index} />,
     )}
   </div>
-}
-NoteLinesBase.propTypes = {
-  count: PropTypes.number.isRequired,
-  style: PropTypes.object,
 }
 const NoteLines = React.memo(NoteLinesBase)
 
@@ -279,7 +263,7 @@ const AnswersAsText = React.memo(AnswersAsTextBase)
 
 
 const BilanPage = (): React.ReactElement => {
-  const {answers, priorities, orgInfo: {advisor = '', city = {}, milo = ''} = {}} =
+  const {answers, priorities, orgInfo: {advisor = '', milo = {}} = {}} =
     useSelector(({user}: MiniRootState): UserState => user)
   const user = useSelector(({user}: MiniRootState): string => makeUrlUser(user))
   const dispatch = useDispatch<DispatchActions>()
@@ -406,10 +390,10 @@ const BilanPage = (): React.ReactElement => {
       <img style={{marginRight: '1em', width: '4.5em'}} src={aliLogo} alt="" />
       <h1 style={titleStyle}>Mon bilan</h1>
       <div style={flexFillerStyle} />
-      {advisor || milo || city ? <div style={orgInfoStyle}>
+      {advisor || milo ? <div style={orgInfoStyle}>
         Réalisé{advisor ? ` avec ${advisor}` : ''}<br />
-        à la Mission&nbsp;Locale{milo ? ` de ${milo}` : ''}
-        {city ? ` (${city.departementId})` : ''}
+        à la Mission&nbsp;Locale{milo && milo.name ? ` de ${milo.name}` : ''}
+        {milo && milo.departementId ? ` (${milo.departementId})` : ''}
       </div> : null}
     </header>
     <div style={cardsContainerStyle}>

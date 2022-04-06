@@ -3,13 +3,14 @@
 import unittest
 from unittest import mock
 
+from bob_emploi.frontend.api import email_pb2
 from bob_emploi.frontend.api import training_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server import carif
 from bob_emploi.frontend.server.mail.test import campaign_helper
 
 
-class PrepareYourApplicationTest(campaign_helper.CampaignTestBase):
+class GetDiplomaCampaignTest(campaign_helper.CampaignTestBase):
     """Tests for the get-diploma campaign."""
 
     campaign_id = 'get-diploma'
@@ -17,9 +18,9 @@ class PrepareYourApplicationTest(campaign_helper.CampaignTestBase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.user.profile.gender = user_pb2.MASCULINE
+        self.user.profile.gender = user_profile_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
-        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_ONCE_A_MONTH
         self.project.opened_strategies.add(strategy_id='get-diploma')
         self.project.city.departement_id = '31'
         self.project.city.ClearField('departement_name')
@@ -113,6 +114,33 @@ class PrepareYourApplicationTest(campaign_helper.CampaignTestBase):
                 {'cityName': 'Paris', 'name': 'Drongo'},
             ],
         })
+
+
+class DiplomaShortCampaignTest(campaign_helper.CampaignTestBase):
+    """Tests for the get-diploma-shortcampaign."""
+
+    campaign_id = 'get-diploma-short'
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.user.profile.gender = user_profile_pb2.MASCULINE
+        self.user.profile.name = 'Patrick'
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_ONCE_A_MONTH
+        self.project.opened_strategies.add(strategy_id='get-diploma')
+        self.project.target_job.masculine_name = 'Steward'
+
+        patcher = mock.patch(carif.__name__ + '.get_trainings')
+        self.mock_get_trainings = patcher.start()
+        self.mock_get_trainings.return_value = []
+        self.addCleanup(patcher.stop)
+
+    def test_basic(self) -> None:
+        """Basic usage."""
+
+        self._assert_user_receives_campaign()
+        self.assertEqual('de steward', self._variables.pop('ofJobName'))
+        self._assert_has_default_vars()
 
 
 if __name__ == '__main__':

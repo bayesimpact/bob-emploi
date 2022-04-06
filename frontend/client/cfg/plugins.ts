@@ -2,7 +2,8 @@
  * A module to prepare all plugins from the `plugins` root folder.
  *
  * Each plugin is a directory with `cfg` and `src` folders. The `cfg` folder may
- * have files `colors.json5`, `const.json5`, `const_dist.json5` and `entrypoints.js`.
+ * have files `colors.json5`, `config.json5` and `entrypoints.js`.
+ // TODO(cyrille): Update documentation for the new environmet behaviour.
  * Each of these files may overrides keys in the corresponding files of the core cfg folder.
  * Only `entrypoints.js` has to be present (the plugin needs at least one entry).
  *
@@ -15,39 +16,45 @@ import _mapValues from 'lodash/mapValues'
 import path from 'path'
 import {fileURLToPath} from 'url'
 
-type Constants = Record<string, unknown>
+export type Colors = Record<string, string>
+export type Config = Record<string, unknown> & {productName?: string}
 
-type Colors = Record<string, string>
+export interface Constants {
+  // The list of colors available in this plugin codebase.
+  // This includes, in that order (later addition overrides a previous one):
+  // - core colors (i.e. cfg/colors)
+  // - plugin colors (e.g. plugins/radar/cfg/colors)
+  colors: Colors
+  // The config includes, in that order (later addition overrides a previous one):
+  // - core config (i.e. cfg/config)
+  // - plugin config (e.g. plugins/radar/cfg/config)
+  // - core config for the given deployment (e.g. cfg/deployments/dev)
+  // - plugin config for the given deployment (e.g. plugins/radar/cfg/deployments/dev)
+  config: Config
+}
 
 export interface Entrypoint {
   readonly entry: string
   readonly htmlFilename?: string
   readonly prefixes?: readonly string[]
+  // The source for rendering the HTML template in which the JS will be inserted.
+  // This is given as a path relative to the plugin's src folder.
   readonly template?: string
-  readonly usesHotLoader?: true
+  // A list of ts/tsx files needed to render the template.
+  // These are given as paths relative to the plugin's src folder.
+  readonly templateDependencies?: readonly string[]
 }
 
 export interface Plugin {
-  // The list of colors available in this plugin codebase.
-  // This includes, in that order (later addition overrides a previous one):
-  // - core colors (i.e. cfg/colors)
-  // - plugin colors (e.g. plugins/radar/cfg/colors)
-  readonly colors: Colors
-  // This includes, in that order (later addition overrides a previous one):
-  // - core constants (i.e. cfg/const)
-  // - plugin constants (e.g. plugins/radar/cfg/const)
-  // - core constants for the given deployment (e.g. cfg/deployments/dev)
-  // - plugin constants for the given deployment (e.g. plugins/radar/cfg/deployments/dev)
-  readonly constants?: Constants
+  readonly constants: Constants
   // A list of patterns (glob, see karma files option) to define the files that are covered by
   // tests.
   readonly coveragePatterns?: readonly string[]
-  readonly demoConstants?: Constants
-  readonly devConstants?: Constants
+  readonly deploymentConstants: Record<string, Constants>
   // The list of entries that this plugin define.
   readonly entrypoints: {[name: string]: Entrypoint}
   // Whether This is a plugin or the core Bob app.
-  readonly isCore?: true
+  readonly isCore: boolean
   // A map of Webpack modules to load in other entrypoints. The keys are entrypoints from other
   // plugins, and the values are entries that will be loaded and compiled when the corresponding
   // entrypoint is loaded.
@@ -72,13 +79,14 @@ async function maybeReadJson5<T>(fileName: string): Promise<T|undefined> {
   return existsSync(fileName) ? await readJson5<T>(fileName) : undefined
 }
 
-const appPluginsDir = path.join(__dirname, '../plugins')
+const projectRootDir = fileURLToPath(new URL('..', import.meta.url))
+const appPluginsDir = path.join(projectRootDir, 'plugins')
 
 const keptPlugins = new Set((process.env.BOB_PLUGINS || '').split(',').filter(Boolean))
 const keepPlugin = (plugin?: Plugin): plugin is Plugin =>
   !!plugin && (!keptPlugins.size || keptPlugins.has(plugin.name))
 
-async function readPluginFromDir(name: string, colors: Colors): Promise<Plugin|undefined> {
+async function readPluginFromDir(name: string): Promise<Plugin|undefined> {
   if (name === 'core') {
     return undefined
   }
@@ -87,15 +95,18 @@ async function readPluginFromDir(name: string, colors: Colors): Promise<Plugin|u
     return undefined
   }
   const pluginPath = path.join(appPluginsDir, name)
-  const pluginColors = {
-    ...colors,
-    ...await maybeReadJson5<Colors>(path.join(pluginPath, 'cfg/colors.json5')),
-  }
-  const constants = await maybeReadJson5<Constants>(path.join(pluginPath, 'cfg/const.json5'))
-  const demoConstants = await maybeReadJson5<Constants>(
-    path.join(pluginPath, 'cfg/deployments/demo.json5'))
-  const devConstants = await maybeReadJson5<Constants>(
-    path.join(pluginPath, 'cfg/deployments/dev.json5'))
+  // TODO(cyrille): Merge colors and const in a single JSON5.
+  const colors = await maybeReadJson5<Colors>(path.join(pluginPath, 'cfg/colors.json5')) || {}
+  const config = await maybeReadJson5<Config>(path.join(pluginPath, 'cfg/config.json5')) || {}
+  const constantsFolder = path.join(pluginPath, 'cfg/deployments')
+  const constantsFiles = existsSync(constantsFolder) ? await fs.readdir(constantsFolder) : []
+  const deploymentConstants = Object.fromEntries(await Promise.all(constantsFiles.
+    filter(filename => filename.endsWith('.json5')).
+    map(async filename => [
+      filename.replace(/\.json5$/, ''),
+      await readJson5<Constants>(path.join(constantsFolder, filename)),
+    ]),
+  ))
   const relativeEntrypoints = await readJson5<{[name: string]: Entrypoint}>(
     path.join(pluginPath, 'cfg/entrypoints.json5'))
   const entrypoints = _mapValues(relativeEntrypoints, ({entry, ...rest}) => ({
@@ -103,18 +114,18 @@ async function readPluginFromDir(name: string, colors: Colors): Promise<Plugin|u
     entry: path.join(pluginPath, entry),
   }))
   const loadersPath = path.join(pluginPath, 'src/loaders')
-  const loaders = existsSync(loadersPath) ? Object.fromEntries(
-    (await fs.readdir(loadersPath)).
+  const loadersFile = existsSync(loadersPath) && await fs.readdir(loadersPath)
+  const loaders = loadersFile ? Object.fromEntries(
+    loadersFile.
       map(filename => filename.replace(/\.tsx?$/, '')).
       map(name => [name, path.join(loadersPath, name)]),
   ) : {}
   const testPath = path.join(pluginPath, 'test')
   const plugin: Plugin = {
-    colors: pluginColors,
-    constants: constants || {},
-    demoConstants,
-    devConstants,
+    constants: {colors, config},
+    deploymentConstants,
     entrypoints,
+    isCore: false,
     loaders,
     name,
     pluginPath,
@@ -124,15 +135,20 @@ async function readPluginFromDir(name: string, colors: Colors): Promise<Plugin|u
   return plugin
 }
 
-async function getAllPlugins(): Promise<readonly Plugin[]> {
+export const getCorePlugin = async (): Promise<Plugin> => {
   const coreEntrypoints = await readJson5<{[name: string]: Entrypoint}>(
     fileURLToPath(new URL('entrypoints.json5', import.meta.url)))
-  const colors = await readJson5<Colors>(fileURLToPath(new URL('colors.json5', import.meta.url)))
+  const colors = await readJson5<Record<string, string>>(
+    fileURLToPath(new URL('colors.json5', import.meta.url)))
+  const config = await readJson5<Record<string, unknown>>(
+    fileURLToPath(new URL('config.json5', import.meta.url)))
+  // TODO(cyrille): Move deployment constants import here.
 
   const basePath = fileURLToPath(new URL('..', import.meta.url))
-  const core: Plugin = {
-    colors,
+  return {
+    constants: {colors, config},
     coveragePatterns: [path.join(basePath, 'src/store/*.ts')],
+    deploymentConstants: {},
     entrypoints: coreEntrypoints,
     isCore: true,
     name: 'core',
@@ -140,12 +156,12 @@ async function getAllPlugins(): Promise<readonly Plugin[]> {
     srcPath: path.join(basePath, 'src'),
     testPath: path.join(basePath, 'test/webpack'),
   }
+}
 
+async function getAllPlugins(): Promise<readonly Plugin[]> {
   const filesAndDirs = await fs.readdir(appPluginsDir)
-  const allPlugins = await Promise.all(filesAndDirs.map(
-    async (name) => await readPluginFromDir(name, colors)))
-
-  // TODO(cyrille): Rather export an object keyed by name.
+  const allPlugins = await Promise.all(filesAndDirs.map(readPluginFromDir))
+  const core = await getCorePlugin()
   const plugins = [core, ...allPlugins].filter(keepPlugin)
   if (!plugins.length) {
     // eslint-disable-next-line no-console
@@ -153,5 +169,68 @@ async function getAllPlugins(): Promise<readonly Plugin[]> {
   }
   return plugins
 }
+
+type HtmlEntrypoint = {[F in 'htmlFilename' | 'prefixes']: NonNullable<Entrypoint[F]>}
+interface PrefixedEntry {
+  htmlFilename: string
+  prefix: string
+}
+export const getEntrypoints = (plugins: readonly Partial<Plugin>[]): readonly PrefixedEntry[] => {
+  const prefixedEntrypoints = plugins.
+    flatMap(({entrypoints}) => Object.values(entrypoints || {})).
+    filter((e): e is Entrypoint & HtmlEntrypoint => !!e.prefixes && !!e.htmlFilename).
+    flatMap(({htmlFilename, prefixes}) => prefixes.map(prefix => ({htmlFilename, prefix})))
+  const hasRoot = !prefixedEntrypoints.length || plugins.some(({isCore}) => isCore)
+  return [
+    ...prefixedEntrypoints,
+    {
+      htmlFilename: hasRoot ? 'index.html' : prefixedEntrypoints[0].htmlFilename,
+      prefix: '',
+    },
+  ]
+}
+
+const getHintedPluginPredicate = (onlyPluginHint: string): ((p: Plugin) => boolean) =>
+  ({name, srcPath}) => name === onlyPluginHint ||
+    onlyPluginHint.startsWith(path.relative(projectRootDir, srcPath))
+
+/* eslint-disable no-console */
+export const actOnPlugins = (pluginHandler: (p: Plugin) => Promise<boolean>, action: string):
+((o?: string) => Promise<void>) => async (onlyPluginHint?: string, hintPrefix?: string) => {
+  onlyPluginHint = onlyPluginHint && hintPrefix && path.relative(hintPrefix, onlyPluginHint) ||
+    onlyPluginHint
+  const allPlugins = await getAllPlugins()
+  if (onlyPluginHint) {
+    const plugin = allPlugins.find(getHintedPluginPredicate(onlyPluginHint))
+    if (!plugin) {
+      throw new Error(`No plugin found from hint "${onlyPluginHint}".`)
+    }
+    console.log(`Starting to ${action} just for plugin`, plugin.name, '…')
+    const hasActed = await pluginHandler(plugin)
+    if (!hasActed) {
+      throw new Error(`Unable to ${action} on plugin ${plugin.name}`)
+    }
+    return
+  }
+  let hasErrors = false
+  for (const plugin of allPlugins) {
+    try {
+      console.log(`Starting to ${action} for plugin`, plugin.name, '…')
+      // eslint-disable-next-line no-await-in-loop
+      const hasActed = await pluginHandler(plugin)
+      if (!hasActed) {
+        console.warn(`Unable to ${action} on plugin`, plugin.name)
+      }
+    } catch (error) {
+      console.error(`An error occurred while trying to ${action} for plugin`, plugin.name, error)
+      hasErrors = true
+    }
+  }
+  if (hasErrors) {
+    throw new Error(`An error occurred while trying to ${action} for plugins,
+      please check the logs.`)
+  }
+}
+/* eslint-enable no-console */
 
 export default getAllPlugins

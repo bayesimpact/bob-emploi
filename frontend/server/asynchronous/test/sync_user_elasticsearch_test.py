@@ -2,55 +2,77 @@
 
 import collections
 import datetime
+import json
 import os
 import typing
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Tuple
 import unittest
 from unittest import mock
 
 from google.protobuf import json_format
-import mongomock
 import requests_mock
 
 from bob_emploi.common.python import now
+from bob_emploi.common.python.test import nowmock
 from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import boolean_pb2
+from bob_emploi.frontend.api import email_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server.asynchronous import sync_user_elasticsearch
+from bob_emploi.frontend.server.asynchronous.test import asynchronous_test_case
 
 
-@mock.patch(now.__name__ + '.get', new=lambda: datetime.datetime(2017, 11, 16))
+def _user_and_its_nps() -> Tuple[user_pb2.User, user_pb2.NPSSurveyResponse]:
+    user = user_pb2.User()
+    project = user.projects.add()
+    project.original_self_diagnostic.CopyFrom(diagnostic_pb2.SelfDiagnostic(
+        status=diagnostic_pb2.KNOWN_SELF_DIAGNOSTIC, category_id='stuck-market'))
+    project.diagnostic.category_id = 'stuck-market'
+    response = user.net_promoter_score_survey_response
+    response.responded_at.FromDatetime(datetime.datetime(2018, 11, 20, 18, 29))
+    response.has_actions_idea = boolean_pb2.TRUE
+    response.nps_self_diagnostic.CopyFrom(diagnostic_pb2.SelfDiagnostic(
+        status=diagnostic_pb2.KNOWN_SELF_DIAGNOSTIC, category_id='missing-diploma'))
+    response.score = 0
+    return user, response
+
+
+@nowmock.patch(new=lambda: datetime.datetime(2017, 11, 16))
 @mock.patch('logging.info', new=mock.MagicMock)
-class SyncTestCase(unittest.TestCase):
+class SyncTestCase(asynchronous_test_case.TestCase):
     """Unit tests for the module."""
 
     def setUp(self) -> None:
         super().setUp()
-        sync_user_elasticsearch.proto.cache.clear()
-        self._db = mongomock.MongoClient().test
-        self._user_db = mongomock.MongoClient().test
-        patcher = mock.patch(sync_user_elasticsearch.__name__ + '._USER_DB', new=self._user_db)
-        patcher.start()
-        patcher = mock.patch(sync_user_elasticsearch.__name__ + '._DB', new=self._db)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+
+        self._db = self._stats_db
+        self._user_db = sync_user_elasticsearch.mongo.get_connections_from_env().user_db
+        self._user_db.user.drop()
         self.mock_elasticsearch = mock.MagicMock()
 
-    @mock.patch(sync_user_elasticsearch.random.__name__ + '.randint')
-    def test_main(self, mock_randint: mock.MagicMock) -> None:
+    @mock.patch(sync_user_elasticsearch.focus.__name__ + '.simulate_coaching_emails')
+    @mock.patch('random.randint')
+    def test_main(self, mock_randint: mock.MagicMock, mock_simulate: mock.MagicMock) -> None:
         """Test main."""
 
         mock_randint.return_value = 42
+        mock_simulate.return_value = [
+            email_pb2.EmailSent(campaign_id='focus-resume'),
+        ]
         self.maxDiff = None  # pylint: disable=invalid-name
         self._user_db.user.insert_one({
             'profile': {
                 'locale': 'fr@tu',
                 'coachingEmailFrequency': 'EMAIL_MAXIMUM',
+                'customGender': 'DECLINE_TO_ANSWER',
                 'email': 'pascal@corpet.net',
+                'familySituation': 'FAMILY_WITH_KIDS',
                 'gender': 'MASCULINE',
+                'isArmyVeteran': False,
                 'yearOfBirth': 1982,
                 'highestDegree': 'DEA_DESS_MASTER_PHD',
                 'origin': 'FROM_A_FRIEND',
+                'races': ['WHITE'],
             },
             'projects': [{
                 'createdAt': '2018-12-01T00:00:00Z',
@@ -69,6 +91,15 @@ class SyncTestCase(unittest.TestCase):
                 },
                 'jobSearchStartedAt': '2018-08-01T00:00:00Z',
                 'minSalary': 45000,
+                'employmentTypes': ['CDD_OVER_3_MONTHS', 'CDI'],
+                'trainingFulfillmentEstimate': 'ENOUGH_EXPERIENCE',
+                'passionateLevel': 'ALIMENTARY_JOB',
+                'previousJobSimilarity': 'NEVER_DONE',
+                'seniority': 'NO_SENIORITY',
+                'networkEstimate': 1,
+                'weeklyOffersEstimate': 'LESS_THAN_2',
+                'weeklyApplicationsEstimate': 'SOME',
+                'totalInterviewsEstimate': 'SOME',
                 'advices': [
                     {
                         'adviceId': 'network',
@@ -87,9 +118,25 @@ class SyncTestCase(unittest.TestCase):
                         'status': 'ADVICE_READ',
                     },
                 ],
+                'actions': [
+                    {
+                        'actionId': 'network',
+                        'status': 'ACTION_UNREAD',
+                    },
+                    {
+                        'actionId': 'read-more',
+                        'status': 'ACTION_CURRENT',
+                    },
+                    {
+                        'actionId': 'life-balance',
+                        'status': 'ACTION_CURRENT',
+                    },
+                ],
+                'wasFeedbackRequested': True,
                 'feedback': {
                     'score': 5,
                     'challengeAgreementScore': 1,
+                    'actionPlanHelpsPlanScore': 3,
                 },
                 'diagnostic': {
                     'categoryId': 'stuck-market',
@@ -117,6 +164,7 @@ class SyncTestCase(unittest.TestCase):
                 'hasBeenPromoted': 'FALSE',
                 'hasGreaterRole': 'TRUE',
                 'hasSalaryIncreased': 'TRUE',
+                'isJobInDifferentSector': 'FALSE',
                 'otherCoachesUsed': ['PE_COUNSELOR_MEETING', 'MUTUAL_AID_ORGANIZATION'],
             }],
             'clientMetrics': {
@@ -145,6 +193,7 @@ class SyncTestCase(unittest.TestCase):
             'origin': {
                 'source': 'facebook',
                 'medium': 'ad',
+                'campaign': 'metiers porteurs',
             },
             'registeredAt': '2017-07-15T18:06:08Z',
             'hasAccount': True,
@@ -177,6 +226,8 @@ class SyncTestCase(unittest.TestCase):
         self.assertEqual({
             'doc_as_upsert': True
         }, body)
+        # Ensure the document is serializable.
+        self.assertTrue(json.dumps(doc))
         self.assertEqual(
             {
                 'randomGroup': .42,
@@ -184,12 +235,16 @@ class SyncTestCase(unittest.TestCase):
                 'profile': {
                     'ageGroup': 'D. 35-44',
                     'coachingEmailFrequency': 'EMAIL_MAXIMUM',
+                    'customGender': 'DECLINE_TO_ANSWER',
+                    'familySituation': 'FAMILY_WITH_KIDS',
                     'frustrations': [],
                     'gender': 'MASCULINE',
                     'hasHandicap': False,
                     'highestDegree': '6 - DEA_DESS_MASTER_PHD',
+                    'isArmyVeteran': False,
                     'locale': 'fr@tu',
                     'origin': 'FROM_A_FRIEND',
+                    'races': ['WHITE'],
                 },
                 'project': {
                     'advices': ['network'],
@@ -212,10 +267,21 @@ class SyncTestCase(unittest.TestCase):
                             'name': 'Boulangerie',
                         },
                     },
+                    'wasFeedbackRequested': True,
                     'feedbackScore': 5,
                     'feedbackLoveScore': 1,
+                    'actionPlanHelpsPlanScore': 3,
                     'challengeAgreementScore': 0,
                     'minSalary': 45000,
+                    'employmentTypes': ['CDD_OVER_3_MONTHS', 'CDI'],
+                    'trainingFulfillmentEstimate': 'ENOUGH_EXPERIENCE',
+                    'passionateLevel': 'ALIMENTARY_JOB',
+                    'previousJobSimilarity': 'NEVER_DONE',
+                    'seniority': 'NO_SENIORITY',
+                    'networkEstimate': 'LOW',
+                    'weeklyOffersEstimate': 'LESS_THAN_2',
+                    'weeklyApplicationsEstimate': 'SOME',
+                    'totalInterviewsEstimate': 'SOME',
                     'diagnostic': {
                         'categoryId': 'stuck-market',
                     },
@@ -229,6 +295,8 @@ class SyncTestCase(unittest.TestCase):
                     'openedStrategies': ['likeable-job'],
                     'numStrategiesShown': 2,
                     'hasReachedAStrategyGoal': True,
+                    'actionPlanStage': 2,
+                    'actionPlanStatus': 'ADDING_ACTIONS',
                 },
                 'registeredAt': '2017-07-15T18:06:08Z',
                 'employmentStatus': {
@@ -239,6 +307,7 @@ class SyncTestCase(unittest.TestCase):
                     'hasBeenPromoted': 'FALSE',
                     'hasGreaterRole': 'TRUE',
                     'hasSalaryIncreased': 'TRUE',
+                    'isJobInDifferentSector': 'FALSE',
                     'otherCoachesUsed': ['PE_COUNSELOR_MEETING', 'MUTUAL_AID_ORGANIZATION'],
                     'bobRelativePersonalization': 12,
                 },
@@ -246,9 +315,13 @@ class SyncTestCase(unittest.TestCase):
                     'focus-network': 'EMAIL_SENT_CLICKED',
                     'focus-spontaneous': 'EMAIL_SENT_OPENED',
                 },
+                'coachingEmails': ['focus-network', 'focus-resume', 'focus-spontaneous'],
+                'coachingEmailsExpected': 3,
                 'coachingEmailsSent': 2,
                 'coachingEmailsClicked': 1,
+                'coachingEmailsClickedRatio': .5,
                 'coachingEmailsOpened': 2,
+                'coachingEmailsOpenedRatio': 1,
                 'clientMetrics': {
                     'firstSessionDurationSeconds': 250,
                     'isFirstSessionMobile': 'TRUE',
@@ -256,6 +329,7 @@ class SyncTestCase(unittest.TestCase):
                 'origin': {
                     'medium': 'ad',
                     'source': 'facebook',
+                    'campaign': 'metiers porteurs',
                 },
                 'hasAccount': True,
                 'isHooked': True,
@@ -274,13 +348,13 @@ class SyncTestCase(unittest.TestCase):
             'Please set SENTRY_DSN to enable logging to Sentry, or use --disable-sentry option')
 
     def _check_city_corner_case(
-            self, expected_city: Dict[str, Any], city_json: Dict[str, Any]) -> None:
+            self, expected_city: dict[str, Any], city_json: dict[str, Any]) -> None:
 
         self._user_db.user.insert_one({
             'projects': [{'city': {'cityId': '69123'}}],
             'registeredAt': '2017-07-15T18:06:08Z',
         })
-        self._db.cities.insert_one(dict(**city_json, _id='69123'))
+        self._db.cities.insert_one(city_json | {'_id': '69123'})
 
         sync_user_elasticsearch.main(self.mock_elasticsearch, [
             '--registered-from', '2017-07',
@@ -376,7 +450,7 @@ class SyncTestCase(unittest.TestCase):
     def test_force_recreate(self) -> None:
         """ES drops index and recreates it at start."""
 
-        called_indices_methods: List[str] = []
+        called_indices_methods: list[str] = []
 
         def _save_called_func(method_name: str) -> Callable[[str], None]:
 
@@ -395,7 +469,7 @@ class SyncTestCase(unittest.TestCase):
         self.mock_elasticsearch.indices.create.assert_called_once_with(index='bobusers')
         self.assertEqual(['delete', 'create'], called_indices_methods)
 
-    def _compute_user_data(self, user: user_pb2.User) -> Dict[str, Any]:
+    def _compute_user_data(self, user: user_pb2.User) -> dict[str, Any]:
         if not user.HasField('registered_at'):
             user.registered_at.GetCurrentTime()
         self._user_db.user.drop()
@@ -404,7 +478,7 @@ class SyncTestCase(unittest.TestCase):
             '--registered-from', '2017-07',
             '--no-dry-run', '--disable-sentry'])
         kwargs = self.mock_elasticsearch.update.call_args[1]
-        return typing.cast(Dict[str, Any], kwargs.pop('body')['doc'])
+        return typing.cast(dict[str, Any], kwargs.pop('body')['doc'])
 
     def test_infinite_salary(self) -> None:
         """Test that infinite salaries are not kept."""
@@ -431,8 +505,8 @@ class SyncTestCase(unittest.TestCase):
     def test_age_group(self) -> None:
         """Test various age groups."""
 
-        age_group_counts: Dict[str, int] = collections.defaultdict(int)
-        age_groups: List[str] = []
+        age_group_counts: dict[str, int] = collections.defaultdict(int)
+        age_groups: list[str] = []
 
         for year in range(1940, 2020):
             user = user_pb2.User()
@@ -452,7 +526,7 @@ class SyncTestCase(unittest.TestCase):
     def _compute_user_data_for_nps(
             self, responded_at: datetime.datetime, score: int,
             has_actions_idea: 'boolean_pb2.OptionalBool.V',
-            self_diagnostic: diagnostic_pb2.SelfDiagnostic) -> Dict[str, Any]:
+            self_diagnostic: diagnostic_pb2.SelfDiagnostic) -> dict[str, Any]:
         user = user_pb2.User()
         project = user.projects.add()
         project.original_self_diagnostic.CopyFrom(diagnostic_pb2.SelfDiagnostic(
@@ -561,48 +635,75 @@ class SyncTestCase(unittest.TestCase):
             },
             data.get('nps_response'))
 
-    # TODO(cyrille): Restrict type for `field` and `value`.
-    def _compute_user_data_for_nps_res(self, field: str, value: int) -> Dict[str, Any]:
-        user = user_pb2.User()
-        project = user.projects.add()
-        project.original_self_diagnostic.CopyFrom(diagnostic_pb2.SelfDiagnostic(
-            status=diagnostic_pb2.KNOWN_SELF_DIAGNOSTIC, category_id='stuck-market'))
-        project.diagnostic.category_id = 'stuck-market'
-        response = user.net_promoter_score_survey_response
-        response.responded_at.FromDatetime(datetime.datetime(2018, 11, 20, 18, 29))
-        response.has_actions_idea = boolean_pb2.TRUE
-        setattr(response, field, value)
-        response.nps_self_diagnostic.CopyFrom(diagnostic_pb2.SelfDiagnostic(
-            status=diagnostic_pb2.KNOWN_SELF_DIAGNOSTIC, category_id='missing-diploma'))
-        response.score = 0
-        return self._compute_user_data(user)
-
     def test_nps_local_market_estimate(self) -> None:
         """Test NPS local market estimate."""
 
-        data = self._compute_user_data_for_nps_res(
-            'local_market_estimate', user_pb2.LOCAL_MARKET_GOOD)
+        user, response = _user_and_its_nps()
+        response.local_market_estimate = user_pb2.LOCAL_MARKET_GOOD
+        data = self._compute_user_data(user)
         self.assertEqual(
             'LOCAL_MARKET_GOOD', data.get('nps_response', {}).get('localMarketEstimate'))
 
     def test_nps_bob_relative_personalization(self) -> None:
         """Test NPS bob relative personalization."""
 
-        data = self._compute_user_data_for_nps_res('bob_relative_personalization', 10)
+        user, response = _user_and_its_nps()
+        response.bob_relative_personalization = 10
+        data = self._compute_user_data(user)
         self.assertEqual('Equally', data.get('nps_response', {}).get('bobRelativePersonalization'))
 
     def test_nps_user_informed_about_career_options(self) -> None:
         """Test NPS user informed about career options."""
 
-        data = self._compute_user_data_for_nps_res('user_informed_about_career_options', 1)
+        user, response = _user_and_its_nps()
+        response.user_informed_about_career_options = 1
+        data = self._compute_user_data(user)
         self.assertEqual(
             'No change', data.get('nps_response', {}).get('userInformedAboutCareerOptions'))
 
     def test_nps_product_usability_score(self) -> None:
         """Test NPS product usability score."""
 
-        data = self._compute_user_data_for_nps_res('product_usability_score', 1)
+        user, response = _user_and_its_nps()
+        response.product_usability_score = 1
+        data = self._compute_user_data(user)
         self.assertEqual('Very poor', data.get('nps_response', {}).get('productUsabilityScore'))
+
+    def test_nps_next_actions(self) -> None:
+        """Test NPS product usability score."""
+
+        self._db.challenge_actions.insert_many([
+            {
+                '_id': 'action-1',
+                'scoreByChallenge': {
+                    'stuck-market': 1,
+                    'missing-diploma': 2,
+                }
+            },
+            {
+                '_id': 'action-2',
+                'scoreByChallenge': {
+                    'stuck-market': 3,
+                    'missing-diploma': 8,
+                }
+            },
+            {
+                '_id': 'action-3',
+                'scoreByChallenge': {
+                    'stuck-market': 6,
+                }
+            },
+        ])
+        user, response = _user_and_its_nps()
+        response.next_actions.extend(['action-1', 'action-2'])
+        data = self._compute_user_data(user)
+        self.assertEqual({
+            'stuck-market': .4,
+            'missing-diploma': 1,
+            'diagnostic': .4,
+            'selfDiagnostic': 1,
+            'originalSelfDiagnostic': .4,
+        }, data.get('nps_response', {}).get('challengeScores'))
 
     def test_nps_request(self) -> None:
         """NPS request computation."""
@@ -619,7 +720,7 @@ class SyncTestCase(unittest.TestCase):
             data.get('nps_request'))
 
     def _compute_data_bob_has_helped(
-            self, created_at: datetime.datetime, bob_has_helped: str) -> Dict[str, Any]:
+            self, created_at: datetime.datetime, bob_has_helped: str) -> dict[str, Any]:
         user = user_pb2.User()
         user.registered_at.FromDatetime(now.get())
         status = user.employment_status.add()
@@ -683,7 +784,7 @@ class SyncTestCase(unittest.TestCase):
 
         mock_warning.assert_called_once_with('bobHasHelped field has unknown answer "%s"', 'WEIRD')
 
-    def _compute_data_feedback_score(self, feedback_score: int) -> Dict[str, Any]:
+    def _compute_data_feedback_score(self, feedback_score: int) -> dict[str, Any]:
         user = user_pb2.User()
         project = user.projects.add()
         project.feedback.score = feedback_score
@@ -745,6 +846,47 @@ class SyncTestCase(unittest.TestCase):
         data = self._compute_user_data(user)
         self.assertEqual(
             'Médecine et Santé', data.get('project', {}).get('targetJob', {}).get('domain'))
+
+    def test_ffs(self) -> None:
+        """Info from the FFS."""
+
+        self._user_db.user.insert_one({
+            'registeredAt': '2022-02-12T18:06:08Z',
+            'emailsSent': [
+                {
+                    'campaignId': 'first-followup-survey',
+                    # 7 days after registration.
+                    'sentAt': '2022-02-19T18:06:08Z',
+                    'status': 'EMAIL_SENT_SENT',
+                },
+                {
+                    'campaignId': 'focus-spontaneous',
+                    'sentAt': '2022-02-21T18:06:08Z',
+                    'status': 'EMAIL_SENT_OPENED',
+                },
+            ],
+            'firstFollowupSurveyResponse': {
+                # 8 days after registration.
+                'respondedAt': '2022-02-20T19:06:00Z',
+                'hasTriedSomethingNew': True,
+                'newIdeasScore': 4,
+            },
+        })
+        sync_user_elasticsearch.main(self.mock_elasticsearch, [
+            '--registered-from', '2022-02-01',
+            '--no-dry-run', '--disable-sentry'])
+
+        self.mock_elasticsearch.update.assert_called_once()
+        kwargs = self.mock_elasticsearch.update.call_args[1]
+        self.assertIn('body', kwargs)
+        self.assertIn('doc', kwargs['body'])
+        doc = kwargs['body']['doc']
+        self.assertTrue(json.dumps(doc), msg='The document should be serializable')
+        self.assertLessEqual({'ffsRequest', 'ffsResponse'}, doc.keys())
+        self.assertEqual({'hasResponded': True, 'sentAfterDays': 7}, doc['ffsRequest'])
+        self.assertEqual(
+            {'hasTriedSomethingNew': True, 'newIdeasScore': 4, 'respondedDaysAfterRegistration': 8},
+            doc['ffsResponse'])
 
 
 if __name__ == '__main__':

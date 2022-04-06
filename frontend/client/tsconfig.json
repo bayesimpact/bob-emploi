@@ -16,8 +16,11 @@
       "components/*": [
         "src/components/*"
       ],
+      "config": [
+        "./config"
+      ],
       "deployment/*": [
-        "src/deployments/fr/*"
+        "src/deployments/types/*"
       ],
       "hooks/*": [
         "src/hooks/*"
@@ -38,6 +41,7 @@
   },
   "include": [
     "/tmp/bob_emploi/frontend/api/*.d.ts",
+    "/tmp/bob_emploi/test_deployment_types.ts",
     "custom.d.ts",
     "cfg",
     "node",

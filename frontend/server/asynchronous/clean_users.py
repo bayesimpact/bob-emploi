@@ -10,7 +10,7 @@
 import argparse
 import datetime
 import logging
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 import bson
 from bson import objectid
@@ -24,7 +24,6 @@ from bob_emploi.frontend.server.asynchronous import report
 from bob_emploi.frontend.server.mail import mail_send
 
 
-_, _DB, _ = mongo.get_connections_from_env()
 _MAX_GUEST_IDLE_TIME = datetime.timedelta(7)
 _MAX_SIGNED_IN_USER_IDLE_TIME = datetime.timedelta(730)
 _TODAY_STRING = proto.datetime_to_json_string(datetime.datetime.now())
@@ -103,7 +102,9 @@ def compute_deletion_date(user_proto: user_pb2.User) -> datetime.datetime:
     return last_interaction_date + recent_interaction_delay
 
 
-def clean_users(database: mongo.UsersDatabase, dry_run: bool = True) -> Tuple[int, int, int]:
+def clean_users(
+        database: mongo.UsersDatabase, dry_run: bool = True,
+        max_users: int = 0) -> Tuple[int, int, int]:
     """Clean inactive users and guests who registered before a given date."""
 
     users = get_users(database)
@@ -113,6 +114,9 @@ def clean_users(database: mongo.UsersDatabase, dry_run: bool = True) -> Tuple[in
     num_errors = 0
     for user in users:
         user_proto = proto.create_from_mongo(user, user_pb2.User, 'user_id')
+
+        if max_users and (num_users_cleaned + num_users_updated + num_errors) >= max_users:
+            return num_users_cleaned, num_users_updated, num_errors
 
         if not user_proto:
             num_errors += 1
@@ -127,7 +131,6 @@ def clean_users(database: mongo.UsersDatabase, dry_run: bool = True) -> Tuple[in
 
         deletion_date = compute_deletion_date(user_proto)
         if deletion_date >= datetime.datetime.today():
-            # raise ValueError(user_proto, deletion_date)
             set_deletion_check_date(user_proto, deletion_date, database, dry_run)
             num_users_updated += 1
             continue
@@ -139,14 +142,18 @@ def clean_users(database: mongo.UsersDatabase, dry_run: bool = True) -> Tuple[in
             num_users_cleaned += 1
         else:
             num_errors += 1
+
     return num_users_cleaned, num_users_updated, num_errors
 
 
-def main(string_args: Optional[List[str]] = None) -> None:
+def main(string_args: Optional[list[str]] = None) -> None:
     """Parse command line arguments and trigger the clean_guest_users function."""
 
     parser = argparse.ArgumentParser(
         description='Clean guests and inactive users from the database.')
+
+    parser.add_argument(
+        '--max-users', help='Only consider a maximum of this number of users.', type=int)
 
     report.add_report_arguments(parser)
 
@@ -155,9 +162,11 @@ def main(string_args: Optional[List[str]] = None) -> None:
     if not report.setup_sentry_logging(args):
         return
 
+    user_db = mongo.get_connections_from_env().user_db
+
     logging.info(
         'Cleaned %d users, set check date for %d users and got %d errors',
-        *clean_users(_DB, args.dry_run))
+        *clean_users(user_db, args.dry_run, args.max_users))
 
 
 if __name__ == '__main__':

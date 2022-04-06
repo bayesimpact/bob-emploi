@@ -2,8 +2,16 @@
 # the container on every change.
 version: "3.4"
 services:
+  bazel:
+    image: bayesimpact/circleci
+    entrypoint: ["bazel"]
+    working_dir: /usr/app
+    volumes:
+      - .:/usr/app
+      - /tmp/bazel-docker-cache:/tmp/bazel-cache
   frontend-flask:
     command: python bob_emploi/frontend/server/server.py
+    entrypoint: ./entrypoint.sh
     volumes:
       - ./frontend/api:/work/bob_emploi/frontend/api
       - ./frontend/server:/work/bob_emploi/frontend/server
@@ -12,6 +20,7 @@ services:
     environment:
       BOB_DEPLOYMENT:
   frontend-flask-test:
+    entrypoint: ./entrypoint.sh
     volumes:
       - ./frontend/api:/work/bob_emploi/frontend/api
       - ./frontend/server:/work/bob_emploi/frontend/server
@@ -20,7 +29,7 @@ services:
       - ./frontend/server/lint_and_test.sh:/work/lint_and_test.sh:ro
       - ./common/python:/work/bob_emploi/common/python:ro
       - ./.pylintrc:/work/.pylintrc:ro
-      - ./.pycodestyle:/work/.pycodestyle:ro
+      - ./.pycodestyle:/work/setup.cfg:ro
   data-analysis-prepare:
     environment:
       BOB_DEPLOYMENT:
@@ -28,6 +37,7 @@ services:
       # Run cleaned_data_test on real data.
       TEST_REAL_DATA: 1
       MONGO_URL: $IMPORTER_MONGO_URL
+    entrypoint: ./entrypoint.sh
     volumes:
       - ./data_analysis:/work/bob_emploi/data_analysis
       - ./data_analysis/data:/work/data
@@ -44,7 +54,6 @@ services:
       - ./frontend/server:/work/bob_emploi/frontend/server
       - ./frontend/release/scheduled-tasks:/work/bob_emploi/frontend/release/scheduled-tasks:ro
       - ./frontend/api:/work/bob_emploi/frontend/api
-      - ./common/vendor/parsel:/usr/local/lib/python3.8/site-packages/mypy/typeshed/third_party/2and3/parsel:ro
       - ~/.aws/credentials:/root/.aws/credentials:ro
   frontend-dev: &dev
     volumes:
@@ -56,7 +65,7 @@ services:
       - ./frontend/client/server.ts:/usr/app/server.ts:ro
       - ./frontend/client/.babelrc:/usr/app/.babelrc:ro
       - ./frontend/client/build_dist.ts:/usr/app/build_dist.ts:ro
-      - ./frontend/client/extract_i18n.sh:/usr/app/extract_i18n.sh:ro
+      - ./frontend/client/extract_i18n.ts:/usr/app/extract_i18n.ts:ro
       - ./frontend/client/i18n.babelrc.js:/usr/app/i18n.babelrc.js:ro
       - ./frontend/client/src:/usr/app/src
       - ./frontend/client/node:/usr/app/node
@@ -66,10 +75,14 @@ services:
       - ./frontend/client/package.json:/usr/app/package.json:ro
       - ./frontend/client/tsconfig.json:/usr/app/tsconfig.json:ro
       - ./frontend/release:/usr/app/release:ro
+      - ./frontend/client/src/translations/fr/vision.txt:/usr/app/i18n/translations/fr/vision.txt:ro
+      - ./frontend/client/src/translations/en/vision.txt:/usr/app/i18n/translations/en/vision.txt:ro
+      # For linting.
+      - ./.eslintrc.json:/usr/app/.eslintrc.json:ro
+      - ./.eslintignore:/usr/app/.eslintignore:ro
+      - ./frontend/client/webpack.eslintrc.json:/usr/app/webpack.eslintrc.json:ro
       # For releasing.
       - ./frontend/dist:/usr/app/dist
-      # TODO(pascal): Create a @types/autocomplete.js npm package.
-      - ./frontend/client/vendor/autocomplete.js.d.ts:/usr/app/node_modules/@types/autocomplete.js/index.d.ts
       # TODO(pascal): Drop this once https://github.com/arthurbergmz/webpack-pwa-manifest/pull/150 gets released.
       - ./frontend/client/vendor/webpack-pwa-manifest.d.ts:/usr/app/node_modules/webpack-pwa-manifest/index.d.ts
     environment:
@@ -91,23 +104,24 @@ services:
       - ./frontend/client/server.ts:/usr/app/server.ts:ro
       - ./frontend/client/.babelrc:/usr/app/.babelrc:ro
       - ./frontend/client/build_dist.ts:/usr/app/build_dist.ts:ro
-      - ./frontend/client/extract_i18n.sh:/usr/app/extract_i18n.sh:ro
+      - ./frontend/client/extract_i18n.ts:/usr/app/extract_i18n.ts:ro
       - ./frontend/client/i18n.babelrc.js:/usr/app/i18n.babelrc.js:ro
       - ./frontend/client/src:/usr/app/src
       - ./frontend/client/node:/usr/app/node
-      - ./frontend/client/check-color-config.sh:/usr/app/check-color-config.sh:ro
-      - ./frontend/client/check-common-typos.sh:/usr/app/check-common-typos.sh:ro
+      - ./frontend/client/check_color_config.ts:/usr/app/check_color_config.ts:ro
       - ./frontend/client/custom.d.ts:/usr/app/custom.d.ts:ro
+      - ./frontend/client/config.ts:/usr/app/config.ts:ro
       - ./frontend/client/jsonlint.sh:/usr/app/jsonlint.sh
       - ./frontend/client/airtable_fields.json5:/usr/app/airtable_fields.json5
       - ./frontend/client/entrypoint.sh:/usr/app/entrypoint.sh:ro
       - ./frontend/client/package.json:/usr/app/package.json:ro
-      - ./frontend/client/check_types.sh:/usr/app/check_types.sh
+      - ./frontend/client/check_types.ts:/usr/app/check_types.ts
       - ./frontend/client/tsconfig.json:/usr/app/tsconfig.json:ro
       - ./frontend/release:/usr/app/release:ro
       # For linting.
       - ./.eslintrc.json:/usr/app/.eslintrc.json:ro
       - ./.eslintignore:/usr/app/.eslintignore:ro
+      - ./frontend/client/webpack.eslintrc.json:/usr/app/webpack.eslintrc.json:ro
       # For testing.
       - ./frontend/client/test:/usr/app/test
       - ./frontend/client/karma.conf.ts:/usr/app/karma.conf.ts:ro
@@ -115,12 +129,35 @@ services:
       # This is actually part of the frontend-db, but it makes it way easier to
       # lint with the same rules.
       - ./frontend/server/db:/usr/app/server/db:ro
-      # TODO(pascal): Create a @types/autocomplete.js npm package.
-      - ./frontend/client/vendor/autocomplete.js.d.ts:/usr/app/node_modules/@types/autocomplete.js/index.d.ts
       - ./frontend/client/vendor/webpack-pwa-manifest.d.ts:/usr/app/node_modules/webpack-pwa-manifest/index.d.ts
-  mailjet:
+  frontend-monitoring:
     volumes:
+      - /tmp/bob_emploi:/tmp/bob_emploi
+      - ./frontend/client/ssl:/etc/ssl/webpack-dev:ro
+      - ./frontend/monitoring/cfg:/usr/app/cfg:ro
+      - ./frontend/monitoring/public:/usr/app/public:ro
+      - ./frontend/monitoring/src:/usr/app/src:ro
+      - ./frontend/monitoring/build_dist.ts:/usr/app/build_dist.ts:ro
+      - ./frontend/monitoring/custom.d.ts:/usr/app/custom.d.ts:ro
+      - ./frontend/monitoring/package.json:/usr/app/package.json:ro
+      - ./frontend/monitoring/server.ts:/usr/app/server.ts:ro
+      - ./frontend/monitoring/tsconfig.json:/usr/app/tsconfig.json:ro
+      - ./frontend/monitoring/dist:/usr/app/dist
+      - ./.eslintrc.json:/usr/app/.eslintrc.json:ro
+      - ./.eslintignore:/usr/app/.eslintignore:ro
+    environment:
+      PUBLIC_HOST: localhost.bob-dev.bayes.org
+      PUBLIC_PORT: 4000
+    ports:
+      - "${PUBLIC_PORT:-4000}:80"
+
+  mailjet:
+    environment:
+      RECIPIENT:
+    volumes:
+      - ./frontend/mailjet/entrypoint.sh:/usr/app/entrypoint.sh
       - ./frontend/mailjet/package.json:/usr/app/package.json:ro
       - ./frontend/mailjet/index.ts:/usr/app/index.ts:ro
+      - ./frontend/mailjet/json2mjml.d.ts:/usr/app/json2mjml.d.ts:ro
       - ./frontend/mailjet/tsconfig.json:/usr/app/tsconfig.json
       - ./frontend/server/mail/templates:/usr/app/templates:rw

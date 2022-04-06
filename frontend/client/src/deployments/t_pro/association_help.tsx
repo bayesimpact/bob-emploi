@@ -1,0 +1,1 @@
+../fr/association_help.tsx

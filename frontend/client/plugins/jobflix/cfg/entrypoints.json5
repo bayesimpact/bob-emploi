@@ -4,5 +4,6 @@
     htmlFilename: 'upskilling.html',
     prefixes: ['/orientation'],
     template: 'index.tsx',
+    templateDependencies: ['components/pages/waiting.tsx'],
   },
 }

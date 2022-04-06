@@ -6,11 +6,14 @@ import {useParams} from 'react-router'
 import {Link, Redirect} from 'react-router-dom'
 
 import useCachedData from 'hooks/cached_data'
-import {RootState} from 'store/actions'
+import type {RootState} from 'store/actions'
 import isMobileVersion from 'store/mobile'
 
-import {DispatchAllUpskillingActions, getMoreUpskillingSectionJobs,
+import {horizontalPagePadding, verticalPagePadding} from '../padding'
+import type {DispatchAllUpskillingActions} from '../../store/actions'
+import {getMoreUpskillingSectionJobs,
   getUpskillingSections} from '../../store/actions'
+import {SELECTION_SECTION} from '../../store/constants'
 import Section from '../section'
 import Stars from '../stars'
 
@@ -25,10 +28,11 @@ const linkStyle: React.CSSProperties = {
   marginRight: 15,
   padding: 5,
 }
-const starsStyle = {
-  margin: `0 0 -35px ${isMobileVersion ? '0px' : '-60px'}`,
+const starsStyle: React.CSSProperties = {
+  margin: `0 -${horizontalPagePadding}px -${verticalPagePadding}px -${horizontalPagePadding}px`,
 }
 const h1Style: React.CSSProperties = {
+  fontFamily: config.titleFont || config.font,
   fontSize: isMobileVersion ? 21 : 30,
   margin: 0,
 }
@@ -36,6 +40,13 @@ const headerStyle: React.CSSProperties = {
   alignItems: 'center',
   display: 'flex',
   margin: '0 25px 20px',
+}
+const sectionInstructionsStyle: React.CSSProperties = {
+  color: colors.TEXT_SUBTITLE_COLOR,
+  fontSize: 14,
+  fontWeight: 'normal',
+  margin: '0 25px 20px',
+  opacity: .8,
 }
 
 const SectionPage = (): null|React.ReactElement => {
@@ -58,15 +69,15 @@ const SectionPage = (): null|React.ReactElement => {
     ({app: {upskillingSections: {[departementId || '']: sections = []} = {}}}: RootState) =>
       sections?.find((section): section is ValidSection => section.id === sectionId))
   useEffect((): void => {
-    if (!departementId || hasAllJobs || !sectionWithId) {
+    if (!departementId || hasAllJobs || !sectionWithId || sectionWithId.isOCR) {
       return
     }
     dispatch(getMoreUpskillingSectionJobs(departementId, sectionWithId))
   }, [departementId, dispatch, hasAllJobs, sectionWithId])
-  const section = sectionId === 'selection' ? {
-    id: 'selection',
+  const section = sectionId === SELECTION_SECTION ? {
+    id: SELECTION_SECTION,
     jobs: selection,
-    name: t('Ma sélection'),
+    name: t('Vos favoris'),
   } : sectionWithId
   if (!loading && !section) {
     return <Redirect to="/" />
@@ -78,9 +89,14 @@ const SectionPage = (): null|React.ReactElement => {
   // TODO(cyrille): Allow header to be fixed on scroll.
   return <React.Fragment>
     <header style={headerStyle}>
-      {isMobileVersion ? null : <Link style={linkStyle} to="/"><ArrowLeftIcon size={25} /></Link>}
+      {isMobileVersion ? null : <Link style={linkStyle} to="/">
+        <ArrowLeftIcon size={25} aria-label={t('Retour')} focusable={false} />
+      </Link>}
       <h1 style={h1Style}>{name}</h1>
     </header>
+    <p style={sectionInstructionsStyle}>
+      {t("Cliquez sur un métier pour avoir plus d'informations")}
+    </p>
     <Section isExpanded={true} {...section} jobs={allJobs || jobs} />
     <Stars sectionId={id} style={starsStyle} />
   </React.Fragment>

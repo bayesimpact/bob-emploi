@@ -5,7 +5,6 @@ from unittest import mock
 
 import requests_mock
 
-from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server.test import base_test
 
 
@@ -13,7 +12,7 @@ from bob_emploi.frontend.server.test import base_test
 class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
     """Unit tests for the authenticate endpoint using LinkedIn Auth."""
 
-    @mock.patch(auth.logging.__name__ + '.warning')
+    @mock.patch('logging.warning')
     def test_bad_code(
             self, mock_requests: requests_mock.Mocker, mock_logging: mock.MagicMock) -> None:
         """Auth request with a OAuth2 code that is not correct."""
@@ -31,7 +30,7 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
 
         mock_logging.assert_called_once()
 
-    @mock.patch(auth.logging.__name__ + '.warning')
+    @mock.patch('logging.warning')
     def test_redirect_uri_mismatch(
             self, mock_requests: requests_mock.Mocker, mock_logging: mock.MagicMock) -> None:
         """Auth request with a redirect_uri that is not registered."""
@@ -54,7 +53,7 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
             mock_logging.call_args[0][2:],
         )
 
-    @mock.patch(auth.logging.__name__ + '.warning')
+    @mock.patch('logging.warning')
     def test_linked_in_server_fails(
             self, mock_requests: requests_mock.Mocker, mock_logging: mock.MagicMock) -> None:
         """Auth request with LinkedIn, but me request fails."""
@@ -76,7 +75,7 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
 
         mock_logging.assert_called_once()
 
-    @mock.patch(auth.logging.__name__ + '.warning')
+    @mock.patch('logging.warning')
     def test_linked_in_server_email_fails(
             self, mock_requests: requests_mock.Mocker, mock_logging: mock.MagicMock) -> None:
         """Auth request with LinkedIn, but email request fails."""

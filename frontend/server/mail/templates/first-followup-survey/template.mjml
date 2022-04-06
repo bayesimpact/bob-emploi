@@ -1,0 +1,44 @@
+<mjml version="4.9.3">
+  <mj-body background-color="#ffffff" color="#000000">
+    <mj-section padding="20px 0 0">
+      <mj-column>
+        <mj-image align="center" alt="{{var:productName}}" border="none" height="auto" src="{{var:productLogoUrl}}" width="102px"/>
+        <mj-text font-size="14px" line-height="20px">
+          <p>Bonjour {{var:firstName}},</p>
+          <p>Il y a une semaine, vous vous êtes connecté{%if var:gender:""=="FEMININE"%}e{%elseif var:gender:""=="MASCULINE"%}{%else%}·e{%endif%} à {{var:productName}} pour vous aider dans votre recherche d'emploi. Nous souhaitons que {{var:productName}} soit un atout, et nous aimerions avoir de vos nouvelles pour savoir comment se déroule votre recherche et si {{var:productName}} vous a aidé{%if var:gender:""=="FEMININE"%}e{%elseif var:gender:""=="MASCULINE"%}{%else%}·e{%endif%}.</p>
+          <p>Vos commentaires ont beaucoup de valeur et un impact très positif. Ils nous permettront d'améliorer l'expérience de {{var:productName}} pour d'autres chercheurs d'emploi.</p>
+          <p><b>{{var:productName}} vous a-t-il aidé{%if var:gender:""=="FEMININE"%}e{%elseif var:gender:""=="MASCULINE"%}{%else%}·e{%endif%} à essayer quelque chose de nouveau dans votre recherche ?</b></p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="0">
+      <mj-column>
+        <mj-button target="_blank" href="{{var:ffsFormUrl}}&amp;answer=" background-color="{{var:buttonBackgroundColor}}" color="{{var:buttonTextColor}}">
+          Non
+        </mj-button>
+      </mj-column>
+      <mj-column>
+        <mj-button target="_blank" href="{{var:ffsFormUrl}}&amp;answer=yes" background-color="{{var:buttonBackgroundColor}}" color="{{var:buttonTextColor}}">
+          Oui
+        </mj-button>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="0">
+      <mj-column>
+        <mj-text font-size="14px" line-height="20px">
+          <p style="margin-bottom: 20px">Nous serions ravis d'avoir de vos nouvelles ! Nous vous souhaitons le meilleur dans votre recherche d'emploi.</p>
+          <p style="margin-bottom: 20px">Bien chaleureusement,</p>
+          <p>{{var:senderName}}</p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column>
+        <mj-divider border-color="#E9EBF0" border-style="solid" border-width="1px" container-background-color="transparent" width="100%"/>
+        <mj-text color="#9596a0" font-size="13px" line-height="22px">
+          <i>Ce message vous a été envoyé à la suite du recueil de vos données sur {{var:productName}}. La fréquence des envois est limitée, mais peut être plus importante en fonction de l'action de l'association. Vous avez la possibilité d'exercer vos droits d'accès, de rectification et de suppression en écrivant à l'adresse suivante : donnees@bob-emploi.fr.</i>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

@@ -1,0 +1,65 @@
+<mjml owa="desktop" version="4.6.3">
+  <mj-body background-color="#ffffff">
+    <mj-section >
+      <mj-column>
+        <mj-text font-size="14px" line-height="22px">Bonjour {{var:firstName:"Patrick"}},</mj-text>
+        <mj-text font-size="14px" line-height="22px">Comme promis, voici le récapitulatif de votre plan d'action créé sur {{var:productName:"Bob"}} le {{var:creationDate:"1er janvier 1070"}}.</mj-text>
+        <mj-text font-size="14px" line-height="22px">Les actions que vous avez choisies sont montrées ici par échéance :</mj-text>
+        <mj-raw>{%if var:numActionsBySections.unscheduled:"0" >= "1"%}</mj-raw>
+          <mj-text font-size="14px" font-weight="600" line-height="22px">À planifier</mj-text>
+          <mj-text font-size="14px" line-height="22px">
+            <ul>{%for action in var:actions.unscheduled%}
+              <li><a href="{{action.url}}">{{action.title}}</a></li>
+            {%endfor%}</ul>
+          </mj-text>
+        <mj-raw>{%endif%}</mj-raw>
+        <mj-raw>{%if var:numActionsBySections.today:"0" >= "1"%}</mj-raw>
+          <mj-text font-size="14px" font-weight="600" line-height="22px">Aujourd'hui</mj-text>
+          <mj-text font-size="14px" line-height="22px">
+            <ul>{%for action in var:actions.today%}
+              <li><a href="{{action.url}}">{{action.title}}</a></li>
+            {%endfor%}</ul>
+          </mj-text>
+        <mj-raw>{%endif%}</mj-raw>
+        <mj-raw>{%if var:numActionsBySections.tomorrow:"0" >= "1"%}</mj-raw>
+          <mj-text font-size="14px" font-weight="600" line-height="22px">Demain</mj-text>
+          <mj-text font-size="14px" line-height="22px">
+            <ul>{%for action in var:actions.tomorrow%}
+              <li><a href="{{action.url}}">{{action.title}}</a></li>
+            {%endfor%}</ul>
+          </mj-text>
+        <mj-raw>{%endif%}</mj-raw>
+        <mj-raw>{%if var:numActionsBySections.week:"0" >= "1"%}</mj-raw>
+          <mj-text font-size="14px" font-weight="600" line-height="22px">Cette semaine</mj-text>
+          <mj-text font-size="14px" line-height="22px">
+            <ul>{%for action in var:actions.week%}
+              <li><a href="{{action.url}}">{{action.title}}</a></li>
+            {%endfor%}</ul>
+          </mj-text>
+        <mj-raw>{%endif%}</mj-raw>
+        <mj-raw>{%if var:numActionsBySections.done:"0" >= "1"%}</mj-raw>
+          <mj-text font-size="14px" font-weight="600" line-height="22px">{%if var:numActionsBySections.done:"0" > "1"%}Actions terminées{%else%}Action terminée{%endif%}</mj-text>
+          <mj-text font-size="14px" line-height="22px">
+            <ul>{%for action in var:actions.done%}
+              <li><a href="{{action.url}}">{{action.title}}</a></li>
+            {%endfor%}</ul>
+          </mj-text>
+        <mj-raw>{%endif%}</mj-raw>
+        <mj-text font-size="14px" line-height="22px">N'hésitez pas à cliquer sur une action pour accéder aux ressources disponibles dans {{var:productName:"Bob"}} et ainsi la réaliser. 🙂
+        </mj-text>
+        <mj-text font-size="14px" line-height="22px">Vous pouvez aussi retourner voir votre <a href="{{var:actionPlanUrl}}">plan d'action</a> pour organiser son exécution.
+        </mj-text>
+        <mj-text font-size="14px" line-height="22px">
+          <p>À très vite,</p>
+          <p>{{var:senderName:"Tabitha"}}</p>
+        </mj-text>
+        <mj-image align="left" alt="" border="none" height="auto" src="{{var:productLogoUrl}}" target="_blank" width="102px"/>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-text font-size="11px" color="#55575d" line-height="2">Vous recevez cet email car vous êtes inscrit{%if var:gender:""=="FEMININE"%}e{%elseif var:gender:""=="MASCULINE"%}{%else%}·e{%endif%} sur <a href="{{var:baseUrl}}?utm_source=bob-emploi&amp;utm_medium=email" target="_blank">{{var:productName}}</a>. <a href="{{var:changeEmailSettingsUrl}}" target="_blank">Cliquez ici</a> si vous ne souhaitez plus recevoir d'emails, ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte {{var:productName}} en veille ? <a href="{{var:statusUpdateUrl}}" target="_blank">cliquez ici</a>.</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

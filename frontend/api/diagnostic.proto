@@ -98,6 +98,9 @@ enum DiagnosticTopic {
 // observation generator for submetrics.
 // TODO(cyrille): Deprecate its use as a sentence generator for the text field in Diagnostic.
 message DiagnosticTemplate {
+  // Unique ID to reference this template.
+  string id = 11;
+
   // Main sentence to be shown to the user.
   string sentence_template = 1 [(string_format) = NATURAL_LANGUAGE, (string_format) = SCORING_PROJECT_TEMPLATE, (string_format) = SINGLE_LINER];
 

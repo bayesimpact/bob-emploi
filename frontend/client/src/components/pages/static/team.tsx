@@ -1,8 +1,9 @@
-import PropTypes from 'prop-types'
+import _uniqueId from 'lodash/uniqueId'
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 
-import {LocalizableString, prepareT, prepareT as prepareTNoExtract} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {prepareT, prepareT as prepareTNoExtract} from 'store/i18n'
 import isMobileVersion from 'store/mobile'
 
 import benjaminImage from 'images/people/benjamin.png'
@@ -10,13 +11,13 @@ import cyrilleImage from 'images/people/cyrille.png'
 import emilieImage from 'images/people/emilie.png'
 import floImage from 'images/people/flo.png'
 import florianImage from 'images/people/florian.png'
-import joannaImage from 'images/people/joanna.jpg'
 import johnImage from 'images/people/john.png'
 import lillieImage from 'images/people/lillie.jpg'
 import nicolasImage from 'images/people/nicolas.jpg'
 import pascalImage from 'images/people/pascal.png'
 import paulImage from 'images/people/paul.png'
 import silImage from 'images/people/sil.png'
+import tabithaImage from 'images/people/tabitha.jpg'
 
 import facebookGrayIcon from 'images/share/facebook-gray-ico.svg'
 import facebookIcon from 'images/share/facebook-ico.svg'
@@ -28,10 +29,11 @@ import twitterIcon from 'images/share/twitter-ico.svg'
 import ExternalLink from 'components/external_link'
 import Trans from 'components/i18n_trans'
 import ModalCloseButton from 'components/modal_close_button'
-import {RadiumDiv, RadiumExternalLink} from 'components/radium'
+import {SmartLink, RadiumExternalLink} from 'components/radium'
 import {StaticPage, TitleSection} from 'components/static'
 import {MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING, SmoothTransitions} from 'components/theme'
 
+// i18next-extract-mark-ns-start landing
 
 const paulBio = {
   description: prepareT(
@@ -118,17 +120,6 @@ const nicolasBio = {
   twitter: 'https://twitter.com/nicolasdivet',
 }
 
-const joannaBio = {
-  description: prepareT(
-    'team:joanna:bio',
-    "Joanna a étudié le français à Cambridge et est accro à la France depuis lors. \
-    Elle aime le design pour l'accessibilité, les podcasts avec de bonnes histoires, \
-    la London Review of Books et elle ne dit jamais non à une tasse de thé."),
-  education: 'University of Cambridge, Sciences-Po Paris',
-  experience: prepareT('team:joanna:experience', 'Halgo, Qobuz, Apple'),
-  linkedin: 'https://www.linkedin.com/in/joannabeaufoy/',
-}
-
 const benjaminBio = {
   description: prepareT(
     'team:benjamin:bio',
@@ -198,6 +189,22 @@ const floBio = {
   linkedin: 'https://www.linkedin.com/in/florian-gauthier-38760b49',
 }
 
+const tabithaBio = {
+  description: prepareT(
+    'team:tabitha:bio',
+    "Tabitha est une scientifique sociale et chercheuse ardente qui adore poser des questions et \
+    comprendre les points de vue des autres. Elle est particulièrement expérimentée dans les \
+    domaines du développement de l'enfant, de l'éducation, et de la santé. Elle est passionnée \
+    par la création des outils et des services qui sont vraiment utiles et percutants, et elle \
+    est ravie de diriger la recherche dans cette poursuite chez Bayes Impact. En dehors du \
+    travail, Tabitha aime beaucoup faire du yoga, manger de la pâtisserie, et se perdre en belles \
+    paroles sur Philadelphie."),
+  education: 'Temple University',
+  experience: prepareT(
+    'team:tabitha:experience', 'Sanametrix, Postdoctoral Fellow à University of Virginia'),
+  linkedin: 'https://www.linkedin.com/in/tabitha-wurster-37172530',
+}
+
 interface Person {
   bio: {
     description: LocalizableString
@@ -216,12 +223,10 @@ interface Person {
 const allPersons: Person[] = [
   {bio: paulBio, name: 'Paul Duan', picture: paulImage, position: prepareT('Président')},
   {bio: pascalBio, name: 'Pascal Corpet', picture: pascalImage,
-    position: prepareT('Directeur technique')},
+    position: prepareT('Ingénieur logiciel')},
   {bio: silBio, name: 'Sil Endale Ahanda', picture: silImage,
     position: prepareT('Ingénieur·e logiciel')},
   {bio: johnBio, name: 'John Métois', picture: johnImage, position: prepareT('Designer UX')},
-  {bio: joannaBio, name: 'Joanna Beaufoy', picture: joannaImage,
-    position: prepareT('Responsable contenu et soutien des utilisateurs')},
   {bio: cyrilleBio, name: 'Cyrille Corpet', picture: cyrilleImage,
     position: prepareT('Ingénieur logiciel')},
   {bio: nicolasBio, name: 'Nicolas Divet', picture: nicolasImage,
@@ -229,13 +234,15 @@ const allPersons: Person[] = [
   {bio: benjaminBio, name: 'Benjamin Goullard', picture: benjaminImage,
     position: prepareT('Responsable du développement')},
   {bio: emilieBio, name: 'Émilie Guth', picture: emilieImage,
-    position: prepareT('Ingénieure logiciel')},
+    position: prepareT('Directrice technique')},
   {bio: lillieBio, name: 'Lillie Carroll', picture: lillieImage,
     position: prepareT('Responsable pays, USA')},
   {bio: florianBio, name: 'Florian Dautil', picture: florianImage,
     position: prepareT('Directeur des opérations')},
   {bio: floBio, name: 'Florian Gauthier', picture: floImage,
     position: prepareT('Directeur des produits')},
+  {bio: tabithaBio, name: 'Tabitha Wurster', picture: tabithaImage,
+    position: prepareT('Directrice de la recherche utilisateur')},
 ]
 
 
@@ -260,12 +267,13 @@ interface PersonTileProps {
 
 const PersonTileBase: React.FC<PersonTileProps> = (props) => {
   const {isSelected, name, onClick, position, picture} = props
-  const {t: translate} = useTranslation()
+  const {t: translate} = useTranslation('landing')
   const boxShadow = '0 12px 25px 0 rgba(0, 0, 0, 0.15)'
   const personStyle: RadiumCSSProperties = {
     ':hover': {
       boxShadow,
     },
+    'alignItems': 'center',
     'backgroundColor': '#fff',
     'boxShadow': isSelected ? boxShadow : 'initial',
     'color': colors.DARK,
@@ -292,20 +300,13 @@ const PersonTileBase: React.FC<PersonTileProps> = (props) => {
     marginTop: 6,
   }
 
-  return <RadiumDiv style={personStyle} onClick={onClick}>
+  return <SmartLink style={personStyle} onClick={onClick}>
     <img style={{display: 'block', width: '100%'}} src={picture} alt="" />
-    <div style={descriptionStyle}>
-      <div style={nameStyle}>{name}</div>
-      <div style={positionStyle}>{translate(...position)}</div>
-    </div>
-  </RadiumDiv>
-}
-PersonTileBase.propTypes = {
-  isSelected: PropTypes.bool.isRequired,
-  name: PropTypes.string.isRequired,
-  onClick: PropTypes.func.isRequired,
-  picture: PropTypes.string.isRequired,
-  position: PropTypes.string.isRequired,
+    <span style={descriptionStyle}>
+      <span style={nameStyle}>{name}</span>
+      <span style={positionStyle}>{translate(...position)}</span>
+    </span>
+  </SmartLink>
 }
 const PersonTile = React.memo(PersonTileBase)
 
@@ -344,19 +345,6 @@ const PersonRowBase: React.FC<TeamPageRowProps> = (props) => {
     })}
   </div>
 }
-PersonRowBase.propTypes = {
-  getPersonClickHandler: PropTypes.func.isRequired,
-  nbPersonInARow: PropTypes.number.isRequired,
-  // @ts-ignore because the InferProps have a hard time here.
-  personRow: PropTypes.arrayOf(PropTypes.shape({
-    bio: PropTypes.object.isRequired,
-    name: PropTypes.string.isRequired,
-    picture: PropTypes.string.isRequired,
-    position: PropTypes.string.isRequired,
-  }).isRequired).isRequired,
-  rowIndex: PropTypes.number.isRequired,
-  showPersonBio: PropTypes.string.isRequired,
-}
 const PersonRow = React.memo(PersonRowBase)
 
 
@@ -384,13 +372,13 @@ const TeamPage: React.FC = (): React.ReactElement => {
     padding: '0 25px',
   }
   return <StaticPage style={{backgroundColor: '#fff'}} page="equipe">
-    <TitleSection pageContent={{title: <Trans parent={null}>
+    <TitleSection pageContent={{title: <Trans parent={null} ns="landing">
       Notre équipe est déterminée<br />
       à changer le monde
     </Trans>}} />
     <div style={{padding: `0 ${MIN_CONTENT_PADDING}px`}}>
       <div style={{margin: '0px auto', maxWidth: MAX_CONTENT_WIDTH}}>
-        <Trans style={quoteStyle}>
+        <Trans style={quoteStyle} ns="landing" parent="p">
           Nous sommes une petite équipe convaincue que la technologie peut être utilisée pour des
           choses qui ont du sens, pas juste pour faire du profit.<br />
           <br />
@@ -453,12 +441,6 @@ const SocialLinkBase: React.FC<SocialLinkProps> = (props) => {
     <img src={grayIcon} alt={shareId} />
   </RadiumExternalLink>
 }
-SocialLinkBase.propTypes = {
-  grayIcon: PropTypes.string.isRequired,
-  icon: PropTypes.string.isRequired,
-  shareId: PropTypes.string.isRequired,
-  url: PropTypes.string.isRequired,
-}
 const SocialLink = React.memo(SocialLinkBase)
 
 
@@ -496,7 +478,7 @@ const PersonBioBase: React.FC<PersonBioProps> = (props: PersonBioProps) => {
   const [shownPerson, showPerson] = useState<Person|undefined>(undefined)
   const handleUnsetPerson = useCallback((): void => showPerson(undefined), [showPerson])
   const containerRef = useRef<HTMLDivElement>(null)
-  const {t, t: translate} = useTranslation()
+  const {t, t: translate} = useTranslation('landing')
 
   const newPerson = personRow.find((person): boolean => person.name === showPersonBio)
   useEffect(() => {
@@ -535,7 +517,7 @@ const PersonBioBase: React.FC<PersonBioProps> = (props: PersonBioProps) => {
   const descriptionStyle: React.CSSProperties = {
     fontSize: 16,
     lineHeight: 1.31,
-    margin: 'auto',
+    margin: '0 auto',
     maxWidth: 500,
   }
   const closeStyle: React.CSSProperties = {
@@ -547,34 +529,27 @@ const PersonBioBase: React.FC<PersonBioProps> = (props: PersonBioProps) => {
     transform: 'initial',
     width: 20,
   }
+  const titleId = useMemo(_uniqueId, [])
   return <div
     style={rowStyle} ref={containerRef}
-    onTransitionEnd={isOpen ? undefined : handleUnsetPerson}>
-    <ModalCloseButton onClick={onClose} style={closeStyle} />
+    onTransitionEnd={isOpen ? undefined : handleUnsetPerson} aria-hidden={!isOpen}>
+    <ModalCloseButton
+      onClick={onClose} style={closeStyle} tabIndex={isOpen ? undefined : -1}
+      aria-describedby={titleId} />
     <div style={{color: colors.DARK, fontSize: 26}}>
-      <strong>{person && person.name}</strong><br />
-      <div style={{color: colors.WARM_GREY, fontSize: 14, fontStyle: 'italic', marginTop: 13}}>
-        {t('Études\u00A0:')} {person && person.bio.education}<br />
+      <p style={{margin: 0}} id={titleId}>{person && person.name}</p>
+      <p style={{color: colors.WARM_GREY, fontSize: 14, fontStyle: 'italic', margin: '13px 0 0'}}>
+        {t('Études\u00A0:')} {person && person.bio.education}
+      </p>
+      <p style={{color: colors.WARM_GREY, fontSize: 14, fontStyle: 'italic', margin: 0}}>
         {t('Expérience\u00A0:')} {person && translate(...person.bio.experience)}
-      </div>
+      </p>
     </div>
     <hr style={hrStyle} />
-    <div style={descriptionStyle}>
+    <p style={descriptionStyle}>
       {person && translate(...person.bio.description)}
-    </div>
+    </p>
     {person ? <PersonSocialLinks {...person} /> : null}
   </div>
-}
-PersonBioBase.propTypes = {
-  onClose: PropTypes.func.isRequired,
-  onOpen: PropTypes.func.isRequired,
-  // @ts-ignore because the InferProps have a hard time here.
-  personRow: PropTypes.arrayOf(PropTypes.shape({
-    bio: PropTypes.object.isRequired,
-    name: PropTypes.string.isRequired,
-    picture: PropTypes.string.isRequired,
-    position: PropTypes.string.isRequired,
-  }).isRequired).isRequired,
-  showPersonBio: PropTypes.string,
 }
 const PersonBio = React.memo(PersonBioBase)

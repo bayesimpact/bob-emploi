@@ -1,5 +1,6 @@
 """Unit tests for the youtube_channel script."""
 
+import contextlib
 import io
 import os
 import textwrap
@@ -53,7 +54,8 @@ class YoutubeChannelTest(unittest.TestCase):
         mock_googleapiclient.reset_mock()
 
         output = io.StringIO()
-        youtube_channel.main(output, ['Aaaa-channel-id', '--filter_playlist_title', '^Test'])
+        with contextlib.redirect_stdout(output):
+            youtube_channel.main(['Aaaa-channel-id', '--filter_playlist_title', '^Test'])
 
         self.assertEqual(textwrap.dedent('''\
             Video ID,Title,URL

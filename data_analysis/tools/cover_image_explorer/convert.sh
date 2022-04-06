@@ -4,6 +4,8 @@
 #  - below 100 Kb for desktop
 #  - below 30 Kb for mobile
 #
+# The images should all be at the root of the folder the script is run from.
+#
 # The strategies are:
 #  - on desktop crop horizontally to 4:3, on mobile crop to 3:4
 #  - reduce max width/height to 1200x1200 on desktop, 600x600 on mobile

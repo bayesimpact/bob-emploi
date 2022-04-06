@@ -20,5 +20,5 @@ def from_json5_file(json_path: Optional[str] = None) -> Config:
 
     if not json_path:
         json_path = os.path.join(os.path.dirname(__file__), 'config.json5')
-    with open(json_path, 'r') as json_file:
+    with open(json_path, 'r', encoding='utf-8') as json_file:
         return typing.cast(Config, json5.load(json_file))

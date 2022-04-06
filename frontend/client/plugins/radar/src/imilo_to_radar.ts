@@ -1,5 +1,6 @@
 // Non-default exports are for test purposes only.
-import {createTask, getCounselorInfo, getDossierId, getPolicies, getUserInfo} from './api'
+import {createTask, getCounselorInfo, getCounselorStructures, getDossierId, getPolicies,
+  getUserInfo} from './api'
 
 declare global {
   interface Window {
@@ -40,10 +41,12 @@ export const makePoliciesString = (policies: readonly PolicyInfo[]): string => p
 export const getTypeformFields = (
   user: UserInfo,
   counselor: CounselorInfo,
+  counselorStructures: CounselorStructures,
   policies: readonly PolicyInfo[],
 ): TypeformFields => {
   const {fullReferent, fullSchoolLevel, id: dossierId, identity, structure} = user
   const {birthDate} = identity || {}
+  const [{id: counselorStructureId = undefined} = {}] = counselorStructures
   const age = birthDate && (new Date().getFullYear() - Number.parseInt(birthDate.split('/')[2]))
 
   const {email, id: counselorId} = counselor
@@ -58,7 +61,7 @@ export const getTypeformFields = (
     dossier_id: dossierId,
     referent_id: fullReferent?.id || undefined,
     school_level: fullSchoolLevel?.code || undefined,
-    structure_id: structure || undefined,
+    structure_id: counselorStructureId || structure || undefined,
   /* eslint-enable camelcase */
   }
 }
@@ -70,10 +73,10 @@ export const getTypeformFields = (
 //    - Keep a trace of the transaction in the young person's dossier in i-milo.
 export default async (): Promise<void> => {
   const dossierId = getDossierId()
-  const [userInfo, counselorInfo, policies] = await Promise.all([
-    getUserInfo(dossierId), getCounselorInfo(), getPolicies(dossierId)])
+  const [userInfo, counselorInfo, counselorStructures, policies] = await Promise.all([
+    getUserInfo(dossierId), getCounselorInfo(), getCounselorStructures(), getPolicies(dossierId)])
   const typeformUrl = new URL(config.typeformUrl)
-  const typeformFields = getTypeformFields(userInfo, counselorInfo, policies)
+  const typeformFields = getTypeformFields(userInfo, counselorInfo, counselorStructures, policies)
   for (const [key, value] of Object.entries(typeformFields)) {
     if (value) {
       typeformUrl.searchParams.set(key, value.toString())

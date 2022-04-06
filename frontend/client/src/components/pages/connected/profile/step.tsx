@@ -1,11 +1,12 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 import _pick from 'lodash/pick'
-import PropTypes from 'prop-types'
-import React, {useCallback, useEffect, useState} from 'react'
+import _zipObject from 'lodash/zipObject'
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {useDispatch, useSelector} from 'react-redux'
 
 import useFastForward from 'hooks/fast_forward'
-import {DispatchAllActions, RootState, onboardingCommentIsShown} from 'store/actions'
+import type {DispatchAllActions, RootState} from 'store/actions'
+import {onboardingCommentIsShown} from 'store/actions'
 import isMobileVersion from 'store/mobile'
 
 import Button from 'components/button'
@@ -29,6 +30,10 @@ export interface StepProps {
   style?: React.CSSProperties
   t: TFunction
   totalStepCount?: number
+}
+
+interface Focusable {
+  focus(): void
 }
 
 
@@ -60,7 +65,7 @@ export interface ProjectStepProps extends StepProps {
 interface BaseStepProps extends StepProps {
   children: React.ReactNode
   fastForward: () => void
-  onNextButtonClick?: () => void
+  onNextButtonClick: () => void
   progressInStep?: number
   title?: string
 }
@@ -104,23 +109,25 @@ const StepBase = (props: BaseStepProps): React.ReactElement => {
     width: isMobileVersion ? 'initial' : 480,
     ...contentStyle,
   }
-  const mobileButtonStyle: React.CSSProperties = {
-    borderRadius: 13,
-    flex: 1,
-    margin: '0 auto',
-    minWidth: 130,
-    padding: '13px 16px',
-  }
-  const buttonStyle = isMobileVersion ? mobileButtonStyle : {}
   useFastForward(fastForward)
   const nextButtonText = nextButtonContent || (isLastOnboardingStep ?
     t('Terminer le questionnaire') : t('Suivant'))
   return <div style={stepStyle} className={isShownAsStepsDuringOnboarding ? '' : 'profile'}>
-    {title ? <div style={titleStyle}>{title}</div> : null}
+    {title ? isShownAsStepsDuringOnboarding ?
+      <h1 style={titleStyle}>{title}</h1> :
+      <div style={titleStyle}>{title}</div> : null}
     {stepNumber && totalStepCount ? <PercentBar
       color={colors.BOB_BLUE}
       height={15}
       percent={Math.round(100 * (stepNumber - 1 + progressInStep) / totalStepCount)}
+      aria-label={t(
+        'étape {{stepNumber}} sur {{totalStepCount}}',
+        {stepNumber, totalStepCount},
+      )}
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={totalStepCount}
+      aria-valuenow={stepNumber}
       isPercentShown={false}
       style={{margin: '10px auto 0', maxWidth: 425, width: '90%'}}
     /> : null
@@ -130,43 +137,20 @@ const StepBase = (props: BaseStepProps): React.ReactElement => {
       {children}
     </div>
     {buttonsOverride || (isMobileVersion ?
-      <FixedButtonNavigation
-        onClick={onNextButtonClick}
-        disabled={!onNextButtonClick}>
+      <FixedButtonNavigation onClick={onNextButtonClick}>
         {nextButtonText}
       </FixedButtonNavigation> :
       <div style={navigationStyle}>
         {onPreviousButtonClick ? <Button
-          type="back" onClick={onPreviousButtonClick} style={{...buttonStyle, marginRight: 20}}
+          type="discreet" onClick={onPreviousButtonClick} style={{marginRight: 20}}
           isRound={true}>
           {t('Précédent')}
         </Button> : null}
-        <Button
-          isRound={true}
-          onClick={onNextButtonClick}
-          disabled={!onNextButtonClick}
-          style={buttonStyle}>
+        <Button isRound={true} onClick={onNextButtonClick}>
           {nextButtonText}
         </Button>
       </div>)}
   </div>
-}
-StepBase.propTypes = {
-  buttonsOverride: PropTypes.node,
-  children: PropTypes.node.isRequired,
-  contentStyle: PropTypes.object,
-  explanation: PropTypes.node,
-  fastForward: PropTypes.func.isRequired,
-  isShownAsStepsDuringOnboarding: PropTypes.bool,
-  nextButtonContent: PropTypes.node,
-  onNextButtonClick: PropTypes.func,
-  onPreviousButtonClick: PropTypes.func,
-  progressInStep: PropTypes.number,
-  stepNumber: PropTypes.number,
-  style: PropTypes.object,
-  t: PropTypes.func.isRequired,
-  title: PropTypes.string,
-  totalStepCount: PropTypes.number,
 }
 const Step = React.memo(StepBase)
 
@@ -222,22 +206,17 @@ const OnboardingCommentContentBase = (props: OnboardingCommentContentProps): Rea
       </div>}
   </div>
 }
-OnboardingCommentContentBase.propTypes = {
-  comment: PropTypes.shape({
-    stringParts: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
-  }),
-  onShown: PropTypes.func,
-  shouldWait: PropTypes.bool,
-  style: PropTypes.object,
-}
 const OnboardingCommentContent = React.memo(OnboardingCommentContentBase)
 
 
 interface OnboardingCommentProps {
   children?: React.ReactNode
+  // Minimal duration of the wait before the commentAfter is shown. If fetching the comment is
+  // longer the wait won't be delayed unnecessarily.
   computingDelayMillisecs?: number
   field: bayes.bob.ProjectOrProfileField
   onDone?: () => void
+  // Whether the user has answered.
   shouldShowAfter: boolean
 }
 
@@ -298,17 +277,6 @@ const OnboardingCommentBase = (props: OnboardingCommentProps): React.ReactElemen
     comment={shownComment && shownComment.comment}
     shouldWait={!shownComment || !shownComment.hasBeenShown} {...otherProps} />
 }
-OnboardingCommentBase.propTypes = {
-  children: PropTypes.node,
-  // Minimal duration of the wait before the commentAfter is shown. If fetching the comment is
-  // longer the wait won't be delayed unnecessarily.
-  computingDelayMillisecs: PropTypes.number,
-  field: PropTypes.string.isRequired,
-  isFetching: PropTypes.bool,
-  onDone: PropTypes.func,
-  // Whether the user has answered.
-  shouldShowAfter: PropTypes.bool,
-}
 const OnboardingComment = React.memo(OnboardingCommentBase)
 
 
@@ -325,14 +293,16 @@ function useProfileChangeCallback<K extends keyof bayes.bob.UserProfile>(
 }
 
 
+type UserField = keyof bayes.bob.UserProfile
 type ProfileFieldsRequirements = {
-  [fieldname in keyof bayes.bob.UserProfile]?: boolean
+  [fieldname in UserField]?: boolean
 }
 
 
 interface ProfileUpdaterHook {
   handleBack: (() => void)|undefined
   handleSubmit: () => void
+  inputsRefMap: {[fieldname in UserField]?: React.Ref<Focusable>}
   isFormValid: boolean
   isValidated: boolean
 }
@@ -341,11 +311,26 @@ interface ProfileUpdaterHook {
 function useProfileUpdater(
   fieldsRequired: ProfileFieldsRequirements, profile: bayes.bob.UserProfile,
   onSubmit?: (value: bayes.bob.UserProfile) => void,
-  onBack?: (value: bayes.bob.UserProfile) => void): ProfileUpdaterHook {
+  onBack?: (value: bayes.bob.UserProfile) => void,
+  fieldsOrder?: readonly UserField[],
+): ProfileUpdaterHook {
   const [isValidated, setIsValidated] = useState(false)
   const isFormValid = (Object.keys(fieldsRequired) as (keyof bayes.bob.UserProfile)[]).
     filter((fieldName: (keyof bayes.bob.UserProfile)): boolean => !!fieldsRequired[fieldName]).
     every((fieldname: (keyof bayes.bob.UserProfile)): boolean => !!profile[fieldname])
+
+  const inputsRef = useRef<readonly React.RefObject<Focusable>[] | undefined>()
+  if (fieldsOrder && (!inputsRef.current || inputsRef.current.length !== fieldsOrder.length)) {
+    inputsRef.current = Array.from(
+      {length: fieldsOrder.length},
+      (): React.RefObject<Focusable> => React.createRef(),
+    )
+  }
+  const inputsRefMap = useMemo(
+    () => fieldsOrder && inputsRef.current && _zipObject(fieldsOrder, inputsRef.current) || {},
+    [fieldsOrder],
+  )
+
   const handleBack = useCallback((): void => {
     const profileDiff = _pick(profile, Object.keys(fieldsRequired))
     onBack?.(profileDiff)
@@ -353,12 +338,25 @@ function useProfileUpdater(
   const handleSubmit = useCallback((): void => {
     setIsValidated(true)
     if (!isFormValid) {
+      if (fieldsOrder && inputsRefMap) {
+        const firstRequired = fieldsOrder.
+          find((fieldname) => !profile[fieldname] && inputsRefMap[fieldname]?.current)
+        if (firstRequired) {
+          inputsRefMap[firstRequired]?.current?.focus()
+        }
+      }
       return
     }
     const profileDiff = _pick(profile, Object.keys(fieldsRequired))
     onSubmit?.(profileDiff)
-  }, [fieldsRequired, isFormValid, onSubmit, profile])
-  return {handleBack: onBack && handleBack || undefined, handleSubmit, isFormValid, isValidated}
+  }, [fieldsOrder, fieldsRequired, inputsRefMap, isFormValid, onSubmit, profile])
+  return {
+    handleBack: onBack && handleBack || undefined,
+    handleSubmit,
+    inputsRefMap,
+    isFormValid,
+    isValidated,
+  }
 }
 
 

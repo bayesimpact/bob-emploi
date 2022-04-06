@@ -32,6 +32,18 @@ class UsersDatabase(typing.NamedTuple):
     user: pymongo.collection.Collection
     user_auth: pymongo.collection.Collection
 
+    def with_prefix(self, prefix: str) -> 'UsersDatabase':
+        """Use collections with the given prefix, instead of the default ones."""
+
+        if not prefix:
+            return self
+        free_base = self.user.database
+        return UsersDatabase(
+            free_base.get_collection(f'{prefix}feedbacks'),
+            free_base.get_collection(f'{prefix}user'),
+            free_base.get_collection(f'{prefix}user_auth'),
+        )
+
     @classmethod
     def from_database(cls, database: pymongo_db.Database) -> 'UsersDatabase':
         """Create a UsersDatabase from a pymongo DB."""
@@ -60,28 +72,6 @@ class UsersDatabase(typing.NamedTuple):
 
 # Pymongo Database that does not contain any PII
 NoPiiMongoDatabase = typing.NewType('NoPiiMongoDatabase', pymongo_db.Database)
-
-
-# TODO(pascal): Drop this once pymongo_db.Database objects are hashable.
-class HashableNoPiiMongoDatabase:
-    """A hashable holder of a NoPiiMongoDatabase."""
-
-    def __init__(self, database: NoPiiMongoDatabase) -> None:
-        self._database = database
-
-    @property
-    def database(self) -> NoPiiMongoDatabase:
-        """The database held by this proxy."""
-
-        return self._database
-
-    def __eq__(self, other: Any) -> bool:
-        if isinstance(other, self.__class__):
-            return other._database == self._database
-        return NotImplemented
-
-    def __hash__(self) -> int:
-        return hash((self._database.client.address, self._database.name))
 
 
 class _Databases(typing.NamedTuple):

@@ -1,0 +1,11 @@
+{
+  "advicePageUrl": "https://labonneboite.pole-emploi.fr/comment-faire-une-candidature-spontanee",
+  "baseUrl": "https://www.bob-emploi.fr",
+  "changeEmailSettingsUrl": "https://www.bob-emploi.fr",
+  "firstName": "Angèle",
+  "gender": "FEMININE",
+  "hasInterviewFrustration": true,
+  "hasSelfConfidenceFrustration": true,
+  "productName": "Bob",
+  "statusUpdateUrl": "https://www.bob-emploi.fr"
+}

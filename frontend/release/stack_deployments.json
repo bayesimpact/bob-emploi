@@ -2,7 +2,24 @@
   {
     "deployment": "fr",
     "region": "eu-west-3",
-    "stackId": "bob-fr"
+    "stackId": "bob-fr",
+    "subStacks": ["jobflix"]
+  },
+  {
+    "deployment": "t_pro",
+    "region": "eu-west-3",
+    "stackId": "bob-t-pro",
+    "subStacks": ["jobflix"]
+  },
+  {
+    "deployment": "youzful",
+    "region": "eu-west-3",
+    "stackId": "bob-youzful"
+  },
+  {
+    "deployment": "skillup",
+    "region": "us-east-1",
+    "stackId": "bob-skillup"
   },
   {
     "deployment": "us",

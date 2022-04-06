@@ -1,9 +1,9 @@
 import {expect} from 'chai'
-import {GoogleLoginResponse} from 'react-google-login'
-import {ThunkAction} from 'redux-thunk'
+import type {GoogleLoginResponse} from 'react-google-login'
+import type {ThunkAction} from 'redux-thunk'
 
-import {AllActions, AsyncAction, RootState, asyncAuthenticate, getDefinedFieldsPath,
-  googleAuthenticateUser} from 'store/actions'
+import type {AllActions, AsyncAction, RootState} from 'store/actions'
+import {asyncAuthenticate, getDefinedFieldsPath, googleAuthenticateUser} from 'store/actions'
 
 
 const defaultRootState: RootState = {

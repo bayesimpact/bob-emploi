@@ -1,10 +1,9 @@
-import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
 import {SmoothTransitions} from 'components/theme'
 
 
-interface Props {
+interface Props extends React.HTMLProps<HTMLDivElement> {
   color: string
   height?: number
   isPercentShown?: boolean
@@ -14,9 +13,11 @@ interface Props {
 
 
 const PercentBar = (props: Props): React.ReactElement => {
-  const {color, height = 25, percent = 0, isPercentShown = true, style} = props
+  const {color, height = 25, percent = 0, isPercentShown = true, style, ...otherProps} = props
 
   const containerStyle = useMemo((): React.CSSProperties => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ['WebkitPrintColorAdjust' as any]: 'exact',
     backgroundColor: colors.MODAL_PROJECT_GREY,
     borderRadius: 25,
     height: height,
@@ -25,6 +26,8 @@ const PercentBar = (props: Props): React.ReactElement => {
     ...style,
   }), [height, style])
   const percentStyle = useMemo((): React.CSSProperties => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ['WebkitPrintColorAdjust' as any]: 'exact',
     backgroundColor: color,
     color: '#fff',
     fontSize: 14,
@@ -37,18 +40,11 @@ const PercentBar = (props: Props): React.ReactElement => {
     width: `${percent}%`,
     ...SmoothTransitions,
   }), [color, height, isPercentShown, percent])
-  return <div style={containerStyle}>
+  return <div style={containerStyle} {...otherProps}>
     {percent ? <div style={percentStyle}>
       {isPercentShown ? `${Math.round(percent)}%` : ''}
     </div> : null}
   </div>
-}
-PercentBar.propTypes = {
-  color: PropTypes.string.isRequired,
-  height: PropTypes.number,
-  isPercentShown: PropTypes.bool,
-  percent: PropTypes.number,
-  style: PropTypes.object,
 }
 
 

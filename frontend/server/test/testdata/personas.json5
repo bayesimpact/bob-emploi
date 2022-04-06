@@ -1446,6 +1446,7 @@
       name: 'Dark Vador',
       familySituation: 'SINGLE',
       frustrations: ['NO_OFFERS'],
+      isArmyVeteran: true,
       yearOfBirth: 1975,
     },
   },

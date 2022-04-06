@@ -34,7 +34,7 @@ class JobOffersTrimTestCase(unittest.TestCase):
             'id_offre,experience_min_duration',
         ], out=io.StringIO())
 
-        with open(self.tmpfile_name) as output_file:
+        with open(self.tmpfile_name, encoding='utf-8') as output_file:
             output = output_file.read()
 
         self.assertEqual(
@@ -57,7 +57,7 @@ class JobOffersTrimTestCase(unittest.TestCase):
             '--trim-dates',
         ], out=io.StringIO())
 
-        with open(self.tmpfile_name) as output_file:
+        with open(self.tmpfile_name, encoding='utf-8') as output_file:
             output = output_file.read()
 
         self.assertEqual(

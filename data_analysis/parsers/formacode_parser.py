@@ -1,8 +1,9 @@
 """Script to parse the PDF dump containing mappings from Rome to Formacodes."""
 
+import argparse
 import re
 import sys
-from typing import Iterator, Sequence, TextIO, Tuple
+from typing import Iterator, Optional, TextIO, Tuple
 
 # Matches ROME identifiers "H2101".
 _ROME_MATCHER = re.compile(r'(?:\b|_)([A-Z]\d{4})(?:\b|_)')
@@ -18,7 +19,7 @@ def _parse_rome_formacode_file(pdf_dump: str) -> Iterator[Tuple[str, str]]:
         training that would be useful for this job.
     """
 
-    with open(pdf_dump) as mappings_file:
+    with open(pdf_dump, encoding='utf-8') as mappings_file:
         for line in mappings_file:
             for mapping in parse_rome_formacode_line(line):
                 yield mapping
@@ -50,21 +51,22 @@ def parse_rome_formacode_line(line: str) -> Iterator[Tuple[str, str]]:
         yield (rome_id, formacode)
 
 
-def main(args: Sequence[str], out: TextIO = sys.stdout) -> None:
+def main(string_args: Optional[list[str]] = None, out: TextIO = sys.stdout) -> None:
     """Parse a Correspondance from Rome to Formacode PDF dump.
 
     Outputs a CSV file with a mapping from ROME ID of jobs to Formacode ID of
     trainings that would be useful for each job.
     """
 
-    if len(args) != 2:
-        raise SystemExit(
-            'Usage: formacode_parser.py Correspondance_Rome_Formacode.txt')
-    input_file = args[1]
+    parser = argparse.ArgumentParser(
+        description='Parse a Correspondance from Rome to Formacode PDF dump')
+    parser.add_argument('input_file')
+    args = parser.parse_args(string_args)
+
     out.write('rome,formacode\n')
-    for rome_id, formacode in _parse_rome_formacode_file(input_file):
+    for rome_id, formacode in _parse_rome_formacode_file(args.input_file):
         out.write(f'{rome_id},{formacode}\n')
 
 
 if __name__ == '__main__':
-    main(sys.argv)
+    main()

@@ -1,10 +1,10 @@
 import {config, expect} from 'chai'
 import {createProjectTitle, PROJECT_EMPLOYMENT_TYPE_OPTIONS, PROJECT_PASSIONATE_OPTIONS,
   PROJECT_EXPERIENCE_OPTIONS, PROJECT_KIND_OPTIONS,
-  createProjectTitleComponents, newProject, flattenProject,
+  createProjectTitleComponents, newProject, flattenProject, getBestValidSalaryUnit,
   TRAINING_FULFILLMENT_ESTIMATE_OPTIONS} from 'store/project'
 // @ts-ignore
-import {EmploymentType} from 'api/job'
+import {EmploymentType, SalaryUnit} from 'api/job'
 import {PreviousJobSimilarity, ProjectKind, TrainingFulfillmentEstimate,
 // @ts-ignore
   PassionateLevel} from 'api/project'
@@ -304,4 +304,20 @@ describe('newProject', (): void => {
     } = updated
     expect(updatedOtherFields).to.deep.equal(projectOtherFields)
   })
+})
+
+describe('getBestValidSalaryUnit', (): void => {
+  it('should return a valid value for an empty input', (): void => {
+    const salaryUnit = getBestValidSalaryUnit()
+    expect(SalaryUnit).to.have.property(salaryUnit)
+    expect(SalaryUnit[salaryUnit]).to.be.ok
+  })
+
+  for (const enumValue in SalaryUnit) {
+    it(`should return a valid value for proto value: ${enumValue}`, (): void => {
+      const bestSalaryUnit = getBestValidSalaryUnit(enumValue as bayes.bob.SalaryUnit)
+      expect(SalaryUnit).to.have.property(bestSalaryUnit)
+      expect(SalaryUnit[bestSalaryUnit]).to.be.ok
+    })
+  }
 })

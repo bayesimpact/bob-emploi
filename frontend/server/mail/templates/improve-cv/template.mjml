@@ -1,524 +1,75 @@
-{
-  "attributes": {
-    "owa": "desktop",
-    "passport": {
-      "id": "_aljbwR5T2H",
-      "revertLostLink": true
-    },
-    "version": "4.6.3"
-  },
-  "children": [
-    {
-      "attributes": {},
-      "children": [
-        {
-          "attributes": {
-            "href": "https://fonts.googleapis.com/css?family=arial",
-            "name": "arial"
-          },
-          "id": "H4pkFjHzXyGV",
-          "tagName": "mj-font"
-        },
-        {
-          "content": "",
-          "id": "EpveioewzjoB",
-          "tagName": "mj-preview"
-        }
-      ],
-      "id": "QS1KrHUs7pI5",
-      "tagName": "mj-head"
-    },
-    {
-      "attributes": {
-        "background-color": "#ffffff",
-        "color": "#55575d",
-        "font-family": "Arial, sans-serif",
-        "passport": {
-          "id": "qf7IfTqq9"
-        }
-      },
-      "children": [
-        {
-          "attributes": {
-            "background-repeat": "repeat",
-            "background-size": "auto",
-            "padding": "20px 0px 20px 0px",
-            "passport": {
-              "header": true,
-              "hidden": true,
-              "id": "HlsqkzLq6qgFD"
-            },
-            "text-align": "center",
-            "vertical-align": "top"
-          },
-          "children": [
-            {
-              "attributes": {
-                "passport": {
-                  "hidden": true,
-                  "id": "LfhXFW1h8ZlRN"
-                }
-              },
-              "children": [
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#55575d",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "11px",
-                    "line-height": "22px",
-                    "padding": "0px 0px 0px 25px",
-                    "padding-bottom": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "hidden": true,
-                      "id": "n1519TvaBbCEe"
-                    }
-                  },
-                  "content": "<p style=\"margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\">Donnez un résumé de cet email à vos destinataires</p>",
-                  "id": "cXtcr2eIWduy",
-                  "tagName": "mj-text"
-                }
-              ],
-              "id": "-8rx5PYTxBy6",
-              "tagName": "mj-column"
-            }
-          ],
-          "id": "n8CET-vGH-vx",
-          "tagName": "mj-section"
-        },
-        {
-          "attributes": {
-            "background-color": "transparent",
-            "background-repeat": "repeat",
-            "full-width": "full-width",
-            "padding": "20px 0px 20px 0px",
-            "padding-bottom": "0px",
-            "padding-top": "12px",
-            "passport": {
-              "id": "YT077ohZT6"
-            },
-            "text-align": "center",
-            "vertical-align": "top"
-          },
-          "children": [
-            {
-              "attributes": {
-                "passport": {
-                  "id": "lJz6oqjF12"
-                }
-              },
-              "children": [
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#000000",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "13px",
-                    "line-height": "24px",
-                    "padding": "0px 0px 0px 0px",
-                    "padding-bottom": "0px",
-                    "padding-left": "0px",
-                    "padding-right": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "8Ijw5Vh8u"
-                    }
-                  },
-                  "content": "<p style=\"line-height: 1.38; margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"color:#55575d\"><span style=\"font-size:14px\"><span style=\"font-family:Arial; text-decoration:none\">Bonjour {{var:firstName:\"Marie\"}},</span></span></span></p>",
-                  "id": "WeLAAE8kBQv1",
-                  "tagName": "mj-text"
-                },
-                {
-                  "attributes": {
-                    "height": "10px",
-                    "passport": {
-                      "id": "AWvfd0rOs"
-                    }
-                  },
-                  "id": "cB5WgGnrkAW3",
-                  "tagName": "mj-spacer"
-                },
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#55575d",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "13px",
-                    "line-height": "22px",
-                    "padding": "0px 0px 0px 0px",
-                    "padding-bottom": "0px",
-                    "padding-left": "0px",
-                    "padding-right": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "C3kSbD9XmF"
-                    }
-                  },
-                  "content": "<p style=\"line-height: 1.38; margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"color:#55575d\"><span style=\"font-family:Arial,sans-serif\"><b style=\"font-weight:400\"><span style=\"font-size:10.5pt; font-weight:400; text-decoration:none\">Comment ça va ?<br><br>Les CV vous savez ce qu'on en pense chez Bob, on est fans des CV adaptés finement à ce que l'employeur recherche.<br><br>L'idée, c'est qu'un bon CV n'est pas une biographie de ce que vous avez fait, mais une candidature avec des <b style=\"font-weight:700\">preuves de vos compétences</b> tirées de vos expériences.{%if var:isSeptember:\"\" == \"True\"%}<br><br>Comme chez Bob on a passé le mois d'août à réfléchir à votre recherche d'emploi, je me suis posée beaucoup de questions sur le CV.{%endif%}<br><br>Qu'est-ce qui peut rendre votre CV irrésistible{%if var:isSeptember:\"\" == \"True\"%} pour la rentrée{%endif%} ? Je pense que j'ai trouvé une <b style=\"font-weight:700\">belle astuce</b> pour l'améliorer.</span></b></span></span></p>",
-                  "id": "YG2PHnYExqHY",
-                  "tagName": "mj-text"
-                },
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#000000",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "13px",
-                    "line-height": "24px",
-                    "padding": "10px 25px",
-                    "padding-bottom": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "AwIV13THp"
-                    }
-                  },
-                  "content": "<p style=\"line-height: 1.7142857142857142; margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"font-size:18px\"><b style=\"font-weight:700\"><i style=\"font-style:normal\"><span style=\"color:#000000; font-weight:700\"><span style=\"font-family:Arial,sans-serif; font-weight:700\"><span style=\"font-weight:700; text-decoration:none\">Sur son CV, transformer ses responsabilités en réussites.</span></span></span></i></b></span></p>",
-                  "id": "3r6I92KP_-wg",
-                  "tagName": "mj-text"
-                },
-                {
-                  "attributes": {
-                    "align": "center",
-                    "alt": "Dessin d'un bonhomme à responsabilités  et un bonhomme à réussites",
-                    "border": "none",
-                    "border-radius": 0,
-                    "fluid-on-mobile": true,
-                    "height": "auto",
-                    "href": "",
-                    "padding": "10px 26px 10px 26px",
-                    "padding-bottom": "10px",
-                    "padding-left": "26px",
-                    "padding-right": "26px",
-                    "padding-top": "10px",
-                    "passport": {
-                      "id": "i1H29l1eu",
-                      "image-id": 13313061,
-                      "mode": "image"
-                    },
-                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/xm3lh/vu0pj.png",
-                    "target": "_blank",
-                    "title": "",
-                    "width": "669px"
-                  },
-                  "id": "71IFxAUWyOun",
-                  "tagName": "mj-image"
-                },
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#000000",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "13px",
-                    "line-height": "24px",
-                    "padding": "0px 0px 0px 0px",
-                    "padding-bottom": "0px",
-                    "padding-left": "0px",
-                    "padding-right": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "urrjIVRSX"
-                    }
-                  },
-                  "content": "<p style=\"line-height: 1.7142857142857142; margin: 10px 0; margin-top: 10px;\"><span style=\"color:#55575d;\"><span style=\"font-family:Arial,sans-serif\"><b style=\"font-weight:400\"><span style=\"font-size:10.5pt; font-weight:400; text-decoration:none\">Si ces réussites comportent une <b style=\"font-weight:700;\">preuve</b> (un certificat, un chiffre) c'est encore mieux.</span></b></span></span></p><p style=\"line-height: 1.7142857142857142; margin: 10px 0; margin-bottom: 10px;\"><span style=\"color:#55575d;\"><span style=\"font-family:Arial,sans-serif\"><b style=\"font-weight:400\"><span style=\"font-size:10.5pt; font-weight:400; text-decoration:none\">Voici un exemple tiré d'un vrai CV de cet été. J'ai changé des détails pour préserver l'anonymat.</span></b></span></span></p>",
-                  "id": "NBSh7fMb8gcx",
-                  "tagName": "mj-text"
-                },
-                {
-                  "attributes": {
-                    "border-color": "#E6E6E6",
-                    "border-style": "solid",
-                    "border-width": "2px",
-                    "padding": "10px 25px",
-                    "passport": {
-                      "id": "4HjhV_Geo"
-                    },
-                    "width": "100%"
-                  },
-                  "id": "sKcU5BpxObOc",
-                  "tagName": "mj-divider"
-                },
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#000000",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "13px",
-                    "line-height": "24px",
-                    "padding": "10px 25px",
-                    "padding-bottom": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "pCa9VxuZM"
-                    }
-                  },
-                  "content": "<p style=\"line-height: 1.7142857142857142; margin: 10px 0; margin-top: 10px;\"><span style=\"color:#545454; font-family:arial,sans-serif; font-size:14px\">✗ </span><span style=\"font-size: 16px; background-color: rgb(250, 244, 83);\"><b style=\"font-weight: 700; background-color: rgb(250, 244, 83);\"><span style=\"font-family: Arial, sans-serif; font-weight: 700; background-color: rgb(250, 244, 83);\"><span style=\"color: rgb(51, 51, 51); font-weight: 700; text-decoration: none; background-color: rgb(250, 244, 83);\"><i style=\"font-style: normal; background-color: rgb(250, 244, 83);\">Avant</i> : une description de mes responsabilités</span></span></b></span></p><p style=\"line-height: 1.7142857142857142; margin: 10px 0;\"><b style=\"background-color: rgb(255, 255, 255); font-weight: 400;\"><span style=\"background-color: rgb(255, 255, 255); font-family: Arial, sans-serif; font-weight: 400;\"><span style=\"background-color: rgb(255, 255, 255); color: rgb(51, 51, 51); font-size: 10.5pt; font-weight: 400; text-decoration: none;\"><span style=\"text-decoration:underline;\">ANIMATION D'ÉQUIPE</span> : Organiser et planifier l'activité (vacances, prises et fin de poste...), former les nouveaux arrivants, organiser des échanges avec l'équipe concernant les <span style=\"background-color: rgb(255, 255, 255);\">problèmes</span> en rayon et proposition de solutions.</span></span></b></p><p style=\"line-height: 1.7142857142857142; margin: 10px 0;\"><span style=\"color:#545454; font-family:arial,sans-serif; font-size:14px\">✓ </span><span style=\"background-color: rgb(250, 244, 83); font-size: 16px;\"><b style=\"background-color: rgb(250, 244, 83); font-weight: 700;\"><i style=\"background-color: rgb(250, 244, 83); font-style: normal;\"><span style=\"background-color: rgb(250, 244, 83); font-family: Arial, sans-serif; font-weight: 700;\"><span style=\"background-color: rgb(250, 244, 83); color: rgb(51, 51, 51); font-weight: 700; text-decoration: none;\">Après : une liste de mes réussites</span></span></i></b></span></p><p style=\"line-height: 1.7142857142857142; margin: 10px 0;\"><b style=\"background-color: rgb(255, 255, 255); font-weight: 400;\"><span style=\"background-color: rgb(255, 255, 255); font-family: Arial, sans-serif; font-weight: 400; text-decoration: underline;\"><span style=\"background-color: rgb(255, 255, 255); color: rgb(51, 51, 51); font-size: 10.5pt; font-weight: 400; text-decoration: underline;\">ANIMATION D'EQUIPE :</span></span></b></p><p style=\"line-height: 1.7142857142857142; margin: 10px 0;\"><b style=\"background-color: rgb(255, 255, 255); font-weight: 400;\"><span style=\"background-color: rgb(255, 255, 255); font-family: Arial, sans-serif; font-weight: 400;\"><span style=\"background-color: rgb(255, 255, 255); color: rgb(51, 51, 51); font-size: 10.5pt; font-weight: 400; text-decoration: none;\">- Organisation et planification de l'activité (congés, prises et fin de poste...). <span style=\"background-color:#faf453;\">Résultats</span> : plannings d'une équipe tournante de <span style=\"background-color:#faf453;\">30 collaborateurs réalisés sur 2 ans</span>. Réduction d'absentéisme : <span style=\"background-color:#faf453;\">3%</span>. Félicitations de la part de l'équipe reçues en <span style=\"background-color:#faf453;\">2017 et 2018.</span></span></span></b></p><p style=\"line-height: 1.7142857142857142; margin: 10px 0;\"><b style=\"background-color: rgb(255, 255, 255); font-weight: 400;\"><span style=\"background-color: rgb(255, 255, 255); font-family: Arial, sans-serif; font-weight: 400;\"><span style=\"background-color: rgb(255, 255, 255); color: rgb(51, 51, 51); font-size: 10.5pt; font-weight: 400; text-decoration: none;\">- Formation des nouveaux arrivants. <span style=\"background-color:#faf453;\">Résultat</span> : 8 salariés formés en 2 ans (<span style=\"background-color:#faf453;\">7 encore en poste).</span></span></span></b></p><p style=\"line-height: 1.7142857142857142; margin: 10px 0; margin-bottom: 10px;\"><b style=\"background-color: rgb(255, 255, 255); font-weight: 400;\"><span style=\"background-color: rgb(255, 255, 255); font-family: Arial, sans-serif; font-weight: 400;\"><span style=\"background-color: rgb(255, 255, 255); color: rgb(51, 51, 51); font-size: 10.5pt; font-weight: 400; text-decoration: none;\">- Organisation des échanges avec l'équipe concernant les problèmes en rayon et proposition de solutions. <span style=\"background-color:#faf453;\">Résultats</span> : nouveau système de stockage conçu et mis en place (<span style=\"background-color:#faf453;\">2017</span>), nouvelle gestion de ruptures de stock (<span style=\"background-color:#faf453;\">2018</span>), <span style=\"background-color:#faf453;\">adoptée par trois magasins</span>.</span></span></b></p>",
-                  "id": "8T7ugSkI43MN",
-                  "tagName": "mj-text"
-                },
-                {
-                  "attributes": {
-                    "border-color": "#E6E6E6",
-                    "border-style": "solid",
-                    "border-width": "2px",
-                    "padding": "10px 25px",
-                    "passport": {
-                      "id": "nYIEvP1TF"
-                    },
-                    "width": "100%"
-                  },
-                  "id": "Ddd4gtXa9UNV",
-                  "tagName": "mj-divider"
-                },
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#000000",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "13px",
-                    "line-height": "24px",
-                    "padding": "0px 0px 0px 0px",
-                    "padding-bottom": "0px",
-                    "padding-left": "0px",
-                    "padding-right": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "MvG_qvINO"
-                    }
-                  },
-                  "content": "<p style=\"margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"color:#000000\"><b style=\"font-weight:400\"><span style=\"font-family:Arial; font-size:10.5pt; font-weight:400; text-decoration:none\">Tout cela est bien joli. Mais comment faire ?</span></b></span></p>",
-                  "id": "580EsYEcd1bW",
-                  "tagName": "mj-text"
-                },
-                {
-                  "attributes": {
-                    "align": "left",
-                    "alt": "5 étapes",
-                    "border": "none",
-                    "border-radius": 0,
-                    "fluid-on-mobile": true,
-                    "height": "auto",
-                    "href": "",
-                    "padding": "10px 25px 10px 25px",
-                    "padding-bottom": "10px",
-                    "padding-left": "25px",
-                    "padding-right": "25px",
-                    "padding-top": "10px",
-                    "passport": {
-                      "id": "pfdO4qRNP",
-                      "image-id": 13313063,
-                      "mode": "image"
-                    },
-                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/xm3lh/vu0pn.png",
-                    "target": "_blank",
-                    "title": "",
-                    "width": "420px"
-                  },
-                  "id": "U4OmPxiErxNk",
-                  "tagName": "mj-image"
-                },
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#000000",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "13px",
-                    "line-height": "24px",
-                    "padding": "0px 0px 0px 0px",
-                    "padding-bottom": "0px",
-                    "padding-left": "0px",
-                    "padding-right": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "fKHh9k73a"
-                    }
-                  },
-                  "content": "<ol><li style=\"color:#333333; font-family:Arial; font-size:10.5pt; text-decoration:none\"><p style=\"line-height: 1.7142857142857142; margin: 10px 0; margin-top: 10px;\"><span style=\"color:#55575d\"><b style=\"font-weight:400\"><span style=\"font-family:Arial; font-size:10.5pt; font-weight:400; text-decoration:none\">{%if var:hasExperience:\"\" == \"False\"%}Vous cherchez votre premier emploi, mais il devrait y avoir quand-même une rubrique \"Expérience\" dans votre CV. Cela peut être scolaire, associative, sociale, artistique … A côté de chaque expérience{%else%}Prenez votre CV et, à côté de chaque expérience{%if var:hasExperience:\"\" != \"True\"%} (si vous n'avez pas encore d'expérience professionnelle, cela peut être scolaire, associative, sociale, artistique …){%endif%}{%endif%}, marquez un <b style=\"font-weight:700\">résultat positif </b>auquel avez pu contribuer.</span></b></span></p></li><li style=\"color:#333333; font-family:Arial; font-size:10.5pt; text-decoration:none\"><p style=\"line-height: 1.7142857142857142; margin: 10px 0;\"><span style=\"color:#55575d\"><b style=\"font-weight:400\"><span style=\"font-family:Arial; font-size:10.5pt; font-weight:400; text-decoration:none\">S'il vous en manque (c'est normal), {%if var:deepLinkAdviceUrl:\"\" != \"\"%}regardez l'astuce sur le CV sur <a target=\"_blank\" href=\"{{var:deepLinkAdviceUrl}}>Bob</a>.</span></b></span></p></li><li style=\"color:#333333; font-family:Arial; font-size:10.5pt; text-decoration:none\"><p style=\"line-height: 1.7142857142857142; margin: 10px 0;\"><span style=\"color:#55575d\"><b style=\"font-weight:400\"><span style=\"font-family:Arial; font-size:10.5pt; font-weight:400; text-decoration:none\">S'il vous en manque encore, {%endif%}demandez à des anciens collègues, à votre ancien employeur si vous gardez une bonne relation, à votre entourage ou à votre <b style=\"font-weight:700\">conseiller emploi</b> de vous donner des idées.</span></b></span></p></li><li style=\"color:#333333; font-family:Arial; font-size:10.5pt; text-decoration:none\"><p style=\"line-height: 1.7142857142857142; margin: 10px 0;\"><span style=\"color:#55575d\"><b style=\"font-weight:400\"><span style=\"font-family:Arial; font-size:10.5pt; font-weight:400; text-decoration:none\">Réécrivez les phrases du CV pour les transformer en des <b style=\"font-weight:700\">exemples vivants</b> de ce que vous avez fait, plutôt qu'un <b style=\"font-weight:700\">descriptif de la fiche de poste</b>.</span></b></span></p></li><li style=\"color:#333333; font-family:Arial; font-size:10.5pt; text-decoration:none\"><p style=\"line-height: 1.7142857142857142; margin: 10px 0; margin-bottom: 10px;\"><span style=\"color:#55575d\"><b style=\"font-weight:400\"><span style=\"font-family:Arial; font-size:10.5pt; font-weight:400; text-decoration:none\">Faites <b style=\"font-weight:700\">relire</b> le CV à une personne pour qui vous avez du respect.</span></b></span></p></li></ol>",
-                  "id": "pQvzU7wIoaHP",
-                  "tagName": "mj-text"
-                },
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#55575d",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "13px",
-                    "line-height": "22px",
-                    "padding": "10px 25px",
-                    "padding-bottom": "0px",
-                    "padding-left": "0px",
-                    "padding-right": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "HLmVue24wM"
-                    }
-                  },
-                  "content": "<p style=\"line-height: 1.7142857142857142; margin: 10px 0; margin-top: 10px;\"><span style=\"background-color:transparent; font-size:14px\">J'espère que cette astuce vous inspirera ✨</span></p><p style=\"line-height: 19px; margin: 10px 0; margin-bottom: 10px;\"><span style=\"background-color:transparent; font-size:14px\">Si cela vous a été utile, répondez à ce mail pour me le dire !</span><br><br><span style=\"background-color:transparent; color:#6b6b68; font-size:14.6667px\">Tenez moi au courant,<br><br>Joanna et l'équipe de Bob</span></p>",
-                  "id": "nLTTKEmuFk_d",
-                  "tagName": "mj-text"
-                }
-              ],
-              "id": "1NJ_rdcr4_Qf",
-              "tagName": "mj-column"
-            }
-          ],
-          "id": "l2DHeTnbWlHU",
-          "tagName": "mj-section"
-        },
-        {
-          "attributes": {
-            "background-repeat": "repeat",
-            "padding": "20px 0",
-            "padding-bottom": "0px",
-            "padding-top": "0px",
-            "passport": {
-              "id": "xstp14LgUiMgcR",
-              "savedSectionID": 408382
-            },
-            "text-align": "center",
-            "vertical-align": "top"
-          },
-          "children": [
-            {
-              "attributes": {
-                "passport": {
-                  "id": "Ics_2OgaOu"
-                }
-              },
-              "children": [
-                {
-                  "attributes": {
-                    "align": "left",
-                    "alt": "",
-                    "border": "none",
-                    "height": "auto",
-                    "href": "",
-                    "padding": "10px 25px",
-                    "padding-left": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "GUTl9ljIQ_4WQU",
-                      "image-id": 6036334
-                    },
-                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
-                    "target": "_blank",
-                    "title": "",
-                    "width": "102px"
-                  },
-                  "id": "9-chMqU4g2ko",
-                  "tagName": "mj-image"
-                }
-              ],
-              "id": "UqkcsrjY0mD8",
-              "tagName": "mj-column"
-            }
-          ],
-          "id": "c_DrD_LnBjLD",
-          "tagName": "mj-section"
-        },
-        {
-          "attributes": {
-            "background-repeat": "repeat",
-            "padding": "20px 0",
-            "passport": {
-              "id": "xR5l9PNeHTakwq"
-            },
-            "text-align": "center",
-            "vertical-align": "top"
-          },
-          "children": [
-            {
-              "attributes": {
-                "passport": {
-                  "id": "Z2qiKfN4k-"
-                }
-              },
-              "children": [
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#55575d",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "13px",
-                    "line-height": "24px",
-                    "padding": "10px 25px",
-                    "padding-bottom": "0px",
-                    "padding-left": "0px",
-                    "padding-right": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "H8zLuJRxRh"
-                    }
-                  },
-                  "content": "<p style=\"line-height: 19px; margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><b style=\"font-weight:400\"><span style=\"font-size:13px; font-weight:400\"><span style=\"color:#000000; font-weight:400\"><span style=\"font-family:Arial,sans-serif; font-weight:400\">Ps : {%if var:isSeptember:\"\" == \"True\"%}✨ </span></span></span></b><b><b style=\"font-weight:400\"><span style=\"font-size:13px; font-weight:400\"><span style=\"color:#333333; font-family:Arial; font-weight:400; text-decoration:none\">J'ai mis “magique” parce que c'est la rentrée et c'est une période où tout semble à nouveau possible. E{%else%}Dans le titre j'ai écrit \"magique\" mais e{%endif%}n fait, chez Bob, nous ne croyons pas beaucoup à la magie. Les sites qui vous disent qu'un recruteur est intéressé par votre profil, puis silence … Le sentiment d'efficacité qui vient quand on a postulé à 5 offres en ligne en trois clics avec le même CV ou presque … puis rien. Dans la recherche d'emploi, c'est important de <b style=\"font-weight:700\">savoir identifier les faux bons</b> plans afin de ne pas perdre son temps.</span></span></b></b><b style=\"font-weight:400\"><span style=\"font-size:13px; font-weight:400\"><span style=\"color:#000000; font-weight:400\"><span style=\"font-family:Arial,sans-serif; font-weight:400\">{%if var:isSeptember:\"\" == \"True\"%}</span></span></span></b><b><b style=\"font-weight:400\"><span style=\"font-size:13px; font-weight:400\"><span style=\"color:#333333; font-family:Arial; font-weight:400; text-decoration:none\"> Nous avons fait quelques changements à Bob pendant l'été pour vous aider le plus possible avec des objectifs à atteindre et des conseils terre-à-terre.{%endif%} Tout sur </span></span></b><a target=\"_blank\" style=\"font-size:13px; font-weight:400; text-decoration:none\" href=\"{{var:loginUrl}}\"><b style=\"font-weight:400\"><span style=\"font-size:13px; font-weight:400\"><span style=\"color:#1155cc; font-family:Arial; font-weight:400; text-decoration:underline\">https://www.bob-emploi.fr</span></span></b></a><b style=\"font-weight:400\"><span style=\"font-size:13px; font-weight:400\"><span style=\"color:#333333; font-family:Arial; font-weight:400; text-decoration:none\">.</span></span></b></b></p>",
-                  "id": "El6ZlrScb649",
-                  "tagName": "mj-text"
-                }
-              ],
-              "id": "b1uf8zMUeWFM",
-              "tagName": "mj-column"
-            }
-          ],
-          "id": "r844jNElJRZ1",
-          "tagName": "mj-section"
-        },
-        {
-          "attributes": {
-            "background-repeat": "repeat",
-            "padding": "20px 0",
-            "padding-bottom": "0px",
-            "padding-top": "0px",
-            "passport": {
-              "id": "tGFlH0i4j77Q",
-              "savedSectionID": 408701,
-              "version": "3.3.5"
-            },
-            "text-align": "center",
-            "vertical-align": "top"
-          },
-          "children": [
-            {
-              "attributes": {
-                "passport": {
-                  "id": "Etf-Y8fAF7ZV"
-                }
-              },
-              "children": [
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#000000",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "13px",
-                    "letter-spacing": "normal",
-                    "padding": "10px 25px",
-                    "padding-bottom": "0px",
-                    "padding-left": "0px",
-                    "padding-right": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "05zr06AedJGC",
-                      "oldContentEditor": "<p style=\"margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"font-size:11px\">Vous recevez cet email car vous êtes inscrit{% if var:gender:\"\" == \"FEMININE\" %}e{% endif %}</span><span style=\"font-size:11px\"> sur <a target=\"_blank\" href=\"https://www.bob-emploi.fr?utm_source=bob-emploi&amp;utm_medium=email\">Bob</a> set avez demandé des emails de coaching. <a target=\"_blank\" href=\"{{var:changeEmailSettingsUrl}}\"><u>Cliquez ici</u></a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte Bob en veille ? <a target=\"_blank\" href=\"{{var:statusUpdateUrl}}\">cliquez ici</a>.</span></p>",
-                      "oldMjAttributes": "{\"line-height\":\"22px\",\"padding-right\":\"0px\",\"font-family\":\"Arial, sans-serif\",\"padding-left\":\"0px\",\"color\":\"#55575d\",\"align\":\"left\",\"padding-bottom\":\"0px\",\"padding\":\"10px 25px\",\"padding-top\":\"0px\",\"font-size\":\"13px\"}"
-                    }
-                  },
-                  "content": "<p class=\"text-build-content\" data-testid=\"GB8_UQEcWz\" style=\"margin: 10px 0;; margin-top: 10px; margin-bottom: 10px\"><span style=\"color:#55575d;font-family:Arial;font-size:11px;line-height:22px;\">Vous recevez cet email car vous êtes inscrit{%if var:gender:\"\"==\"FEMININE\"%}e{%else%}{%if var:gender:\"\"==\"MASCULINE\"%}{%else%}·e{%endif%}{% endif %} sur </span><a class=\"link-build-content\" style=\"color:inherit;\" target=\"_blank\" href=\"https://www.bob-emploi.fr?utm_source=bob-emploi&amp;utm_medium=email\"><span style=\"color:#0000EE;font-family:Arial;font-size:11px;line-height:22px;\"><u>Bob</u></span></a><span style=\"color:#55575d;font-family:Arial;font-size:11px;line-height:22px;\"> et avez demandé des emails de coaching. </span><a class=\"link-build-content\" style=\"color:inherit;\" target=\"_blank\" href=\"{{var:changeEmailSettingsUrl}}\"><span style=\"color:#0000EE;font-family:Arial;font-size:11px;line-height:22px;\"><u>Cliquez ici</u></span></a><span style=\"color:#55575d;font-family:Arial;font-size:11px;line-height:22px;\"> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte Bob en veille ? </span><a class=\"link-build-content\" style=\"color:inherit;\" target=\"_blank\" href=\"{{var:statusUpdateUrl}}\"><span style=\"color:#0000EE;font-family:Arial;font-size:11px;line-height:22px;\"><u>cliquez ici</u></span></a><span style=\"color:#55575d;font-family:Arial;font-size:11px;line-height:22px;\">.</span></p>",
-                  "id": "05zr06AedJGC",
-                  "tagName": "mj-text"
-                }
-              ],
-              "id": "Etf-Y8fAF7ZV",
-              "tagName": "mj-column"
-            }
-          ],
-          "id": "tGFlH0i4j77Q",
-          "tagName": "mj-section"
-        }
-      ],
-      "id": "Vm7NXerxLlRS",
-      "tagName": "mj-body"
-    }
-  ],
-  "id": "XQuxYmeHI3HR",
-  "tagName": "mjml"
-}
+<mjml owa="desktop" version="4.6.3">
+  <mj-body background-color="#ffffff" color="#000000">
+    <mj-section >
+      <mj-column>
+        <mj-text font-size="14px" line-height="1.38">
+          Bonjour {{var:firstName:"Marie"}},
+        </mj-text>
+        <mj-spacer height="10px"/>
+        <mj-text font-size="14px" line-height="1.38">
+          Comment ça va ?<br/><br/>Les CV vous savez ce qu'on en pense chez {{var:productName}}, on est fans des CV adaptés finement à ce que l'employeur recherche.<br/><br/>L'idée, c'est qu'un bon CV n'est pas une biographie de ce que vous avez fait, mais une candidature avec des <b>preuves de vos compétences</b> tirées de vos expériences.{%if var:isSeptember:"" == "True"%}<br/><br/>Comme chez {{var:productName}} on a passé le mois d'août à réfléchir à votre recherche d'emploi, je me suis posé beaucoup de questions sur le CV.{%endif%}<br/><br/>Qu'est-ce qui peut rendre votre CV irrésistible{%if var:isSeptember:"" == "True"%} pour la rentrée{%endif%} ? Je pense que j'ai trouvé une <b>belle astuce</b> pour l'améliorer.
+        </mj-text>
+        <mj-text font-size="18px" line-height="1.7" font-weight="700">
+          Sur son CV, transformer ses responsabilités en réussites.
+        </mj-text>
+        <mj-image align="center" alt="Dessin d'un bonhomme à responsabilités et un bonhomme à réussites" border-radius="0" border="none" fluid-on-mobile="true" height="auto" padding-bottom="10px" padding-left="26px" padding-right="26px" padding-top="10px" padding="10px 26px 10px 26px" src="https://t.bob-emploi.fr/tplimg/6u2u/b/xm3lh/vu0pj.png" width="669px"></mj-image>
+        <mj-text font-size="14px" line-height="1.38">
+          <p>Si ces réussites comportent une <b>preuve</b> (un certificat, un chiffre) c'est encore mieux.</p>
+          <p>Voici un exemple tiré d'un vrai CV de cet été. J'ai changé des détails pour préserver l'anonymat.</p>
+        </mj-text>
+        <mj-divider border-color="#E6E6E6" border-style="solid" border-width="2px" padding="10px 25px" width="100%"></mj-divider>
+        <mj-text font-size="14px" line-height="1.38">
+          <p style="font-size:16px;font-weight:700">✗ <span style="background-color: {{var:highlightColor}}">Avant : une description de mes responsabilités</span></p>
+          <p><u>ANIMATION D'ÉQUIPE :</u></p>
+          <p>Organiser et planifier l'activité (vacances, prises et fin de poste...), former les nouveaux arrivants, organiser des échanges avec l'équipe concernant les problèmes en rayon et proposition de solutions.</p>
+          <p style="font-size:16px;font-weight:700">✓ <span style="background-color: {{var:highlightColor}}">Après : une liste de mes réussites</span></p>
+          <p><u>ANIMATION D'ÉQUIPE :</u></p>
+          <p>- Organisation et planification de l'activité (congés, prises et fin de poste...). <span style="background-color: {{var:highlightColor}}">Résultats</span> : plannings d'une équipe tournante de <span style="background-color: {{var:highlightColor}}">30 collaborateurs réalisés sur 2 ans</span>. Réduction d'absentéisme : <span style="background-color: {{var:highlightColor}}">3%</span>. Félicitations de la part de l'équipe reçues en <span style="background-color: {{var:highlightColor}}">2017 et 2018.</span></p>
+          <p>- Formation des nouveaux arrivants. <span style="background-color: {{var:highlightColor}}">Résultat</span> : 8 salariés formés en 2 ans (<span style="background-color: {{var:highlightColor}}">7 encore en poste</span>).</p>
+          <p>- Organisation des échanges avec l'équipe concernant les problèmes en rayon et proposition de solutions. <span style="background-color: {{var:highlightColor}}">Résultats</span> : nouveau système de stockage conçu et mis en place (<span style="background-color: {{var:highlightColor}}">2017</span>), nouvelle gestion de ruptures de stock (<span style="background-color: {{var:highlightColor}}">2018</span>), <span style="background-color: {{var:highlightColor}}">adoptée par trois magasins</span>.</p>
+        </mj-text>
+        <mj-divider border-color="#E6E6E6" border-style="solid" border-width="2px" padding="10px 25px" width="100%"></mj-divider>
+        <mj-text font-size="14px" line-height="1.38">
+          Tout cela est bien joli. Mais comment faire ?
+        </mj-text>
+        <mj-image align="left" alt="5 étapes" border-radius="0" border="none" fluid-on-mobile="true" height="auto" padding-bottom="10px" padding-left="25px" padding-right="25px" padding-top="10px" padding="10px 25px 10px 25px" src="https://t.bob-emploi.fr/tplimg/6u2u/b/xm3lh/vu0pn.png" width="420px"></mj-image>
+        <mj-text font-size="14px" line-height="1.38">
+          <ol>
+            <li style="margin-bottom: 20px">
+              {%if var:hasExperience:"" == "False"%}Vous cherchez votre premier emploi, mais il devrait y avoir quand-même une rubrique "Expérience" dans votre CV. Cela peut être scolaire, associative, sociale, artistique … A côté de chaque expérience{%else%}Prenez votre CV et, à côté de chaque expérience{%if var:hasExperience:"" != "True"%} (si vous n'avez pas encore d'expérience professionnelle, cela peut être scolaire, associative, sociale, artistique …){%endif%}{%endif%}, marquez un <b>résultat positif </b>auquel vous avez pu contribuer.
+            </li>
+            <li style="margin-bottom: 20px">
+              S'il vous en manque (c'est normal), {%if var:deepLinkAdviceUrl:"" != ""%}regardez l'astuce sur le CV sur <a target="_blank" href="{{var:deepLinkAdviceUrl}}">{{var:productName}}</a>.
+            </li>
+            <li style="margin-bottom: 20px">
+              S'il vous en manque encore, {%endif%}demandez à des anciens collègues, à votre ancien employeur si vous gardez une bonne relation, à votre entourage ou à votre <b>conseiller emploi</b> de vous donner des idées.
+            </li>
+            <li style="margin-bottom: 20px">
+              Réécrivez les phrases du CV pour les transformer en des <b>exemples vivants</b> de ce que vous avez fait, plutôt qu'un <b>descriptif de la fiche de poste</b>.
+            </li>
+            <li style="margin-bottom: 20px">
+              Faites <b>relire</b> le CV à une personne pour qui vous avez du respect.
+            </li>
+          </ol>
+        </mj-text>
+        <mj-text font-size="14px" line-height="1.38">
+          <p>J'espère que cette astuce vous inspirera ✨</p>
+          <p>
+            Si cela vous a été utile, répondez à ce mail pour me le dire !<br/><br/>
+            Tenez moi au courant,<br/><br/>
+            {{var:senderName}}
+          </p>
+        </mj-text>
+        <mj-image alt="{{var:productName}}" border="none" height="auto" padding="10px 25px" src="{{var:productLogoUrl}}" width="102px"/>
+        <mj-text font-size="14px" line-height="1.38">
+          PS : {%if var:isSeptember:"" == "True"%}✨ J'ai mis "magique" parce que c'est la rentrée et c'est une période où tout semble à nouveau possible. E{%else%}Dans le titre j'ai écrit "magique" mais e{%endif%}n fait, chez {{var:productName}}, nous ne croyons pas beaucoup à la magie. Les sites qui vous disent qu'un recruteur est intéressé par votre profil, puis silence … Le sentiment d'efficacité qui vient quand on a postulé à 5 offres en ligne en trois clics avec le même CV ou presque … puis rien. Dans la recherche d'emploi, c'est important de <b>savoir identifier les faux bons</b> plans afin de ne pas perdre son temps.{%if var:isSeptember:"" == "True"%} Nous avons fait quelques changements à {{var:productName}} pendant l'été pour vous aider le plus possible avec des objectifs à atteindre et des conseils terre-à-terre.{%endif%} Tout sur <a target="_blank" style="color:inherit" href="{{var:loginUrl}}">{{var:baseUrl}}</a>.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-text font-size="11px" color="#55575d" line-height="2">Vous recevez cet email car vous êtes inscrit{%if var:gender:""=="FEMININE"%}e{%elseif var:gender:""=="MASCULINE"%}{%else%}·e{%endif%} sur <a href="{{var:baseUrl}}?utm_source=bob-emploi&amp;utm_medium=email" target="_blank">{{var:productName}}</a> et avez demandé des emails de coaching. <a href="{{var:changeEmailSettingsUrl}}" target="_blank">Cliquez ici</a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte {{var:productName}} en veille ? <a href="{{var:statusUpdateUrl}}" target="_blank">cliquez ici</a>.</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

@@ -1,0 +1,28 @@
+<mjml owa="desktop" version="4.6.3">
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-text line-height="1.38">Bonjour {{var:firstName:"Élise"}},</mj-text>
+        <mj-text line-height="1.38">
+          <p>Vous avez récemment visité <b>Jobflix</b> pour explorer de nouveaux métiers.</p>
+        </mj-text>
+        <mj-text line-height="1.38">Afin d'améliorer l'utilité de notre plateforme, <b>nous serions très heureux d'avoir votre avis</b>. Cliquez sur le bouton ci-dessous pour nous en dire un peu plus — cela ne vous prendra que <b>3 petites minutes</b>, promis ! 🙏</mj-text>
+
+        <mj-text line-height="1.38">Comme récompense, vous aurez une chance de <b>gagner un bon d'achat de 50 €</b> pour un magasin de votre choix (tirage au sort parmi tous les répondants) !</mj-text>
+        <mj-button align="center" background-color="#58BBFB" border-radius="100px" border="none" color="#ffffff" container-background-color="transparent" font-family="Ubuntu, Helvetica, Arial, sans-serif" font-size="13px" font-weight="normal" href="https://www.surveymonkey.com/r/TKWMJWB" inner-padding="10px 25px" padding-bottom="20px" padding-left="25px" padding-right="25px" padding-top="20px" padding="10px 25px" text-decoration="none" text-transform="none" vertical-align="middle">Donner mon avis</mj-button>
+        <mj-text line-height="1.38">
+          <p>À très vite</p>
+          <p>{{var:senderName}}</p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column>
+        <mj-divider border-color="#E9EBF0" border-style="solid" border-width="1px" container-background-color="transparent" width="100%"/>
+        <mj-text color="#9596a0" font-size="13px" line-height="22px">
+          <i>Ce message vous a été envoyé à la suite du recueil de vos données sur {{var:productName}}. La fréquence des envois est limitée, mais peut être plus importante en fonction de l'action de l'association. Vous avez la possibilité d'exercer vos droits d'accès, de rectification et de suppression en écrivant à l'adresse suivante : donnees@bob-emploi.fr.</i>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

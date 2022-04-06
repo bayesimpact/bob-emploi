@@ -1,0 +1,22 @@
+<mjml>
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-image src="https://images.typeform.com/images/iAfyfvGCTY43/image/default" id="i0ph" height="120px" width="241px" padding-right="0" align="left"/>
+        <mj-text>
+          Bonjour {{var:prenom}}
+          <br>
+          <br>Vous avez débuté un test de valorisation du parcours du jeune vers l'autonomie pour{%for id_jeune in var:idsJeunes%} <a data-cke-saved-href="https://portail.i-milo.fr/records/api/dossier/{{id_jeune}}" href="https://portail.i-milo.fr/records/api/dossier/{{id_jeune}}">{{id_jeune}}</a>{%endfor%}, le {{var:dateDeLaPhotoPrecedente}}.
+          <br>
+          <br>
+          <span style="color:#3498db;"><strong>C'est le moment maintenant de procéder à la passation de la photo suivante.</strong></span>
+          <br>
+          <br>Nous vous invitons à activer « MILOrizons » à partir de la fiche I-MILO du jeune concerné sur votre navigateur web.
+          <br>
+          <br>Toute l'équipe MILOrizons vous souhaite une bonne passation.
+          <br>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

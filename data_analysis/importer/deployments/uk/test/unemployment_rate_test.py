@@ -2,6 +2,7 @@
 
 from os import path
 import os
+import tempfile
 import unittest
 
 import requests_mock
@@ -15,6 +16,12 @@ class TestCareerChangers(unittest.TestCase):
 
     test_data_folder = path.join(path.dirname(__file__), 'testdata')
 
+    def setUp(self) -> None:
+        super().setUp()
+        tmpfile, self.tmpfile_name = tempfile.mkstemp()
+        os.close(tmpfile)
+        self.addCleanup(lambda: os.remove(self.tmpfile_name))
+
     def test_basic_usage(self, mock_requests: requests_mock.Mocker) -> None:
         """Basic usage."""
 
@@ -27,10 +34,10 @@ class TestCareerChangers(unittest.TestCase):
                 }
             ]
         })
-        out = path.join(self.test_data_folder, 'unem_rate.csv')
+        out = self.tmpfile_name
 
         unemployment_rate.main(out, jobs_xls=os.path.join(self.test_data_folder, 'soc/soc2010.xls'))
-        with open(out) as output_file:
+        with open(out, encoding='utf-8') as output_file:
             header = output_file.readline()
             first_line = output_file.readline()
 
@@ -49,10 +56,10 @@ class TestCareerChangers(unittest.TestCase):
                 }
             ]
         })
-        out = path.join(self.test_data_folder, 'unem_rate.csv')
+        out = self.tmpfile_name
 
         unemployment_rate.main(out, jobs_xls=os.path.join(self.test_data_folder, 'soc/soc2010.xls'))
-        with open(out) as output_file:
+        with open(out, encoding='utf-8') as output_file:
             header = output_file.readline()
             first_line = output_file.readline()
 

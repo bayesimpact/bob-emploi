@@ -7,9 +7,9 @@
 // Missing feature:
 //  - unset ':active' state in some cases (e.g. when the callback of onClick changes the focus).
 import _memoize from 'lodash/memoize'
-import PropTypes from 'prop-types'
 import React, {useCallback, useDebugValue, useMemo, useRef, useState} from 'react'
-import {Link, LinkProps} from 'react-router-dom'
+import type {LinkProps} from 'react-router-dom'
+import {Link} from 'react-router-dom'
 
 
 interface HoverProps<HTMLElement> {
@@ -207,36 +207,57 @@ const RadiumLinkBase = (props: RadiumLinkProps): React.ReactElement => {
 const RadiumLink = React.memo(RadiumLinkBase)
 
 
-const RadiumExternalLinkBase = (props: RadiumProps<HTMLAnchorElement>):
+const RadiumExternalLinkBase =
+(props: RadiumProps<HTMLAnchorElement>, ref?: React.Ref<HTMLAnchorElement>):
 React.ReactElement => {
   const [radiumProps] = useRadium<HTMLAnchorElement>(props)
   // eslint-disable-next-line jsx-a11y/anchor-has-content
-  return <a {...radiumProps} rel="noopener noreferrer" target="_blank" />
+  return <a ref={ref} {...radiumProps} rel="noopener noreferrer" target="_blank" />
 }
-const RadiumExternalLink = React.memo(RadiumExternalLinkBase)
+const RadiumExternalLink = React.memo(React.forwardRef(RadiumExternalLinkBase))
+
+// See https://github.com/jsx-eslint/eslint-plugin-jsx-a11y/blob/main/docs/rules/no-noninteractive-element-interactions.md
+type InteractionsProps =
+// TODO(pascal): Add onClick, once all errors have been fixed.
+//  | 'onClick'
+  | 'onMouseDown'
+  | 'onMouseUp'
+  | 'onKeyPress'
+  | 'onKeyDown'
+  | 'onKeyUp'
+type NonInteractiveHTMLProps<E extends HTMLElement> = Omit<React.HTMLProps<E>, InteractionsProps>
 
 
-const RadiumDivBase = (props: React.HTMLProps<HTMLDivElement>): React.ReactElement =>
-  <div {...useRadium<HTMLDivElement>(props)[0]} />
-const RadiumDiv = React.memo(RadiumDivBase)
-
-
-const RadiumSpanBase = (props: React.HTMLProps<HTMLSpanElement>): React.ReactElement =>
+const RadiumSpanBase = (props: NonInteractiveHTMLProps<HTMLSpanElement>): React.ReactElement =>
   <span {...useRadium<HTMLSpanElement>(props)[0]} />
 const RadiumSpan = React.memo(RadiumSpanBase)
+
+const RadiumLiBase = (props: NonInteractiveHTMLProps<HTMLLIElement>): React.ReactElement =>
+  <li {...useRadium<HTMLLIElement>(props)[0]} />
+const RadiumListEl = React.memo(RadiumLiBase)
+
+
+const RadiumButtonBase = (props: React.HTMLProps<HTMLButtonElement>): React.ReactElement => {
+  const [radiumProps] = useRadium<HTMLButtonElement, React.HTMLProps<HTMLButtonElement>>(props)
+  return <button type="button" {...radiumProps as React.ComponentPropsWithoutRef<'button'>} />
+}
+const RadiumButton = React.memo(RadiumButtonBase)
 
 
 type SmartLinkProps =
   | RadiumProps<HTMLSpanElement>
   | RadiumProps<HTMLAnchorElement>
+  | RadiumProps<HTMLButtonElement>
   | RadiumLinkProps
 
 // TODO(cyrille): Use wherever applicable.
 const SmartLinkBase: React.FC<SmartLinkProps> =
 ({style, ...props}: SmartLinkProps): React.ReactElement => {
   const linkStyle: RadiumCSSProperties = {
+    borderRadius: 3,
     color: 'inherit',
     cursor: 'pointer',
+    outlineOffset: 2,
     textDecoration: 'none',
     ...style,
   }
@@ -249,17 +270,13 @@ const SmartLinkBase: React.FC<SmartLinkProps> =
     // eslint-disable-next-line jsx-a11y/anchor-has-content
     return <RadiumExternalLink href={href} {...otherAnchorProps} style={linkStyle} />
   }
-  return <RadiumSpan
-    {...props} style={linkStyle} role={props.onClick && 'button'}
-    tabIndex={props.onClick ? 0 : -1} />
-}
-SmartLinkBase.propTypes = {
-  href: PropTypes.string,
-  style: PropTypes.object,
-  to: PropTypes.string,
+  if (props.onClick) {
+    return <RadiumButton style={linkStyle} {...props as RadiumProps<HTMLButtonElement>} />
+  }
+  return <RadiumSpan style={linkStyle} {...props} />
 }
 const SmartLink = React.memo(SmartLinkBase)
 
 
-export {SmartLink, RadiumDiv, RadiumExternalLink, RadiumLink, RadiumSpan, useHover,
-  useHoverAndFocus, useRadium}
+export {SmartLink, RadiumExternalLink, RadiumLink, RadiumListEl,
+  useHover, useHoverAndFocus, useRadium, useFocus}

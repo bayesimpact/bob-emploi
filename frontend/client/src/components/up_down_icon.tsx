@@ -2,8 +2,7 @@ import ChevronDownIcon from 'mdi-react/ChevronDownIcon'
 import ChevronUpIcon from 'mdi-react/ChevronUpIcon'
 import MenuDownIcon from 'mdi-react/MenuDownIcon'
 import MenuUpIcon from 'mdi-react/MenuUpIcon'
-import {MdiReactIconProps} from 'mdi-react/dist/typings'
-import PropTypes from 'prop-types'
+import type {MdiReactIconProps} from 'mdi-react/dist/typings'
 import React, {useMemo} from 'react'
 
 
@@ -22,11 +21,7 @@ const UpDownIcon = (props: Props): React.ReactElement => {
     }
     return isUp ? MenuUpIcon : MenuDownIcon
   }, [icon, isUp])
-  return <Icon {...otherProps} />
-}
-UpDownIcon.propTypes = {
-  icon: PropTypes.oneOf(['chevron', 'menu']).isRequired,
-  isUp: PropTypes.bool,
+  return <Icon role="img" {...otherProps} />
 }
 
 

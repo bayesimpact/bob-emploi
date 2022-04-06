@@ -6,17 +6,29 @@ import logging
 import os
 from os import path
 import typing
-from typing import Any, Callable, Dict, Mapping, Optional, List, Sequence, Set, Tuple
+from typing import Any, Callable, Mapping, Optional, Sequence, Set, Tuple
 
 import requests
+from requests import adapters
+from urllib3.util import retry
+import sentry_sdk
+from sentry_sdk.integrations import logging as sentry_logging
 
-from bob_emploi.data_analysis.i18n import translation
-from bob_emploi.data_analysis.lib import checker
+from bob_emploi.common.python import checker
+from bob_emploi.common.python import mustache
+from bob_emploi.common.python.i18n import translation
 from bob_emploi.frontend.server.asynchronous.i18n import extract_mailjet_strings
 from bob_emploi.frontend.server.mail.templates import mailjet_templates
 
 # ID of the Airtable base containing translations.
 _I18N_BASE_ID = 'appkEc8N0Bw4Uok43'
+
+_HTTP_ADAPTER = adapters.HTTPAdapter(max_retries=retry.Retry(
+    total=10,
+    status_forcelist=[429, 503],
+    allowed_methods=['POST', 'GET', 'OPTIONS', 'PUT'],
+    backoff_factor=2,
+))
 
 
 def translate_html_tags(
@@ -90,17 +102,8 @@ def translate_html_tags(
     return before + translated + after
 
 
-def translate_mailjet_content(folder: str, translate: Callable[[str], str]) -> Mapping[str, Any]:
-    """Translate a Mailjet template from a folder using a translate function."""
-
-    # Headers.
-    with open(path.join(folder, 'headers.json'), 'rt') as headers_file:
-        headers_content = json.load(headers_file)
-    headers_content['Subject'] = translate_html_tags(headers_content['Subject'], translate)
-
-    # HTML.
-    with open(path.join(folder, 'template.html'), 'rt') as html_file:
-        html_soup = html_file.read()
+def _clean_and_translate_xml(html_soup: str, translate: Callable[[str], str]) -> str:
+    html_soup = extract_mailjet_strings.clear_meaningless_spaces(html_soup)
     for html_cell in extract_mailjet_strings.iterate_html_contents(html_soup):
         try:
             translated_cell = translate_html_tags(
@@ -108,12 +111,33 @@ def translate_mailjet_content(folder: str, translate: Callable[[str], str]) -> M
         except KeyError as error:
             raise ValueError(f'Impossible to translate {html_cell}') from error
         html_soup = html_soup.replace(html_cell, translated_cell)
+    return html_soup
+
+
+def _check_mustache(template: str, folder: str) -> None:
+    with open(path.join(folder, 'vars-example.json'), 'rt', encoding='utf-8') as vars_file:
+        template_vars = json.load(vars_file) | {'senderName': 'Sender Name'}
+    mustache.instantiate(template, template_vars, use_strict_syntax=True)
+
+
+def translate_mailjet_content(folder: str, translate: Callable[[str], str]) -> Mapping[str, Any]:
+    """Translate a Mailjet template from a folder using a translate function."""
+
+    # Headers.
+    with open(path.join(folder, 'headers.json'), 'rt', encoding='utf-8') as headers_file:
+        headers_content = json.load(headers_file)
+    headers_content['Subject'] = translate_html_tags(headers_content['Subject'], translate)
+
+    # HTML.
+    with open(path.join(folder, 'template.html'), 'rt', encoding='utf-8') as html_file:
+        html_soup = _clean_and_translate_xml(html_file.read(), translate)
+    _check_mustache(html_soup, folder)
 
     # MJML.
-    with open(path.join(folder, 'template.mjml'), 'rt') as mjml_file:
-        mjml_root = json.load(mjml_file)
-    for unused_node_path, node, field in extract_mailjet_strings.iterate_mjml_contents(mjml_root):
-        node[field] = translate_html_tags(node[field], translate)
+    with open(path.join(folder, 'template.mjml'), 'rt', encoding='utf-8') as mjml_file:
+        mjml_content = mjml_file.read()
+    mjml_root = _clean_and_translate_xml(mjml_content, translate)
+    _check_mustache(mjml_root, folder)
 
     return {
         'Headers': headers_content,
@@ -141,7 +165,7 @@ class _TemplateTranslationError(ValueError):
 
     def __init__(
             self,
-            missing_translations: Set[str], validation_errors: Dict[str, ValueError]) -> None:
+            missing_translations: Set[str], validation_errors: dict[str, ValueError]) -> None:
         errors = ''
         if missing_translations:
             errors += 'There are missing translations for:\n  ' + \
@@ -165,12 +189,14 @@ class _TranslationResult(typing.NamedTuple):
 class _MailTranslator:
 
     def __init__(self, mj_api_key: str, mj_api_secret: str):
-        self._all_translations: Dict[str, Dict[str, str]] = {}
+        self._all_translations: dict[str, dict[str, str]] = {}
         self._auth = (mj_api_key, mj_api_secret)
         self._space_checker = checker.SpacesChecker()
+        self._http = requests.Session()
+        self._http.mount('https://', _HTTP_ADAPTER)
 
     def _post_mailjet(self, url: str, data: Any) -> requests.Response:
-        return requests.post(
+        return self._http.post(
             url,
             data=json.dumps(data),
             headers={'Content-Type': 'application/json'},
@@ -200,10 +226,10 @@ class _MailTranslator:
         new_template_id: Optional[int] = None
 
         if not self._all_translations:
-            self._all_translations.update(translation.get_all_translations())
+            self._all_translations |= translation.get_all_translations()
 
         missing_translations: Set[str] = set()
-        validation_errors: Dict[str, ValueError] = {}
+        validation_errors: dict[str, ValueError] = {}
 
         def _translate(string: str) -> str:
             try:
@@ -224,11 +250,16 @@ class _MailTranslator:
             raise exception
 
         if template_id:
-            response = requests.get(
+            response = self._http.get(
                 f'https://api.mailjet.com/v3/REST/template/{template_id}/detailcontent',
                 headers={'Content-Type': 'application/json'},
                 auth=self._auth,
             )
+            try:
+                response.raise_for_status()
+            except requests.exceptions.HTTPError as error:
+                logging.error(response.text, exc_info=error)
+                raise
             old_data = response.json()['Data'][0]
             if old_data == data:
                 logging.info('Data is already up to date for "%s" in "%s".', campaign_id, lang)
@@ -237,6 +268,7 @@ class _MailTranslator:
             if dry_run:
                 logging.info('Template for "%s" in "%s" would be created.', campaign_id, lang)
                 return _TranslationResult(new_template_id=1)
+            logging.info('Creating template for "%s" in "%s".', campaign_id, lang)
             response = self._post_mailjet(
                 'https://api.mailjet.com/v3/REST/template',
                 data={
@@ -256,6 +288,7 @@ class _MailTranslator:
         if dry_run:
             logging.info('Data would be updated for "%s" in "%s".', campaign_id, lang)
         else:
+            logging.info('Updating template for "%s" in "%s".', campaign_id, lang)
             response = self._post_mailjet(
                 f'https://api.mailjet.com/v3/REST/template/{template_id}/detailcontent',
                 data=data,
@@ -271,7 +304,7 @@ class _MailTranslator:
 
 def _update_mailjet_templates(
         map_filename: str, campaign_id: str, lang: str, template_id: int) -> None:
-    with open(map_filename, 'rt') as map_file:
+    with open(map_filename, 'rt', encoding='utf-8') as map_file:
         map_as_list = json.load(map_file)
 
     try:
@@ -281,10 +314,10 @@ def _update_mailjet_templates(
         return
     if 'i18n' not in map_as_list[index]:
         map_as_list[index]['i18n'] = {}
-    map_as_list[index]['i18n'].update({lang: template_id})
+    map_as_list[index]['i18n'] |= {lang: template_id}
 
-    with open(map_filename, 'wt') as map_file:
-        json.dump(map_as_list, map_file, indent=2)
+    with open(map_filename, 'wt', encoding='utf-8') as map_file:
+        json.dump(map_as_list, map_file, indent=2, ensure_ascii=False, sort_keys=True)
         map_file.write('\n')
 
 
@@ -318,6 +351,14 @@ def main(string_args: Optional[Sequence[str]] = None) -> None:
         help='Do not update any template nor files')
     args = parser.parse_args(string_args)
 
+    sentry_dsn = os.getenv('SENTRY_DSN')
+    if sentry_dsn:
+        # TODO(pascal): Fix when https://github.com/getsentry/sentry-python/issues/1081 is solved.
+        sentry_sdk.init(  # pylint: disable=abstract-class-instantiated
+            dsn=sentry_dsn,
+            integrations=[
+                sentry_logging.LoggingIntegration(level=logging.INFO, event_level=logging.WARNING)])
+
     if 'existing' in args.campaign_id:
         actions = [
             (campaign_id, lang)
@@ -328,10 +369,14 @@ def main(string_args: Optional[Sequence[str]] = None) -> None:
         actions = [
             (campaign_id, lang)
             for campaign_id in args.campaign_id
-            for lang in args.lang or ('en')
+            for lang in args.lang or ('en',)
         ]
 
-    errors: List[Tuple[str, str, ValueError]] = []
+    for campaign_id in {action[0] for action in actions}:
+        if mailjet_templates.MAP[campaign_id].get('noI18n'):
+            raise ValueError(f'{campaign_id} is marked as not translatable.')
+
+    errors: list[Tuple[str, str, ValueError]] = []
     translator = _MailTranslator(args.mailjet_apikey, args.mailjet_secret)
     for campaign_id, lang in actions:
         try:

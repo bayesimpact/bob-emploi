@@ -1,6 +1,6 @@
 """Module to advise the user to go to pôle emploi online salons."""
 
-from typing import Callable, Dict, Iterable, List
+from typing import Callable, Iterable
 
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import online_salon_pb2
@@ -8,7 +8,7 @@ from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
 
-_AREA_TYPE_TO_ID_GETTER: Dict[
+_AREA_TYPE_TO_ID_GETTER: dict[
     'geo_pb2.AreaType.V',
     Callable[[geo_pb2.FrenchCity], str]
 ] = {
@@ -28,7 +28,7 @@ class _AdviceOnlineSalons(scoring_base.ModelBase):
 
     @scoring_base.ScoringProject.cached('online_salons')
     def _get_relevant_salons(self, project: scoring_base.ScoringProject) \
-            -> List[online_salon_pb2.OnlineSalon]:
+            -> list[online_salon_pb2.OnlineSalon]:
         today = project.now
         # TODO(cyrille): Test filters.
         filtered_salons = scoring_base.filter_using_score(

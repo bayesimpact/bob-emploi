@@ -4,7 +4,8 @@ import jobSatisfactionIcon from 'images/advices/skill-for-future/job-satisfactio
 import noAutomatisationIcon from 'images/advices/skill-for-future/no-automatisation.png'
 import timeToMarketIcon from 'images/advices/skill-for-future/time-to-market.png'
 
-import {LocalizableString, prepareT} from './i18n'
+import type {LocalizableString} from './i18n'
+import {prepareT} from './i18n'
 
 export interface AssetProp {
   readonly icon: string

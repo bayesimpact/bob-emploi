@@ -1,0 +1,6 @@
+*
+!/frontend/mailjet/
+!/frontend/server/mail/templates/*
+/frontend/server/mail/templates/README.md
+/frontend/server/mail/templates/*.py
+/frontend/server/mail/templates/__pycache__

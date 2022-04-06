@@ -1,0 +1,17 @@
+{
+  "baseUrl": "https://www.bob-emploi.fr",
+  "changeEmailSettingsUrl": "https://www.bob-emploi.fr/settings",
+  "date": "20 décembre 2018",
+  "firstName": "Agnès",
+  "firstTeamMember": "Tabitha",
+  "gender": "FEMININE",
+  "isCoachingEnabled": "True",
+  "loginUrl": "https://www.bob-emploi.fr/login",
+  "numberTeamMembers": "10",
+  "numberUsers": "270 000",
+  "ofJob": "d'ingénieure nucléaire",
+  "productLogoUrl": "https://t.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
+  "productName": "Bob",
+  "teamMembers": "Paul, John, Pascal, Sil, Cyrille, Flo, Nicolas, Florian, Lillie",
+  "viralityTemplate": "https://www.bob-emploi.fr"
+}

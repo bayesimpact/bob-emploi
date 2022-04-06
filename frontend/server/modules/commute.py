@@ -1,7 +1,7 @@
 """Module to advise the user to extend their commute to get more offers."""
 
 import math
-from typing import Iterable, Iterator, List
+from typing import Iterable, Iterator
 
 from bob_emploi.frontend.server import geo
 from bob_emploi.frontend.server import proto
@@ -69,7 +69,7 @@ class _AdviceCommuteScoringModel(scoring_base.ModelBase):
 
     @scoring_base.ScoringProject.cached('commute')
     def list_nearby_cities(self, project: scoring_base.ScoringProject) \
-            -> List[commute_pb2.CommutingCity]:
+            -> list[commute_pb2.CommutingCity]:
         """Compute and store all interesting cities that are not too close and not too far.
 
         Those cities will be used by the Commute advice.

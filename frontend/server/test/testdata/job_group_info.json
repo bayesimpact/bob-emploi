@@ -244,6 +244,7 @@
             ]
         }
     },
-    "preferredApplicationMedium": "APPLY_IN_PERSON"
+    "preferredApplicationMedium": "APPLY_IN_PERSON",
+    "skillsForFuture": [{"name": "Empathie"}]
   }
 ]

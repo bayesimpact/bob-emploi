@@ -8,6 +8,7 @@ from unittest import mock
 import mailjet_rest
 import requests
 
+from bob_emploi.common.python.test import nowmock
 from bob_emploi.frontend.server.mail import mail_send
 from bob_emploi.frontend.server.mail.templates import mailjet_templates
 from bob_emploi.frontend.server.test import mailjetmock
@@ -97,6 +98,17 @@ class MailTest(unittest.TestCase):
         self.assertEqual(['1@me.com'], [m.recipient['Email'] for m in sent_emails])
         self.assertEqual({98765}, {m.properties['TemplateID'] for m in sent_emails})
 
+    def test_send_template_fallback_locale(self) -> None:
+        """Choose the relevant mailjet template for other locales, using  fallback."""
+
+        mail_send.send_template(
+            'imt', _Recipient('1@me.com', 'Primary', 'Recipient', 'en_UK'), {'custom': 'var'})
+
+        sent_emails = mailjetmock.get_all_sent_messages()
+
+        self.assertEqual(['1@me.com'], [m.recipient['Email'] for m in sent_emails])
+        self.assertEqual({98765}, {m.properties['TemplateID'] for m in sent_emails})
+
     def test_send_template_multiple_recipients(self) -> None:
         """Send template to multiple recipients."""
 
@@ -122,14 +134,20 @@ class MailTest(unittest.TestCase):
                 'imt', _Recipient('alice@help.me', 'Alice', 'NeedsHelp', ''), {'nullVar': None})
 
     def test_dry_run(self) -> None:
-        """Test the create_email_sent_protos function."""
+        """Test the dry_run mode."""
 
         res = mail_send.send_template(
             'imt', _Recipient('alice@help.me', 'Alice', 'NeedsHelp', ''), {}, dry_run=True)
 
         self.assertEqual(200, res.status_code)
         res.raise_for_status()
-        self.assertFalse(mail_send.create_email_sent_proto(res))
+        email_sent_proto = mail_send.create_email_sent_proto(res)
+        self.assertTrue(email_sent_proto)
+        assert email_sent_proto
+        self.assertFalse(email_sent_proto.mailjet_message_id)
+
+        sent_emails = mailjetmock.get_all_sent_messages()
+        self.assertFalse(sent_emails)
 
     def test_create_email_sent_protos(self) -> None:
         """Test the create_email_sent_protos function."""
@@ -141,7 +159,7 @@ class MailTest(unittest.TestCase):
                 _Recipient('3@me.com', 'Third', 'Recipient', ''),
             ])
 
-        with mock.patch(mail_send.now.__name__ + '.get') as mock_now:
+        with nowmock.patch() as mock_now:
             mock_now.return_value = datetime.datetime(2018, 11, 28, 17, 10)
             protos = list(mail_send.create_email_sent_protos(res))
 

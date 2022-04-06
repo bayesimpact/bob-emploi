@@ -1,14 +1,14 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 import _memoize from 'lodash/memoize'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import StarIcon from 'mdi-react/StarIcon'
-import PropTypes from 'prop-types'
 import React, {useMemo, useCallback} from 'react'
 import {useTranslation} from 'react-i18next'
 
 
 import {closeToCity, lowerFirstLetter, ofJobName, toTitleCase} from 'store/french'
-import {LocalizableString, prepareT} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {prepareT} from 'store/i18n'
 import {genderizeJob} from 'store/job'
 import isMobileVersion from 'store/mobile'
 
@@ -16,13 +16,14 @@ import ExternalLink from 'components/external_link'
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
 import Markdown from 'components/markdown'
-import {RadiumDiv} from 'components/radium'
+import {RadiumExternalLink} from 'components/radium'
 import laBonneBoiteImage from 'images/labonneboite-picto.png'
 import laBonneAlternanceImage from 'images/labonnealternance-picto.svg'
 import poleEmploiImage from 'images/ple-emploi-ico.png'
 import Picto from 'images/advices/picto-spontaneous-application.svg'
 
-import {MethodSuggestionList, CardProps, EmailTemplate, ToolCard, useAdviceData} from './base'
+import type {CardProps} from './base'
+import {MethodSuggestionList, EmailTemplate, ToolCard, useAdviceData} from './base'
 
 
 const emptyArray = [] as const
@@ -34,11 +35,14 @@ const utmTrackingQuery = 'utm_medium=web&utm_source=bob&utm_campaign=bob-conseil
 interface ValidCompany extends bayes.bob.Company {
   name: string
 }
+const noMarginStyle: React.CSSProperties = {
+  margin: 0,
+}
 
 const createLink = (
   maxDistanceToCompaniesKm: number, isForAlternance?: boolean,
   cityId?: string, romeId?: string): string => {
-  const baseUrl = isForAlternance ? 'https://labonnealternance.pole-emploi.fr/' :
+  const baseUrl = isForAlternance ? 'https://labonnealternance.pole-emploi.fr/' : // checkURL
     config.spontaneousApplicationSource
   const distanceParam = maxDistanceToCompaniesKm ? `d=${maxDistanceToCompaniesKm}&` : ''
   return `${baseUrl}entreprises/commune` +
@@ -104,7 +108,7 @@ const CompaniesBase: React.FC<CompaniesProps> =
     },
   )
   const footer = useMemo((): React.ReactElement =>
-    <Trans t={t} parent={null}>
+    <Trans t={t} parent="p" style={noMarginStyle}>
       <img
         src={poleEmploiImage} style={{height: 35, marginRight: 10, verticalAlign: 'middle'}}
         alt="Pôle emploi" />
@@ -175,37 +179,19 @@ const SpontaneousMethod: React.FC<CardProps> = (props: CardProps): React.ReactEl
     {isOnlyLookingForAlternance ? null : <ToolCard
       imageSrc={laBonneBoiteImage} href={createLink(maxDistanceToCompaniesKm)}>
       La Bonne Boite
-      <Trans t={t} style={{fontSize: 13, fontWeight: 'normal'}}>
-        pour trouver des entreprises à fort potentiel d'embauche
-      </Trans>
+      <span style={{fontSize: 13, fontWeight: 'normal'}}>
+        {t("pour trouver des entreprises à fort potentiel d'embauche")}
+      </span>
     </ToolCard>}
     {isLookingForAlternance ? <ToolCard
       imageSrc={laBonneAlternanceImage}
       href={createLink(maxDistanceToAlternanceCompaniesKm, true)}>
       La Bonne Alternance
-      <Trans t={t} style={{fontSize: 13, fontWeight: 'normal'}}>
-        pour trouver des entreprises qui embauchent en alternance
-      </Trans>
+      <span style={{fontSize: 13, fontWeight: 'normal'}}>
+        {t('pour trouver des entreprises qui embauchent en alternance')}
+      </span>
     </ToolCard> : null}
   </MethodSuggestionList>
-}
-SpontaneousMethod.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-  profile: PropTypes.shape({
-    gender: PropTypes.string,
-  }).isRequired,
-  project: PropTypes.shape({
-    city: PropTypes.shape({
-      name: PropTypes.string.isRequired,
-    }),
-    targetJob: PropTypes.shape({
-      jobGroup: PropTypes.shape({
-        romeId: PropTypes.string,
-      }),
-    }),
-  }).isRequired,
-  strategyId: PropTypes.string,
-  t: PropTypes.func.isRequired,
 }
 
 
@@ -300,19 +286,19 @@ const tipStyle: React.CSSProperties = {
 
 const SpontaneousTipsMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
   const {handleExplore} = props
-  const {t, t: translate} = useTranslation()
+  const {t, t: translate} = useTranslation('advisor')
   return <div>
     <div style={{marginBottom: 20}}>{t('3 étapes pour envoyer des candidatures spontanées')}</div>
     {
       leads.map(({leadsList, title}, indexLead): ReactStylableElement|null =>
         <MethodSuggestionList
-          key={`list-${indexLead}`} title={title}
+          key={`list-${indexLead}`} title={translate(...title)}
           style={methodStyle} isNotClickable={true}>
           {
             leadsList.map((lead, indexTip): ReactStylableElement|null => lead.emailExample ?
               <EmailTemplate
                 content={translate(...lead.emailExample)}
-                title={lead.name}
+                title={translate(...lead.name)}
                 key={`lead-${indexLead}-${indexTip}`}
                 onContentShown={handleExplore('email template')} />
               : <div key={`tip-${indexLead}-${indexTip}`} style={tipStyle}>
@@ -322,11 +308,6 @@ const SpontaneousTipsMethod: React.FC<CardProps> = (props: CardProps): React.Rea
       )}
   </div>
 }
-
-SpontaneousTipsMethod.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-}
-
 
 const ExpandedAdviceCardContent = config.spontaneousApplicationSource ?
   React.memo(SpontaneousMethod) : React.memo(SpontaneousTipsMethod)
@@ -343,7 +324,7 @@ const iconTextStyle = {
 
 const getStarStyle = _memoize(
   (starIndex: number, hiringPotential: number): React.CSSProperties => ({
-    fill: starIndex < hiringPotential - 1 ? colors.GREENISH_TEAL : colors.PINKISH_GREY,
+    fill: starIndex < hiringPotential ? colors.GREENISH_TEAL : colors.PINKISH_GREY,
     height: 20,
     width: 20,
   }),
@@ -355,6 +336,8 @@ interface StarsProps {
   t: TFunction
 }
 
+const maxStars = 5
+
 
 const StarsBase = ({hiringPotential, t}: StarsProps): React.ReactElement|null => {
   if (!hiringPotential) {
@@ -364,12 +347,13 @@ const StarsBase = ({hiringPotential, t}: StarsProps): React.ReactElement|null =>
     {isMobileVersion ? null : <Trans parent="span" style={titleStyle} t={t}>
       Potentiel d'embauche&nbsp;:
     </Trans>}
-    {Array.from({length: 3}, (unused, index): React.ReactNode =>
-      <StarIcon style={getStarStyle(index, hiringPotential)} key={`star-${index}`} />)}
+    {Array.from({length: maxStars}, (unused, index): React.ReactNode =>
+      <StarIcon
+        style={getStarStyle(index, hiringPotential)} key={`star-${index}`}
+        aria-label={index === maxStars - 1 ?
+          t('{{numStars}} sur 5', {numStars: hiringPotential}) : undefined}
+        aria-hidden={index !== maxStars - 1} focusable={false} />)}
   </span>
-}
-StarsBase.propTypes = {
-  hiringPotential: PropTypes.number,
 }
 const Stars = React.memo(StarsBase)
 
@@ -400,24 +384,27 @@ const createLBAUrl = (siret: string|undefined, tracking: string, romeId: string)
 }
 
 
+const tracking = 'utm_medium=web&utm_source=bob&utm_campaign=bob-conseil-ent'
+
+
 const CompanyLinkBase: React.FC<CompanyLinkProps> =
   (props: CompanyLinkProps): React.ReactElement => {
     const {
       cityName, hiringPotential, isForAlternance, onClick, name, romeId, siret, style, t,
     } = props
-    const tracking = 'utm_medium=web&utm_source=bob&utm_campaign=bob-conseil-ent'
-    const LBBUrl = useMemo(() => createLBBUrl(siret, tracking), [siret, tracking])
-    const LBAUrl = useMemo(() => createLBAUrl(siret, tracking, romeId), [siret, tracking, romeId])
-    const url = isForAlternance ? LBAUrl : LBBUrl
-
-    const handleClick = useMemo(() => (): void => {
-      window.open(url, '_blank')
-      onClick && onClick()
-    }, [onClick, url])
+    const url = useMemo(() => {
+      if (siret) {
+        return isForAlternance ? createLBAUrl(siret, tracking, romeId) :
+          createLBBUrl(siret, tracking)
+      }
+      return `https://${config.googleTopLevelDomain}/search?q=${
+        encodeURIComponent(name + ' ' + cityName)}`
+    }, [isForAlternance, siret, romeId, name, cityName])
 
     const containerStyle: React.CSSProperties = {
+      color: 'inherit',
+      textDecoration: 'none',
       ...style,
-      cursor: siret ? 'pointer' : 'initial',
       fontWeight: 'normal',
     }
     if (isMobileVersion) {
@@ -427,11 +414,11 @@ const CompanyLinkBase: React.FC<CompanyLinkProps> =
       fill: colors.CHARCOAL_GREY,
       flex: 'none',
       height: 25,
-      opacity: siret ? 1 : 0,
+      opacity: 1,
       padding: '0 10px',
       width: 45,
     }
-    return <RadiumDiv style={containerStyle} onClick={siret ? handleClick : undefined}>
+    return <RadiumExternalLink style={containerStyle} onClick={onClick} href={url}>
       <span style={{flex: 1}}><strong>{toTitleCase(name)}</strong>
         {cityName && !isMobileVersion ?
           <span style={{paddingLeft: '.3em'}}>
@@ -439,19 +426,9 @@ const CompanyLinkBase: React.FC<CompanyLinkProps> =
           </span> : null}
       </span>
       <Stars hiringPotential={hiringPotential || 0} t={t} />
-      <ChevronRightIcon style={chevronStyle} />
-    </RadiumDiv>
+      <ChevronRightIcon style={chevronStyle} aria-hidden={true} focusable={false} />
+    </RadiumExternalLink>
   }
-CompanyLinkBase.propTypes = {
-  cityName: PropTypes.string,
-  hiringPotential: PropTypes.number,
-  isForAlternance: PropTypes.bool,
-  name: PropTypes.string.isRequired,
-  onClick: PropTypes.func,
-  romeId: PropTypes.string.isRequired,
-  siret: PropTypes.string,
-  style: PropTypes.object,
-}
 const CompanyLink = React.memo(CompanyLinkBase)
 
 

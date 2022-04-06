@@ -20,12 +20,12 @@ declare module '*.svg?fill=%23000' {
   export default content
 }
 
-declare module '*.svg?fill=%231888ff' {
+declare module '*.svg?stroke=%239596a0' {
   const content: string
   export default content
 }
 
-declare module '*.svg?stroke=%239596a0' {
+declare module '*.svg?stroke=%23fff' {
   const content: string
   export default content
 }
@@ -55,6 +55,11 @@ declare module '*.pdf' {
   export default content
 }
 
+declare module '*/static_i18n?static' {
+  const content: () => Promise<import('i18next').TFunction>
+  export default content
+}
+
 declare module '*/airtable_fields.json5' {
   interface Table {
     readonly altTable?: string
@@ -69,6 +74,7 @@ declare module '*/airtable_fields.json5' {
   const tables: {
     adviceModules: Table
     categories: Table
+    diagnosticMainChallenges: Table
     emailTemplates: Table
     goals: Table
     vae: Table
@@ -106,82 +112,25 @@ interface RadiumCSSProperties extends React.CSSProperties {
 
 type ReactStylableElement = React.ReactElement<{style?: RadiumCSSProperties}>
 
-// The value here is just a placeholder as the real values are in colors.json5. However it helps
-// to ensure proper typing.
+declare namespace color {
+  type CoreColors = import('config').Colors
+  // Need an interface (instead of a type) to be mergeable in plugins.
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface Colors extends CoreColors {}
+}
 
-type ConfigColor = '#1888ff'
-type CoreColors = {[name in keyof typeof import('/tmp/bob_emploi/colors.json')]: ConfigColor}
-// Need an interface (instead of a type) to be mergeable in plugins.
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface Colors extends CoreColors {}
+declare namespace configuration {
+  type CoreConfig = import('config').Config
+  // Need an interface (instead of a type) to be mergeable in plugins.
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface Config extends CoreConfig {}
+}
 
 // Map of colors used in the app.
-declare const colors: Colors
-declare const colorsMap: Colors
+declare const colors: color.Colors
+declare const colorsMap: color.Colors
 
-// TODO(cyrille): Separate different kinds of constants in sub-objects.
-interface Config {
-  // TODO(cyrille): Move as override in ali plugin.
-  readonly aliAmplitudeToken: string
-  readonly amplitudeToken: string
-  readonly canonicalUrl: string
-  readonly citySuggestAlgoliaIndex: string
-  readonly clientVersion: string
-  // country ID is used for translation contexts
-  readonly countryId: string
-  // Name of the SVG file in images/maps. See doc in src/images/maps/README.md
-  readonly countryMapName: string
-  // countryName is used for Google search terms
-  readonly countryName: string
-  readonly currencySign: string
-  readonly dataSourceAutomation: string
-  readonly dataSourceLMI: string
-  readonly departementSuggestAlgoliaIndex: string
-  readonly donationUrl: string
-  readonly defaultLang: string
-  // Name of the external website with LMI (in the sentence "a {{externalLmiSiteName}} website").
-  readonly externalLmiSiteName: string
-  // Link to an external page with LMI. You can use backticks and reference to job and city to
-  // create deep links.
-  readonly externalLmiUrl: string
-  readonly facebookPixelID: string
-  readonly facebookSSOAppId: string
-  readonly findOtherActivitiesUrl: string
-  readonly frustrationOptionsExcluded: readonly string[]
-  readonly emploiStoreClientId: string
-  // geoAdminNames are used to handle different geographic zone names (région/département)
-  readonly geoAdmin1Name: string
-  readonly geoAdmin2Name: string
-  readonly githubSourceLink: string
-  readonly googleSSOClientId: string
-  readonly googleTopLevelDomain: string
-  readonly googleUAID: string
-  readonly grossToNet: number
-  readonly helpRequestUrl: string
-  readonly hasVAEData: boolean
-  readonly hoursPerWeek: number
-  readonly isCoachingEnabled: boolean
-  readonly isCurrencySignPrefixed: boolean
-  readonly isEmploiStoreEnabled: boolean
-  readonly isLmiInBeta: boolean
-  readonly jobGroupImageSmallUrl: string
-  readonly jobGroupImageUrl: string
-  readonly jobSuggestAlgoliaIndex: string
-  readonly linkedInClientId: string
-  readonly methodAssociationHelpFooterLink: string
-  readonly methodAssociationHelpFooterUrl: string
-  readonly npsSurvey: 'short' | 'full'
-  readonly originOptionsExcluded: readonly bayes.bob.UserOrigin[]
-  readonly productName: string
-  readonly radarProductName: string
-  readonly salaryUnitOptionsExcluded: readonly bayes.bob.SalaryUnit[]
-  readonly sentryDSN: string
-  readonly spontaneousApplicationSource: string
-  readonly trainingFindName: string
-  readonly trainingFindUrl: string
-  readonly zendeskDomain: string
-}
-declare const config: Config
+declare const config: configuration.Config
 
 declare namespace download {
   interface AdviceModule {

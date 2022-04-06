@@ -1,87 +1,11 @@
 import {expect} from 'chai'
 import i18n from 'i18next'
 
-import {getAdviceModule, getEmailTemplates, getLanguage, getLocaleWithTu,
-  toLocaleString} from 'store/i18n'
+import {defaultInitOptions, getLanguage, getLocaleWithTu, toLocaleString,
+  getFallbackLanguages} from 'store/i18n'
+import {locales as dateLocales} from 'store/i18n_date'
 
 i18n.init()
-
-describe('getAdviceModule', (): void => {
-  before((): void => {
-    getAdviceModule.cache.clear?.()
-  })
-
-  it('should return a proper module (check point)', (): void => {
-    i18n.changeLanguage('fr')
-    i18n.addResourceBundle('fr', 'adviceModules', {
-      'fresh-resume:goal': 'bien refaire votre CV',
-    })
-    const t = i18n.getFixedT('fr', 'translation')
-    const freshResumeModule = getAdviceModule('fresh-resume', t)
-    expect(freshResumeModule).to.be.ok
-    expect(freshResumeModule.goal).to.eq('bien refaire votre CV')
-  })
-
-  it('should return the right json format for another language than fr', (): void => {
-    i18n.addResourceBundle('en', 'adviceModules', {
-      'fresh-resume:goal': 'redo your resume properly',
-    }, true)
-    i18n.changeLanguage('en')
-    const t = i18n.getFixedT('en', 'translation')
-    const enModule = getAdviceModule('fresh-resume', t)
-    expect(enModule).to.be.ok
-    expect(enModule.goal).to.eq('redo your resume properly')
-  })
-})
-
-
-const emailTemplatesKeys = new Set([
-  'content',
-  'filters',
-  'personalizations',
-  'reason',
-  'title',
-  'type',
-])
-
-
-const isEmailTemplatesJson = (json: ReturnType<typeof getEmailTemplates>): void => {
-  expect(json).to.be.an('object')
-  for (const value of Object.values(json)) {
-    expect(value).to.be.an('array')
-    for (const template of value) {
-      const unexpectedKeys =
-        Object.keys(template).filter((key): boolean => !emailTemplatesKeys.has(key))
-      expect(unexpectedKeys).to.be.empty
-    }
-  }
-}
-
-
-describe('getEmailTemplates', (): void => {
-  // TODO(pascal): Consider dropping that test, it's covered by static typing already.
-  it('should return the right json format', (): void => {
-    i18n.changeLanguage('fr')
-    i18n.addResourceBundle('fr', 'emailTemplates', {
-      'recPzDMOZdVD0opz1:title': 'Demander un devis à une auto-école partenaire',
-    })
-    const t = i18n.getFixedT('fr', 'translation')
-    isEmailTemplatesJson(getEmailTemplates(t))
-  })
-
-  it('should return the right json format for another language than fr', (): void => {
-    i18n.addResourceBundle('en', 'emailTemplates', {
-      'recPzDMOZdVD0opz1:title': 'Ask in English',
-    }, true)
-    i18n.changeLanguage('en')
-    const t = i18n.getFixedT('en', 'translation')
-
-    const enTemplates = getEmailTemplates(t)
-    isEmailTemplatesJson(enTemplates)
-
-    expect(enTemplates['driving-license-euro'][0].title).to.eq('Ask in English')
-  })
-})
 
 
 describe('getLanguage', (): void => {
@@ -120,5 +44,26 @@ describe('getLocaleWithTu', (): void => {
 
   it('should add tutoiement if language allows it and canTutoie is true.', (): void => {
     expect(getLocaleWithTu('fr', true)).to.equal('fr@tu')
+  })
+})
+
+describe('supportedLngs', (): void => {
+  it('should have a defined date locale for each supported language.', (): void => {
+    expect(dateLocales).to.have.all.keys(defaultInitOptions.supportedLngs || [])
+  })
+})
+
+describe('getFallbackLanguages', (): void => {
+  it('should return simple lang as such', (): void => {
+    expect(getFallbackLanguages('fr')).to.eql(['fr'])
+    expect(getFallbackLanguages('en')).to.eql(['en'])
+  })
+
+  it('should fallback to lang without dialect if any', (): void => {
+    expect(getFallbackLanguages('fr@tu')).to.eql(['fr@tu', 'fr'])
+  })
+
+  it('should fallback to lang without country if any', (): void => {
+    expect(getFallbackLanguages('en_UK')).to.eql(['en_UK', 'en'])
   })
 })

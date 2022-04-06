@@ -1,9 +1,9 @@
-import PropTypes from 'prop-types'
 import React, {useEffect, useMemo} from 'react'
 import {useTranslation} from 'react-i18next'
 
 import useCachedData from 'hooks/cached_data'
-import {getMainChallengesUserCount, RootState} from 'store/actions'
+import type {RootState} from 'store/actions'
+import {getMainChallengesUserCount} from 'store/actions'
 import isMobileVersion from 'store/mobile'
 import {useGender} from 'store/user'
 
@@ -147,7 +147,7 @@ const StrategiesPreviewPage = (props: Props): React.ReactElement => {
   return <PageWithNavigationBar
     page="strats-preview"
     navBarContent={t('Ma priorité')}
-    isChatButtonShown={true} style={pageStyle}>
+    isChatButtonShown={false} style={pageStyle}>
     <div style={pageContainerStyle}>
       <div style={titleStyle}>{t('Comment relever le défi\u00A0?')}</div>
       <BobInteraction style={bobInteractionStyle}>
@@ -180,21 +180,6 @@ const StrategiesPreviewPage = (props: Props): React.ReactElement => {
       </FixedButtonNavigation>
     </div>
   </PageWithNavigationBar>
-}
-StrategiesPreviewPage.propTypes = {
-  baseUrl: PropTypes.string.isRequired,
-  project: PropTypes.shape({
-    diagnostic: PropTypes.shape({
-      categories: PropTypes.arrayOf(PropTypes.shape({
-        interestingHighlight: PropTypes.string,
-        interestingText: PropTypes.string,
-        opportunityHighlight: PropTypes.string,
-        opportunityText: PropTypes.string,
-      })),
-      categoryId: PropTypes.string,
-    }),
-    projectId: PropTypes.string.isRequired,
-  }).isRequired,
 }
 
 export default React.memo(StrategiesPreviewPage)

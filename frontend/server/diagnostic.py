@@ -4,13 +4,12 @@
 import logging
 import random
 import re
-from typing import List, Iterable, Iterator, Optional, Set, Tuple, Union
-
-import pymongo
+from typing import Iterable, Iterator, Optional, Set, Tuple, Union
 
 from bob_emploi.common.python import now
+from bob_emploi.common.python import proto as common_proto
 from bob_emploi.frontend.server import french
-from bob_emploi.frontend.server import i18n
+from bob_emploi.frontend.server import jobs
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring
@@ -86,18 +85,6 @@ def diagnose_scoring_project(
         return diagnostic
 
     return _compute_diagnostic_overall(scoring_project, diagnostic, main_challenge)
-
-
-# TODO(pascal): DRY with imt email.
-_EMPLOYMENT_TYPES = {
-    job_pb2.INTERNSHIP: i18n.make_translatable_string('stage'),
-    job_pb2.CDI: i18n.make_translatable_string('CDI'),
-    job_pb2.CDD_OVER_3_MONTHS: i18n.make_translatable_string('CDD de plus de 3 mois'),
-    job_pb2.CDD_LESS_EQUAL_3_MONTHS: i18n.make_translatable_string('CDD de moins de 3 mois'),
-    job_pb2.INTERIM: i18n.make_translatable_string('intérim'),
-    job_pb2.ANY_CONTRACT_LESS_THAN_A_MONTH:
-    i18n.make_translatable_string("contrat de moins d'un mois"),
-}
 
 
 def _create_bolded_string(text: str) -> diagnostic_pb2.BoldedString:
@@ -202,9 +189,9 @@ def quick_diagnose(
                 comment = scoring_project.translate_static_string(
                     'Plus de {percentage}% des offres sont en {employment_type}.',
                 )
-            if main_employment_type_percentage.employment_type in _EMPLOYMENT_TYPES:
+            if main_employment_type_percentage.employment_type in jobs.EMPLOYMENT_TYPES:
                 employment_type = scoring_project.translate_static_string(
-                    _EMPLOYMENT_TYPES[main_employment_type_percentage.employment_type])
+                    jobs.EMPLOYMENT_TYPES[main_employment_type_percentage.employment_type])
                 response.comments.add(
                     field=diagnostic_pb2.EMPLOYMENT_TYPE_FIELD,
                     is_before_question=True,
@@ -238,11 +225,17 @@ def _compute_diagnostic_overall(
         logging.warning('No overall template for project: %s', main_challenge.category_id)
         return diagnostic
     diagnostic.overall_sentence = project.populate_template(
-        project.translate_string(overall_template.sentence_template))
+        project.translate_airtable_string(
+            'diagnosticOverall', overall_template.id, 'sentence_template',
+            is_genderized=True, hint=overall_template.sentence_template))
     diagnostic.text = project.populate_template(
-        project.translate_string(overall_template.text_template))
+        project.translate_airtable_string(
+            'diagnosticOverall', overall_template.id, 'text_template',
+            is_genderized=True, hint=overall_template.text_template))
     diagnostic.strategies_introduction = project.populate_template(
-        project.translate_string(overall_template.strategies_introduction))
+        project.translate_airtable_string(
+            'diagnosticOverall', overall_template.id, 'strategies_introduction',
+            is_genderized=True, hint=overall_template.strategies_introduction))
     diagnostic.overall_score = overall_template.score
     diagnostic.bob_explanation = main_challenge.bob_explanation
 
@@ -259,13 +252,10 @@ def _compute_diagnostic_overall(
     return diagnostic
 
 
-# TODO(cyrille): Use fetch_from_mongo once counts are saved under ID 'values'.
 def get_users_counts(database: mongo.NoPiiMongoDatabase) -> Optional[stats_pb2.UsersCount]:
     """Get the count of users in departements and in job groups."""
 
-    all_counts = next(
-        database.user_count.find({}).sort('aggregatedAt', pymongo.DESCENDING).limit(1), None)
-    return proto.create_from_mongo(all_counts, stats_pb2.UsersCount, always_create=False)
+    return proto.fetch_from_mongo(database, stats_pb2.UsersCount, 'user_count', '')
 
 
 _DIAGNOSTIC_MAIN_CHALLENGES: \
@@ -282,7 +272,7 @@ def list_main_challenges(database: mongo.NoPiiMongoDatabase) \
 
 
 _MAIN_CHALLENGE_TRANSLATABLE_FIELDS = \
-    tuple(proto.list_translatable_fields(diagnostic_pb2.DiagnosticMainChallenge))
+    tuple(common_proto.list_translatable_fields(diagnostic_pb2.DiagnosticMainChallenge))
 
 
 def translate_main_challenge(
@@ -344,7 +334,7 @@ def set_main_challenges_relevance(
         main_challenges: Optional[Iterable[diagnostic_pb2.DiagnosticMainChallenge]] = None,
         database: Optional[mongo.NoPiiMongoDatabase] = None,
         should_highlight_first_blocker: bool = True) -> \
-        Iterator[Tuple[diagnostic_pb2.DiagnosticMainChallenge, List[user_pb2.MissingField]]]:
+        Iterator[Tuple[diagnostic_pb2.DiagnosticMainChallenge, list[user_pb2.MissingField]]]:
     """For all main challenges, tell whether it's relevant for a project.
 
     Arg list:

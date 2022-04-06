@@ -5,7 +5,7 @@ import unittest
 
 from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import project_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server.test import scoring_test
 from bob_emploi.frontend.server.test import filters_test
 
@@ -554,7 +554,7 @@ class FrustrationTimeManagementScoringModelTest(scoring_test.HundredScoringModel
     def test_frustrated_is_bad(self) -> None:
         """Test that frustrated users have worse score."""
 
-        self.persona.user_profile.frustrations.append(user_pb2.TIME_MANAGEMENT)
+        self.persona.user_profile.frustrations.append(user_profile_pb2.TIME_MANAGEMENT)
         score = self._score_persona(self.persona)
         self.assert_worse_score(score, msg=f'Fail for "{self.persona.name}"')
 
@@ -581,7 +581,7 @@ class JobSimilarityScoringModelTest(scoring_test.HundredScoringModelTestBase):
         """Users with similar experience and frustrated by atypic profile."""
 
         self.persona.project.previous_job_similarity = project_pb2.DONE_SIMILAR
-        self.persona.user_profile.frustrations.append(user_pb2.ATYPIC_PROFILE)
+        self.persona.user_profile.frustrations.append(user_profile_pb2.ATYPIC_PROFILE)
         score = self._score_persona(self.persona)
         self.assert_good_score(score, limit=.6, msg=f'Fail for "{self.persona.name}"')
 

@@ -69,6 +69,7 @@ CancelablePromise<T> => {
     catch: cancelableCatch,
     finally: cancelableFinally,
     promise,
+    // eslint-disable-next-line unicorn/no-thenable
     then,
   }
 }

@@ -1,12 +1,12 @@
 """Helper module to create tests for emailing campaigns."""
 
 import datetime
+import json
 import os
-from os import path as os_path
 import random
 import re
 import typing
-from typing import Any, Dict, List, Literal, Optional, Pattern, Union
+from typing import Any, Literal, Mapping, Optional, Pattern, Union
 import unittest
 from unittest import mock
 from urllib import parse
@@ -15,8 +15,9 @@ from google.protobuf import json_format
 import mongomock
 import pymongo
 
-from bob_emploi.common.python import now
+from bob_emploi.common.python.test import nowmock
 from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.server import cache
 from bob_emploi.frontend.server import mongo
@@ -55,7 +56,8 @@ class CampaignTestBase(unittest.TestCase):
         env_patcher.start()
         self.addCleanup(env_patcher.stop)
         self.addCleanup(mongo.cache.clear)
-        self.database = pymongo.MongoClient('mongodb://mydata.com/test').test
+        self.database = mongo.NoPiiMongoDatabase(
+            pymongo.MongoClient('mongodb://mydata.com/test').test)
         self._user_database = pymongo.MongoClient('mongodb://myprivatedata.com/user_test').user_test
 
         # TODO(cyrille): Use this to mock time whenever necessary.
@@ -63,12 +65,12 @@ class CampaignTestBase(unittest.TestCase):
         # Default values that shouldn't be expected, and should be overridden when necessary.
         user_name = 'Patrick'
         user_email = 'patrick@bayes.org'
-        user_user_id = '%024x' % random.randrange(16**24)
+        user_user_id = f'{random.randrange(16**24):024x}'
         user_registration_date = datetime.datetime.now() - datetime.timedelta(days=90)
         # TODO(cyrille): Replace these values by personas.
         self.user = user_pb2.User(user_id=user_user_id)
         self.user.registered_at.FromDatetime(user_registration_date)
-        self.user.profile.gender = user_pb2.MASCULINE
+        self.user.profile.gender = user_profile_pb2.MASCULINE
         self.user.profile.name = user_name
         self.user.profile.email = user_email
         self.user.profile.year_of_birth = 1990
@@ -89,20 +91,20 @@ class CampaignTestBase(unittest.TestCase):
         self.project.city.region_id = '84'
         self.project.city.region_name = 'Auvergne-Rhône-Alpes'
 
-        self._variables: Dict[str, Any] = {}
-        self._from: Dict[str, Any] = {}
+        self._variables: dict[str, Any] = {}
+        self._from: dict[str, Any] = {}
 
-    @mock.patch(mail_blast.auth.__name__ + '.SECRET_SALT', new=b'prod-secret')
+    @mock.patch(mail_blast.auth_token.__name__ + '.SECRET_SALT', new=b'prod-secret')
     @mailjetmock.patch()
     def _assert_user_receives_campaign(
             self, should_be_sent: bool = True, blast_from: Optional[str] = None,
-            blast_to: Optional[str] = None, extra_args: Optional[List[str]] = None) -> None:
+            blast_to: Optional[str] = None, extra_args: Optional[list[str]] = None) -> None:
         json_user = json_format.MessageToDict(self.user)
         json_user['_id'] = mongomock.ObjectId(json_user.pop('userId'))
         self._user_database.user.insert_one(json_user)
         year = self.user.registered_at.ToDatetime().year
         if self.now:
-            now_patcher = mock.patch(now.__name__ + '.get', return_value=self.now)
+            now_patcher = nowmock.patch(new=mock.MagicMock(return_value=self.now))
             now_patcher.start()
             self.addCleanup(now_patcher.stop)
         mail_blast.main([
@@ -113,6 +115,7 @@ class CampaignTestBase(unittest.TestCase):
             blast_from or str(year),
             '--registered-to',
             blast_to or str(year + 1),
+            '--log-reason-on-error',
         ] + (extra_args or []))
         all_sent_messages = mailjetmock.get_all_sent_messages()
         if not should_be_sent:
@@ -122,6 +125,7 @@ class CampaignTestBase(unittest.TestCase):
         self.assertEqual(self.campaign_id, all_sent_messages[0].properties['CustomCampaign'])
         self._variables = all_sent_messages[0].properties['Variables']
         self._from = all_sent_messages[0].properties['From']
+        self.assertEqual(self._from['Name'], self._variables.pop('senderName'))
 
         # Test that variables used in the template are populated.
         template_id = str(all_sent_messages[0].properties['TemplateID'])
@@ -129,15 +133,16 @@ class CampaignTestBase(unittest.TestCase):
             typing.cast(mailjet_templates.Id, self.campaign_id))
         self.assertTrue(template_path, msg=f'No template for campaign "{self.campaign_id}"')
         assert template_path
-        with open(os_path.join(template_path, 'vars.txt'), 'r') as vars_file:
-            template_vars = {v.strip() for v in vars_file if not v.startswith('#')}
+        vars_filename = os.path.join(template_path, 'vars-example.json')
+        with open(vars_filename, 'r', encoding='utf-8') as vars_file:
+            template_vars = json.load(vars_file).keys()
         for template_var in template_vars:
             self.assertIn(
                 template_var, self._variables,
                 msg=f'Template error for campaign {self.campaign_id}, see '
                 f'https://app.mailjet.com/template/{template_id}/build')
 
-    @mock.patch(mail_blast.auth.__name__ + '.SECRET_SALT', new=b'prod-secret')
+    @mock.patch(mail_blast.auth_token.__name__ + '.SECRET_SALT', new=b'prod-secret')
     @mailjetmock.patch()
     def _assert_user_receives_focus(self, should_be_sent: bool = True) -> None:
         json_user = json_format.MessageToDict(self.user)
@@ -157,6 +162,7 @@ class CampaignTestBase(unittest.TestCase):
         self.assertEqual(self.campaign_id, all_sent_messages[0].properties['CustomCampaign'])
         self._variables = all_sent_messages[0].properties['Variables']
         self._from = all_sent_messages[0].properties['From']
+        self.assertEqual(self._from['Name'], self._variables.pop('senderName'))
 
     def _assert_regex_field(self, field: str, regex: Union[str, Pattern[str]]) \
             -> None:
@@ -206,7 +212,7 @@ class CampaignTestBase(unittest.TestCase):
             field, 'https://www.bob-emploi.fr/statut/mise-a-jour',
             user=self.user.user_id,
             token=re.compile(r'\d+\.[a-f0-9]+'),
-            gender=user_pb2.Gender.Name(self.user.profile.gender),
+            gender=user_profile_pb2.Gender.Name(self.user.profile.gender),
             hl=self.user.profile.locale or 'fr',
             employed=str(self.project.kind == project_pb2.FIND_ANOTHER_JOB) or 'False')
 
@@ -225,9 +231,13 @@ class CampaignTestBase(unittest.TestCase):
         self.assertEqual(first_name or 'Patrick', self._variables.pop('firstName'))
         self.assertEqual(gender or 'MASCULINE', self._variables.pop('gender'))
         self.assertEqual('Bob', self._variables.pop('productName'))
+        self.assertEqual(
+            'https://t.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png',
+            self._variables.pop('productLogoUrl'))
+        self.assertEqual('#faf453', self._variables.pop('highlightColor'))
         self._assert_has_unsubscribe_url()
 
-    def _assert_remaining_variables(self, variables: Dict[str, Any]) -> None:
+    def _assert_remaining_variables(self, variables: dict[str, Any]) -> None:
         self.assertEqual(variables, self._variables)
 
     def _assert_sender_name(self, sender_name: str) -> None:
@@ -236,3 +246,13 @@ class CampaignTestBase(unittest.TestCase):
         except KeyError:
             self.fail(f'From does not contain field "Name"\n{self._from}')
         self.assertEqual(sender_name, _sender_name)
+
+    def _assert_all_template_variables(self, variables: Mapping[str, str]) -> None:
+        """Checks that the variables have all the keys needed for the given campaign."""
+
+        vars_file_path = os.path.join(mailjet_templates.PATH, self.campaign_id, 'vars-example.json')
+        with open(vars_file_path, encoding='utf-8') as vars_file:
+            template_vars = json.load(vars_file).keys()
+        self.assertFalse(
+            template_vars - set(variables.keys()),
+            msg='Some variables from the email are not given')

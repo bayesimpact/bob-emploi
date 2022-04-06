@@ -2,7 +2,7 @@
 
 import json
 import os
-from typing import Any, Dict
+from typing import Any
 import unittest
 from unittest import mock
 
@@ -19,7 +19,7 @@ class QuickAdvisorTest(base_test.ServerTestCase):
         user_info = {'profile': {'name': 'Albert', 'yearOfBirth': 1973}}
         self.user_id, self.auth_token = self.create_user_with_token(data=user_info)
 
-    def _update_user(self, user_data: Dict[str, Any]) -> None:
+    def _update_user(self, user_data: dict[str, Any]) -> None:
         self.app.post(
             '/api/user',
             data=json.dumps(user_data),
@@ -43,6 +43,7 @@ class QuickAdvisorTest(base_test.ServerTestCase):
         """Test a quick advice when setting the city field."""
 
         self._db.user_count.insert_one({
+            '_id': '',
             'aggregatedAt': '2016-11-15T16:51:55Z',
             'departementCounts': {
                 '69': 365,
@@ -69,6 +70,7 @@ class QuickAdvisorTest(base_test.ServerTestCase):
         """Test a quick advice when setting the target job field."""
 
         self._db.user_count.insert_one({
+            '_id': '',
             'aggregatedAt': '2016-11-15T16:51:55Z',
             'jobGroupCounts': {
                 'L1510': 256
@@ -332,6 +334,7 @@ class QuickAdvisorTest(base_test.ServerTestCase):
         """Test a quick advice when setting the city field in English."""
 
         self._db.user_count.insert_one({
+            '_id': '',
             'aggregatedAt': '2016-11-15T16:51:55Z',
             'departementCounts': {
                 '69': 365,

@@ -2,38 +2,37 @@ import _keyBy from 'lodash/keyBy'
 import _mapValues from 'lodash/mapValues'
 import _memoize from 'lodash/memoize'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
-import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
+import type {ReactMarkdownProps} from 'react-markdown/lib/complex-types'
 import {useDispatch, useSelector} from 'react-redux'
 import {Link} from 'react-router-dom'
-import VisibilitySensor from 'react-visibility-sensor'
 
 import useFastForward from 'hooks/fast_forward'
-import {DispatchAllActions, RomeJobGroup, RootState, fetchApplicationModes,
-  followJobOffersLinkAction} from 'store/actions'
+import useOnScreen from 'hooks/on_screen'
+import type {RomeJobGroup, RootState} from 'store/actions'
+import {fetchApplicationModes} from 'store/actions'
 import {inDepartement, lowerFirstLetter} from 'store/french'
 import {prepareT} from 'store/i18n'
-import {getApplicationModeText, getApplicationModes,
-  getGoogleJobSearchUrl, getPEJobBoardURL} from 'store/job'
-import {Score, colorFromPercent, computeBobScore} from 'store/score'
-import {useAlwaysConvincePage, useGender} from 'store/user'
+import {getApplicationModeText, getApplicationModes} from 'store/job'
+import type {Score} from 'store/score'
+import {colorFromPercent, computeBobScore} from 'store/score'
 
 import BobScoreCircle from 'components/bob_score_circle'
 import Button from 'components/button'
 import NewMainChallengesTrain from 'components/challenges_train'
 import Trans from 'components/i18n_trans'
 import GrowingNumber from 'components/growing_number'
-import {CoverImageWithText} from 'components/job_group_cover_image'
-import Markdown, {MarkdownRendererProps} from 'components/markdown'
+import {CoverImageWithTitleAndText} from 'components/job_group_cover_image'
+import Markdown from 'components/markdown'
 import {useModal} from 'components/modal'
 import isMobileVersion from 'store/mobile'
 import {ModifyProjectModal} from 'components/navigation'
-import {BubbleToRead, BubbleToReadProps, Discussion, DiscussionBubble, NoOpElement,
+import type {BubbleToReadProps} from 'components/phylactery'
+import {BubbleToRead, Discussion, DiscussionBubble, NoOpElement,
   WaitingElement} from 'components/phylactery'
-import {RadiumExternalLink, SmartLink} from 'components/radium'
+import {SmartLink} from 'components/radium'
 import {SignUpBanner} from 'components/pages/signup'
-import MainChallengesTrain from 'components/statistics/vertical_main_challenges_train'
 import {STATS_PAGE} from 'components/url'
 import missingDiplomaImage from 'images/missing-diploma.png'
 import strongCompetitionImage from 'images/strong-competition.svg'
@@ -67,41 +66,6 @@ Un membre de l'équipe de {{productName}} vous enverra un diagnostic personnalis
     helpRequestUrl: config.helpRequestUrl,
     productName: config.productName,
   })
-
-
-const sideLinkStyle: RadiumCSSProperties = {
-  ':hover': {
-    backgroundColor: colors.LIGHT_GREY,
-  },
-  'alignItems': 'center',
-  'borderTop': `1px solid ${colors.MODAL_PROJECT_GREY}`,
-  'color': colors.SLATE,
-  'display': 'flex',
-  'fontSize': 14,
-  'padding': '15px 20px',
-  'textDecoration': 'none',
-}
-
-
-interface SideLinkProps extends Omit<React.HTMLProps<HTMLAnchorElement>, 'href' | 'ref'> {
-  href?: string
-}
-
-const SideLinkBase = (props: SideLinkProps): React.ReactElement|null => {
-  const {children, href, ...otherProps} = props
-  if (!href) {
-    return null
-  }
-  return <RadiumExternalLink href={href} style={sideLinkStyle} {...otherProps}>
-    <div style={{flex: 1}}>{children}</div>
-    <ChevronRightIcon size={20} style={{marginRight: -7}} />
-  </RadiumExternalLink>
-}
-SideLinkBase.propTypes = {
-  children: PropTypes.node,
-  href: PropTypes.string,
-}
-const SideLink = React.memo(SideLinkBase)
 
 
 function hasRomeId(jobGroup?: bayes.bob.JobGroup): jobGroup is RomeJobGroup {
@@ -272,30 +236,6 @@ const BobThinksVisualCardBase = (props: VisualCardProps): React.ReactElement|nul
   }
   return null
 }
-BobThinksVisualCardBase.propTypes = {
-  category: PropTypes.string,
-  project: PropTypes.shape({
-    city: PropTypes.shape({
-      name: PropTypes.string.isRequired,
-    }),
-    diagnostic: PropTypes.shape({
-      categories: PropTypes.arrayOf(PropTypes.shape({
-        categoryId: PropTypes.string.isRequired,
-      }).isRequired),
-    }),
-    localStats: PropTypes.shape({
-      imt: PropTypes.shape({
-        yearlyAvgOffersPer10Candidates: PropTypes.number,
-      }),
-    }),
-    targetJob: PropTypes.shape({
-      jobGroup: PropTypes.shape({
-        name: PropTypes.string,
-      }),
-    }),
-  }),
-  style: PropTypes.object,
-}
 const BobThinksVisualCard = React.memo(BobThinksVisualCardBase)
 
 
@@ -333,10 +273,6 @@ const StrategiesIntroductionBase: React.FC<IntroductionProps> =
     </Button>
   </div>
 }
-StrategiesIntroductionBase.propTypes = {
-  onClick: PropTypes.func.isRequired,
-  text: PropTypes.string,
-}
 const StrategiesIntroduction = React.memo(StrategiesIntroductionBase)
 
 
@@ -354,13 +290,8 @@ interface ScoreSectionProps {
 const FlatScoreSectionBase: React.FC<ScoreSectionProps> =
 (props: ScoreSectionProps): React.ReactElement => {
   const {maxBarLength = 200, score: {color, percent}, strokeWidth = 4, style} = props
-  const [hasStartedGrowing, setHasStartedGrowing] = useState(false)
-  const startGrowing = useCallback((isVisible: boolean): void => {
-    if (!isVisible) {
-      return
-    }
-    setHasStartedGrowing(true)
-  }, [])
+  const domRef = useRef<HTMLDivElement>(null)
+  const hasStartedGrowing = useOnScreen(domRef, {isForAppearing: true})
   const durationMillisec = 1000
   const percentColor = !hasStartedGrowing ? colors.RED_PINK : color
   const containerStyle: React.CSSProperties = useMemo(() => ({
@@ -376,45 +307,32 @@ const FlatScoreSectionBase: React.FC<ScoreSectionProps> =
       stroke-dashoffset ${durationMillisec}ms linear`,
   }), [durationMillisec])
   const barLength = percent * maxBarLength / 100
-  return <VisibilitySensor
-    active={!hasStartedGrowing} intervalDelay={250} partialVisibility={true}
-    onChange={startGrowing}>
-    <div style={containerStyle}>
-      <div style={{display: 'flex', flexDirection: 'column', paddingTop: 10}}>
-        <div style={{fontSize: 16, fontWeight: 900}}>Score global</div>
-        <div style={{width: maxBarLength}}>
-          <svg fill="none" viewBox={`0 0 ${maxBarLength} 30`}>
-            <g strokeLinecap="round">
-              <path
-                stroke={colors.SILVER}
-                d={`M ${strokeWidth} 10 H ${maxBarLength - strokeWidth}`} opacity={0.8}
-                strokeWidth={strokeWidth} />
-              <path
-                stroke={percentColor}
-                style={transitionStyle}
-                d={`M ${strokeWidth} 10 H ${percent * maxBarLength / 100}`}
-                strokeDashoffset={hasStartedGrowing ? 0 : barLength}
-                strokeDasharray={barLength}
-                strokeWidth={2 * strokeWidth}
-              />
-            </g>
-          </svg>
-        </div>
-      </div>
-      <div style={{fontSize: 22, fontWeight: 900}}>
-        <GrowingNumber durationMillisec={durationMillisec} number={percent} isSteady={true} />%
+  return <div style={containerStyle} ref={domRef}>
+    <div style={{display: 'flex', flexDirection: 'column', paddingTop: 10}}>
+      <div style={{fontSize: 16, fontWeight: 900}}>Score global</div>
+      <div style={{width: maxBarLength}}>
+        <svg fill="none" viewBox={`0 0 ${maxBarLength} 30`}>
+          <g strokeLinecap="round">
+            <path
+              stroke={colors.SILVER}
+              d={`M ${strokeWidth} 10 H ${maxBarLength - strokeWidth}`} opacity={0.8}
+              strokeWidth={strokeWidth} />
+            <path
+              stroke={percentColor}
+              style={transitionStyle}
+              d={`M ${strokeWidth} 10 H ${percent * maxBarLength / 100}`}
+              strokeDashoffset={hasStartedGrowing ? 0 : barLength}
+              strokeDasharray={barLength}
+              strokeWidth={2 * strokeWidth}
+            />
+          </g>
+        </svg>
       </div>
     </div>
-  </VisibilitySensor>
-}
-FlatScoreSectionBase.propTypes = {
-  maxBarLength: PropTypes.number,
-  score: PropTypes.shape({
-    color: PropTypes.string.isRequired,
-    percent: PropTypes.number.isRequired,
-  }).isRequired,
-  strokeWidth: PropTypes.number,
-  style: PropTypes.object,
+    <div style={{fontSize: 22, fontWeight: 900}}>
+      <GrowingNumber durationMillisec={durationMillisec} number={percent} isSteady={true} />%
+    </div>
+  </div>
 }
 const FlatScoreSection = React.memo(FlatScoreSectionBase)
 
@@ -479,21 +397,21 @@ const scoreTitleStyle: React.CSSProperties = {
   textAlign: 'center',
 }
 
-const ScoreTitleParagraph = (props: React.HTMLProps<HTMLDivElement> & MarkdownRendererProps):
+const ScoreTitleParagraph = (props: React.HTMLProps<HTMLDivElement> & ReactMarkdownProps):
 React.ReactElement => {
-  const {node: omittedNode, nodeKey: omittedNodeKey, ...divProps} = props
+  const {node: omittedNode, ...divProps} = props
   return <div {...divProps} style={scoreTitleStyle} />
 }
 
 const getScoreTitleStrong = _memoize((color: string) =>
-  function ScoreTitleStrong(props: React.HTMLProps<HTMLSpanElement> & MarkdownRendererProps):
+  function ScoreTitleStrong(props: React.HTMLProps<HTMLSpanElement> & ReactMarkdownProps):
   React.ReactElement {
-    const {node: omittedNode, nodeKey: omittedNodeKey, ...spanProps} = props
+    const {node: omittedNode, ...spanProps} = props
     return <span style={{color}} {...spanProps} />
   })
 
 const BobScoreBase: React.FC<BobScoreProps> =
-({isAnimated, isTitleShown, score: {color, percent, shortTitle}}): React.ReactElement => {
+({isAnimated, isTitleShown = true, score: {color, percent, shortTitle}}): React.ReactElement => {
   const bobCircleProps = isMobileVersion ? {
     halfAngleDeg: 66.7,
     radius: 60,
@@ -522,18 +440,6 @@ const BobScoreBase: React.FC<BobScoreProps> =
       isAnimated={isAnimated} />
     {isTitleShown ? <Markdown content={shortTitle} components={components} /> : null}
   </div>
-}
-BobScoreBase.propTypes = {
-  isAnimated: PropTypes.bool,
-  isTitleShown: PropTypes.bool,
-  score: PropTypes.shape({
-    color: PropTypes.string,
-    percent: PropTypes.number.isRequired,
-    shortTitle: PropTypes.string.isRequired,
-  }).isRequired,
-}
-BobScoreBase.defaultProps = {
-  isTitleShown: true,
 }
 const BobScore = React.memo(BobScoreBase)
 
@@ -626,59 +532,26 @@ const separatorStyle: React.CSSProperties = {
 const ScoreWithHeaderBase: React.FC<ScoreWithHeaderProps> =
   (props: ScoreWithHeaderProps): React.ReactElement => {
     const {baseUrl, isAnimated, openModifyModal, project, score} = props
-    const {
-      city: {name: cityName = undefined} = {}, diagnostic: {categories = emptyArray} = {},
-      targetJob = {}} = project
-    const isConvincePageEnabled = useAlwaysConvincePage()
-    const gender = useGender()
+    const {city: {name: cityName = undefined} = {}, targetJob = {}} = project
     const {t} = useTranslation()
     return <React.Fragment>
-      <CoverImageWithText
+      <CoverImageWithTitleAndText
         imageStyle={headerJobCoverStyle}
-        style={{...scoreHeaderStyle, ...isConvincePageEnabled ? {marginTop: 0} : {}}}
+        style={{...scoreHeaderStyle, marginTop: 0}}
         {...{cityName, cityStyle, jobStyle, targetJob}}>
         <SmartLink onClick={openModifyModal} style={modifyProjectStyle}>{t('Modifier')}</SmartLink>
-      </CoverImageWithText>
+      </CoverImageWithTitleAndText>
       <div style={scoreCardStyle}>
         <BobScore score={score} isTitleShown={false} isAnimated={isAnimated} />
-        {/* TODO(sil): Make sure the title is well balanced. */}
-        <div style={mainSentenceStyle}>{score.shortTitle}</div>
-        {isConvincePageEnabled ? <div style={separatorStyle} /> : <div style={{margin: '0 20px'}}>
-          <MainChallengesTrain
-            areDetailsShownAsHover={true} mainChallenges={categories} gender={gender} />
-          <div style={separatorStyle} />
-        </div>}
+        <div style={mainSentenceStyle}><BalancedTitle>{score.shortTitle}</BalancedTitle></div>
+        <div style={separatorStyle} />
         <Link to={`${baseUrl}/${STATS_PAGE}`} style={statsLinkStyle}>
-          {isConvincePageEnabled ? t('Voir les statistiques') : t('En savoir plus')}
+          {t('Voir les statistiques')}
           <ChevronRightIcon size={18} style={{marginLeft: '.2em'}} />
         </Link>
       </div>
     </React.Fragment>
   }
-ScoreWithHeaderBase.propTypes = {
-  baseUrl: PropTypes.string.isRequired,
-  isAnimated: PropTypes.bool,
-  project: PropTypes.shape({
-    city: PropTypes.shape({
-      name: PropTypes.string.isRequired,
-    }).isRequired,
-    diagnostic: PropTypes.shape({
-      categories: PropTypes.arrayOf(PropTypes.shape({
-        categoryId: PropTypes.string.isRequired,
-      }).isRequired),
-    }),
-    targetJob: PropTypes.shape({
-      jobGroup: PropTypes.shape({
-        romeId: PropTypes.string.isRequired,
-      }).isRequired,
-    }),
-  }).isRequired,
-  score: PropTypes.shape({
-    color: PropTypes.string,
-    percent: PropTypes.number.isRequired,
-    shortTitle: PropTypes.string.isRequired,
-  }).isRequired,
-}
 const ScoreWithHeader = React.memo(ScoreWithHeaderBase)
 
 const noMarginStyle = {margin: 0}
@@ -769,8 +642,6 @@ interface DiagnosticProps {
   isFirstTime?: boolean
   makeAdviceLink: (adviceId: string, strategyId: string) => string
   makeStrategyLink: (strategyId: string) => string
-  onDiagnosticTextShown?: () => void
-  onFullDiagnosticShown?: () => void
   project: bayes.bob.Project
   strategies?: readonly bayes.bob.Strategy[]
   style?: React.CSSProperties
@@ -797,21 +668,13 @@ const titleCardStyle: React.CSSProperties = {
 
 const desktopWidth = 600
 const DiagnosticBase = (props: DiagnosticProps): React.ReactElement => {
-  const {diagnosticData, isFirstTime = false, onDiagnosticTextShown, onFullDiagnosticShown, style,
-    userName} = props
+  const {diagnosticData, isFirstTime = false, style, userName} = props
 
-  const isConvincePageEnabled = useAlwaysConvincePage()
   const hasAccount = useSelector(({user: {hasAccount}}: RootState): boolean => !!hasAccount)
   const {t} = useTranslation()
-  const dispatch = useDispatch<DispatchAllActions>()
   const [areStrategiesShown, setAreStrategiesShown] = useState(!isFirstTime)
   const [isDiagnosticTextShown, setIsDiagnosticTextShown] = useState(isFirstTime)
   const [isModifyModalShown, showModifyModal, hideModifyModal] = useModal(false)
-
-  const onShown = isFirstTime ? onDiagnosticTextShown : onFullDiagnosticShown
-  useEffect((): void => {
-    onShown?.()
-  }, [onShown])
 
   const score = useMemo((): Score => {
     return computeBobScore(diagnosticData, userName, t)
@@ -819,19 +682,13 @@ const DiagnosticBase = (props: DiagnosticProps): React.ReactElement => {
 
   const handleCloseDiagnosticText = useCallback((): void => {
     setIsDiagnosticTextShown(false)
-    onFullDiagnosticShown?.()
-  }, [onFullDiagnosticShown])
+  }, [])
 
   useEffect((): void => {
     window.scrollTo(0, 0)
   }, [isDiagnosticTextShown])
 
   const handleOpenStrategies = useCallback((): void => setAreStrategiesShown(true), [])
-
-  const followJobOffersLink = useCallback(
-    (): void => void dispatch(followJobOffersLinkAction),
-    [dispatch],
-  )
 
   const {text} = diagnosticData
   const {percent, shortTitle, title} = score
@@ -857,9 +714,8 @@ const DiagnosticBase = (props: DiagnosticProps): React.ReactElement => {
     </div>}
   </React.Fragment> : undefined
   const {advices = [], baseUrl, makeAdviceLink, makeStrategyLink, project,
-    project: {city, targetJob, originalSelfDiagnostic: {categoryId: selfDiagnostic} = {},
+    project: {originalSelfDiagnostic: {categoryId: selfDiagnostic} = {},
       diagnostic: {categories = emptyArray} = {}}, strategies = emptyArray} = props
-  const {categoryId} = diagnosticData
   const isBobTalksModalShown = isDiagnosticTextShown && !isMobileVersion
   if (isDiagnosticTextShown && isMobileVersion) {
     return <DiagnosticText
@@ -885,8 +741,6 @@ const DiagnosticBase = (props: DiagnosticProps): React.ReactElement => {
     paddingTop: 0,
   }
 
-  const jobBoardURL = config.countryId === 'fr' ? getPEJobBoardURL(targetJob, city) :
-    getGoogleJobSearchUrl(t, targetJob?.name)
   // TODO(sil): Put a smooth transition when closing the sign up banner.
   return <div style={pageStyle}>
     {isMobileVersion ? null : <ModifyProjectModal
@@ -899,22 +753,9 @@ const DiagnosticBase = (props: DiagnosticProps): React.ReactElement => {
         {...{isFirstTime, percent, style, text, title}} isModal={true}
         onClose={handleCloseDiagnosticText} /> : null}
       {isMobileVersion ? null : <div style={{position: 'relative', width: 360, zIndex: 1}}>
-        {isConvincePageEnabled ? null :
-          <Trans parent="h2" style={panelTitleStyle}>Votre projet</Trans>}
         <ScoreWithHeader
           openModifyModal={showModifyModal}
           {...{baseUrl, project, score}} isAnimated={isFirstTime} />
-        {isConvincePageEnabled ? null : <div style={{...cardStyle, overflow: 'hidden'}}>
-          <BobThinksVisualCard category={categoryId} {...{project}} />
-          {/* TODO(cyrille): Only hide the link when the footnote is
-            actually present in the visual card. */}
-          {categoryId && APPLICATION_MODES_VC_CATEGORIES.has(categoryId) ?
-            null : <SideLink
-              onClick={followJobOffersLink}
-              href={jobBoardURL}>
-              {t("Voir les offres d'emploi")}
-            </SideLink>}
-        </div>}
         {/* TODO(pascal): Re-enable PDF */}
       </div>}
       <div style={
@@ -929,7 +770,7 @@ const DiagnosticBase = (props: DiagnosticProps): React.ReactElement => {
           </React.Fragment>}
         {areStrategiesShown ?
           <React.Fragment>
-            {isConvincePageEnabled && !isMobileVersion ?
+            {!isMobileVersion ?
               <div style={{marginBottom: 20}}>
                 <NewMainChallengesTrain
                   selfDiagnostic={selfDiagnostic} showSelfDiagnostic={false}
@@ -942,43 +783,6 @@ const DiagnosticBase = (props: DiagnosticProps): React.ReactElement => {
       </div>
     </div>
   </div>
-}
-DiagnosticBase.propTypes = {
-  advices: PropTypes.array,
-  baseUrl: PropTypes.string.isRequired,
-  diagnosticData: PropTypes.object.isRequired,
-  isFirstTime: PropTypes.bool,
-  makeAdviceLink: PropTypes.func.isRequired,
-  makeStrategyLink: PropTypes.func.isRequired,
-  onDiagnosticTextShown: PropTypes.func,
-  onFullDiagnosticShown: PropTypes.func,
-  project: PropTypes.shape({
-    city: PropTypes.shape({
-      name: PropTypes.string.isRequired,
-    }).isRequired,
-    diagnostic: PropTypes.shape({
-      categories: PropTypes.arrayOf(PropTypes.shape({
-        categoryId: PropTypes.string.isRequired,
-      }).isRequired),
-    }).isRequired,
-    localStats: PropTypes.shape({
-      imt: PropTypes.shape({
-        yearlyAvgOffersPer10Candidates: PropTypes.number,
-      }),
-    }),
-    originalSelfDiagnostic: PropTypes.shape({
-      categoryId: PropTypes.string,
-    }),
-    targetJob: PropTypes.shape({
-      jobGroup: PropTypes.shape({
-        romeId: PropTypes.string.isRequired,
-      }).isRequired,
-      name: PropTypes.string,
-    }),
-  }),
-  strategies: PropTypes.array,
-  style: PropTypes.object,
-  userName: PropTypes.string,
 }
 const Diagnostic = React.memo(DiagnosticBase)
 

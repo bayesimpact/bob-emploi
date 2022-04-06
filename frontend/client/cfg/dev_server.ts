@@ -1,64 +1,29 @@
-import {promises as fs, existsSync} from 'fs'
-import _flatMap from 'lodash/flatMap'
+import {existsSync} from 'fs'
+import type {ServerOptions} from 'https'
 import path from 'path'
+import type {Configuration} from 'webpack-dev-server'
+import type {Rewrite} from 'connect-history-api-fallback'
 
-import getAllPlugins, {Entrypoint} from './plugins'
+import getPlugins, {getEntrypoints} from './plugins'
 
-type EntrypointWithPrefixes = Entrypoint & {prefixes: NonNullable<Entrypoint['prefixes']>}
+type ConfigWithRewrites = Configuration & {historyApiFallback: {
+  rewrites: (Rewrite & {to: string})[]
+}}
 
-interface Rewrite {
-  from: RegExp
-  to: string
-}
-
-interface DevServer {
-  contentBase: string
-  historyApiFallback: {rewrites: readonly Rewrite[]}
-  hot: boolean
-  https: false | {
-    ca: Buffer
-    cert: Buffer
-    key: Buffer
-  }
-  noInfo: boolean
-  port: number
-  proxy: {
-    [prefix: string]: {
-      secure: boolean
-      target: string
-    }
-  }
-  public: string
-  publicPath: string
-}
-
-async function getDevServer(): Promise<DevServer> {
-  const plugins = await getAllPlugins()
-  const entrypoints: {[name: string]: Entrypoint} = plugins.
-    reduce((previousEntrypoints, {entrypoints}) => ({
-      ...previousEntrypoints,
-      ...entrypoints,
-    }), {})
+async function getDevServer(): Promise<ConfigWithRewrites> {
+  const pluginEntries = getEntrypoints(await getPlugins())
+  const rewrites = pluginEntries.map(({htmlFilename, prefix}) => ({
+    from: prefix ? new RegExp(`^${prefix}(/|$)`) : /.*/,
+    to: `/${htmlFilename}`,
+  }))
 
   const sslPath = '/etc/ssl/webpack-dev'
-
-  const rewrites: readonly Rewrite[] = _flatMap(Object.values(entrypoints).
-    filter((e): e is EntrypointWithPrefixes => !!e.prefixes).
-    map(({htmlFilename, prefixes}): readonly Rewrite[] => prefixes.map((prefix): Rewrite => ({
-      from: new RegExp(`^${prefix}(/|$)`),
-      to: `/${htmlFilename}`,
-    }))))
-
   return {
-    contentBase: './',
+    client: {
+      webSocketURL: `https://${process.env.PUBLIC_HOST}:${process.env.PUBLIC_PORT}/ws`,
+    },
     historyApiFallback: {rewrites},
-    hot: true,
-    https: existsSync(path.join(sslPath, 'key.pem')) ? {
-      ca: await fs.readFile(path.join(sslPath, 'chain.pem')),
-      cert: await fs.readFile(path.join(sslPath, 'cert.pem')),
-      key: await fs.readFile(path.join(sslPath, 'key.pem')),
-    } : false,
-    noInfo: false,
+    host: process.env.BIND_HOST || 'localhost',
     port: 80,
     proxy: {
       '/api': {
@@ -66,8 +31,14 @@ async function getDevServer(): Promise<DevServer> {
         target: 'https://frontend-flask',
       },
     },
-    public: `${process.env.PUBLIC_HOST}:${process.env.PUBLIC_PORT}`,
-    publicPath: '/',
+    server: existsSync(path.join(sslPath, 'key.pem')) ? {
+      options: {
+        ca: path.join(sslPath, 'chain.pem'),
+        cert: path.join(sslPath, 'cert.pem'),
+        key: path.join(sslPath, 'key.pem'),
+      } as ServerOptions,
+      type: 'https',
+    } : 'http',
   }
 }
 

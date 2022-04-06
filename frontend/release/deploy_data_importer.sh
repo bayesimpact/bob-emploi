@@ -100,12 +100,8 @@ function deploy_task_definition {
 }
 
 deploy_task_definition
-jq -r '.[]|select(.deprecatedFor | not)|.stackId,.region' "$DIRNAME/stack_deployments.json" |
-  while read -r stack_name; do
-    read -r region
-    deploy_in_stack --stack-name "$stack_name" --region "$region"
-  done
-
+python "$DIRNAME/cloudformation/deploy.py" --no-dry-run --change-set-name "deploy-data-${DOCKER_TAG//_/-}" \
+  parameter ImporterDockerTag "$DOCKER_TAG"
 git push -f "$GIT_ORIGIN_WITH_WRITE_PERMISSION" "$TAG:prod-data-importer"
 
 # Ping Slack to say the deployment is done.

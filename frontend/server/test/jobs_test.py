@@ -164,8 +164,6 @@ class JobsTest(unittest.TestCase):
     def test_get_best_jobs_in_area_cache(self) -> None:
         """get_best_jobs_in_area has limited caching ability."""
 
-        database_proxy = mongo.HashableNoPiiMongoDatabase(self.database)
-
         self.database.best_jobs_in_area.drop()
         self.database.best_jobs_in_area.insert_one({
             '_id': '69',
@@ -174,7 +172,7 @@ class JobsTest(unittest.TestCase):
 
         self.assertEqual(
             'C0000',
-            jobs.get_best_jobs_in_area(database_proxy, '69')
+            jobs.get_best_jobs_in_area(self.database, '69')
             .best_local_market_score_jobs[0].job_group.rome_id)
 
         self.database.best_jobs_in_area.drop()
@@ -185,19 +183,19 @@ class JobsTest(unittest.TestCase):
 
         self.assertEqual(
             'C0000',
-            jobs.get_best_jobs_in_area(database_proxy, '69')
+            jobs.get_best_jobs_in_area(self.database, '69')
             .best_local_market_score_jobs[0].job_group.rome_id,
             msg='Value is cached')
 
         # Bust the cache.
         for i in range(31):
-            jobs.get_best_jobs_in_area(database_proxy, f'{i}')
-            jobs.get_best_jobs_in_area(database_proxy, f'{i}')
-            jobs.get_best_jobs_in_area(database_proxy, f'{i}')
+            jobs.get_best_jobs_in_area(self.database, f'{i}')
+            jobs.get_best_jobs_in_area(self.database, f'{i}')
+            jobs.get_best_jobs_in_area(self.database, f'{i}')
 
         self.assertEqual(
             'Z4242',
-            jobs.get_best_jobs_in_area(database_proxy, '69')
+            jobs.get_best_jobs_in_area(self.database, '69')
             .best_local_market_score_jobs[0].job_group.rome_id,
             msg='Value is fetched again')
 

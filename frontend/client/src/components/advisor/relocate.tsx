@@ -1,16 +1,16 @@
-import {TFunction} from 'i18next'
-import PropTypes from 'prop-types'
-import React, {useCallback, useMemo} from 'react'
+import type {TFunction} from 'i18next'
+import React, {useMemo} from 'react'
 
 import {lowerFirstLetter, thanInDepartement} from 'store/french'
 
 import AppearingList from 'components/appearing_list'
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
-import {RadiumDiv} from 'components/radium'
+import {RadiumExternalLink} from 'components/radium'
 import Picto from 'images/advices/picto-relocate.svg'
 
-import {CardProps, PercentageBoxes, useAdviceData} from './base'
+import type {CardProps} from './base'
+import {PercentageBoxes, useAdviceData} from './base'
 
 
 const emptyArray = [] as const
@@ -24,13 +24,15 @@ const RelocateMethod = (props: CardProps): React.ReactElement|null => {
   const {data: {departementScores = emptyArray}, loading} =
     useAdviceData<bayes.bob.RelocateData>(props)
 
-  const otherDepartements = useMemo((): React.ReactElement<SuggestionProps>[] =>
-    departementScores.map(
+  const hasAnyOfferRatio = departementScores.some(({offerRatio}) => offerRatio && offerRatio > 1.1)
+
+  const otherDepartements = useMemo((): React.ReactElement<SuggestionProps>[] => {
+    return departementScores.map(
       (score, index): React.ReactElement<SuggestionProps> => <RelocateDepartmentSuggestion
         key={`dep-${index}`} onClick={handleExplore('departement')}
-        departementScore={score}
-        style={{marginTop: -1}} t={t} />),
-  [departementScores, handleExplore, t])
+        departementScore={score} isOfferRatioShown={hasAnyOfferRatio}
+        style={{marginTop: -1}} t={t} />)
+  }, [departementScores, handleExplore, hasAnyOfferRatio, t])
 
   if (loading) {
     return loading
@@ -46,7 +48,7 @@ const RelocateMethod = (props: CardProps): React.ReactElement|null => {
   const targetDepList = <RelocateDepartmentSuggestion
     key="target-dep" onClick={handleExplore('target')}
     departementScore={{name: city && city.departementName || ''}}
-    isTargetDepartment={true} t={t} />
+    isTargetDepartment={true} t={t} isOfferRatioShown={hasAnyOfferRatio} />
 
   return <div>
     <Trans count={otherDepartements.length} t={t}>
@@ -61,16 +63,13 @@ const RelocateMethod = (props: CardProps): React.ReactElement|null => {
     </AppearingList>
   </div>
 }
-RelocateMethod.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-  project: PropTypes.object.isRequired,
-}
 const ExpandedAdviceCardContent = React.memo(RelocateMethod)
 
 
 interface SuggestionProps {
   departementScore: bayes.bob.DepartementScore
   isTargetDepartment?: boolean
+  isOfferRatioShown: boolean
   onClick: () => void
   style?: React.CSSProperties
   t: TFunction
@@ -78,13 +77,12 @@ interface SuggestionProps {
 
 
 const RelocateDepartmentSuggestionBase = (props: SuggestionProps): React.ReactElement => {
-  const {departementScore, isTargetDepartment, onClick, style, t} = props
-  const handleClick = useCallback((): void => {
+  const {departementScore, isOfferRatioShown, isTargetDepartment, onClick, style, t} = props
+  const href = useMemo((): string => {
     const searchTerm = encodeURIComponent(
       `${departementScore.name} ${config.geoAdmin2Name}, ${config.countryName}`)
-    window.open(`https://${config.googleTopLevelDomain}/maps/search/${searchTerm}`, '_blank')
-    onClick && onClick()
-  }, [departementScore, onClick])
+    return `https://${config.googleTopLevelDomain}/maps/search/${searchTerm}`
+  }, [departementScore])
 
   const containerStyle = useMemo((): RadiumCSSProperties => ({
     ':hover': {
@@ -93,12 +91,14 @@ const RelocateDepartmentSuggestionBase = (props: SuggestionProps): React.ReactEl
     'alignItems': 'center',
     'backgroundColor': '#fff',
     'border': `solid 1px ${colors.MODAL_PROJECT_GREY}`,
+    'color': 'inherit',
     'cursor': 'pointer',
     'display': 'flex',
     'fontSize': 13,
     'fontWeight': 'bold',
     'height': 50,
     'padding': '0 20px',
+    'textDecoration': 'none',
     ...style,
   }), [style])
 
@@ -108,15 +108,17 @@ const RelocateDepartmentSuggestionBase = (props: SuggestionProps): React.ReactEl
       fontWeight: 'bold',
       marginRight: 10,
     }
-    return <RadiumDiv style={containerStyle} onClick={handleClick}>
+    return <RadiumExternalLink href={href} style={containerStyle} onClick={onClick}>
       <Trans t={t} style={targetDepartmentStyle} parent="span">
         {{departementName: departementScore.name}} (votre département, pour comparer)
       </Trans>
-      <div style={{flex: 1}} />
-      <Trans t={t} style={{fontStyle: 'italic', fontWeight: 'normal'}}>
-        Offres par candidat&nbsp;:
-      </Trans> <PercentageBoxes percentage={1} />
-    </RadiumDiv>
+      <span style={{flex: 1}} />
+      {isOfferRatioShown ? <React.Fragment>
+        <Trans t={t} style={{fontStyle: 'italic', fontWeight: 'normal'}} parent="span">
+          Offres par candidat&nbsp;:
+        </Trans> <PercentageBoxes percentage={1} />
+      </React.Fragment> : null}
+    </RadiumExternalLink>
   }
 
   const multiplierStyle: React.CSSProperties = {
@@ -126,24 +128,20 @@ const RelocateDepartmentSuggestionBase = (props: SuggestionProps): React.ReactEl
   }
   const roundedOffers = Number.parseFloat((departementScore.offerRatio || 0).toPrecision(2))
 
-  return <RadiumDiv style={containerStyle} onClick={handleClick}>
+  return <RadiumExternalLink href={href} style={containerStyle} onClick={onClick}>
     <span style={{fontWeight: 'bold', marginRight: 10}}>
       {departementScore.name}
     </span>
-    <div style={{flex: 1}} />
+    <span style={{flex: 1}} />
     <span>
-      {roundedOffers > 1.1 ? <span style={{alignItems: 'center', display: 'flex'}}>
-        <Trans style={multiplierStyle} t={t}>
-          {{roundedOffers}}x plus
-        </Trans> <PercentageBoxes percentage={roundedOffers} /></span> : null}
+      {roundedOffers > 1.1 && isOfferRatioShown ?
+        <span style={{alignItems: 'center', display: 'flex'}}>
+          <Trans style={multiplierStyle} t={t} parent="span">
+            {{roundedOffers}}x plus
+          </Trans> <PercentageBoxes percentage={roundedOffers} />
+        </span> : null}
     </span>
-  </RadiumDiv>
-}
-RelocateDepartmentSuggestionBase.propTypes = {
-  departementScore: PropTypes.object.isRequired,
-  isTargetDepartment: PropTypes.bool,
-  onClick: PropTypes.func,
-  style: PropTypes.object,
+  </RadiumExternalLink>
 }
 const RelocateDepartmentSuggestion = React.memo(RelocateDepartmentSuggestionBase)
 

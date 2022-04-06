@@ -1,5 +1,4 @@
-import {TFunction, TOptions} from 'i18next'
-import PropTypes from 'prop-types'
+import type {TFunction, TOptions} from 'i18next'
 import React, {useCallback, useMemo} from 'react'
 
 import Button from 'components/button'
@@ -8,7 +7,7 @@ import Trans from 'components/i18n_trans'
 import VideoFrame from 'components/video_frame'
 import Picto from 'images/advices/picto-personality-test.svg'
 
-import {CardProps} from './base'
+import type {CardProps} from './base'
 
 
 interface TestCardProps {
@@ -64,13 +63,6 @@ const TestCardBase: React.FC<TestCardProps> = (props: TestCardProps): React.Reac
       </Button>
     </div>
   </div>
-}
-TestCardBase.propTypes = {
-  children: PropTypes.node.isRequired,
-  handleExplore: PropTypes.func.isRequired,
-  style: PropTypes.object,
-  title: PropTypes.string.isRequired,
-  url: PropTypes.string.isRequired,
 }
 const TestCard = React.memo(TestCardBase)
 
@@ -132,19 +124,11 @@ const PersonalityTest: React.FC<CardProps> = (props: CardProps): React.ReactElem
       <VideoFrame>
         <iframe
           // TODO(cyrille): Handle explore 'video' when clicking in the iframe.
-          src={videoLink}
-          frameBorder={0} scrolling="no" allowFullScreen={true}
+          src={videoLink} scrolling="no" allowFullScreen={true}
           title={t('Présentation de Paul Duan à la cérémonie du diplôme de Sciences-Po')} />
       </VideoFrame>
     </section> : null}
   </div>
-}
-PersonalityTest.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-  profile: PropTypes.shape({
-    gender: PropTypes.string,
-  }).isRequired,
-  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(PersonalityTest)
 

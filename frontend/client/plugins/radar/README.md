@@ -49,6 +49,23 @@ docker-compose run --rm data-analysis-prepare radar/typeform_radar.py upload
 
 The export script is in Python and is located in `data_analysis/radar`.
 
+### Dashboard in Kibana
+
+The config of the Kibana dashboard is stored in `data_analysis/radar/dashboard.ndjson`.
+
+To reimport it, first compact it:
+
+```
+jq -c . data_analysis/radar/dashboard.ndjson > radar-kibana.ndjson
+```
+
+To export it and update our stored version, pretty print it:
+
+```
+jq . radar-kibana.ndjson > data_analysis/radar/dashboard.ndjson
+```
+
+
 ## Email script
 
 TODO(pascal): Implement the script.

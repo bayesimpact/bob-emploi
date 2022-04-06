@@ -7,14 +7,13 @@ readonly service="$( "$cli_dir/find_service.sh" "$@" test )"
 readonly project_path=$1
 readonly file_path=$2
 readonly relative_file_path=${file_path#"$project_path/"}
-readonly verbose=$3
 
 if [[ $relative_file_path == *_test.py ]]; then
     echo "Running tests in $relative_file_path..."
-    path="$relative_file_path"
+    cmd=(-m unittest "bob_emploi/$relative_file_path" --buffer)
 else
     echo "Running tests for $service..."
-    if [[ "$service" == "frontend-flaks-test" ]]; then
+    if [[ "$service" == "frontend-flask-test" ]]; then
         path="frontend"
     elif [[ "$service" == "analytics" ]]; then
         path="analytics"
@@ -23,10 +22,7 @@ else
     else
         path=""
     fi
+    cmd=(-m unittest discover "bob_emploi/$path" '*_test.py' --buffer)
 fi
 
-if [ -z "$verbose" ]; then
-    readonly options="--with-terseout"
-fi
-
-docker-compose --ansi never run -e TEST_REAL_DATA --rm --no-deps $service nosetests "$options" "bob_emploi/$path"
+docker-compose --ansi never run -e TEST_REAL_DATA --rm --no-deps $service python "${cmd[@]}"

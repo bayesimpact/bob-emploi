@@ -4,7 +4,7 @@ import collections
 import itertools
 import logging
 import typing
-from typing import Dict, List, Optional, Tuple
+from typing import Optional, Tuple
 
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import strategy_pb2
@@ -21,9 +21,9 @@ _STRATEGY_ADVICE_TEMPLATES: proto.MongoCachedCollection[strategy_pb2.StrategyAdv
 _STRATEGY_MODULES: proto.MongoCachedCollection[strategy_pb2.StrategyModule] = \
     proto.MongoCachedCollection(strategy_pb2.StrategyModule, 'strategy_modules')
 
-_STRATEGY_MODULES_WITH_TEMPLATES: List[Tuple[
+_STRATEGY_MODULES_WITH_TEMPLATES: list[Tuple[
     mongo.NoPiiMongoDatabase,
-    Dict[str, List[strategy_pb2.StrategyModule]]]] = []
+    dict[str, list[strategy_pb2.StrategyModule]]]] = []
 
 _SPECIFIC_TO_JOB_ADVICE_ID = 'specific-to-job'
 
@@ -41,7 +41,7 @@ cache.register_clear_func(clear_cache)
 
 
 def _get_strategy_modules_by_category(database: mongo.NoPiiMongoDatabase) \
-        -> Dict[str, List[strategy_pb2.StrategyModule]]:
+        -> dict[str, list[strategy_pb2.StrategyModule]]:
     """Populate the strategy modules with advice templates, and return them grouped by
     diagnostic category.
     """
@@ -61,7 +61,7 @@ def _get_strategy_modules_by_category(database: mongo.NoPiiMongoDatabase) \
                 'Missing strategy "%s" for advice modules "%s"',
                 strategy_id, ', '.join(a.advice_id for a in full_advice))
         strategy.pieces_of_advice.extend(full_advice)
-    strategies_by_category: Dict[str, List[strategy_pb2.StrategyModule]] = \
+    strategies_by_category: dict[str, list[strategy_pb2.StrategyModule]] = \
         collections.defaultdict(list)
     for strategy in strategies.values():
         for category_id in strategy.category_ids:
@@ -118,7 +118,7 @@ def strategize(
 
 def _make_strategy(
         project: scoring.ScoringProject, module: strategy_pb2.StrategyModule,
-        advice_scores: Dict[str, float]) -> Optional[strategy_pb2.Strategy]:
+        advice_scores: dict[str, float]) -> Optional[strategy_pb2.Strategy]:
     if module.is_for_alpha and not project.features_enabled.alpha:
         return None
     score = project.score(module.trigger_scoring_model)
@@ -136,7 +136,7 @@ def _make_strategy(
         pieces_of_advice.append(strategy_pb2.StrategyAdvice(
             advice_id=user_advice_id,
             teaser=project.populate_template(project.translate_string(advice.teaser_template)),
-            header=project.populate_template(project.translate_string(advice.header_template))))
+            why=project.populate_template(project.translate_string(advice.why_template))))
     if _SPECIFIC_TO_JOB_ADVICE_ID in advice_scores:
         specific_to_job_config = project.specific_to_job_advice_config()
         if specific_to_job_config and module.strategy_id in specific_to_job_config.strategy_ids:
@@ -157,7 +157,15 @@ def _make_strategy(
             'strategyModules', module.strategy_id, 'header_template',
             hint=module.header_template)),
         strategy_id=module.strategy_id,
-        external_url=project.populate_template(module.external_url_template))
+        external_url=project.populate_template(module.external_url_template),
+        infinitive_title=project.translate_airtable_string(
+            'strategyModules', module.strategy_id, 'infinitive_title',
+            hint=module.infinitive_title),
+        action_ids=module.action_ids,
+        description_speech=project.populate_template(project.translate_airtable_string(
+            'strategyModules', module.strategy_id, 'description_speech',
+            hint=module.description_speech, is_genderized=True)),
+    )
 
     if strategy.external_url and pieces_of_advice:
         logging.error(

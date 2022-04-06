@@ -1,0 +1,1 @@
+../fr/loading_image.tsx

@@ -18,7 +18,7 @@ You can try it out on a local instance:
 
 import datetime
 import typing
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import pandas as pd
 
@@ -37,7 +37,7 @@ def check_coverage(missions: pd.DataFrame) -> bool:
     """Report if the new data are not dropping too much the expected coverage.
 
     Expected values are defined based on the following notebook:
-    https://github.com/bayesimpact/bob-emploi-internal/blob/master/data_analysis/notebooks/scraped_data/civic_service_offers.ipynb
+    https://github.com/bayesimpact/bob-emploi-internal/blob/HEAD/data_analysis/notebooks/scraped_data/civic_service_offers.ipynb
     """
 
     # We expect at least 75% (77) of the 103 départements to be covered.
@@ -51,7 +51,7 @@ def check_coverage(missions: pd.DataFrame) -> bool:
     return True
 
 
-def csv2dicts(civic_service_missions_csv: str, today: Optional[str] = None) -> List[Dict[str, Any]]:
+def csv2dicts(civic_service_missions_csv: str, today: Optional[str] = None) -> list[dict[str, Any]]:
     """Import civic service missions data per departement in MongoDB.
 
     Args:
@@ -95,9 +95,9 @@ def csv2dicts(civic_service_missions_csv: str, today: Optional[str] = None) -> L
     missions_recent = missions[missions.date_formatted >= earlier_start]
 
     # Keeping only a maximum of 5 missions per departement.
-    def _create_missions(missions: pd.DataFrame) -> List[Dict[str, Any]]:
+    def _create_missions(missions: pd.DataFrame) -> list[dict[str, Any]]:
         return typing.cast(
-            List[Dict[str, Any]],
+            list[dict[str, Any]],
             missions[[
                 'organism', 'link', 'duration', 'start_date', 'domain', 'title', 'description']]
             .rename(columns={'organism': 'associationName'})
@@ -115,7 +115,7 @@ def csv2dicts(civic_service_missions_csv: str, today: Optional[str] = None) -> L
         raise ValueError('The putative new data lacks coverage.')
 
     return typing.cast(
-        List[Dict[str, Any]], missions_per_departement.to_dict(orient='records'))
+        list[dict[str, Any]], missions_per_departement.to_dict(orient='records'))
 
 
 if __name__ == '__main__':

@@ -5,21 +5,22 @@
 import datetime
 import functools
 import io
+import itertools
 import json
 import time
 import typing
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, Iterator, Optional, Tuple, Type, Union
 from unittest import mock
 import uuid
 
 import requests
 
 
-_JsonDict = Dict[str, Any]
+_JsonDict = dict[str, Any]
 
 
 def _check_not_null_variable(
-        json_variable: Union[None, List[Any], _JsonDict]) -> None:
+        json_variable: Union[None, list[Any], _JsonDict]) -> None:
     if json_variable is None:
         raise ValueError('null is not an acceptable value.')
     if isinstance(json_variable, list):
@@ -104,9 +105,9 @@ def _check_valid_template_id(template_id: Any) -> bool:
 class _InMemoryMailjetServer:
 
     def __init__(self) -> None:
-        self.messages: List[_SentMessage] = []
+        self.messages: list[_SentMessage] = []
         self.next_id = 101
-        self._messages_by_id: Dict[int, _SentMessage] = {}
+        self._messages_by_id: dict[int, _SentMessage] = {}
         self.has_too_many_get_requests = False
 
     def clear(self) -> None:
@@ -145,6 +146,7 @@ class _Client:
         self.version = version
         self.message = _Messager(version)
         self.send = _Sender(version)
+        self.campaign = _Campaigner(version)
 
 
 class _Messager:
@@ -207,7 +209,7 @@ class _Sender:
             _check_valid_template_id(message['TemplateID'])
         for target_type in ('To', 'Cc', 'Cci'):
             if target_type in message:
-                messages: List[Dict[str, Any]] = []
+                messages: list[dict[str, Any]] = []
                 for recipient in message[target_type]:
                     message_uuid, message_id = _MOCK_SERVER.create_message(recipient, message)
                     messages.append({
@@ -237,6 +239,40 @@ class _Sender:
             return typing.cast(requests.Response, error.response)
 
         return _create_json_response(json_content)
+
+
+class _Campaigner:
+
+    def __init__(self, client_version: str) -> None:
+        self._version = client_version
+
+    def get(self, *, filters: Optional[_JsonDict] = None) -> requests.Response:  # pylint: disable=invalid-name
+        """Create a new email."""
+
+        campaigns = itertools.groupby(
+            sorted(_MOCK_SERVER.messages, key=lambda m: m.properties.get('CustomCampaign', '')),
+            key=lambda m: typing.cast(str, m.properties.get('CustomCampaign', '')))
+
+        custom_campaign = filters and filters.get('CustomCampaign')
+
+        json_campaigns: list[_JsonDict] = []
+        for name, messages in campaigns:
+            if custom_campaign and custom_campaign != name:
+                continue
+            all_messages = list(messages)
+            first_message = all_messages[0]
+            created_at = datetime.datetime.fromtimestamp(round(first_message.arrived_at))
+            send_end_at = datetime.datetime.fromtimestamp(round(all_messages[-1].arrived_at))
+            json_campaigns.append({
+                'ID': first_message.message_id + 10000,
+                'CreatedAt': f'{created_at.isoformat()}Z',
+                'SendStartAt': f'{created_at.isoformat()}Z',
+                'SendEndAt': f'{send_end_at.isoformat()}Z',
+                'CustomValue': name,
+                'FirstMessageID': first_message.message_id
+            })
+
+        return _create_json_response({'Count': len(json_campaigns), 'Data': json_campaigns})
 
 
 _T = typing.TypeVar('_T')
@@ -294,7 +330,7 @@ def patch() -> _Patch:
     return _Patch()
 
 
-def get_all_sent_messages() -> List[_SentMessage]:
+def get_all_sent_messages() -> list[_SentMessage]:
     """Return a list of all sent messages."""
 
     return _MOCK_SERVER.messages

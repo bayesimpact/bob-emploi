@@ -5,7 +5,7 @@
 
 while read LOGLINE
 do
-  if [[ "${LOGLINE}" == *"waiting for connections"* ]]; then
+  if [[ "${LOGLINE}" == *"Waiting for connections"* ]]; then
     for collection_file in fixtures/*.json; do
       collection=${collection_file/fixtures\//}
       collection=${collection/.json/}

@@ -4,7 +4,7 @@ import datetime
 from os import path
 import re
 import typing
-from typing import Any, Callable, Dict, Final, Iterable, Iterator, List, Literal, Optional, Tuple, \
+from typing import Any, Callable, Final, Iterable, Iterator, Literal, Optional, Tuple, \
     TypedDict, Union
 
 from bob_emploi.data_analysis.lib import migration_helpers
@@ -129,10 +129,10 @@ class _TrainingData(_MetadataWithRome, total=False):
 
 
 class _JobSeekerData(TypedDict, total=False):
-    de: List[_UnemploymentPeriodData]
-    e0: List[_PartTimeData]
-    rome: List[_TargetedJobData]
-    p2: List[_TrainingData]
+    de: list[_UnemploymentPeriodData]
+    e0: list[_PartTimeData]
+    rome: list[_TargetedJobData]
+    p2: list[_TrainingData]
 
 
 # Regular expression to search the number of the region in an FHS filename.
@@ -171,7 +171,7 @@ def job_seeker_iterator(fhs_folder: str, tables: Iterable[str] = (UNEMPLOYMENT_P
         'IDX': ...}
     """
 
-    def _table_iterator(table: str) -> PeekIterator[Dict[str, str]]:
+    def _table_iterator(table: str) -> PeekIterator[dict[str, str]]:
         return PeekIterator(migration_helpers.flatten_iterator(
             path.join(fhs_folder, f'*/{table}.csv')))
     iterators = {table: _table_iterator(table) for table in set(tables)}
@@ -182,9 +182,9 @@ def job_seeker_iterator(fhs_folder: str, tables: Iterable[str] = (UNEMPLOYMENT_P
         key = min(
             job_seeker_key(i.peek())
             for i in iterators.values() if not i.done)
-        job_seeker: Dict[str, List[Dict[str, str]]] = {}
+        job_seeker: dict[str, list[dict[str, str]]] = {}
         for table, i in iterators.items():
-            values: List[Dict[str, str]] = []
+            values: list[dict[str, str]] = []
             while not i.done:
                 current = i.peek()
                 if job_seeker_key(current) != key:
@@ -211,7 +211,7 @@ class _JobSeekerKey(typing.NamedTuple):
     IDX: int
 
 
-def job_seeker_key(row: Dict[str, str]) -> _JobSeekerKey:
+def job_seeker_key(row: dict[str, str]) -> _JobSeekerKey:
     """Compute the key from some job seeker's data."""
 
     return _JobSeekerKey(
@@ -312,9 +312,9 @@ class JobSeeker:
         if cover_holes_up_to >= 0:
             periods.cover_holes(
                 datetime.timedelta(days=cover_holes_up_to),
-                lambda m1, m2: typing.cast(_UnemploymentPeriodData, dict(m2, **{
+                lambda m1, m2: m2 | typing.cast(_UnemploymentPeriodData, {
                     REGISTRATION_REASON_FIELD: m1[REGISTRATION_REASON_FIELD],
-                    REGISRATION_DATE_FIELD: m1[REGISRATION_DATE_FIELD]})))
+                    REGISRATION_DATE_FIELD: m1[REGISRATION_DATE_FIELD]}))
 
         return periods
 
@@ -330,7 +330,7 @@ class JobSeeker:
         """
 
         registration_periods = self._unemployment_periods(cover_holes_up_to=-1, period_type=None)
-        training_periods: List[Tuple[
+        training_periods: list[Tuple[
             Union[str, datetime.date, None],
             Union[str, datetime.date, None],
             _TrainingData,
@@ -424,12 +424,12 @@ class JobSeeker:
             periods.exclude_period(
                 begin,
                 end,
-                lambda m: typing.cast(_UnemploymentPeriodData, dict(m, **{
+                lambda m: typing.cast(_UnemploymentPeriodData, m | {
                     REGISTRATION_REASON_FIELD: RegistrationReason.END_OF_PART_TIME_WORK,
-                    REGISRATION_DATE_FIELD: end})),  # pylint: disable=cell-var-from-loop
-                lambda m: typing.cast(_UnemploymentPeriodData, dict(m, **{
+                    REGISRATION_DATE_FIELD: end}),  # pylint: disable=cell-var-from-loop
+                lambda m: typing.cast(_UnemploymentPeriodData, m | {
                     CANCELATION_REASON_FIELD: CancellationReason.STARTING_PART_TIME_WORK,
-                    CANCELATION_DATE_FIELD: begin})),  # pylint: disable=cell-var-from-loop
+                    CANCELATION_DATE_FIELD: begin}),  # pylint: disable=cell-var-from-loop
             )
 
     def state_at_date(self, when: datetime.date) -> Optional[_UnemploymentPeriodData]:
@@ -473,7 +473,7 @@ class JobSeeker:
                 _UnemploymentPeriodData, dict(m, MOTANN=CancellationReason.NOW)))
         job_group_history = self._data[TARGETED_JOB_TABLE]
         for unemployment_period in unemployment_periods:
-            periods_including_changes: List[Period[_MetadataWithRome]] = []
+            periods_including_changes: list[Period[_MetadataWithRome]] = []
             if job_group_history:
                 for change in self._data[TARGETED_JOB_TABLE]:
                     change_period = Period(

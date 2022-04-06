@@ -1,5 +1,4 @@
 import CheckIcon from 'mdi-react/CheckIcon'
-import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 import {connect} from 'react-redux'
 import {Link} from 'react-router-dom'
@@ -13,8 +12,10 @@ import 'styles/fonts/OpenSans/font.css'
 
 import Button from '../button'
 import GenericPage from '../page'
-import QUESTIONS_TREE, {Question, TopicId} from '../questions_tree'
-import {Routes, MiniRootState} from '../../store'
+import type {Question, TopicId} from '../questions_tree'
+import QUESTIONS_TREE from '../questions_tree'
+import type {MiniRootState} from '../../store'
+import {Routes} from '../../store'
 
 
 const isTopicComplete = (
@@ -184,14 +185,6 @@ const HubCardBase: React.FC<HubCardProps> = (props: HubCardProps): React.ReactEl
     </div>
   </Link>
 }
-HubCardBase.propTypes = {
-  color: PropTypes.string.isRequired,
-  image: PropTypes.string.isRequired,
-  isComplete: PropTypes.bool.isRequired,
-  linkTo: PropTypes.string.isRequired,
-  style: PropTypes.object,
-  title: PropTypes.node.isRequired,
-}
 const HubCard = connect(
   (
     {user: {answers}}: MiniRootState,
@@ -275,18 +268,13 @@ const HubPageBase: React.FC<HubPageConnectedProps> =
     </div>
   </GenericPage>
 }
-HubPageBase.propTypes = {
-  isNextButtonShown: PropTypes.bool.isRequired,
-  nextUrl: PropTypes.string.isRequired,
-  orgInfo: PropTypes.string,
-}
 const HubPage = connect(
-  ({app: {orgInfo: {advisor, city, email, milo}}, user: {answers}}: MiniRootState):
+  ({app: {orgInfo: {advisor, email, milo}}, user: {answers}}: MiniRootState):
   HubPageConnectedProps => ({
     isNextButtonShown: QUESTIONS_TREE.some(({questions = [], url: topic}): boolean =>
       isTopicComplete(answers, topic, questions)),
     nextUrl: `/aborder/${QUESTIONS_TREE[0].url}`,
-    orgInfo: advisor || email || milo || city?.departementId || 'Informations conseiller',
+    orgInfo: advisor || email || milo.name || 'Informations conseiller',
   }))(React.memo(HubPageBase))
 
 

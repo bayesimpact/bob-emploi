@@ -102,7 +102,7 @@ if [ -n "$CI" ]; then
   sed -i '1 s/$/ (auto-generated notes)/' $RELEASE_NOTES
 else
   read -n1 -p 'Press any key to continue or ctrl+c to cancel…'
-  "${EDITOR:-${GIT_EDITOR:-$(git config core.editor || echo 'vim')}}" $RELEASE_NOTES
+  ${EDITOR:-${GIT_EDITOR:-$(git config core.editor || echo 'vim')}} $RELEASE_NOTES
 fi
 
 # Remove comments from release notes.

@@ -1,12 +1,15 @@
 """Script to update users analytics data to Elasticsearch."""
 
 import argparse
+import collections
 import datetime
+import functools
 import logging
 import os
 import random
+import re
 import typing
-from typing import Any, Dict, List, Optional, Mapping
+from typing import Any, Optional, Mapping
 
 import certifi as _  # Needed to handle SSL in elasticsearch connections, for production use.
 import elasticsearch
@@ -15,22 +18,66 @@ import requests
 import requests_aws4auth
 
 from bob_emploi.common.python import now
+from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import boolean_pb2
 from bob_emploi.frontend.api import diagnostic_pb2
+from bob_emploi.frontend.api import email_pb2
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
+from bob_emploi.frontend.api import stats_pb2
 from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server.asynchronous import report
+from bob_emploi.frontend.server.mail import focus
 from bob_emploi.frontend.server.mail import mail_send
 from bob_emploi.frontend.server.mail import all_campaigns
 
-_DB, _USER_DB, _UNUSED_EVAL_DB = mongo.get_connections_from_env()
-
 _ALL_COACHING_EMAILS = all_campaigns.campaign.get_coaching_campaigns().keys()
+
+_CHALLENGE_ACTIONS: proto.MongoCachedCollection[stats_pb2.ChallengeAction] = \
+    proto.MongoCachedCollection(
+        stats_pb2.ChallengeAction, 'challenge_actions', id_field='action_id')
+
+_AWS_ES_URL_PATTERN = re.compile(r'.*\.(?P<region>\w+)\.es\.amazonaws\.com$')
+
+_NETWORK_ESTIMATE_OPTIONS = {
+    0: 'UNKNOWN_NETWORK_LEVEL',
+    1: 'LOW',
+    2: 'MEDIUM',
+    3: 'HIGH',
+}
+
+
+@functools.lru_cache()
+def get_challenge_actions() -> dict[str, dict[str, float]]:
+    """Compute the score of each action for a given challenge.
+
+    Returns a dict whose keys are challenges, and values are dicts of action -> normalized score.
+    Normalization is so that total score for a given challenge is always 1.
+    """
+
+    stats_db = mongo.get_connections_from_env().stats_db
+
+    challenges: dict[str, dict[str, float]] = collections.defaultdict(dict)
+    for action in _CHALLENGE_ACTIONS.get_collection(stats_db):
+        for challenge, score in action.score_by_challenge.items():
+            challenges[challenge][action.action_id] = score
+    for challenge, actions in challenges.items():
+        total_score = sum(actions.values())
+        challenges[challenge] = {
+            action: score / total_score for action, score in actions.items()}
+    return challenges
+
+
+def get_challenge_action_score(challenge: str, actions: list[str]) -> float:
+    """Compute the score of a user towards a given challenge, depending on the actions taken."""
+
+    return sum(
+        score for action, score in get_challenge_actions()[challenge].items() if action in actions)
 
 
 def age_group(year_of_birth: int) -> str:
@@ -147,7 +194,7 @@ class _TocScore(typing.NamedTuple):
 
 
 # See https://docs.google.com/spreadsheets/d/1bmmDku67rWIpjfDU5kg9dUpPEGQNowX8bYZaTLq_13Y/edit#gid=0
-_TOC_SCORES: Dict[str, _TocScore] = {
+_TOC_SCORES: dict[str, _TocScore] = {
     'undefined-project': _TocScore(0, 0, 0, 0, 0, 0, 0),
     'stuck-market': _TocScore(4, 0, 1, 1, 1, 1, 0),
     'find-what-you-like': _TocScore(2, 5, 0, 0, 0, 0, 0),
@@ -188,9 +235,9 @@ _ROME_DOMAINS = {
 }
 
 
-def _get_job_domain(job: job_pb2.Job) -> str:
+def _get_job_domain(stats_db: mongo.NoPiiMongoDatabase, job: job_pb2.Job) -> str:
     target_job = proto.fetch_from_mongo(
-        _DB, job_pb2.JobGroup, 'job_group_info', job.job_group.rome_id)
+        stats_db, job_pb2.JobGroup, 'job_group_info', job.job_group.rome_id)
     if target_job and target_job.domain:
         return target_job.domain
     rome_first_letter = job.job_group.rome_id[:1]
@@ -201,8 +248,8 @@ _T = typing.TypeVar('_T')
 _U = typing.TypeVar('_U')
 
 
-def _remove_null_fields(mydict: Dict[_T, Optional[_U]]) -> Dict[_T, _U]:
-    out: Dict[_T, _U] = {}
+def _remove_null_fields(mydict: dict[_T, Optional[_U]]) -> dict[_T, _U]:
+    out: dict[_T, _U] = {}
     for key, value in mydict.items():
         clean_value: Optional[_U]
         if isinstance(value, dict):
@@ -214,8 +261,8 @@ def _remove_null_fields(mydict: Dict[_T, Optional[_U]]) -> Dict[_T, _U]:
     return out
 
 
-def _get_urban_context(city_id: str) -> Optional[str]:
-    target_city = proto.fetch_from_mongo(_DB, geo_pb2.FrenchCity, 'cities', city_id)
+def _get_urban_context(stats_db: mongo.NoPiiMongoDatabase, city_id: str) -> Optional[str]:
+    target_city = proto.fetch_from_mongo(stats_db, geo_pb2.FrenchCity, 'cities', city_id)
     if target_city:
         urban_context = target_city.urban_context
         return f'{urban_context:d} - {geo_pb2.UrbanContext.Name(urban_context)}'
@@ -267,42 +314,78 @@ def _product_usability_score_value(product_usability_score: int) -> str:
     return 'unknown'
 
 
-def _user_to_analytics_data(user: user_pb2.User) -> Dict[str, Any]:
+def _get_action_plan_status(project: project_pb2.Project) -> tuple[int, str]:
+    selected_actions = [
+        action for action in project.actions
+        if action.status != action_pb2.ACTION_UNREAD]
+    if not selected_actions:
+        return (1, 'EMPTY')
+    if not project.HasField('action_plan_started_at'):
+        return (2, 'ADDING_ACTIONS')
+    has_scheduled_all_actions = all(
+        action.HasField('expected_completion_at')
+        for action in selected_actions)
+    if not has_scheduled_all_actions:
+        return (3, 'STARTED')
+    has_done_all_actions = all(
+        action.status == action_pb2.ACTION_DONE
+        for action in selected_actions)
+    if not has_done_all_actions:
+        return (4, 'ALL_PLANNED')
+    return (5, 'ALL_DONE')
+
+
+def user_to_analytics_data(user: user_pb2.User) -> dict[str, Any]:
     """Gather analytics data to insert into elasticsearch."""
 
+    stats_db = mongo.get_connections_from_env().stats_db
+
     has_opened_strategy = False
-    data: Dict[str, Any] = {
+    data: dict[str, Any] = {
         'registeredAt': user.registered_at.ToJsonString(),
         'randomGroup': random.randint(0, 100) / 100,
         'profile': {
             'ageGroup': age_group(user.profile.year_of_birth),
-            'coachingEmailFrequency': user_pb2.EmailFrequency.Name(
+            'coachingEmailFrequency': email_pb2.EmailFrequency.Name(
                 user.profile.coaching_email_frequency),
-            'frustrations': [user_pb2.Frustration.Name(f) for f in user.profile.frustrations],
-            'gender': user_pb2.Gender.Name(user.profile.gender),
+            # TODO(sil): Use more relevant names for gender fields.
+            'customGender': user.profile.custom_gender,
+            'familySituation': user_profile_pb2.FamilySituation.Name(user.profile.family_situation),
+            'frustrations':
+            [user_profile_pb2.Frustration.Name(f) for f in user.profile.frustrations],
+            'gender': user_profile_pb2.Gender.Name(user.profile.gender),
             'hasHandicap': user.profile.has_handicap,
             'highestDegree': _get_degree_level(user.profile.highest_degree),
-            'locale': scoring.get_user_locale(user.profile),
-            'origin': user_pb2.UserOrigin.Name(user.profile.origin),
+            'isArmyVeteran': user.profile.is_army_veteran,
+            'locale': user.profile.locale or 'fr',
+            'origin': user_profile_pb2.UserOrigin.Name(user.profile.origin),
         },
         'featuresEnabled': json_format.MessageToDict(user.features_enabled),
         'origin': {
             'medium': user.origin.medium,
             'source': user.origin.source,
+            'campaign': user.origin.campaign,
         },
         'hasAccount': user.has_account,
     }
 
+    def _add_scored_challenge(name: str, challenge_id: Optional[str]) -> None:
+        if not challenge_id:
+            return
+        if not (score := data.get('nps_response', {}).get('challengeScores', {}).get(challenge_id)):
+            return
+        data['nps_response']['challengeScores'][name] = score
+
     last_project = _get_last_complete_project(user)
     if last_project:
-        scoring_project = scoring.ScoringProject(last_project, user, _DB)
+        scoring_project = scoring.ScoringProject(last_project, user, stats_db)
         data['project'] = {
             'targetJob': {
                 'name': last_project.target_job.name,
                 'job_group': {
                     'name': last_project.target_job.job_group.name,
                 },
-                'domain': _get_job_domain(last_project.target_job),
+                'domain': _get_job_domain(stats_db, last_project.target_job),
             },
             'areaType': geo_pb2.AreaType.Name(last_project.area_type),
             'city': {
@@ -320,6 +403,22 @@ def _user_to_analytics_data(user: user_pb2.User) -> Dict[str, Any]:
             'isComplete': not last_project.is_incomplete,
             'openedStrategies': [
                 strat.strategy_id for strat in last_project.opened_strategies if strat.started_at],
+            'employmentTypes': [
+                job_pb2.EmploymentType.Name(employment_type)
+                for employment_type in last_project.employment_types],
+            'trainingFulfillmentEstimate': project_pb2.TrainingFulfillmentEstimate.Name(
+                last_project.training_fulfillment_estimate),
+            'passionateLevel': project_pb2.PassionateLevel.Name(last_project.passionate_level),
+            'previousJobSimilarity': project_pb2.PreviousJobSimilarity.Name(
+                last_project.previous_job_similarity),
+            'seniority': project_pb2.ProjectSeniority.Name(last_project.seniority),
+            'weeklyOffersEstimate': project_pb2.NumberOfferEstimateOption.Name(
+                last_project.weekly_offers_estimate),
+            'weeklyApplicationsEstimate': project_pb2.NumberOfferEstimateOption.Name(
+                last_project.weekly_applications_estimate),
+            'totalInterviewsEstimate': project_pb2.NumberOfferEstimateOption.Name(
+                last_project.total_interviews_estimate),
+            'networkEstimate': _NETWORK_ESTIMATE_OPTIONS[last_project.network_estimate],
         }
         if last_project.strategies:
             data['project']['ratioOpenedStrategies'] = sum(
@@ -348,15 +447,30 @@ def _user_to_analytics_data(user: user_pb2.User) -> Dict[str, Any]:
                     last_project.diagnostic.category_id
         if last_project.kind:
             data['project']['kind'] = project_pb2.ProjectKind.Name(last_project.kind)
+
+        data['project']['actionPlanStage'], data['project']['actionPlanStatus'] = \
+            _get_action_plan_status(last_project)
+
+        # Project feedback score.
         if last_project.feedback.score:
             data['project']['feedbackScore'] = last_project.feedback.score
             data['project']['feedbackLoveScore'] = feedback_love_score(last_project.feedback.score)
+            feedback_scores = json_format.MessageToDict(last_project.feedback)
+            for field in (
+                'actionPlanBetterPrepareScore', 'actionPlanHelpsPlanScore',
+                'actionPlanUsefulnessScore', 'advocacyScore', 'motivationScore',
+                'newInfoImproveScore',
+            ):
+                if feedback_scores.get(field):
+                    data['project'][field] = feedback_scores[field]
+        if last_project.was_feedback_requested:
+            data['project']['wasFeedbackRequested'] = True
         if last_project.feedback.challenge_agreement_score:
             data['project']['challengeAgreementScore'] = \
                 last_project.feedback.challenge_agreement_score - 1
         if last_project.min_salary and last_project.min_salary < 1000000000:
             data['project']['minSalary'] = last_project.min_salary
-        urban_context = _get_urban_context(last_project.city.city_id)
+        urban_context = _get_urban_context(stats_db, last_project.city.city_id)
         if urban_context:
             data['project']['city']['urbanContext'] = urban_context
         if last_project.diagnostic.category_id:
@@ -364,6 +478,7 @@ def _user_to_analytics_data(user: user_pb2.User) -> Dict[str, Any]:
         has_opened_strategy = any(strat.started_at for strat in last_project.opened_strategies)
 
     data['finishedOnboardingPercent'] = 100 if data.get('project', {}).get('isComplete') else 0
+
     nps_email = next(
         (email for email in user.emails_sent if email.campaign_id == 'nps'),
         None)
@@ -385,16 +500,20 @@ def _user_to_analytics_data(user: user_pb2.User) -> Dict[str, Any]:
             'score': user.net_promoter_score_survey_response.score,
             'time': user.net_promoter_score_survey_response.responded_at.ToJsonString(),
         }
-        if user.net_promoter_score_survey_response.nps_self_diagnostic.category_id:
-            data['nps_response']['selfDiagnostic']['categoryId'] = \
-                user.net_promoter_score_survey_response.nps_self_diagnostic.category_id
-            if last_project and last_project.original_self_diagnostic and \
-                    last_project.original_self_diagnostic.category_id and \
-                    last_project.diagnostic.category_id:
+        if actions := list(user.net_promoter_score_survey_response.next_actions):
+            data['nps_response']['challengeScores'] = {
+                challenge: get_challenge_action_score(challenge, actions)
+                for challenge in get_challenge_actions()}
+            if last_project:
+                _add_scored_challenge('diagnostic', last_project.diagnostic.category_id)
+        if self_category := user.net_promoter_score_survey_response.nps_self_diagnostic.category_id:
+            data['nps_response']['selfDiagnostic']['categoryId'] = self_category
+            _add_scored_challenge('selfDiagnostic', self_category)
+            if last_project and last_project.diagnostic.category_id and (
+                    original_self_category := last_project.original_self_diagnostic.category_id):
                 data['nps_response']['selfDiagnostic']['hasChanged'] = _self_diagnostic_change(
-                    last_project.original_self_diagnostic.category_id,
-                    user.net_promoter_score_survey_response.nps_self_diagnostic.category_id,
-                    last_project.diagnostic.category_id)
+                    original_self_category, self_category, last_project.diagnostic.category_id)
+                _add_scored_challenge('originalSelfDiagnostic', original_self_category)
         if user.net_promoter_score_survey_response.local_market_estimate:
             data['nps_response']['localMarketEstimate'] = user_pb2.LocalMarketUserEstimate.Name(
                 user.net_promoter_score_survey_response.local_market_estimate)
@@ -434,11 +553,39 @@ def _user_to_analytics_data(user: user_pb2.User) -> Dict[str, Any]:
         if last_status.has_been_promoted:
             data['employmentStatus']['hasBeenPromoted'] = boolean_pb2.OptionalBool.Name(
                 last_status.has_been_promoted)
+        if last_status.is_job_in_different_sector:
+            data['employmentStatus']['isJobInDifferentSector'] = boolean_pb2.OptionalBool.Name(
+                last_status.is_job_in_different_sector)
+
+    ffs_email = next(
+        (email for email in user.emails_sent if email.campaign_id == 'first-followup-survey'),
+        None)
+    if ffs_email:
+        data['ffsRequest'] = {
+            'hasResponded': user.first_followup_survey_response.HasField('responded_at'),
+            'sentAfterDays':
+            (ffs_email.sent_at.ToDatetime() - user.registered_at.ToDatetime()).days,
+        }
+    if user.first_followup_survey_response.HasField('responded_at'):
+        data['ffsResponse'] = {
+            'hasTriedSomethingNew': user.first_followup_survey_response.has_tried_something_new,
+            'respondedDaysAfterRegistration':
+                (user.first_followup_survey_response.responded_at.ToDatetime() -
+                 user.registered_at.ToDatetime()).days,
+        }
+        ffs_scores = json_format.MessageToDict(user.first_followup_survey_response)
+        for field in (
+            'learnToMeetChallengeScore', 'newIdeasScore', 'usefulResourceScore',
+            'helpsPlanScore', 'personalizedAdviceScore', 'knewOwnNeedScore',
+            'usefulScheduleScore',
+        ):
+            if ffs_scores.get(field):
+                data['ffsResponse'][field] = ffs_scores[field]
 
     if user.emails_sent:
         data['emailsSent'] = {
             # This will keep only the last email sent for each campaign.
-            email.campaign_id: user_pb2.EmailSentStatus.Name(email.status)
+            email.campaign_id: email_pb2.EmailSentStatus.Name(email.status)
             for email in sorted(user.emails_sent, key=lambda email: email.sent_at.ToDatetime())
         }
         data['coachingEmailsSent'] = sum(
@@ -452,6 +599,20 @@ def _user_to_analytics_data(user: user_pb2.User) -> Dict[str, Any]:
             1 for campaign, status in data['emailsSent'].items()
             if campaign in _ALL_COACHING_EMAILS and
             status in mail_send.READ_EMAIL_STATUS_STRINGS)
+        if data['coachingEmailsSent']:
+            data['coachingEmailsClickedRatio'] = \
+                data['coachingEmailsClicked'] / data['coachingEmailsSent']
+            data['coachingEmailsOpenedRatio'] = \
+                data['coachingEmailsOpened'] / data['coachingEmailsSent']
+    expected_coaching_emails = set(data.get('emailsSent', {})) | {
+        email.campaign_id
+        for email in focus.simulate_coaching_emails(user, database=stats_db)}
+    if expected_coaching_emails:
+        data['coachingEmailsExpected'] = len(expected_coaching_emails)
+        data['coachingEmails'] = sorted(expected_coaching_emails)
+
+    if user.profile.races:
+        data['profile']['races'] = list(user.profile.races)
 
     data['isHooked'] = bool(
         has_opened_strategy or
@@ -475,6 +636,8 @@ def export_user_to_elasticsearch(
         force_recreate: bool, dry_run: bool = True) -> None:
     """Synchronize users to elasticsearch for analytics purpose."""
 
+    user_db = mongo.get_connections_from_env().user_db
+
     if not dry_run:
         has_previous_index = es_client.indices.exists(index=index)
         if force_recreate and has_previous_index:
@@ -486,7 +649,7 @@ def export_user_to_elasticsearch(
 
     nb_users = 0
     nb_docs = 0
-    cursor = _USER_DB.user.find({
+    cursor = user_db.user.find({
         'registeredAt': {'$gt': registered_from},
         'featuresEnabled.excludeFromAnalytics': {'$ne': True},
     })
@@ -494,7 +657,7 @@ def export_user_to_elasticsearch(
 
         nb_users += 1
         user = proto.create_from_mongo(row, user_pb2.User, 'user_id')
-        data = _user_to_analytics_data(user)
+        data = user_to_analytics_data(user)
 
         logging.debug(data)
 
@@ -515,7 +678,7 @@ def export_user_to_elasticsearch(
 
 def main(
         es_client: elasticsearch.Elasticsearch,
-        string_args: Optional[List[str]] = None) -> None:
+        string_args: Optional[list[str]] = None) -> None:
     """Parse command line arguments and trigger sync_employment_status function."""
 
     parser = argparse.ArgumentParser(
@@ -538,6 +701,14 @@ def main(
         force_recreate=args.force_recreate, dry_run=args.dry_run)
 
 
+def _find_aws_region(env: Mapping[str, str]) -> str:
+    if region := env.get('ELASTICSEARCH_AWS_REGION'):
+        return region
+    if (url := env.get('ELASTICSEARCH_URL')) and (match := _AWS_ES_URL_PATTERN.match(url)):
+        return match.group('region')
+    return 'eu-central-1'
+
+
 def _get_auth_from_env(env: Mapping[str, str]) -> Optional[requests_aws4auth.AWS4Auth]:
     aws_in_docker = env.get('AWS_CONTAINER_CREDENTIALS_RELATIVE_URI')
     if aws_in_docker:
@@ -555,7 +726,7 @@ def _get_auth_from_env(env: Mapping[str, str]) -> Optional[requests_aws4auth.AWS
     if not access_key_id:
         return None
     return requests_aws4auth.AWS4Auth(
-        access_key_id, secret_access_key, 'eu-central-1', 'es', session_token=session_token)
+        access_key_id, secret_access_key, _find_aws_region(env), 'es', session_token=session_token)
 
 
 def get_es_client_from_env() -> elasticsearch.Elasticsearch:

@@ -5,9 +5,7 @@ import logging
 from os import path
 import re
 import sys
-import typing
-from typing import Any, Dict, Iterator, List, Literal, Mapping, MutableMapping, Optional, \
-    Sequence, Set, Tuple
+from typing import Iterator, Literal, Mapping, Optional, Sequence, Set, Tuple
 
 import polib
 
@@ -25,6 +23,10 @@ _HTML_DIV_PATTERN = re.compile(r'<div[ >\n](?:[^<])*?</div>', re.MULTILINE)
 _HTML_ATTRS_PATTERN = re.compile(r'(?:^| )([a-z]+)="((?:[^"]|\\")*)"', re.MULTILINE)
 # Regexp to match the HTML title, e.g. <title>...</title>
 _HTML_TITLE_PATTERN = re.compile(r'<title>(?:[^<]|<[^t]|<t[^i])*?</title>')
+# Regexp to match whitespace between HTML tags that can be dropped, e.g. </p>\n  \n<p>
+_HTML_MEANINGLESS_PATTERN = re.compile(r'(?<=>)\s*(\n\s*)+|\s*(\n\s*)+(?=<)')
+# Regexp to match a simple MJML XML end node without inner mj- child, e.g. <mj-text>...</mj-text>
+_MJML_XML_NODE_PATTERN = re.compile(r'<mj-(?:[^>]*/>|(?:[^<]|<[^m]|<m[^j]|mj[^-])*?</mj-[^>]*>)')
 
 
 # TODO(pascal): Move to a library.
@@ -140,9 +142,9 @@ def itemize_html_and_mjml_tags(html_soup: str) -> Tuple[str, Mapping[str, str]]:
     '<0><1>Cool{2}</1><3/>Beans</0>' => {'0': 'p style="f"', '1':'a', '2': '{var:foo}', '3': 'br '}
     """
 
-    items: Dict[str, str] = {}
-    reverse_items: Dict[str, str] = {}
-    context: List[str] = []
+    items: dict[str, str] = {}
+    reverse_items: dict[str, str] = {}
+    context: list[str] = []
     simplified = ''
     for token, token_type in tokenize_html_and_mjml(html_soup):
         if not token:
@@ -187,16 +189,17 @@ def itemize_html_and_mjml_tags(html_soup: str) -> Tuple[str, Mapping[str, str]]:
 
 
 # Attributes to extract.
-_HTML_ATTRS_TO_EXTRACT = {
-    'a': ('href',),
-    'img': ('alt', 'src'),
-}
 _MAILJET_ATTRS_TO_EXTRACT = {
     'mj-button': ('href',),
     'mj-image': ('alt', 'href', 'src'),
     'mj-social': ('facebook-href', 'twitter-href'),
     'mj-social-element': ('href',),
 }
+_HTML_ATTRS_TO_EXTRACT = {
+    'a': ('href',),
+    'img': ('alt', 'src'),
+    'mj-image': ('alt', 'href', 'src'),
+} | _MAILJET_ATTRS_TO_EXTRACT
 
 
 def extract_i18n_from_html_attrs_in_items(contents: Mapping[str, str]) \
@@ -216,10 +219,12 @@ def extract_i18n_from_html_attrs_in_items(contents: Mapping[str, str]) \
         tag, attributes = re.split(r'\s+', content, 1)
         if tag not in _HTML_ATTRS_TO_EXTRACT:
             continue
-        if 'https://www.mailjet.com/images/theme/v1/icons/ico-social/' in content:
-            continue
         for key, value in _HTML_ATTRS_PATTERN.findall(attributes):
             if key in _HTML_ATTRS_TO_EXTRACT[tag] and value:
+                if 'https://www.mailjet.com/images/theme/v1/icons/ico-social/' in value:
+                    continue
+                if value in {'twitter', 'facebook'}:
+                    continue
                 yield value, item, key
 
 
@@ -249,45 +254,14 @@ def iterate_html_contents(html_soup: str) -> Iterator[str]:
         yield cell
     for div in _HTML_DIV_PATTERN.findall(html_soup):
         yield div
+    for mj_node in _MJML_XML_NODE_PATTERN.findall(html_soup):
+        # TODO(pascal): Allow again once we only extract strings to translate from MJML, for now
+        # it's difficult to locate the equivalent strings in HTML.
+        if mj_node.startswith('<mj-raw>'):
+            continue
+        yield mj_node
     for title in _HTML_TITLE_PATTERN.findall(html_soup):
         yield title
-
-
-def iterate_mjml_contents(content: MutableMapping[str, Any], node_path: str = '') \
-        -> Iterator[Tuple[str, MutableMapping[str, str], str]]:
-    """Browses an MJML tree and yield the nodes that have a meaningful content.
-
-    Yields:
-        a node with a meaningful property, the path of the node in the tree and the property name.
-    """
-
-    if isinstance(content, list):
-        return
-    try:
-        string = content.get('content')
-    except Exception as error:
-        raise ValueError(node_path) from error
-
-    if content.get('attributes', {}).get('passport', {}).get('hidden', False):
-        return
-    if content.get('attributes', {}).get('hidden', False):
-        return
-
-    tag_name = content.get('tagName')
-    if tag_name in _MAILJET_ATTRS_TO_EXTRACT:
-        for field in _MAILJET_ATTRS_TO_EXTRACT[tag_name]:
-            attr_string = content.get('attributes', {}).get(field)
-            if not attr_string:
-                continue
-            yield node_path, typing.cast(MutableMapping[str, str], content.get('attributes')), field
-
-    if string:
-        yield node_path, typing.cast(MutableMapping[str, str], content), 'content'
-        return
-
-    for child_index, child in enumerate(content.get('children', [])):
-        child_path = f'{node_path}.{tag_name}[{child_index}]'
-        yield from iterate_mjml_contents(child, child_path)
 
 
 def has_i18n_content(string: str) -> bool:
@@ -304,10 +278,22 @@ def has_i18n_content(string: str) -> bool:
     )
 
 
+def clear_meaningless_spaces(html_soup: str) -> str:
+    """Clear white spaces invisible to HTML."""
+
+    return _HTML_MEANINGLESS_PATTERN.sub('', html_soup)
+
+
 def _extract_from_mailjet_html(filename: str) -> Iterator[Tuple[str, str]]:
-    with open(filename, 'rt') as html_file:
+    with open(filename, 'rt', encoding='utf-8') as html_file:
         html_soup = html_file.read()
+    yield from _extract_from_mailjet_html_content(html_soup)
+
+
+def _extract_from_mailjet_html_content(html_content: str) -> Iterator[Tuple[str, str]]:
+    html_soup = clear_meaningless_spaces(html_content)
     for html_cell in iterate_html_contents(html_soup):
+        original_html_cell = html_cell
         cell_has_i18n_content = has_i18n_content(html_cell)
         html_cell = html_cell.replace('<style></style>', '')
         opening_tags, string, unused_closing_tags = breaks_outer_tags_html(html_cell)
@@ -326,7 +312,7 @@ def _extract_from_mailjet_html(filename: str) -> Iterator[Tuple[str, str]]:
                 attribute_strings.add(itemized_attr_string)
 
         cursor = 0
-        while (cursor := html_soup.find(string, cursor)) > 0:
+        while (cursor := html_soup.find(original_html_cell, cursor)) > 0:
             line_index = len(html_soup[:cursor].split('\n'))
             if cell_has_i18n_content:
                 yield itemized_string, str(line_index)
@@ -337,21 +323,9 @@ def _extract_from_mailjet_html(filename: str) -> Iterator[Tuple[str, str]]:
 
 
 def _extract_from_mjml(filename: str) -> Iterator[Tuple[str, str]]:
-    with open(filename, 'rt') as mjml_file:
-        content = json.load(mjml_file)
-    for node_path, node, field in iterate_mjml_contents(content):
-        mjml_content = node[field]
-        string = breaks_outer_tags_html(mjml_content)[1]
-        try:
-            itemized_string, items = itemize_html_and_mjml_tags(string)
-            if has_i18n_content(mjml_content):
-                yield itemized_string, node_path
-            for attribute_string, item, attr in extract_i18n_from_html_attrs_in_items(items):
-                itemized_attribute, unused_ = itemize_html_and_mjml_tags(attribute_string)
-                if has_i18n_content(itemized_attribute):
-                    yield itemized_attribute, f'{node_path}.{item}.{attr}'
-        except Exception as error:
-            raise ValueError(node) from error
+    with open(filename, 'rt', encoding='utf-8') as mjml_file:
+        content = mjml_file.read()
+    yield from _extract_from_mailjet_html_content(content)
 
 
 def extract_from_mailjet(folder: str) -> Iterator[polib.POEntry]:
@@ -362,7 +336,7 @@ def extract_from_mailjet(folder: str) -> Iterator[polib.POEntry]:
         mjml_strings.add(string)
         yield polib.POEntry(msgid=string, occurrences=[(f'{folder}/template.mjml', node)])
 
-    with open(path.join(folder, 'headers.json'), 'rt') as headers_file:
+    with open(path.join(folder, 'headers.json'), 'rt', encoding='utf-8') as headers_file:
         headers_content = json.load(headers_file)
     itemized_subject, unused_items = itemize_html_and_mjml_tags(headers_content['Subject'])
     yield polib.POEntry(
@@ -374,6 +348,8 @@ def extract_from_mailjet(folder: str) -> Iterator[polib.POEntry]:
     for string, line in _extract_from_mailjet_html(path.join(folder, 'template.html')):
         html_strings.add(string)
         yield polib.POEntry(msgid=string, occurrences=[(f'{folder}/template.html', line)])
+    if has_i18n_content(itemized_subject):
+        html_strings.add(itemized_subject)
 
     if mjml_strings != html_strings:
         raise ValueError(
@@ -404,7 +380,21 @@ def main(string_args: Optional[Sequence[str]] = None) -> str:
     if string_args is None:
         string_args = sys.argv[1:]
     translations = polib.POFile()
-    for folder in string_args:
+    for arg in string_args:
+        if arg.endswith('.json'):
+            with open(arg, encoding='utf-8') as json_file:
+                templates = json.load(json_file)
+            for template in templates:
+                if template.get('noI18n'):
+                    continue
+                folder = path.join(path.dirname(arg), template.get('name', ''))
+                try:
+                    _add_mailjet(translations, folder)
+                except Exception as error:
+                    raise ValueError(folder) from error
+            continue
+
+        folder = arg
         if path.isdir(folder) and '__pycache__' not in folder:
             try:
                 _add_mailjet(translations, folder)

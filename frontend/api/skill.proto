@@ -1,17 +1,19 @@
 syntax = "proto3";
 
+import "bob_emploi/frontend/api/options.proto";
+
 package bayes.bob;
 option go_package="bayes.org/bob_emploi/frontend/api/skill";
 
 message Skill {
-  // French name of the skill.
-  string name = 1;
+  // Name of the skill.
+  string name = 1 [(string_format) = NATURAL_LANGUAGE];
 
-  // Short description, in French, of what this skill represents.
-  string description = 2;
+  // Short description, of what this skill represents.
+  string description = 2 [(string_format) = NATURAL_LANGUAGE];
 
   // URL of a web page to discover this skill (video, MOOC, tool).
-  string discover_url = 3;
+  string discover_url = 3 [(string_format) = NATURAL_LANGUAGE, (string_format) = URL_FORMAT];
 
   // A sorted list of assets of this skill (most relevant first).
   repeated SkillAsset assets = 4;

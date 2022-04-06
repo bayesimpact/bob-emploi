@@ -1,6 +1,7 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 
-import {LocalizableString, combineTOptions, prepareT} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {combineTOptions, prepareT} from 'store/i18n'
 
 
 const tricotomyScore = <T>(percent: number, low: T, medium: T, high: T): T =>

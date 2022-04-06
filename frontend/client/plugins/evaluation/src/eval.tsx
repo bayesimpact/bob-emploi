@@ -1,16 +1,16 @@
 import {ConnectedRouter, connectRouter, routerMiddleware} from 'connected-react-router'
 import i18next from 'i18next'
+import _uniqueId from 'lodash/uniqueId'
 import {createBrowserHistory} from 'history'
 import Storage from 'local-storage-fallback'
-import PropTypes from 'prop-types'
 import React, {
   Suspense, useCallback, useLayoutEffect, useEffect, useMemo, useRef, useState,
 } from 'react'
-import GoogleLogin, {GoogleLoginResponse, GoogleLoginResponseOffline} from 'react-google-login'
-import {hot} from 'react-hot-loader/root'
+import type {GoogleLoginResponse, GoogleLoginResponseOffline} from 'react-google-login'
+import GoogleLogin from 'react-google-login'
 import {useTranslation} from 'react-i18next'
 import {connect, Provider, useDispatch, useSelector} from 'react-redux'
-import {Redirect, Route, Switch, useHistory, useLocation, useParams} from 'react-router'
+import {Route, Switch, useHistory, useLocation, useParams} from 'react-router'
 import {createStore, applyMiddleware, combineReducers} from 'redux'
 import {composeWithDevTools} from 'redux-devtools-extension'
 import thunk from 'redux-thunk'
@@ -18,20 +18,28 @@ import thunk from 'redux-thunk'
 import 'normalize.css'
 import 'styles/App.css'
 
-import {computeAdvicesForProject, getLaborStats, hideToasterMessageAction, noOp,
+import TabNavigationProvider from 'hooks/tab_navigation'
+
+import type {ActionWithId} from 'store/actions'
+import {computeActionsForProject, computeAdvicesForProject, getLaborStats, hideToasterMessageAction,
   simulateFocusEmails} from 'store/actions'
 
 import {app, asyncState} from 'store/app_reducer'
 import {hasErrorStatus} from 'store/http'
-import {LocalizableString, init as i18nInit, prepareT} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {init as i18nInit, prepareT} from 'store/i18n'
 import {parseQueryString} from 'store/parse'
-import {CancelablePromise, makeCancelable, useAsynceffect, useSafeDispatch} from 'store/promise'
-import createSentryMiddleware from 'store/sentry'
+import {createProjectTitle} from 'store/project'
+import type {CancelablePromise} from 'store/promise'
+import {makeCancelable, useAsynceffect, useSafeDispatch} from 'store/promise'
+import createSentryEnhancer from 'store/sentry'
 
 import Button from 'components/button'
+import CircularProgress from 'components/circular_progress'
 import Trans from 'components/i18n_trans'
+import LabeledToggle from 'components/labeled_toggle'
 import {useModal} from 'components/modal'
-import {RadiumDiv, RadiumSpan} from 'components/radium'
+import {SmartLink} from 'components/radium'
 import Snackbar from 'components/snackbar'
 import Select from 'components/select'
 import Textarea from 'components/textarea'
@@ -41,21 +49,24 @@ import WaitingPage from 'components/pages/waiting'
 // TODO(pascal): Move outside of components/page.
 import {Strategies} from 'components/pages/connected/project/strategy'
 
-import {CONCEPT_EVAL_PAGE, EVAL_PAGE} from './routes'
+import {ACTIONS_EVAL_PAGE, CONCEPT_EVAL_PAGE, EVAL_PAGE, FEEDBACK_EVAL_PAGE} from './routes'
 
+import ActionsPage, {ActionsPanel} from './components/actions'
 import {AdvicesRecap} from './components/advices_recap'
 import Assessment from './components/assessment'
 import {MainChallengesDistribution, UseCaseSelector} from './components/categories'
 import Coaching from './components/coaching'
 import CreatePoolModal from './components/create_pool_modal'
+import FeedbackPage from './components/feedback'
 import PoolOverview from './components/pool_overview'
 import {EVAL_SCORES} from './components/score_levels'
 import Stats from './components/statistics'
 import UseCase from './components/use_case'
 
-import {AllEvalActions, AuthEvalState, DispatchAllEvalActions, EvalRootState,
-  diagnoseProject, strategizeProject, saveUseCaseEval,
-  getAllMainChallenges, createUseCase} from './store/actions'
+import type {AllEvalActions, AuthEvalState, DispatchAllEvalActions,
+  EvalRootState} from './store/actions'
+import {diagnoseProject, strategizeProject, saveUseCaseEval, getAllMainChallenges,
+  createUseCase} from './store/actions'
 import {getUseCaseTitle} from './store/eval'
 import evalAppReducer from './store/app_reducer'
 import {usePools, useUseCases} from './store/selectors'
@@ -66,6 +77,7 @@ const emptyObject = {} as const
 const OVERVIEW_ID = 'sommaire'
 const DIAGNOSTIC_PANEL = 'diagnostic'
 const ADVICE_PANEL = 'advice'
+const ACTIONS_PANEL = 'actions'
 const STRATEGIES_PANEL = 'strategies'
 const STATS_PANEL = 'statistics'
 const COACHING_PANEL = 'coaching'
@@ -73,6 +85,7 @@ const COACHING_PANEL = 'coaching'
 type EvalPanel =
   | typeof DIAGNOSTIC_PANEL
   | typeof ADVICE_PANEL
+  | typeof ACTIONS_PANEL
   | typeof STRATEGIES_PANEL
   | typeof STATS_PANEL
   | typeof COACHING_PANEL
@@ -82,6 +95,7 @@ i18nInit()
 
 
 interface UseCaseEvalState {
+  actions?: readonly ActionWithId[]
   advices?: readonly bayes.bob.Advice[]
   emailsSent?: readonly bayes.bob.EmailSent[]
   diagnostic?: bayes.bob.Diagnostic
@@ -108,6 +122,11 @@ const panels: readonly EvalPanelConfig[] = [
     predicate: ({advices}: UseCaseEvalState): boolean => !!(advices && advices.length),
   },
   {
+    name: prepareT('Actions'),
+    panelId: ACTIONS_PANEL,
+    predicate: ({actions}: UseCaseEvalState): boolean => !!(actions && actions.length),
+  },
+  {
     name: prepareT('Stratégies'),
     panelId: STRATEGIES_PANEL,
     predicate: ({strategies}: UseCaseEvalState): boolean => !!(strategies && strategies.length),
@@ -127,13 +146,14 @@ const panels: readonly EvalPanelConfig[] = [
 
 interface PanelHeaderLinkProps extends EvalPanelConfig {
   onClick: (panelId: EvalPanel) => void
+  panelDomId?: string
   shownPanel?: EvalPanel
   state: UseCaseEvalState
 }
 
 
 const PanelHeaderLinkBase = (props: PanelHeaderLinkProps): React.ReactElement => {
-  const {name, onClick, panelId, predicate, shownPanel, state} = props
+  const {name, onClick, panelDomId, panelId, predicate, shownPanel, state} = props
   const {t: translate} = useTranslation()
   const handleClick = useCallback((): void => onClick(panelId), [onClick, panelId])
   const isAvailable = predicate(state)
@@ -145,8 +165,10 @@ const PanelHeaderLinkBase = (props: PanelHeaderLinkProps): React.ReactElement =>
     'opacity': isAvailable ? 1 : .5,
     'paddingBottom': 5,
   }
-  return <HeaderLink onClick={handleClick} isSelected={shownPanel === panelId}>
-    <RadiumSpan style={toggleTitleStyle}>{translate(...name)}</RadiumSpan>
+  return <HeaderLink
+    onClick={handleClick} isSelected={shownPanel === panelId} style={toggleTitleStyle}
+    aria-controls={panelDomId}>
+    {translate(...name)}
   </HeaderLink>
 }
 const PanelHeaderLink = React.memo(PanelHeaderLinkBase)
@@ -162,7 +184,9 @@ interface UseCaseEvalProps {
 const UseCaseEvalBase = (props: UseCaseEvalProps): React.ReactElement => {
   const {onSaveEval, selectNextUseCase, useCase} = props
   const dispatch = useDispatch<DispatchAllEvalActions>()
+  const {t} = useTranslation()
 
+  const [actions, setActions] = useState<readonly ActionWithId[]>(emptyArray)
   const [advices, setAdvices] = useState<readonly bayes.bob.Advice[]>(emptyArray)
   const [mainChallenges, setMainChallenges] =
     useState<readonly bayes.bob.DiagnosticMainChallenge[]>(emptyArray)
@@ -178,6 +202,14 @@ const UseCaseEvalBase = (props: UseCaseEvalProps): React.ReactElement => {
   const [shownPanel, setShownPanel] = useState<EvalPanel>(DIAGNOSTIC_PANEL)
   const [strategies, setStrategies] = useState<readonly bayes.bob.Strategy[]>(emptyArray)
   const [userCounts, setUserCounts] = useState<bayes.bob.UsersCount|undefined>(undefined)
+  const [areAllModulesEnabled, setAreAllModulesEnabled] = useState(false)
+
+  const [isLoadingLaborStats, setIsLoadingLaborStats] = useState(false)
+  const [isDiagnosingProject, setIsDiagnosingProject] = useState(false)
+  const [isFindingActions, setIsFindingActions] = useState(false)
+  const [isAdvisingProject, setIsAdvisingProject] = useState(false)
+  const [isStrategizingProject, setIsStrategizingProject] = useState(false)
+  const [isSimulatingEmails, setIsSimulatingEmails] = useState(false)
 
   const localizedUserData = useMemo((): undefined|bayes.bob.User => {
     if (!useCase || !useCase.userData) {
@@ -190,8 +222,12 @@ const UseCaseEvalBase = (props: UseCaseEvalProps): React.ReactElement => {
         ...userData?.profile,
         locale: i18next?.languages?.[0] || config.defaultLang,
       },
+      projects: userData?.projects?.map((project) => project.title ? project : {
+        ...project,
+        title: createProjectTitle(project, t, userData?.profile?.gender),
+      }),
     }
-  }, [useCase])
+  }, [t, useCase])
 
   useEffect(() => {
     setEmailsSent(emptyArray)
@@ -207,8 +243,13 @@ const UseCaseEvalBase = (props: UseCaseEvalProps): React.ReactElement => {
     if (!localizedUserData) {
       return
     }
+    setIsLoadingLaborStats(true)
     const laborStats = await dispatch(getLaborStats(localizedUserData.projects?.[0] || {}))
-    if (!laborStats || checkIfCanceled()) {
+    if (checkIfCanceled()) {
+      return
+    }
+    setIsLoadingLaborStats(false)
+    if (!laborStats) {
       return
     }
     const {jobGroupInfo, localStats, userCounts} = laborStats
@@ -218,15 +259,21 @@ const UseCaseEvalBase = (props: UseCaseEvalProps): React.ReactElement => {
   }, [dispatch, localizedUserData])
 
   useAsynceffect(async (checkIfCanceled) => {
+    setActions(emptyArray)
     setAdvices(emptyArray)
     setDiagnostic(undefined)
     setStrategies(emptyArray)
     if (!localizedUserData) {
       return
     }
+    setIsDiagnosingProject(true)
     const diagnostic = await dispatch(diagnoseProject(localizedUserData))
+    if (checkIfCanceled()) {
+      return
+    }
+    setIsDiagnosingProject(false)
     // Set diagnostic on state and compute the advice modules.
-    if (!diagnostic || checkIfCanceled()) {
+    if (!diagnostic) {
       return
     }
     setDiagnostic(diagnostic)
@@ -236,26 +283,49 @@ const UseCaseEvalBase = (props: UseCaseEvalProps): React.ReactElement => {
         ...localizedUserData.projects?.[0],
         diagnostic,
       }],
+      ...areAllModulesEnabled && {featuresEnabled: {
+        ...localizedUserData.featuresEnabled,
+        allModules: true,
+      }},
     }
+    setIsFindingActions(true)
+    const actionsPromise = dispatch(computeActionsForProject(userWithDiagnostic))
+    setIsAdvisingProject(true)
     const {advices} = await dispatch(computeAdvicesForProject(userWithDiagnostic)) || {}
-    if (!advices || checkIfCanceled()) {
+    if (checkIfCanceled()) {
+      return
+    }
+    setIsAdvisingProject(false)
+    if (!advices) {
       return
     }
     setAdvices(advices)
+    const {actions = emptyArray} = await actionsPromise || {}
+    if (checkIfCanceled()) {
+      return
+    }
+    setIsFindingActions(false)
+    setActions(actions.filter((a): a is ActionWithId => !!a.actionId))
     const userWithAdviceAndDiagnostic = {
       ...localizedUserData,
       projects: [{
         ...localizedUserData.projects?.[0],
+        actions,
         advices,
         diagnostic,
       }],
     }
+    setIsStrategizingProject(true)
     const {strategies} = await dispatch(strategizeProject(userWithAdviceAndDiagnostic)) || {}
-    if (!strategies || checkIfCanceled()) {
+    if (checkIfCanceled()) {
+      return
+    }
+    setIsStrategizingProject(false)
+    if (!strategies) {
       return
     }
     setStrategies(strategies)
-  }, [dispatch, localizedUserData])
+  }, [dispatch, localizedUserData, areAllModulesEnabled])
 
   useAsynceffect(async (checkIfCanceled) => {
     setMainChallenges(emptyArray)
@@ -290,20 +360,35 @@ const UseCaseEvalBase = (props: UseCaseEvalProps): React.ReactElement => {
       }],
     }
 
+    setIsSimulatingEmails(true)
     const {emailsSent} = await dispatch(
       simulateFocusEmails(userWithAdviceDiagnosticAndStrategies)) || {}
-    if (emailsSent && !checkIfCanceled()) {
+    if (checkIfCanceled()) {
+      return
+    }
+    setIsSimulatingEmails(false)
+    if (emailsSent) {
       setEmailsSent(emailsSent)
     }
   }, [dispatch, useCase, advices, coachingEmailFrequency, diagnostic, strategies])
 
   const state = useMemo((): UseCaseEvalState => ({
+    actions,
     advices,
     diagnostic,
     emailsSent,
     strategies,
-  }), [advices, diagnostic, emailsSent, strategies])
-  const availablePanels = panels.filter(({predicate}): boolean => predicate(state))
+  }), [actions, advices, diagnostic, emailsSent, strategies])
+  const isLoading = {
+    [ACTIONS_PANEL]: isFindingActions,
+    [ADVICE_PANEL]: isAdvisingProject,
+    [COACHING_PANEL]: isSimulatingEmails,
+    [DIAGNOSTIC_PANEL]: isDiagnosingProject,
+    [STATS_PANEL]: isLoadingLaborStats,
+    [STRATEGIES_PANEL]: isStrategizingProject,
+  } as const
+  const availablePanels = panels.filter(
+    ({panelId, predicate}): boolean => isLoading[panelId] || predicate(state))
 
   const choosePanel = useCallback((wantedPanel?: string): void => {
     const {panelId: nextPanel} =
@@ -398,16 +483,25 @@ const UseCaseEvalBase = (props: UseCaseEvalProps): React.ReactElement => {
 
   const fullProject = useMemo(() => ({
     ...projects?.[0],
+    actions,
     advices,
     diagnostic,
     localStats,
     strategies,
-  }), [projects, advices, diagnostic, localStats, strategies])
+  }), [projects, actions, advices, diagnostic, localStats, strategies])
 
   const user = useMemo(() => ({
     profile,
     projects: [fullProject],
   }), [fullProject, profile])
+
+  const toggleAreAllModulesEnabled = useCallback((): void => {
+    setAreAllModulesEnabled((wasEnabled: boolean): boolean => !wasEnabled)
+  }, [])
+  const allModulesToggle = <LabeledToggle
+    isSelected={areAllModulesEnabled} onClick={toggleAreAllModulesEnabled} type="checkbox"
+    label={t('Activer tous les modules')} />
+  const panelDomId = useMemo(_uniqueId, [])
 
   const panelContent = ((): React.ReactNode => {
     const isPanelAvailable = !!availablePanels.some(({panelId}): boolean => panelId === shownPanel)
@@ -420,16 +514,29 @@ const UseCaseEvalBase = (props: UseCaseEvalProps): React.ReactElement => {
           diagnostic={diagnostic || emptyObject}
           diagnosticEvaluations={evaluation && evaluation.diagnostic || emptyObject}
           onEvaluateSection={handleEvaluateDiagnosticSection}
+          isLoading={isDiagnosingProject}
         />
+      case ACTIONS_PANEL:
+        return <React.Fragment>
+          {allModulesToggle}
+          <ActionsPanel project={fullProject} actions={actions} isLoading={isFindingActions} />
+        </React.Fragment>
       case ADVICE_PANEL:
-        return <AdvicesRecap
-          profile={profile} project={fullProject} advices={advices || emptyArray}
-          adviceEvaluations={evaluation && evaluation.advices || emptyObject}
-          onEvaluateAdvice={handleEvaluateAdvice}
-          onRescoreAdvice={handleRescoreAdvice}
-          moduleNewScores={evaluation && evaluation.modules || emptyObject}
-        />
+        return <React.Fragment>
+          {allModulesToggle}
+          <AdvicesRecap
+            profile={profile} project={fullProject} advices={advices || emptyArray}
+            adviceEvaluations={evaluation && evaluation.advices || emptyObject}
+            onEvaluateAdvice={handleEvaluateAdvice}
+            onRescoreAdvice={handleRescoreAdvice}
+            moduleNewScores={evaluation && evaluation.modules || emptyObject}
+            isLoading={isAdvisingProject}
+          />
+        </React.Fragment>
       case STRATEGIES_PANEL:
+        if (isStrategizingProject) {
+          return <CircularProgress />
+        }
         // TODO(cyrille): Make sure we can see what's inside the strategies.
         return <Strategies
           project={fullProject}
@@ -437,13 +544,14 @@ const UseCaseEvalBase = (props: UseCaseEvalProps): React.ReactElement => {
       case STATS_PANEL:
         return <Stats
           mainChallenges={mainChallenges} project={fullProject} profile={profile}
-          jobGroupInfo={jobGroupInfo} userCounts={userCounts} />
+          jobGroupInfo={jobGroupInfo} userCounts={userCounts}
+          isLoading={isLoadingLaborStats} />
       case COACHING_PANEL:
         return <Coaching
           emailsSent={emailsSent || emptyArray}
           coachingEmailFrequency={coachingEmailFrequency}
           onChangeFrequency={setCoachingEmailFrequency}
-          user={user} />
+          user={user} isLoading={isSimulatingEmails} />
     }
   })()
 
@@ -459,12 +567,14 @@ const UseCaseEvalBase = (props: UseCaseEvalProps): React.ReactElement => {
   }
   return <React.Fragment>
     <div style={style}>
-      <div style={toggleStyle}>
+      <div style={toggleStyle} role="tablist">
         {panels.map((panel: EvalPanelConfig): React.ReactElement => <PanelHeaderLink
           {...panel} key={panel.panelId} state={state} shownPanel={shownPanel}
-          onClick={choosePanel} />)}
+          onClick={choosePanel} panelDomId={panelDomId} />)}
       </div>
-      {panelContent}
+      <div role="tabpanel" id={panelDomId}>
+        {panelContent}
+      </div>
     </div>
     <ScorePanel
       evaluation={evaluation}
@@ -492,14 +602,14 @@ const UseCaseEvalPageBase = (): React.ReactElement => {
   // Get the use case to display if any.
   const {search} = useLocation()
   const {
-    email, poolName: poolNameInSearch, ticketId, userId,
+    email, ticketId, userId,
   } = parseQueryString(search.slice(1))
   const hasSoleUser = !!(email || userId || ticketId)
 
   const dispatch = useSafeDispatch<DispatchAllEvalActions>()
   const history = useHistory()
   const {
-    poolName = poolNameInSearch,
+    poolName,
     useCaseId,
   } = useParams<{poolName?: string; useCaseId?: string}>()
 
@@ -605,7 +715,11 @@ const UseCaseEvalPageBase = (): React.ReactElement => {
     (selectedUseCase: bayes.bob.UseCase, field: string, emailOrId: string): void => {
       hideCreatePoolModal()
       selectUseCase(selectedUseCase)
-      history.push(`${EVAL_PAGE}?${field}=${encodeURIComponent(emailOrId)}`)
+      if (emailOrId) {
+        history.push(`${EVAL_PAGE}?${field}=${encodeURIComponent(emailOrId)}`)
+      } else {
+        history.replace(EVAL_PAGE)
+      }
     },
     [hideCreatePoolModal, history])
 
@@ -657,11 +771,6 @@ const UseCaseEvalPageBase = (): React.ReactElement => {
     minWidth: 400,
     padding: 5,
   }
-  // TODO(pascal): Remove after 2021-06-01.
-  if (poolNameInSearch) {
-    const oldUseCaseId = poolName !== poolNameInSearch && poolName || ''
-    return <Redirect to={`${EVAL_PAGE}/${poolNameInSearch}/${oldUseCaseId}`} />
-  }
   return <div style={style}>
     <CreatePoolModal
       isShown={isCreatePoolModalShown}
@@ -690,7 +799,6 @@ const UseCaseEvalPageBase = (): React.ReactElement => {
     </div>
   </div>
 }
-UseCaseEvalPageBase.propTypes = {}
 const UseCaseEvalPage = React.memo(UseCaseEvalPageBase)
 
 
@@ -711,23 +819,17 @@ const ScoreButtonBase = (props: ScoreButtonProps): React.ReactElement => {
       opacity: 1,
     },
     'cursor': 'pointer',
+    'display': 'block',
     'fontSize': 13,
     'fontWeight': 500,
     'opacity': isSelected ? 1 : .5,
     'padding': '25px 10px',
     'textAlign': 'center',
   }), [isSelected])
-  return <RadiumDiv style={containerStyle} onClick={handleClick}>
+  return <SmartLink style={containerStyle} onClick={handleClick} aria-pressed={isSelected}>
     <img src={image} alt="" style={{paddingBottom: 10}} /><br />
     {children}
-  </RadiumDiv>
-}
-ScoreButtonBase.propTypes = {
-  children: PropTypes.node.isRequired,
-  image: PropTypes.string.isRequired,
-  isSelected: PropTypes.bool,
-  onClick: PropTypes.func.isRequired,
-  score: PropTypes.string.isRequired,
+  </SmartLink>
 }
 const ScoreButton = React.memo(ScoreButtonBase)
 
@@ -749,6 +851,9 @@ const ConceptEvalPage = React.memo(ConceptEvalPageBase)
 const STORAGE_SIGN_IN_KEY = `${config.productName}-eval-google-sign-in`
 
 
+const warningStyle: React.CSSProperties = {
+  marginBottom: 20,
+}
 const AuthenticateEvalPageBase = (): React.ReactElement => {
   const dispatch = useDispatch<DispatchAllEvalActions>()
   const fetchGoogleIdToken = useSelector(({auth}: EvalRootState) => auth.fetchGoogleIdToken)
@@ -784,6 +889,12 @@ const AuthenticateEvalPageBase = (): React.ReactElement => {
       <Route path={CONCEPT_EVAL_PAGE}>
         <ConceptEvalPage />
       </Route>
+      <Route path={ACTIONS_EVAL_PAGE}>
+        <ActionsPage />
+      </Route>
+      <Route path={FEEDBACK_EVAL_PAGE}>
+        <FeedbackPage />
+      </Route>
       <Route path={`${EVAL_PAGE}/:poolName/:useCaseId?`}>
         <UseCaseEvalPage />
       </Route>
@@ -794,12 +905,13 @@ const AuthenticateEvalPageBase = (): React.ReactElement => {
   }
 
   return <div style={{padding: 20, textAlign: 'center'}}>
+    <Trans parent="p" style={warningStyle}>
+      Cette fonctionnalité nécessite l'utilisation de cookies pour fonctionner.<br />En cliquant
+      sur "Sign in", vous en acceptez l'utilisation.
+    </Trans>
     <GoogleLogin
       clientId={config.googleSSOClientId}
       isSignedIn={!!Storage.getItem(STORAGE_SIGN_IN_KEY)}
-      // TODO(cyrille): Drop once https://github.com/anthonyjgrove/react-google-login/issues/333
-      // is resolved.
-      onAutoLoadFinished={noOp}
       onSuccess={handleGoogleLogin}
       onFailure={handleGoogleFailure} />
     {authenticationError ? <React.Fragment>
@@ -818,7 +930,7 @@ const AuthenticateEvalPage = React.memo(AuthenticateEvalPageBase)
 async function fetchGoogleIdToken(googleUser: GoogleLoginResponse): Promise<string> {
   const {'expires_at': expiresAt, 'id_token': idToken} = googleUser.getAuthResponse()
   if (expiresAt > Date.now()) {
-    return Promise.resolve(idToken)
+    return idToken
   }
   const {id_token: googleIdToken} = await googleUser.reloadAuthResponse()
   return googleIdToken
@@ -849,8 +961,8 @@ const history = createBrowserHistory()
 
 // Enable devTools middleware.
 const finalCreateStore = composeWithDevTools(
-  // sentryMiddleware needs to be first to correctly catch exception down the line.
-  applyMiddleware(createSentryMiddleware(), thunk, routerMiddleware(history)),
+  applyMiddleware(thunk, routerMiddleware(history)),
+  createSentryEnhancer(),
 )(createStore)
 
 // Create the store that will be provided to connected components via Context.
@@ -864,7 +976,10 @@ const store = finalCreateStore(
     user: evalUserReducer,
   }),
 )
+// TODO(pascal): Find a way to do that without module.
+// eslint-disable-next-line unicorn/prefer-module
 if (module.hot) {
+  // eslint-disable-next-line unicorn/prefer-module
   module.hot.accept(['store/app_reducer', './store/app_reducer'], async (): Promise<void> => {
     const {app: newApp, asyncState: newAsyncState} = await import('store/app_reducer')
     const {default: newEvalAppReducer} = await import('./store/app_reducer')
@@ -880,14 +995,15 @@ if (module.hot) {
 }
 
 
-interface HeaderLinkProps extends React.HTMLProps<HTMLSpanElement> {
+interface HeaderLinkProps extends React.HTMLProps<HTMLButtonElement> {
   isSelected?: boolean
+  style?: RadiumCSSProperties
 }
 
 
 const HeaderLinkBase = (props: HeaderLinkProps): React.ReactElement => {
   const {children, isSelected, style, ...extraProps} = props
-  const containerStyle = useMemo((): React.CSSProperties => ({
+  const containerStyle = useMemo((): RadiumCSSProperties => ({
     cursor: 'pointer',
     fontSize: 15,
     fontWeight: isSelected ? 'bold' : 'initial',
@@ -896,14 +1012,10 @@ const HeaderLinkBase = (props: HeaderLinkProps): React.ReactElement => {
     width: 80,
     ...style,
   }), [isSelected, style])
-  return <span style={containerStyle} {...extraProps}>
+  return <SmartLink
+    role="tab" aria-selected={isSelected} style={containerStyle} {...extraProps} type="button">
     {children}
-  </span>
-}
-HeaderLinkBase.propTypes = {
-  children: PropTypes.node,
-  isSelected: PropTypes.bool,
-  style: PropTypes.object,
+  </SmartLink>
 }
 const HeaderLink = React.memo(HeaderLinkBase)
 
@@ -989,18 +1101,6 @@ const ScorePanelBase = (props: ScorePanelProps): React.ReactElement => {
     </div>
   </div>
 }
-ScorePanelBase.propTypes = {
-  evaluation: PropTypes.shape({
-    comments: PropTypes.string,
-    score: PropTypes.string,
-  }).isRequired,
-  isModified: PropTypes.bool,
-  isSaved: PropTypes.bool,
-  onSave: PropTypes.func.isRequired,
-  onUpdate: PropTypes.func.isRequired,
-  selectNextUseCase: PropTypes.func.isRequired,
-  style: PropTypes.object,
-}
 const ScorePanel = React.memo(ScorePanelBase)
 
 
@@ -1016,14 +1116,16 @@ const EvalSnackbar = connect(
 
 const App = (): React.ReactElement => <Provider store={store}>
   <Suspense fallback={<WaitingPage />}>
-    <div style={{backgroundColor: colors.BACKGROUND_GREY, color: colors.DARK_TWO}}>
-      <ConnectedRouter history={history}>
-        <Route path={EVAL_PAGE} component={AuthenticateEvalPage} />
-      </ConnectedRouter>
-      <EvalSnackbar timeoutMillisecs={4000} />
-    </div>
+    <TabNavigationProvider>
+      <div style={{backgroundColor: colors.BACKGROUND_GREY, color: colors.DARK_TWO}}>
+        <ConnectedRouter history={history}>
+          <Route path={EVAL_PAGE} component={AuthenticateEvalPage} />
+        </ConnectedRouter>
+        <EvalSnackbar timeoutMillisecs={4000} />
+      </div>
+    </TabNavigationProvider>
   </Suspense>
 </Provider>
 
 
-export default hot(React.memo(App))
+export default React.memo(App)

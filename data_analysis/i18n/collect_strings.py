@@ -9,19 +9,24 @@ import collections
 import itertools
 import logging
 import os
+import re
 import typing
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Mapping, Set, Tuple
+from typing import Any, Iterable, Iterator, Optional, Mapping, Set
 
 from airtable import airtable
+from google.protobuf import descriptor
 import json5
 import requests
 
+from bob_emploi.common.python import checker
 from bob_emploi.common.python import now
+from bob_emploi.common.python.i18n import translation
+from bob_emploi.frontend.api import geo_pb2
+from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import options_pb2
-from bob_emploi.data_analysis.i18n import translation
 from bob_emploi.data_analysis.importer import airtable_to_protos
 from bob_emploi.data_analysis.importer import import_status
-from bob_emploi.data_analysis.lib import checker
+
 
 _I18N_BASE_ID = 'appkEc8N0Bw4Uok43'
 _BOB_ADVICE_BASE_ID = 'appXmyc7yYj0pOcae'
@@ -43,7 +48,7 @@ class _Collectible(typing.NamedTuple):
 
 
 def _get_client_collectibles(filename: str) -> Iterator[_Collectible]:
-    with open(filename) as fields_file:
+    with open(filename, encoding='utf-8') as fields_file:
         fields = json5.load(fields_file)
     for namespace, collection in fields.items():
         yield _Collectible(
@@ -64,7 +69,22 @@ def _convert_snake_to_camel_case(snake: str) -> str:
 
 # List of Airtable fields to collect for translation that will be used client-side.
 CLIENT_COLLECTIBLES = tuple(_get_client_collectibles(
-    'bob_emploi/frontend/client/airtable_fields.json5'))
+    os.path.join(
+        os.path.dirname(__file__),
+        '../../frontend/client/airtable_fields.json5')))
+
+
+class _EnumMessageType(typing.Protocol):
+    DESCRIPTOR: descriptor.EnumDescriptor
+
+
+# TODO(sil): Find a cleaner way to get them.
+# List of Proto enums to collect for translation that will be used for analytics.
+_PROTO_COLLECTIBLES: tuple[_EnumMessageType, ...] = (
+    geo_pb2.AreaType,
+    job_pb2.EmploymentType,
+    job_pb2.DegreeLevel,
+)
 
 
 def _airtable_fallback_iterate(
@@ -90,10 +110,10 @@ class StringCollector:
 
     def __init__(self, api_key: str) -> None:
         self._i18n_base = airtable.Airtable(_I18N_BASE_ID, api_key)
-        self._existing_translations: Dict[str, airtable.Record[Mapping[str, Any]]] = {}
-        self._duplicate_strings: Dict[str, List[str]] = collections.defaultdict(list)
+        self._existing_translations: dict[str, airtable.Record[Mapping[str, Any]]] = {}
+        self._duplicate_strings: dict[str, list[str]] = collections.defaultdict(list)
         for record in self._i18n_base.iterate('translations'):
-            key = typing.cast(Dict[str, Optional[str]], record['fields']).get('string')
+            key = typing.cast(dict[str, Optional[str]], record['fields']).get('string')
             if not key:
                 continue
             if key in self._existing_translations:
@@ -101,15 +121,15 @@ class StringCollector:
                 continue
             self._existing_translations[key] = record
         self._api_key = api_key
-        self.bases: Dict[str, airtable.Airtable] = {}
-        self._collected: Dict[str, Dict[str, str]] = \
+        self.bases: dict[str, airtable.Airtable] = {}
+        self._collected: dict[str, dict[str, str]] = \
             collections.defaultdict(lambda: collections.defaultdict(str))
         self._used_translations: Set[str] = set()
         self._now = now.get().isoformat() + 'Z'
         self._today = self._now[:len('2020-12-09')]
 
     @property
-    def duplicate_strings(self) -> Mapping[str, List[str]]:
+    def duplicate_strings(self) -> Mapping[str, list[str]]:
         """Duplicate strings to translate."""
 
         return self._duplicate_strings
@@ -121,7 +141,7 @@ class StringCollector:
 
     def collect_string(
             self, text: str, origin: str, origin_id: str,
-            translations: Optional[Dict[str, str]] = None) -> None:
+            translations: Optional[dict[str, str]] = None) -> None:
         """Collect a string to translate."""
 
         self._collected[origin or ''][origin_id or ''] = text
@@ -143,7 +163,7 @@ class StringCollector:
                 return
 
             update_fields = {'last_used': self._now, 'origin': origin, 'origin_id': origin_id}
-            update_fields.update(new_translations)
+            update_fields |= new_translations
             self._i18n_base.update('translations', existing_record['id'], update_fields)
             # TODO(pascal): Keep track of all places where it is used.
             return
@@ -155,7 +175,7 @@ class StringCollector:
             'last_used': self._now,
         }
         if translations:
-            fields.update(translations)
+            fields |= translations
         logging.info('Uploading text: %s', text)
         record = self._i18n_base.create('translations', fields)
         self._existing_translations[text] = record
@@ -203,7 +223,7 @@ class StringCollector:
         converter = airtable_to_protos.PROTO_CLASSES[proto]
 
         # Check whether the proto type has any translatable fields.
-        for field in converter.proto_type.DESCRIPTOR.fields_by_name.values():
+        for field in converter.proto_type.DESCRIPTOR.fields:
             field_string_formats = field.GetOptions().Extensions[options_pb2.string_format]
             if options_pb2.NATURAL_LANGUAGE in field_string_formats:
                 break
@@ -214,6 +234,7 @@ class StringCollector:
 
         num_errors = 0
         base = self._get_base(base_id)
+        unique_id_field = converter.unique_id_field
         for record in _airtable_fallback_iterate(base, table, view=view, alt_table=alt_table):
             try:
                 message, _id = converter.convert_record_to_proto(record)
@@ -221,17 +242,22 @@ class StringCollector:
                 logging.error('An error occurred while converting the record:\n\t%s', str(error))
                 num_errors += 1
                 continue
-            if converter.unique_id_field:
-                record_id = getattr(message, converter.unique_id_field) or _id
+            if unique_id_field:
+                record_id = getattr(message, unique_id_field) or _id
             else:
                 record_id = _id
             for value, path, string_format in checker.collect_formatted_strings(message):
                 if string_format == options_pb2.NATURAL_LANGUAGE:
                     self.collect_string(value, f'{table}:{path}', record_id)
-                    if record_id != _id and '.' not in path:
+                    if unique_id_field and '.' not in path:
                         self.collect_string(
                             translation.create_translation_key(namespace, record_id, path),
                             f'{namespace}:{path}:key', record_id, {'fr': value})
+                if string_format == options_pb2.TRANSLATABLE_ID:
+                    short_path = re.compile(r'\.\d+$').sub('', path)
+                    self.collect_string(
+                        translation.create_translation_key(namespace, short_path, value),
+                        f'{namespace}:{short_path}:key', value)
         return num_errors
 
     def collect_for_client(self, table: str = '') -> None:
@@ -242,8 +268,33 @@ class StringCollector:
         for collectible in tables_to_collect:
             self.collect_from_table(*collectible)
 
+    def collect_from_proto(self, proto: _EnumMessageType) -> None:
+        """Collect enum names to translate from proto files.
+
+        Args:
+            proto: the name of the enum proto.
+        """
+
+        is_translatable = proto.DESCRIPTOR.GetOptions().Extensions[options_pb2.is_enum_translatable]
+        if not is_translatable:
+            logging.error('The proto is not translatable: %s', proto)
+
+        for text in proto.DESCRIPTOR.values_by_name.keys():
+            self.collect_string(
+                f'proto:{proto.DESCRIPTOR.name}:{text}', f'proto:{text}:key', proto.DESCRIPTOR.name,
+                translations={'fr': text})
+
+    def collect_for_proto(self, proto: str = '') -> None:
+        """Collect all translatable enum fields."""
+
+        proto_to_collect = [
+            coll for coll in _PROTO_COLLECTIBLES if proto in coll.DESCRIPTOR.name] or \
+            _PROTO_COLLECTIBLES
+        for collectible in proto_to_collect:
+            self.collect_from_proto(collectible)
+
     def list_unused_translations(self) \
-            -> Iterator[Tuple[airtable.Record[Mapping[str, Any]], Optional[str]]]:
+            -> Iterator[tuple[airtable.Record[Mapping[str, Any]], Optional[str]]]:
         """List all the translations that are in the DB but have not been collected in this run.
 
         We will only list translations that have the same origin as one of the origins used
@@ -257,7 +308,7 @@ class StringCollector:
         unused_translations = self._existing_translations.keys() - self._used_translations
         for unused_translation in unused_translations:
             record = self._existing_translations[unused_translation]
-            fields = typing.cast(Dict[str, Any], record['fields'])
+            fields = typing.cast(dict[str, Any], record['fields'])
             if fields.get('origin') not in self._collected:
                 continue
             new_value = self._collected.get(typing.cast(str, fields.get('origin', '')), {})\
@@ -282,8 +333,8 @@ def _handle_unused_translations(collector: StringCollector, action: str = 'list'
     unused_translations = collector.list_unused_translations()
     for record, new_value in unused_translations:
         if action == 'list':
-            fields: Dict[str, Any] = collections.defaultdict(str)
-            fields.update(record['fields'])
+            fields: dict[str, Any] = collections.defaultdict(str)
+            fields |= record['fields']
             if new_value is None:
                 logging.warning(
                     'A string from "%(origin)s" - "%(origin_id)s" is unused: "%(string)s"',
@@ -303,14 +354,20 @@ def _handle_unused_translations(collector: StringCollector, action: str = 'list'
 
 
 _CLIENT_PREFIX = 'client-'
+_PROTO_PREFIX = 'proto-'
 
-_ALL_COLLECTIONS = ('client',) + tuple(
+_ALL_COLLECTIONS = ('proto', 'client', 'job_group_info') + tuple(
     collection
     for collection, importer in import_status.get_importers().items()
     if importer.script == 'airtable_to_protos')
 
-_ALL_COLLECTION_NAMES = _ALL_COLLECTIONS + tuple(
+_CLIENT_COLLECTIONS = tuple(
     f'{_CLIENT_PREFIX}{coll.table}' for coll in CLIENT_COLLECTIBLES)
+
+_PROTO_COLLECTIONS = tuple(
+    f'{_PROTO_PREFIX}{field.DESCRIPTOR.name}' for field in _PROTO_COLLECTIBLES)
+
+_ALL_COLLECTION_NAMES = _ALL_COLLECTIONS + _CLIENT_COLLECTIONS + _PROTO_COLLECTIONS
 
 
 def _print_report(text: str) -> None:
@@ -322,7 +379,7 @@ def _print_report(text: str) -> None:
         }]})
 
 
-def main(string_args: Optional[List[str]] = None) -> None:
+def main(string_args: Optional[list[str]] = None) -> None:
     """Collect all the strings in Airtable to translate."""
 
     parser = argparse.ArgumentParser(
@@ -352,6 +409,7 @@ def main(string_args: Optional[List[str]] = None) -> None:
 
     collection_errors = {}
     collections_not_collected = []
+
     for collection in args.collection or _ALL_COLLECTIONS:
         if collection.startswith('client'):
             table = collection[len(_CLIENT_PREFIX):]
@@ -359,11 +417,25 @@ def main(string_args: Optional[List[str]] = None) -> None:
                 'Collecting strings for client%s…', f' table "{table}"' if table else '')
             collector.collect_for_client(table)
             continue
+        if collection.startswith('proto'):
+            logging.info('Collecting strings for protobuf: "%s"…', collection)
+            proto = collection[len(_PROTO_PREFIX):]
+            collector.collect_for_proto(proto)
+            continue
         try:
             importer = import_status.get_importers()[collection]
         except KeyError:
             logging.warning('The collection "%s" does not have an importer.', collection)
             collections_not_collected.append(collection)
+            continue
+        if collection == 'job_group_info':
+            logging.info('Collecting strings for importer "%s"…', collection)
+            # TODO(cyrille): Collect all `_airtable`-suffixed args.
+            airtable_skills = importer.args and importer.args.get('skills_for_future_airtable')
+            if airtable_skills:
+                base_id, table, view = airtable_skills.split(':')
+                collector.collect_for_airtable_importer(
+                    collection=collection, proto='Skill', base_id=base_id, table=table, view=view)
             continue
         if importer.script != 'airtable_to_protos':
             logging.warning(
@@ -372,7 +444,8 @@ def main(string_args: Optional[List[str]] = None) -> None:
             continue
         logging.info('Collecting strings for importer "%s"…', collection)
         num_failed_records = collector.collect_for_airtable_importer(
-            collection=collection, **(importer.args or {}))
+            collection=collection,
+            **({key: value for key, value in (importer.args or {}).items() if value}))
         if num_failed_records:
             collection_errors[collection] = num_failed_records
 
@@ -381,7 +454,7 @@ def main(string_args: Optional[List[str]] = None) -> None:
     if collections_not_collected:
         error_text += f'Strings not collected for {collections_not_collected}.'
     if collection_errors:
-        errors = '\n'.join([f'{coll}: {collection_errors[coll]}' for coll in collection_errors])
+        errors = '\n'.join([f'{coll}: {errors}' for coll, errors in collection_errors.items()])
         if not error_text:
             error_text += 'All the collections have been collected.\n'
         error_text += f'Errors in collection:\n{errors}'

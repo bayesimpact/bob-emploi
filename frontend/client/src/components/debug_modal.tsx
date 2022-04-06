@@ -1,16 +1,20 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react'
-import PropTypes from 'prop-types'
 import {useTranslation} from 'react-i18next'
 import {useSelector} from 'react-redux'
 
-import {RootState, displayToasterMessage, getAuthTokens, saveUser, sendUserEmail,
+import useKeyListener from 'hooks/key_listener'
+import type {RootState} from 'store/actions'
+import {displayToasterMessage, listUserEmails, saveUser, sendUserEmail,
   useDispatch} from 'store/actions'
+import {useProject} from 'store/project'
 import {useAsynceffect} from 'store/promise'
+import {useAuthTokens} from 'store/user'
 
 import Button from 'components/button'
-import Select, {SelectOption} from 'components/select'
+import type {SelectOption} from 'components/select'
+import Select from 'components/select'
 import Textarea from 'components/textarea'
-import {Modal, ModalConfig} from './modal'
+import {Modal, useModal} from './modal'
 
 
 const dropComputedFields = (project: bayes.bob.Project): bayes.bob.Project => {
@@ -85,12 +89,11 @@ const selectFormStyle: React.CSSProperties = {
 }
 
 
-interface DebugModalProps extends Omit<ModalConfig, 'children'> {
-  onClose: () => void
-}
+type Props = Omit<React.ComponentProps<typeof Modal>, 'isShown'|'onClose'|'children'>
 
-const DebugModal = (props: DebugModalProps): React.ReactElement => {
-  const {isShown, onClose} = props
+const DebugModal = ({style: parentStyle, ...props}: Props): React.ReactElement => {
+  const [isShown, show, onClose] = useModal()
+  useKeyListener('KeyE', show, {ctrl: true, shift: true})
   const {email, keepProps, keepProps: {userId}, user} = useSelector(({user}: RootState) => {
     const {facebookId, googleId, linkedInId, peConnectId, userId, ...userProps} = user
     return {
@@ -101,15 +104,23 @@ const DebugModal = (props: DebugModalProps): React.ReactElement => {
   })
   const wasEmployed = user?.projects?.[0]?.kind === 'FIND_ANOTHER_JOB' ? 'True' : 'False'
   const dispatch = useDispatch()
-  const [authTokens, setAuthTokens] = useState<bayes.bob.AuthTokens|undefined>()
-  useAsynceffect(async (checkIfCanceled): Promise<void> => {
-    if (userId) {
-      const authTokens = await dispatch(getAuthTokens())
-      if (!checkIfCanceled()) {
-        setAuthTokens(authTokens || undefined)
-      }
-    }
-  }, [dispatch, userId])
+  const authTokens = useAuthTokens(userId)
+  const {i18n, t} = useTranslation('components')
+  const defaultCampaigns = useMemo((): readonly bayes.bob.EmailSent[] => [
+    {
+      campaignId: 'first-followup-survey',
+      subject: t('Envoyer le FFS'),
+    },
+    {
+      campaignId: 'nps',
+      subject: t('Envoyer le NPS'),
+    },
+    {
+      campaignId: 'employment-status',
+      subject: t('Envoyer le RER'),
+    },
+  ], [t])
+  const [availableCampaigns, setAvailableCampaigns] = useState(defaultCampaigns)
 
   const [userJson, setUserJson, hasUserJsonBeenEdited] = useFrozenState(
     (): string => JSON.stringify(user, undefined, 2),
@@ -117,11 +128,14 @@ const DebugModal = (props: DebugModalProps): React.ReactElement => {
   )
 
   const parseUser = useCallback((): bayes.bob.User|undefined => {
-    let updatedUser: bayes.bob.User
-    try {
-      updatedUser = JSON.parse(userJson.replace(/ObjectId\(("[\da-f]+")\)/, '$1'))
-    } catch (error) {
-      dispatch(displayToasterMessage(error.toString()))
+    const updatedUser = ((): bayes.bob.User|undefined => {
+      try {
+        return JSON.parse(userJson.replace(/ObjectId\(("[\da-f]+")\)/, '$1'))
+      } catch (error) {
+        dispatch(displayToasterMessage((error as Error).toString()))
+      }
+    })()
+    if (!updatedUser) {
       return
     }
     // Delete fields starting with "_".
@@ -139,6 +153,17 @@ const DebugModal = (props: DebugModalProps): React.ReactElement => {
     onClose()
   }, [dispatch, keepProps, email, onClose])
 
+  useAsynceffect(async (checkIfCanceled) => {
+    if (!isShown) {
+      setAvailableCampaigns(defaultCampaigns)
+      return
+    }
+    const response = await dispatch(listUserEmails())
+    if (!checkIfCanceled() && response) {
+      setAvailableCampaigns(response.campaigns || defaultCampaigns)
+    }
+  }, [defaultCampaigns, dispatch, isShown])
+
   const handleSaveAndClose = useCallback((): void => {
     if (!hasUserJsonBeenEdited) {
       onClose()
@@ -152,24 +177,31 @@ const DebugModal = (props: DebugModalProps): React.ReactElement => {
     updatedUser && saveUpdatedUser(dropUserProjectsComputedFields(updatedUser))
   }, [parseUser, saveUpdatedUser])
 
-  const {i18n, t} = useTranslation()
-  const {profile: {locale = i18n.language} = {}, projects} = user
-  const hasAdvices = projects && projects[0] && projects[0].advices
+  const {locale = i18n.language} = user.profile || {}
+  const hasAdvices = useProject()?.advices
   const buttonStyle: React.CSSProperties = {
     alignSelf: 'flex-end',
     margin: 20,
   }
-  const style: React.CSSProperties = {
+  const style = useMemo((): React.CSSProperties => ({
     display: 'flex',
     flexDirection: 'column',
     height: '80%',
     width: '80%',
-  }
+    ...parentStyle,
+  }), [parentStyle])
   const formOptions = useMemo((): readonly SelectOption<string>[] => {
     const options: SelectOption<string>[] = [{
       name: t('Formulaires de retours'),
       value: '',
     }]
+    if (authTokens?.ffsUrl) {
+      const answer = Math.random() > .5 ? 'yes' : ''
+      options.push({
+        name: t('Ouvrir le FFS'),
+        value: `${authTokens.ffsUrl}&answer=${answer}&hl=${locale}`,
+      })
+    }
     const score = Math.floor(Math.random() * 10)
     if (authTokens?.npsUrl) {
       options.push({
@@ -197,31 +229,26 @@ const DebugModal = (props: DebugModalProps): React.ReactElement => {
       dispatch(displayToasterMessage(t('Email envoyé')))
     }
   }, [dispatch, t])
-  // TODO(pascal): Create an endpoint to get the list of available campaigns.
   const emailOptions = useMemo((): readonly SelectOption<string>[] => ([
     {
       name: t("Envoi d'un email"),
       value: '',
     },
-    {
-      name: t('Envoyer le NPS'),
-      value: 'nps',
-    },
-    {
-      name: t('Envoyer le RER'),
-      value: 'employment-status',
-    },
-  ]), [t])
-  return <Modal {...props} style={style}>
+    ...availableCampaigns.map(({campaignId, subject}) => ({
+      name: `${subject} (${campaignId})`,
+      value: campaignId || '',
+    })),
+  ]), [t, availableCampaigns])
+  return <Modal isShown={isShown} onClose={onClose} {...props} style={style}>
     <Textarea
       style={{flex: 1, fontFamily: 'Monospace', fontSize: 12}}
       value={userJson} onChange={setUserJson} />
     <div style={buttonStyle}>
-      {emailOptions.length ? <Select
-        options={emailOptions}
+      {emailOptions.length && email ? <Select
+        options={emailOptions} menuPlacement="top"
         style={selectFormStyle} onChange={handleCampaignPick} value="" /> : null}
       {formOptions.length ? <Select
-        options={formOptions}
+        options={formOptions} menuPlacement="top"
         style={selectFormStyle} onChange={openInNewWindow} value="" /> : null}
       {hasAdvices ? <Button
         onClick={diagnoseAgain} isRound={true}
@@ -233,10 +260,6 @@ const DebugModal = (props: DebugModalProps): React.ReactElement => {
       </Button>
     </div>
   </Modal>
-}
-DebugModal.propTypes = {
-  isShown: PropTypes.bool,
-  onClose: PropTypes.func.isRequired,
 }
 
 

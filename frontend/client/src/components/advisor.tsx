@@ -1,27 +1,26 @@
 import * as Sentry from '@sentry/browser'
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 import _memoize from 'lodash/memoize'
-import PropTypes from 'prop-types'
-import React, {useEffect, useMemo, useState} from 'react'
+import React, {useCallback, useEffect, useMemo, useRef} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useSelector} from 'react-redux'
-import VisibilitySensor from 'react-visibility-sensor'
 
 import useMedia from 'hooks/media'
-import {RootState, advicePageIsShown, exploreAdvice, seeAdvice, useDispatch} from 'store/actions'
-import {getAdviceTitle} from 'store/advice'
+import useOnScreen from 'hooks/on_screen'
+import type {RootState} from 'store/actions'
+import {advicePageIsShown, exploreAdvice, seeAdvice, useDispatch} from 'store/actions'
+import {getAdviceModule, getAdviceTitle} from 'store/advice'
 import {upperFirstLetter} from 'store/french'
-import {getAdviceModule} from 'store/i18n'
+import isMobileVersion from 'store/mobile'
 
 import constructionImage from 'images/construction-picto.svg'
 import defaultPicto from 'images/default-picto.svg'
-import AlphaTag from 'components/pages/connected/project/alpha_tag'
+import AlphaTag from 'components/alpha_tag'
 import RocketChain from 'components/rocket_chain'
-import isMobileVersion from 'store/mobile'
 import StringJoiner from 'components/string_joiner'
 import TipsList from 'components/tips_list'
 
-import {CardProps, WithAdvice} from './advisor/base'
+import type {CardProps, WithAdvice} from './advisor/base'
 import Alternance from './advisor/alternance'
 import AssociationHelp from './advisor/association_help'
 import BetterJobInGroup from './advisor/better_job_in_group'
@@ -42,6 +41,7 @@ import ImmersionMilo from './advisor/immersion_milo'
 import ImproveInterview from './advisor/improve_interview'
 import ImproveResume from './advisor/improve_resume'
 import JobBoards from './advisor/job_boards'
+import Jobflix from './advisor/jobflix'
 import LessApplications from './advisor/less_applications'
 import LifeBalance from './advisor/life_balance'
 import LongTermMom from './advisor/long_term_mom'
@@ -94,6 +94,7 @@ export const ADVICE_MODULES: {[moduleId: string]: Module} = {
   'immersion-milo': ImmersionMilo,
   'improve-interview': ImproveInterview,
   'improve-resume': ImproveResume,
+  'jobflix': Jobflix,
   'less-applications': LessApplications,
   'life-balance': LifeBalance,
   'long-term-mom': LongTermMom,
@@ -143,43 +144,35 @@ interface AdviceCardProps extends WithAdvice {
 const AdviceCardBase: React.FC<AdviceCardProps> = (props: AdviceCardProps): React.ReactElement => {
   const {'aria-live': ariaLive, advice, areTipsShown, onShow, project, style} = props
   const isForPrint = useMedia() === 'print'
-  const [hasBeenSeen, setHasBeenSeen] = useState(isForPrint)
   const dispatch = useDispatch()
   useEffect((): void => {
     dispatch(advicePageIsShown(project, advice))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [advice.adviceId, dispatch, project.projectId])
-  const handleVisibilityChange = useMemo(() => (isVisible: boolean): void => {
+  const handleVisibilityChange = useCallback((isVisible: boolean): void => {
     if (!isVisible) {
       return
     }
-    setHasBeenSeen(true)
     dispatch(seeAdvice(project, advice))
     onShow?.()
   }, [advice, dispatch, project, onShow])
+  const sectionRef = useRef<HTMLElement>(null)
+  useOnScreen(sectionRef, {
+    isActive: !isForPrint,
+    isForAppearing: true,
+    minTopValue: 10,
+    onChange: handleVisibilityChange,
+  })
   return <div style={style} id={advice.adviceId} aria-live={ariaLive}>
-    <VisibilitySensor
-      active={!hasBeenSeen} intervalDelay={250} minTopValue={10}
-      partialVisibility={true} onChange={handleVisibilityChange}>
-      <section>
-        {/* TODO(cyrille): Enforce the fontSize somehow, since the Component does not
-          expect a style prop. */}
-        <ExpandedAdviceCardContent style={{fontSize: 16}} {...props} />
-        {areTipsShown ? <TipsList {...{advice, project}} /> : null}
-      </section>
-    </VisibilitySensor>
+    <section ref={sectionRef}>
+      {/* TODO(cyrille): Enforce the fontSize somehow, since the Component does not
+        expect a style prop. */}
+      <ExpandedAdviceCardContent style={{fontSize: 16}} {...props} />
+      {areTipsShown ? <TipsList {...{advice, project}} /> : null}
+    </section>
   </div>
 }
 const AdviceCard = React.memo(AdviceCardBase)
-AdviceCardBase.propTypes = {
-  advice: PropTypes.shape({
-    adviceId: PropTypes.string.isRequired,
-  }).isRequired,
-  areTipsShown: PropTypes.bool,
-  onShow: PropTypes.func,
-  project: PropTypes.object.isRequired,
-  style: PropTypes.object,
-}
 
 
 export interface ExplorerAdviceCardConfig extends ExpandedAdviceCardProps {
@@ -284,7 +277,7 @@ React.ReactElement => {
         right: 0,
       }} /> : null}
     </div>
-    <button style={selectForMoreStyle} onClick={onClick}>
+    <button style={selectForMoreStyle} onClick={onClick} type="button">
       {howToSeeMore}
     </button>
   </div>
@@ -380,17 +373,6 @@ const ExplorerAdviceCardBase: React.FC<ExplorerAdviceCardConfig> =
   </div>
 }
 const ExplorerAdviceCard = React.memo(ExplorerAdviceCardBase)
-ExplorerAdviceCardBase.propTypes = {
-  advice: PropTypes.shape({
-    adviceId: PropTypes.string.isRequired,
-    explanations: PropTypes.arrayOf(PropTypes.string.isRequired),
-    numStars: PropTypes.number,
-    score: PropTypes.number,
-  }).isRequired,
-  howToSeeMore: PropTypes.node,
-  onClick: PropTypes.func,
-  style: PropTypes.object,
-}
 
 export interface ExpandedAdviceCardProps extends WithAdvice {
   backgroundColor?: string | number
@@ -450,13 +432,6 @@ const ExpandedAdviceCardContentBase: React.FC<ExpandedAdviceCardProps> =
   return <GenericExpandedAdvice {...{profile, style, t}} />
 }
 const ExpandedAdviceCardContent = React.memo(ExpandedAdviceCardContentBase)
-ExpandedAdviceCardContentBase.propTypes = {
-  advice: PropTypes.object.isRequired,
-  project: PropTypes.shape({
-    projectId: PropTypes.string,
-  }).isRequired,
-  style: PropTypes.object,
-}
 
 
 interface MethodHeaderProps {
@@ -508,18 +483,6 @@ const MethodHeaderBase: React.FC<MethodHeaderProps> =
   </header>
 }
 const MethodHeader = React.memo(MethodHeaderBase)
-MethodHeaderBase.propTypes = {
-  advice: PropTypes.shape({
-    adviceId: PropTypes.string.isRequired,
-    isForAlphaOnly: PropTypes.bool,
-    numStars: PropTypes.number,
-  }).isRequired,
-  project: PropTypes.shape({
-    projectId: PropTypes.string.isRequired,
-  }),
-  style: PropTypes.object,
-  title: PropTypes.string,
-}
 
 
 interface MethodProps extends MethodHeaderProps, WithAdvice {
@@ -547,15 +510,6 @@ const WorkingMethodBase: React.FC<MethodProps> = (props: MethodProps): React.Rea
   </div>
 }
 const WorkingMethod = React.memo(WorkingMethodBase)
-WorkingMethodBase.propTypes = {
-  advice: PropTypes.shape({
-    adviceId: PropTypes.string.isRequired,
-  }).isRequired,
-  project: PropTypes.shape({
-    projectId: PropTypes.string.isRequired,
-  }).isRequired,
-  style: PropTypes.object,
-}
 
 
 interface AdvicePictoProps extends React.ImgHTMLAttributes<HTMLImageElement> {

@@ -5,9 +5,8 @@ import json
 import logging
 import os
 from os import path
-import sys
 import typing
-from typing import Iterable, Optional, Sequence, TextIO
+from typing import Iterable, Optional, Sequence
 
 import polib
 import tqdm
@@ -52,7 +51,7 @@ def _iter_strings_from_file(filename: str, should_skip_unknown: bool = False) \
         return
 
     if filename.endswith('.json'):
-        with open(filename, 'rt') as json_file:
+        with open(filename, 'rt', encoding='utf-8') as json_file:
             messages = json.load(json_file)
         for line, (message, translation) in enumerate(messages.items()):
             yield _TranslatableString(
@@ -71,9 +70,7 @@ def _iter_strings_from_files(filenames: Iterable[str]) -> Iterable[_Translatable
             raise ValueError(f'Could not upload strings from {filename}') from error
 
 
-def main(
-        string_args: Optional[Sequence[str]] = None,
-        progress_file: TextIO = sys.stderr) -> None:
+def main(string_args: Optional[Sequence[str]] = None) -> None:
     """Collect all the strings in Airtable to translate."""
 
     parser = argparse.ArgumentParser()
@@ -85,6 +82,9 @@ def main(
         help='POT or JSON files containing strings to translate. Can also be a folder containing '
         'such files.',
         type=str)
+    parser.add_argument(
+        '--prefix-with-namespace', default=False, action='store_true',
+        help='If true, prefix the strings with the namespace (the file basename) before upploading')
     parser.add_argument('--lang', nargs='?', help='The language of the translations to uploads')
     args = parser.parse_args(string_args)
 
@@ -96,13 +96,16 @@ def main(
             'https://airtable.com/account and set it in the AIRTABLE_API_KEY '
             'env var.')
 
-    iterate_on_files = tqdm.tqdm(args.filenames, file=progress_file)
+    iterate_on_files = tqdm.tqdm(args.filenames)
 
     collector = collect_strings.StringCollector(args.api_key)
     for message, origin, origin_id, translation in _iter_strings_from_files(iterate_on_files):
+        if args.prefix_with_namespace:
+            message = f'{origin.split(".", 1)[0]}:{message}'
         collector.collect_string(
             message, origin, origin_id,
-            {args.lang: translation} if args.lang and translation else None)
+            {args.lang: translation}
+            if args.lang and translation and translation != message else None)
 
 
 if __name__ == '__main__':

@@ -6,7 +6,7 @@ import json
 import logging
 import os
 import typing
-from typing import Any, Dict, Optional, Sequence, Set, Tuple
+from typing import Any, Optional, Sequence, Set, Tuple
 
 from airtable import airtable
 import polib
@@ -22,6 +22,7 @@ _REQUIRED_LANGUAGES = {'en'}
 _DOWNLOAD_LANGUAGES = {'en', 'en_UK', 'fr', 'fr@tu'}
 
 
+# TODO(cyrille): Separate the test for missing translations.
 def main(string_args: Optional[Sequence[str]] = None) -> None:
     """Download translations from Airtable for static server strings."""
 
@@ -60,7 +61,7 @@ def main(string_args: Optional[Sequence[str]] = None) -> None:
     logging.info('Downloading translations from Airtable…')
     i18n_base = airtable.Airtable(_I18N_BASE_ID, args.api_key)
     translations = {
-        typing.cast(Dict[str, Any], record['fields']).get('string', ''): {
+        typing.cast(dict[str, Any], record['fields']).get('string', ''): {
             lang: translation
             for lang, translation in record['fields'].items()
             if lang in _DOWNLOAD_LANGUAGES
@@ -79,7 +80,7 @@ def main(string_args: Optional[Sequence[str]] = None) -> None:
                 for split_index in range(index, len(parts))])
 
     logging.info('Filtering translations of extracted strings…')
-    extracted_translations: Dict[str, Dict[str, str]] = {}
+    extracted_translations: dict[str, dict[str, str]] = {}
     should_raise_on_missing = bool(os.getenv('FAIL_ON_MISSING_TRANSLATIONS', ''))
     missing_translations: Set[Tuple[Optional[str], str]] = set()
     for key in extracted_strings | mailjet_strings:
@@ -104,7 +105,7 @@ def main(string_args: Optional[Sequence[str]] = None) -> None:
         logging.info(missing_translations_string)
 
     logging.info('Creating the translations file…')
-    with open(args.output, 'wt') as output_file:
+    with open(args.output, 'wt', encoding='utf-8') as output_file:
         json.dump(extracted_translations, output_file, ensure_ascii=False, sort_keys=True)
 
 

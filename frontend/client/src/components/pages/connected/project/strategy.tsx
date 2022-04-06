@@ -1,5 +1,4 @@
-import {TFunction, TOptions} from 'i18next'
-import _fromPairs from 'lodash/fromPairs'
+import type {TFunction, TOptions} from 'i18next'
 import _groupBy from 'lodash/groupBy'
 import _isEqual from 'lodash/isEqual'
 import _keyBy from 'lodash/keyBy'
@@ -8,7 +7,6 @@ import ArrowLeftIcon from 'mdi-react/ArrowLeftIcon'
 import ChevronDownIcon from 'mdi-react/ChevronDownIcon'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import CheckIcon from 'mdi-react/CheckIcon'
-import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useDispatch, useSelector} from 'react-redux'
@@ -16,17 +14,22 @@ import {Route, Switch} from 'react-router'
 import {Link, Redirect, useHistory, useParams} from 'react-router-dom'
 
 import useFastForward from 'hooks/fast_forward'
-import {DispatchAllActions, RootState, displayToasterMessage, emailCheck, setUserProfile,
+import type {Focusable} from 'hooks/focus'
+import useFocusableRefAs from 'hooks/focus'
+import type {DispatchAllActions, RootState} from 'store/actions'
+import {displayToasterMessage, emailCheck, setUserProfile,
   silentlySetupCoaching, startStrategy, replaceStrategy, stopStrategy, strategyWorkPageIsShown,
 } from 'store/actions'
-import {ValidAdvice, getAdviceGoal} from 'store/advice'
+import type {ValidAdvice} from 'store/advice'
+import {getAdviceGoal} from 'store/advice'
 import {getDateString, getDiffBetweenDatesInString, upperFirstLetter} from 'store/french'
-import {LocalizableString, StrategyGoal, combineTOptions, getStrategyGoals,
-  prepareT} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {combineTOptions, prepareT} from 'store/i18n'
 import {impactFromPercentDelta} from 'store/score'
-import {StrategyCompletion, getStartedStrategy, getStrategyCompletion,
-  getStrategyProgress, isValidStrategy} from 'store/strategy'
-import {getUniqueExampleEmail, useAlwaysConvincePage, useGender} from 'store/user'
+import type {StrategyCompletion, StrategyGoal} from 'store/strategy'
+import {getStartedStrategy, getStrategyCompletion,
+  getStrategyGoals, getStrategyProgress, isValidStrategy} from 'store/strategy'
+import {getUniqueExampleEmail, useGender} from 'store/user'
 import {validateEmail} from 'store/validations'
 
 import {AdvicePicto, WorkingMethod} from 'components/advisor'
@@ -37,17 +40,20 @@ import {colorToAlpha} from 'components/colors'
 import ExternalLink from 'components/external_link'
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
-import Input, {Inputable} from 'components/input'
-import LabeledToggle from 'components/labeled_toggle'
+import type {Inputable} from 'components/input'
+import Input from 'components/input'
 import {LoginLink} from 'components/login'
 import Markdown from 'components/markdown'
 import isMobileVersion from 'store/mobile'
-import {Modal, ModalConfig, useModal} from 'components/modal'
+import type {ModalConfig} from 'components/modal'
+import {Modal, useModal} from 'components/modal'
 import {PageWithNavigationBar} from 'components/navigation'
 import CoachingConfirmationModal from 'components/pages/connected/coaching_modal'
 import PercentBar from 'components/percent_bar'
 import PieChart from 'components/pie_chart'
-import {RadiumDiv, SmartLink} from 'components/radium'
+import {RadioCircle} from 'components/radio_button'
+import {useRadioGroup} from 'components/radio_group'
+import {SmartLink, useRadium} from 'components/radium'
 import Tag from 'components/tag'
 import {FastTransitions} from 'components/theme'
 import {Routes} from 'components/url'
@@ -78,6 +84,7 @@ const FOLLOWUP_EMAILS_OPTIONS: Readonly<FollowupOption[]> = [
     value: 'EMAIL_MAXIMUM',
   },
 ]
+const FOLLOWUP_EMAILS_VALUES = FOLLOWUP_EMAILS_OPTIONS.map(({value}) => value)
 
 const strategyCardStyle: React.CSSProperties = {
   border: `2px solid ${colors.MODAL_PROJECT_GREY}`,
@@ -87,10 +94,14 @@ const strategyCardStyle: React.CSSProperties = {
 
 interface CoachingOptionProps {
   description: string
+  index: number
   isSelected: boolean
   name: string
   onClick: (option: bayes.bob.EmailFrequency) => void
+  onFocus: (index: number) => void
   option: bayes.bob.EmailFrequency
+  role: 'radio'
+  tabIndex?: 0|-1
   style: RadiumCSSProperties
 }
 
@@ -107,8 +118,11 @@ const coachingOptionDescriptionStyle = {
 }
 
 
-const CoachingOptionBase = (props: CoachingOptionProps): React.ReactElement => {
-  const {description, isSelected, name, onClick, option, style} = props
+const CoachingOptionBase = (
+  props: CoachingOptionProps, ref?: React.Ref<Focusable>): React.ReactElement => {
+  const {description, index, isSelected, name, onClick, onFocus, option, style,
+    ...otherProps} = props
+  const handleFocus = useCallback(() => onFocus(index), [onFocus, index])
   const optionStyle = useMemo((): RadiumCSSProperties => ({
     ':hover': selectedOptionStyle,
     ...isSelected && selectedOptionStyle,
@@ -119,21 +133,27 @@ const CoachingOptionBase = (props: CoachingOptionProps): React.ReactElement => {
     'cursor': 'pointer',
     'display': 'flex',
     'padding': '20px 25px',
+    'width': '100%',
     ...FastTransitions,
     ...style,
   }), [isSelected, style])
   const handleClick = useCallback((): void => onClick(option), [onClick, option])
-  return <RadiumDiv onClick={handleClick} style={optionStyle}>
-    <LabeledToggle
-      style={{marginBottom: 0}}
-      label={<div style={{marginLeft: 10}}>
-        <h3 style={{fontSize: 18, margin: 0}}>{name}</h3>
-        <div style={coachingOptionDescriptionStyle}>{description}</div>
-      </div>}
-      isSelected={isSelected} type="radio" />
-  </RadiumDiv>
+  const [radiumProps, {isActive, isFocused, isHovered}] = useRadium({
+    onFocus: handleFocus,
+    style: optionStyle,
+    ...otherProps,
+  })
+  return <button
+    onClick={handleClick} {...radiumProps} ref={useFocusableRefAs(ref)}
+    role="radio" aria-checked={isSelected}>
+    <RadioCircle isSelected={isSelected} isHighlighted={isFocused || isHovered || isActive} />
+    <span style={{marginLeft: 10}}>
+      <h3 style={{fontSize: 18, margin: 0}}>{name}</h3>
+      <div style={coachingOptionDescriptionStyle}>{description}</div>
+    </span>
+  </button>
 }
-const CoachingOption = React.memo(CoachingOptionBase)
+const CoachingOption = React.memo(React.forwardRef(CoachingOptionBase))
 
 
 interface CoachingModalProps extends Omit<ModalConfig, 'children'> {
@@ -177,6 +197,11 @@ const CoachingModalBase = (props: CoachingModalProps): null|React.ReactElement =
       dispatch(displayToasterMessage(t('Modifications sauvegardées.')))
     }
   }, [dispatch, frequency, onClose, t])
+  const {childProps, containerProps} = useRadioGroup<HTMLDivElement, bayes.bob.EmailFrequency>({
+    onChange: setFrequency,
+    selectedIndex: frequency ? FOLLOWUP_EMAILS_VALUES.indexOf(frequency) : -1,
+    values: FOLLOWUP_EMAILS_VALUES,
+  })
   if (!config.isCoachingEnabled) {
     return null
   }
@@ -197,14 +222,18 @@ const CoachingModalBase = (props: CoachingModalProps): null|React.ReactElement =
       isShown={isShown} onClose={onClose} style={{margin: 20}}
       title={t('Choisissez le coaching qui vous convient')}>
       <div style={contentStyle}>
-        {FOLLOWUP_EMAILS_OPTIONS.map(({description, name, value, ...option}): React.ReactNode =>
-          <CoachingOption
-            {...option} isSelected={frequency === value}
-            description={translate(...description)} name={translate(...name)}
-            onClick={setFrequency} option={value}
-            key={value} style={{marginBottom: 20}} />)}
+        <div {...containerProps}>
+          {FOLLOWUP_EMAILS_OPTIONS.map(
+            ({description, name, value, ...option}, index): React.ReactNode =>
+              <CoachingOption
+                {...option}
+                {...childProps(index)}
+                description={translate(...description)} name={translate(...name)}
+                onClick={setFrequency} option={value}
+                key={value} style={{marginBottom: 20}} />)}
+        </div>
         <div style={buttonsStyle}>
-          <Button isRound={true} type="back" style={{marginRight: 15}} onClick={onClose}>
+          <Button isRound={true} type="discreet" style={{marginRight: 15}} onClick={onClose}>
             {t('Annuler')}
           </Button>
           <Button isRound={true} disabled={!frequency} onClick={handleConfirm}>
@@ -226,11 +255,13 @@ interface SelectCoachingProps {
 
 const selectCoachingHeaderStyle = {
   color: colors.COOL_GREY,
+  display: 'block',
   fontSize: 14,
   fontStyle: 'italic',
   lineHeight: '19px',
 }
 const selectCoachingNameStyle: React.CSSProperties = {
+  display: 'block',
   fontSize: 18,
   fontWeight: 'bold',
 }
@@ -251,6 +282,7 @@ const SelectCoachingBase = (props: SelectCoachingProps): React.ReactElement|null
     ...!!onClick && {cursor: 'pointer'},
     'display': 'flex',
     'padding': '20px 25px',
+    'width': '100%',
     ...style,
   }), [onClick, style])
   if (!config.isCoachingEnabled) {
@@ -264,13 +296,13 @@ const SelectCoachingBase = (props: SelectCoachingProps): React.ReactElement|null
     </Button>
   }
   const {name} = FOLLOWUP_EMAILS_OPTIONS.find(({value}): boolean => value === frequency) || {}
-  return <RadiumDiv onClick={onClick} style={containerStyle}>
-    <div style={{flex: 1}}>
-      <div style={selectCoachingHeaderStyle}>{t('Type de coaching\u00A0:')}</div>
-      <div style={selectCoachingNameStyle}>{name && translate(...name) || ''}</div>
-    </div>
-    <ChevronDownIcon size={24} />
-  </RadiumDiv>
+  return <SmartLink onClick={onClick} style={containerStyle}>
+    <span style={{flex: 1}}>
+      <span style={selectCoachingHeaderStyle}>{t('Type de coaching\u00A0:')}</span>
+      <span style={selectCoachingNameStyle}>{name && translate(...name) || ''}</span>
+    </span>
+    <ChevronDownIcon size={24} aria-hidden={true} focusable={false} />
+  </SmartLink>
 }
 const SelectCoaching = React.memo(SelectCoachingBase)
 
@@ -312,7 +344,7 @@ const StopStrategyModalBase = (props: StopStrategyModalProps): React.ReactElemen
       supprimées… C'est dommage d'arrêter maintenant.
     </Trans>}
     <Trans style={buttonsContainerStyle}>
-      <Button onClick={onClose} type="back" isRound={true} style={cancelButtonStyle}>
+      <Button onClick={onClose} type="discreet" isRound={true} style={cancelButtonStyle}>
         Annuler
       </Button>
       <Button onClick={onConfirm} type="deletion" isRound={true}>Arrêter</Button>
@@ -447,18 +479,11 @@ const WhyButtonBase = (props: WhyButtonProps): React.ReactElement|null => {
     <BobModal onConfirm={hideModal} isShown={isModalShown} buttonText="OK">
       {why}
     </BobModal>
-    <RadiumDiv onClick={handleClick} style={buttonStyle}>
-      <img src={bobHeadImage} alt={config.productName} style={bobStyle} />
+    <SmartLink onClick={handleClick} style={buttonStyle}>
+      <img src={bobHeadImage} alt="" style={bobStyle} />
       {t("L'explication de {{productName}}", {productName: config.productName})}
-    </RadiumDiv>
+    </SmartLink>
   </React.Fragment>
-}
-WhyButtonBase.propTypes = {
-  onClick: PropTypes.func,
-  strategy: PropTypes.shape({
-    header: PropTypes.string,
-  }).isRequired,
-  style: PropTypes.object,
 }
 const WhyButton = React.memo(WhyButtonBase)
 
@@ -506,6 +531,11 @@ const tagStyle: React.CSSProperties = {
   fontWeight: 'bold',
   marginLeft: 10,
   textTransform: 'initial',
+}
+const mobileTagStyle: React.CSSProperties = {
+  ...tagStyle,
+  marginBottom: 10,
+  marginLeft: 0,
 }
 
 const flexFillerStyle: React.CSSProperties = {
@@ -568,7 +598,7 @@ const getImpactStyle = _memoize((color: string): React.CSSProperties => ({
 
 const StrategyListItemBase: React.FC<ListItemProps> = (props): React.ReactElement => {
   // TODO(cyrille): Handle completed strategies.
-  const {chevronSize, hasStartedOtherStrategy, project,
+  const {chevronSize = 24, hasStartedOtherStrategy, project,
     strategy: {externalUrl, isPrincipal, description, score, strategyId, title},
     strategyCompletion: {isComplete, isStarted, progress},
     rank, strategyUrl, style} = props
@@ -610,10 +640,11 @@ const StrategyListItemBase: React.FC<ListItemProps> = (props): React.ReactElemen
       hasStartedOtherStrategy={hasStartedOtherStrategy} goals={goals} strategyId={strategyId} />
     <div style={contentStyle}>
       <div>
+        {isMobileVersion && isPrincipal ? <Tag style={mobileTagStyle}>{t('Priorité')}</Tag> : null}
         <div style={titleStyle}>{title}</div>
         <Trans>Impact&nbsp;: <span style={getImpactStyle(color)}>+&nbsp;{{score}}%</span></Trans>
       </div>
-      {isPrincipal ? <Tag style={tagStyle}>{t('Priorité')}</Tag> : null}
+      {isPrincipal && !isMobileVersion ? <Tag style={tagStyle}>{t('Priorité')}</Tag> : null}
       <div style={flexFillerStyle} />
       {isComplete ? <CheckIcon style={completedStyle} size={30} /> : null}
       {strategyUrl ? isStarted ? <ChevronRightIcon size={chevronSize} /> :
@@ -630,26 +661,6 @@ const StrategyListItemBase: React.FC<ListItemProps> = (props): React.ReactElemen
       <span style={footerTextStyle}>{description}</span>
     </div> : null}
   </SmartLink>
-}
-StrategyListItemBase.propTypes = {
-  chevronSize: PropTypes.number.isRequired,
-  hasStartedOtherStrategy: PropTypes.bool.isRequired,
-  project: PropTypes.object.isRequired,
-  rank: PropTypes.number.isRequired,
-  strategy: PropTypes.shape({
-    description: PropTypes.string,
-    externalUrl: PropTypes.string,
-    isPrincipal: PropTypes.bool,
-    score: PropTypes.number,
-    strategyId: PropTypes.string.isRequired,
-    title: PropTypes.string.isRequired,
-  }).isRequired,
-  strategyCompletion: PropTypes.object.isRequired,
-  strategyUrl: PropTypes.string,
-  style: PropTypes.object,
-}
-StrategyListItemBase.defaultProps = {
-  chevronSize: 24,
 }
 const StrategyListItem = React.memo(StrategyListItemBase)
 
@@ -715,6 +726,8 @@ const StartStrategyModal: React.FC<StartStrategyModalProps> = (props: StartStrat
   const {t} = useTranslation()
   const inputRef = useRef<Inputable>(null)
   const dispatch = useDispatch<DispatchAllActions>()
+  // TODO(pascal): Ask the user.
+  const isPersistent = false
   const submit = useCallback(async (): Promise<void> => {
     if (!config.isCoachingEnabled || userEmail) {
       onSubmit()
@@ -733,10 +746,10 @@ const StartStrategyModal: React.FC<StartStrategyModalProps> = (props: StartStrat
       setEmailAlreadyUsed(true)
       return
     }
-    if (await dispatch(silentlySetupCoaching(email))) {
+    if (await dispatch(silentlySetupCoaching(email, isPersistent, t))) {
       onSubmit()
     }
-  }, [dispatch, onSubmit, email, userEmail])
+  }, [dispatch, isPersistent, onSubmit, email, t, userEmail])
   useFastForward((): void => {
     if (userEmail || email) {
       submit()
@@ -784,12 +797,13 @@ const StartStrategyModal: React.FC<StartStrategyModalProps> = (props: StartStrat
           </LoginLink> pour continuer.
         </Trans> : null}
       </div> : null}
-      {strategyId.startsWith('interview-success') ? <Trans style={covidWarningStyle}>
-        Nous savons que certains points de ce programme seront compliqués avec le confinement.
-        {' '}<ExternalLink href={Routes.COVID_PAGE} style={blueLinkStyle}>
-          Retrouvez-ici nos conseils
-        </ExternalLink> pour avancer sur votre recherche, tout en restant à la maison.
-      </Trans> : null}
+      {config.hasCovidBanner && strategyId.startsWith('interview-success') ?
+        <Trans style={covidWarningStyle}>
+          Nous savons que certains points de ce programme seront compliqués avec le confinement.
+          {' '}<ExternalLink href={Routes.COVID_PAGE} style={blueLinkStyle}>
+            Retrouvez-ici nos conseils
+          </ExternalLink> pour avancer sur votre recherche, tout en restant à la maison.
+        </Trans> : null}
       <div style={startStrategyModalSubmitButtonStyle}>
         <Button onClick={submit} type="validation" isProgressShown={isWorking}>
           {isEmailRequired ? t('Valider') : t("C'est parti\u00A0!")}
@@ -838,7 +852,7 @@ const StrategiesListBase: React.FC<StrategiesListProps> = (props): React.ReactEl
     return null
   }
   if (!isShown) {
-    return <button onClick={show}>
+    return <button onClick={show} type="button">
       {t('+ Afficher plus de stratégies')}
     </button>
   }
@@ -855,18 +869,6 @@ const StrategiesListBase: React.FC<StrategiesListProps> = (props): React.ReactEl
     </AppearingList>
   </div>
 }
-StrategiesListBase.propTypes = {
-  isAnimationEnabled: PropTypes.bool,
-  isCollapsed: PropTypes.bool,
-  makeStrategyLink: PropTypes.func,
-  project: PropTypes.object.isRequired,
-  strategies: PropTypes.arrayOf(PropTypes.shape({
-    strategyId: PropTypes.string,
-  })),
-  strategyStyle: PropTypes.object,
-  title: PropTypes.array.isRequired,
-  titleStyle: PropTypes.object,
-}
 const StrategiesList = React.memo(StrategiesListBase)
 
 type StrategyClass = 'complete' | 'started' | 'main' | 'other'
@@ -874,7 +876,6 @@ type StrategyClasses = {[className in StrategyClass]: readonly bayes.bob.Strateg
 
 const StrategiesBase: React.FC<StrategiesProps> = (props: StrategiesProps): React.ReactElement => {
   const {project, strategies, titleStyle} = props
-  const isConvincePageEnabled = useAlwaysConvincePage()
   const classifiedStrategies = useMemo((): StrategyClasses =>
     _groupBy<bayes.bob.Strategy>(strategies, ({isSecondary, strategyId}): StrategyClass => {
       if (strategyId) {
@@ -908,22 +909,12 @@ const StrategiesBase: React.FC<StrategiesProps> = (props: StrategiesProps): Reac
       {...props}
       strategies={classifiedStrategies['other']}
       title={prepareT('Autre stratégie', {count: 0})}
-      isCollapsed={!isMobileVersion && isConvincePageEnabled} />
+      isCollapsed={!isMobileVersion} />
     <StrategiesList
       {...props}
       strategies={classifiedStrategies['complete']}
       title={prepareT('Stratégie terminée', {count: 0})} />
   </React.Fragment>
-}
-StrategiesBase.propTypes = {
-  project: PropTypes.shape({
-    openedStrategies: PropTypes.arrayOf(PropTypes.shape({
-      strategyId: PropTypes.string.isRequired,
-    }).isRequired),
-  }).isRequired,
-  strategies: PropTypes.arrayOf(PropTypes.shape({
-    strategyId: PropTypes.string,
-  })).isRequired,
 }
 const Strategies = React.memo(StrategiesBase)
 
@@ -941,11 +932,6 @@ const StrategySectionBase = (props: Omit<StratPanelProps, 'ref'>): React.ReactEl
   return <StratPanel style={sectionStyle} {...otherProps} title={title}>
     {children}
   </StratPanel>
-}
-StrategySectionBase.propTypes = {
-  children: PropTypes.node.isRequired,
-  style: PropTypes.object,
-  title: PropTypes.string.isRequired,
 }
 const StrategySection = React.memo(StrategySectionBase)
 
@@ -981,8 +967,8 @@ const GoalsSelectionEditorBase = (props: GoalsSelectionEditorProps): React.React
 
   const selectGoals = useCallback((selectedGoals: readonly string[]): void => {
     const selectedGoalsSet = new Set(selectedGoals)
-    const reachedGoals =
-      _fromPairs(goals.map(({goalId}): [string, boolean] => [goalId, selectedGoalsSet.has(goalId)]))
+    const reachedGoals = Object.fromEntries(
+      goals.map(({goalId}): [string, boolean] => [goalId, selectedGoalsSet.has(goalId)]))
     onSubmit(reachedGoals)
   }, [goals, onSubmit])
 
@@ -1010,12 +996,6 @@ const GoalsSelectionEditorBase = (props: GoalsSelectionEditorProps): React.React
       checkboxStyle={itemStyle}
       selectedCheckboxStyle={selectedItemStyle} />
   </div>
-}
-GoalsSelectionEditorBase.propTypes = {
-  goals: PropTypes.array.isRequired,
-  onSubmit: PropTypes.func.isRequired,
-  reachedGoals: PropTypes.objectOf(PropTypes.bool),
-  style: PropTypes.object,
 }
 const GoalsSelectionEditor = React.memo(GoalsSelectionEditorBase)
 
@@ -1080,7 +1060,7 @@ const GoalsSelectionTabBase = (props: GoalsSelectionTabProps): React.ReactElemen
     </div>
     <section>
       <header style={mobileSectionHeaderStyle}>{t('Mon coaching')}</header>
-      <button style={coachingStyle} onClick={showModal}>
+      <button style={coachingStyle} onClick={showModal} type="button">
         <div style={{flex: 1}}>{t('Type de coaching')}</div>
         <div style={{fontStyle: 'italic', fontWeight: 'bold', margin: 10}}>{
           coaching && translate(...coaching) || t('Désactivé')
@@ -1103,11 +1083,12 @@ const GoalsSelectionTabBase = (props: GoalsSelectionTabProps): React.ReactElemen
     </section>
   </React.Fragment>
 }
-GoalsSelectionTabBase.propTypes = {
-  onSubmit: PropTypes.func.isRequired,
-}
 const GoalsSelectionTab = React.memo(GoalsSelectionTabBase)
 
+
+const blockStyle: React.CSSProperties = {
+  display: 'block',
+}
 
 interface MethodProps {
   advice: bayes.bob.Advice & {adviceId: string}
@@ -1119,6 +1100,7 @@ const ObservationMethodBase = (props: MethodProps): React.ReactElement => {
   const {t} = useTranslation()
   const containerStyle = useMemo((): React.CSSProperties => ({
     ...strategyCardStyle,
+    display: 'block',
     fontSize: 13,
     fontWeight: 'bold',
     height: 190,
@@ -1127,15 +1109,15 @@ const ObservationMethodBase = (props: MethodProps): React.ReactElement => {
     width: 140,
     ...style,
   }), [style])
-  return <div style={containerStyle}>
+  return <span style={containerStyle}>
     <AdvicePicto adviceId={adviceId} style={{marginBottom: 20, width: 64}} />
-    <div>{upperFirstLetter(getAdviceGoal(advice, t))}</div>
-  </div>
+    <span style={blockStyle}>{upperFirstLetter(getAdviceGoal(advice, t))}</span>
+  </span>
 }
 const ObservationMethod = React.memo(ObservationMethodBase)
 
 
-interface StratPanelProps extends React.HTMLProps<HTMLDivElement> {
+interface StratPanelProps extends React.HTMLProps<HTMLElement> {
   title: string
 }
 
@@ -1316,7 +1298,7 @@ const MobileStrategyPageBase = (props: MobileStrategyPageProps): React.ReactElem
           <MethodsList methods={unreadMethods} strategyUrl={strategyUrl} />
           <MethodsList methods={readMethods} isRead={true} strategyUrl={strategyUrl} />
         </Route>
-        <Redirect to={`${strategyUrl}/objectifs`} />
+        <Route><Redirect to={`${strategyUrl}/objectifs`} /></Route>
       </Switch>
     </div>
     <div style={navStyle}>
@@ -1492,21 +1474,6 @@ const StrategyPageBase = (props: StrategyPageProps): React.ReactElement => {
   return <DesktopStrategyPage
     {...{project, projectUrl, strategy}} openedStrategy={openedStrategy}
     onSelectGoals={handleGoalsSelection} />
-}
-StrategyPageBase.propTypes = {
-  project: PropTypes.shape({
-    advices: PropTypes.array.isRequired,
-    projectId: PropTypes.string,
-  }).isRequired,
-  projectUrl: PropTypes.string.isRequired,
-  strategy: PropTypes.shape({
-    piecesOfAdvice: PropTypes.arrayOf(PropTypes.shape({
-      adviceId: PropTypes.string.isRequired,
-    }).isRequired),
-    strategyId: PropTypes.string.isRequired,
-    title: PropTypes.string.isRequired,
-  }).isRequired,
-  strategyRank: PropTypes.number.isRequired,
 }
 type ValidStrategyAdvice = bayes.bob.StrategyAdvice & {adviceId: string}
 const StrategyPage = React.memo(StrategyPageBase)

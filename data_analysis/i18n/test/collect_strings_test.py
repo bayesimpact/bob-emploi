@@ -2,7 +2,7 @@
 
 import datetime
 import typing
-from typing import List, Set, Tuple
+from typing import Set, Tuple
 import unittest
 from unittest import mock
 
@@ -10,6 +10,7 @@ from airtable import airtable
 import airtablemock
 import requests_mock
 
+from bob_emploi.common.python.test import nowmock
 from bob_emploi.data_analysis.i18n import collect_strings
 from bob_emploi.data_analysis.importer import import_status
 from bob_emploi.data_analysis.importer.test import airtable_to_protos_test
@@ -17,7 +18,7 @@ from bob_emploi.frontend.api import network_pb2
 
 
 _TABLES_TO_MOCK: Set[Tuple[str, str, str]] = {
-    (i.args.get('base_id', ''), i.args.get('table', ''), i.args.get('view', ''))
+    (i.args.get('base_id') or '', i.args.get('table') or '', i.args.get('view') or '')
     for i in import_status.get_importers().values()
     if i.script == 'airtable_to_protos' and i.args
 } | {
@@ -33,16 +34,25 @@ class CollectStringsTest(airtablemock.TestCase):
     def setUp(self) -> None:
         super().setUp()
         airtablemock.create_empty_table('appkEc8N0Bw4Uok43', 'translations')
+        airtablemock.create_empty_table('appXmyc7yYj0pOcae', 'skills_for_future')
+        airtablemock.create_view(
+            'appXmyc7yYj0pOcae', 'skills_for_future', 'viwfJ3L3qKPMVV2wp', 'unused != 3')
         for base_id, table, view in _TABLES_TO_MOCK:
-            airtablemock.create_empty_table(base_id, table)
+            try:
+                airtablemock.create_empty_table(base_id, table)
+            except ValueError:
+                # It's OK if the table exist already.
+                pass
             if view:
                 airtablemock.create_view(base_id, table, view, 'unused != 3')
 
-    def _assert_all_translations(self, expected: List[str]) -> None:
+    def _assert_all_translations(
+            self, expected: list[str], are_proto_included: bool = False) -> None:
         translations = \
             list(airtable.Airtable('appkEc8N0Bw4Uok43', '').iterate('translations'))
-        actual = [t.get('fields', {}).get('string') for t in translations]
-        self.assertCountEqual(expected, actual)
+        actual = [t.get('fields', {}).get('string', '') for t in translations]
+        filtered_actual = [t for t in actual if 'proto' not in t or are_proto_included]
+        self.assertCountEqual(expected, filtered_actual)
 
     def test_client_collectibles(self) -> None:
         """Sanity check on CLIENT_COLLECTIBLES."""
@@ -75,20 +85,56 @@ class CollectStringsTest(airtablemock.TestCase):
             'metric_title': 'A category metric title',
             'order': 1,
         })
+        diagnostic_overall_record = bob_advice_base.create('diagnostic_overall', {
+            'category_id': 'my-category',
+            'sentence_template': 'An overall diagnostic sentence',
+            'text_template': 'An overall diagnostic text',
+            'score': 4,
+            'order': 1,
+        })
+        diagnostic_overall_record_id = diagnostic_overall_record['id']
         collect_strings.main(['apikey'])
 
         self._assert_all_translations(
             [
                 'A category metric title',
+                'An overall diagnostic sentence',
+                'An overall diagnostic text',
                 'First Advice',
                 'My category description',
                 'Second Advice',
                 'adviceModules:first-advice:static_explanations',
                 'adviceModules:first-advice:title',
                 'adviceModules:second-advice:title',
+                f'diagnosticOverall:{diagnostic_overall_record_id}:sentence_template',
+                f'diagnosticOverall:{diagnostic_overall_record_id}:text_template',
                 'diagnosticMainChallenges:my-category:description',
                 'diagnosticMainChallenges:my-category:metric_title',
-            ])
+                'proto:AreaType:CITY',
+                'proto:AreaType:COUNTRY',
+                'proto:AreaType:DEPARTEMENT',
+                'proto:AreaType:REGION',
+                'proto:AreaType:UNKNOWN_AREA_TYPE',
+                'proto:AreaType:WORLD',
+                'proto:EmploymentType:ALTERNANCE',
+                'proto:EmploymentType:ANY_CONTRACT_LESS_THAN_A_MONTH',
+                'proto:EmploymentType:CDD',
+                'proto:EmploymentType:CDD_LESS_EQUAL_3_MONTHS',
+                'proto:EmploymentType:CDD_OVER_3_MONTHS',
+                'proto:EmploymentType:CDI',
+                'proto:EmploymentType:FULL_TIME_EMPLOYMENT',
+                'proto:EmploymentType:INTERIM',
+                'proto:EmploymentType:INTERNSHIP',
+                'proto:EmploymentType:PART_TIME_EMPLOYMENT',
+                'proto:EmploymentType:UNDEFINED_EMPLOYMENT_TYPE',
+                'proto:DegreeLevel:BAC_BACPRO',
+                'proto:DegreeLevel:BTS_DUT_DEUG',
+                'proto:DegreeLevel:CAP_BEP',
+                'proto:DegreeLevel:DEA_DESS_MASTER_PHD',
+                'proto:DegreeLevel:LICENCE_MAITRISE',
+                'proto:DegreeLevel:NO_DEGREE',
+                'proto:DegreeLevel:UNKNOWN_DEGREE',
+            ], are_proto_included=True)
         self.assertEqual(0, mock_requests.call_count)
 
     def test_duplicates(self) -> None:
@@ -206,6 +252,18 @@ class CollectStringsTest(airtablemock.TestCase):
         collect_strings.main(['apiKey', '--collection', 'contact_lead'])
         self._assert_all_translations(
             ['I need to be translated', 'This is a templated email', 'Translation needed'])
+
+    def test_job_group_info(self) -> None:
+        """Test collecting strings for the job_group_info collection from importer."""
+
+        bob_advice_base = airtable.Airtable('appXmyc7yYj0pOcae', '')
+        bob_advice_base.create('skills_for_future', {
+            'description': 'Translation needed',
+            'name': 'I need to be translated',
+            'assets': [1],
+        })
+        collect_strings.main(['apiKey', '--collection', 'job_group_info'])
+        self._assert_all_translations(['I need to be translated', 'Translation needed'])
 
     @mock.patch(
         collect_strings.__name__ + '._SLACK_IMPORT_URL', 'https://slack.example.com/webhook')
@@ -495,7 +553,7 @@ class CollectStringsTest(airtablemock.TestCase):
             'adviceModules:other:title',
         ])
 
-    @mock.patch(collect_strings.now.__name__ + '.get')
+    @nowmock.patch()
     def test_last_used(self, mock_now: mock.MagicMock) -> None:
         """Check the behavior of last_used."""
 

@@ -1,7 +1,7 @@
 """Module to handle Geonames cities datasets."""
 
 import csv
-from typing import Dict, Iterator
+from typing import Iterator
 
 # Names of the fields in geonames dump format.
 # See https://download.geonames.org/export/dump/readme.txt
@@ -28,13 +28,13 @@ GEONAMES_FIELDNAMES = (
 )
 
 
-def iterate_geonames(filename: str) -> Iterator[Dict[str, str]]:
+def iterate_geonames(filename: str) -> Iterator[dict[str, str]]:
     """Iterate on geonames rows from a tsv file.
 
     Yields dicts with keys in GEONAMES_FIELDNAMES.
     """
 
-    with open(filename, 'rt') as file:
+    with open(filename, 'rt', encoding='utf-8') as file:
         names_reader = csv.DictReader(
             file, fieldnames=GEONAMES_FIELDNAMES, delimiter='\t',
         )

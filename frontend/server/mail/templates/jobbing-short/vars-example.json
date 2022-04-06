@@ -1,0 +1,18 @@
+{
+  "baseUrl": "https://www.bob-emploi.fr",
+  "changeEmailSettingsUrl": "https://www.bob-emploi.fr",
+  "firstName": "Angèle",
+  "gender": "FEMININE",
+  "inDepartement": "dans le Rhône",
+  "jobs": [
+    {
+      "name": "Livreur/Livreuse"
+    },
+    {
+      "name": "Barman/Barmaid"
+    }
+  ],
+  "ofJobName": "de maquettiste",
+  "productName": "Bob",
+  "statusUpdateUrl": "https://www.bob-emploi.fr"
+}

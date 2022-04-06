@@ -1,6 +1,7 @@
 """Unit tests for the reorient-jobbing module."""
 
-from typing import Any, Dict
+import json
+from typing import Any
 import unittest
 from unittest import mock
 
@@ -201,7 +202,7 @@ class ReorientJobbingEndpointTestCase(base_test.ServerTestCase):
         user_info = self.get_user_info(self.user_id, self.auth_token)
         self.project_id = user_info['projects'][0]['projectId']
 
-    def _add_project_modifier(self, user: Dict[str, Any]) -> None:
+    def _add_project_modifier(self, user: dict[str, Any]) -> None:
         """Modifier to add a custom project."""
 
         user['projects'] = user.get('projects', []) + [{
@@ -286,7 +287,7 @@ class ReorientJobbingEndpointTestCase(base_test.ServerTestCase):
                 },
         })
 
-        self._db.translations.insert_many([
+        self.add_translations([
             {
                 'string': 'SuperFemme',
                 'en': 'Wonderwoman',
@@ -324,7 +325,7 @@ class ReorientJobbingEndpointTestCase(base_test.ServerTestCase):
             ],
             jobs['reorientJobbingJobs'])
 
-    def _add_fr_tu_project_modifier(self, user: Dict[str, Any]) -> None:
+    def _add_fr_tu_project_modifier(self, user: dict[str, Any]) -> None:
 
         user['projects'] = user.get('projects', []) + [{
             'targetJob': {'jobGroup': {'romeId': 'A1234'}},
@@ -383,7 +384,7 @@ class ReorientJobbingEndpointTestCase(base_test.ServerTestCase):
             jobs['reorientJobbingJobs'])
         mock_logging.assert_not_called()
 
-    def _add_undefined_project_modifier(self, user: Dict[str, Any]) -> None:
+    def _add_undefined_project_modifier(self, user: dict[str, Any]) -> None:
         """Modifier to add an undefined project."""
 
         user['projects'] = user.get('projects', []) + [{
@@ -431,6 +432,67 @@ class ReorientJobbingEndpointTestCase(base_test.ServerTestCase):
         jobs = self.json_from_response(response)
         self.assertEqual(
             [{'name': 'Wonderwoman'}],
+            jobs['reorientJobbingJobs'])
+
+    def test_all_modules(self) -> None:
+        """Show all recommended jobs if in all_modules."""
+
+        self._db.local_diagnosis.replace_one({'_id': '45:A1234'}, {
+            '_id': '45:A1234',
+            'imt':
+                {
+                    'yearlyAvgOffersPer10Candidates': 5,
+                },
+        })
+
+        self._db.reorient_jobbing.insert_one(
+            {
+                '_id': '45',
+                'departementJobStats':
+                    {
+                        'jobs': [
+                            {
+                                'romeId': 'A1413',
+                                'masculineName': 'Superman',
+                                'feminineName': 'Wonderwoman',
+                                'name': 'Superhero',
+                                'marketScore': 6,
+                            },
+                            {
+                                'romeId': 'A1401',
+                                'feminineName': 'Aide arboricole',
+                                'masculineName': 'Aide arboricole',
+                                'name': 'Aide arboricole',
+                                'marketScore': 4,
+                            },
+                        ],
+                    },
+            }
+        )
+        self._clear_cache()
+        response = self.app.post(
+            '/api/advice/reorient-jobbing',
+            data=json.dumps({
+                'featuresEnabled': {'allModules': True},
+                'profile': {'gender': 'FEMININE'},
+                'projects': [{
+                    'targetJob': {'jobGroup': {'romeId': 'A1234'}},
+                    'city': {'departementId': '45'},
+                }],
+            }))
+
+        jobs = self.json_from_response(response)
+        self.assertEqual(
+            [
+                {
+                    'name': 'Wonderwoman',
+                    'offersPercentGain': 20.0,
+                },
+                {
+                    'name': 'Aide arboricole',
+                    'offersPercentGain': -20.0,
+                }
+            ],
             jobs['reorientJobbingJobs'])
 
 

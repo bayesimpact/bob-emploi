@@ -1,0 +1,13 @@
+{
+  "settings": {
+    "import/resolver": {
+      "typescript": {},
+      "webpack": {
+        "config": "cfg/simple.json"
+      }
+    },
+    "react": {
+      "version": "16.8"
+    }
+  }
+}

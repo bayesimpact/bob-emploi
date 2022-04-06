@@ -10,11 +10,10 @@ set -e
 source "$(dirname "${BASH_SOURCE[0]}")/bashrc"
 
 readonly BOB_DEPLOYMENT="${BOB_DEPLOYMENT:-fr}"
-readonly PROD_HOST="$(jq -r '.Aliases.Items[0]' "$(dirname "${BASH_SOURCE[0]}")/../release/cloudfront/$BOB_DEPLOYMENT.json")"
+readonly PROD_HOST="$(bob_stack_var "$BOB_DEPLOYMENT" PublicDomainName)"
 
 if [ -z "$PROD_HOST" ]; then
-    >&2 echo "Couldn't find a valid host name, please check BOB_DEPLOYMENT=\"$BOB_DEPLOYMENT\" is a valid deployment"
-    >&2 echo "and make sure it has a Cloudfront config in frontend/release/cloudfront/"
+    >&2 echo "Couldn't find a valid host name, please check BOB_DEPLOYMENT=\"$BOB_DEPLOYMENT\" is a valid deployment."
     exit 1
 fi
 

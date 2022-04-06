@@ -3,11 +3,11 @@ import React, {useMemo} from 'react'
 import {prepareT} from 'store/i18n'
 
 import Trans from 'components/i18n_trans'
+import type {AdvicePageProps, CardProps} from 'components/static'
 import {TestimonialCard} from 'components/testimonials'
 import picto from 'images/advices/picto-association-help.svg'
 
-import {AdviceDetail, AdvicePageProps, AdviceSection, CardProps, StaticAdviceCardBase,
-  StaticAdvicePage} from './base'
+import {AdviceDetail, AdviceSection, StaticAdviceCardBase, StaticAdvicePage} from './base'
 
 
 const adviceId = 'soutien-association'
@@ -101,5 +101,6 @@ export default {
   Page: React.memo(Page),
   StaticAdviceCard: React.memo(StaticAdviceCard),
   adviceId,
+  isTranslated: true,
   name,
 }

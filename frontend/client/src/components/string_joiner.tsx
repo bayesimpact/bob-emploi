@@ -1,6 +1,5 @@
 import * as Sentry from '@sentry/browser'
 import _memoize from 'lodash/memoize'
-import PropTypes from 'prop-types'
 import React from 'react'
 import {useTranslation} from 'react-i18next'
 
@@ -23,7 +22,7 @@ const extractSeparator = _memoize((listString: string): readonly [string, string
 
 
 const StringJoiner = (props: Props): React.ReactElement => {
-  const {t} = useTranslation()
+  const {t} = useTranslation('components')
   const [defaultSeparator, defaultLastSeparator] =
     extractSeparator(t('<0></0>, <1></1> ou <2></2>'))
   const {children, lastSeparator = defaultLastSeparator, separator = defaultSeparator} = props
@@ -37,11 +36,6 @@ const StringJoiner = (props: Props): React.ReactElement => {
     parts.push(child)
   })
   return <span>{parts}</span>
-}
-StringJoiner.propTypes = {
-  children: PropTypes.arrayOf(PropTypes.node.isRequired),
-  lastSeparator: PropTypes.node,
-  separator: PropTypes.node,
 }
 
 

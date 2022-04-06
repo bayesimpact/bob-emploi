@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 import React from 'react'
 
 import {closeToCity} from 'store/french'
@@ -9,7 +8,12 @@ import Trans from 'components/i18n_trans'
 import Picto from 'images/advices/picto-volunteer.svg'
 import logoTousBenevoles from 'images/logo-tous-benevoles.png'
 
-import {CardProps, MethodSuggestionList, Mission, useAdviceData} from './base'
+import type {CardProps} from './base'
+import {MethodSuggestionList, Mission, useAdviceData} from './base'
+
+const noMarginStyle: React.CSSProperties = {
+  margin: 0,
+}
 
 
 const VolunteerMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
@@ -31,7 +35,7 @@ const VolunteerMethod: React.FC<CardProps> = (props: CardProps): React.ReactElem
     <GrowingNumber number={missionCount} isSteady={true} /> mission cherche des bénévoles comme vous
   </Trans>
   const subtitle = closeToCity(name, t)
-  const footer = <Trans parent={null} t={t}>
+  const footer = <Trans parent="p" t={t} style={noMarginStyle}>
     <img
       src={logoTousBenevoles} style={{height: 35, marginRight: 10, verticalAlign: 'middle'}}
       alt={t('logo Tous Bénévoles')} />
@@ -48,15 +52,6 @@ const VolunteerMethod: React.FC<CardProps> = (props: CardProps): React.ReactElem
       key={`mission-${index}`} aggregatorName="Tous Bénévoles" {...mission}
       onContentShown={handleExplore('mission')} />)}
   </MethodSuggestionList>
-}
-VolunteerMethod.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-  project: PropTypes.shape({
-    city: PropTypes.shape({
-      name: PropTypes.string.isRequired,
-    }),
-  }).isRequired,
-  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(VolunteerMethod)
 

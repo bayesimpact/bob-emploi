@@ -16,6 +16,7 @@ downloads/
 lib64/
 parts/
 var/
+bazel-*
 
 # IDEs or other local software
 .idea
@@ -65,9 +66,6 @@ bigquery_credentials.dat
 
 # Files that are automatically created by frontend/release/deploy_api.sh
 frontend/release/api/assets
-
-# File automatically created when running frontend/release/build.sh
-/frontend/release/nginx.conf
 
 # Files containing personal credentials related to this project.
 /frontend/release/openrc.sh

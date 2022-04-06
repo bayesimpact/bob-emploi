@@ -2,7 +2,7 @@
 
 import inspect
 import os
-from typing import Any, Callable, List
+from typing import Any, Callable
 import unittest
 
 
@@ -32,7 +32,7 @@ class TolerantAsserter:
 
         self._asserter = asserter
         self._tolerance = tolerance
-        self._errors: List[Exception] = []
+        self._errors: list[Exception] = []
 
     def __getattr__(self, name: str) -> Any:
         attr = getattr(self._asserter, name)

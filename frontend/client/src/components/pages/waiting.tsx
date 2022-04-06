@@ -1,11 +1,7 @@
-import i18n from 'i18next'
-import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 import {useTranslation} from 'react-i18next'
 
-import loadingImageFr from 'images/logo-bob-loading-fr.svg'
-// TODO(émilie): Vectorize the text to avoid font bug on Chrome for MacOS.
-import loadingImageEn from 'images/logo-bob-loading-en.svg'
+import LoadingImage from 'deployment/loading_image'
 
 
 const baseStyle: React.CSSProperties = {
@@ -30,13 +26,8 @@ const WaitingPage: React.FC<Props> = ({loadingImage, style}): React.ReactElement
     ...style,
   }), [style])
   return <div style={finalStyle}>
-    <img alt={t('Chargement…')}
-      src={loadingImage || (i18n.language?.startsWith('en') ? loadingImageEn : loadingImageFr)} />
+    {loadingImage ? <img alt={t('Chargement…')} src={loadingImage} /> : <LoadingImage />}
   </div>
-}
-WaitingPage.propTypes = {
-  loadingImage: PropTypes.string,
-  style: PropTypes.object,
 }
 
 

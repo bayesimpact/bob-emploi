@@ -1,6 +1,6 @@
 """Tests for the bob_emploi.importer.soc_job_suggest module."""
 
-import io
+import logging
 import os
 from os import path
 import unittest
@@ -55,16 +55,15 @@ class UploadTestCase(unittest.TestCase):
         mock_client = mock_algoliasearch.SearchClient.create()
         mock_client.init_index().save_objects.side_effect = exceptions.AlgoliaException
 
-        output = io.StringIO()
-
         with self.assertRaises(exceptions.AlgoliaException):
-            soc_job_suggest.upload(data_folder=self.testdata_folder, out=output)
+            with self.assertLogs(level=logging.ERROR) as logged:
+                soc_job_suggest.upload(data_folder=self.testdata_folder)
 
         mock_client.move_index.assert_not_called()
         mock_client.init_index().delete.assert_called_once_with()
-        output_value = output.getvalue()
-        self.assertTrue(
-            output_value.startswith('[\n  {\n    "jobGroupId": "11-1011"'), msg=output_value)
+        output_value = logged.records[0].getMessage()
+        self.assertIn('An error occurred while saving to Algolia', output_value)
+        self.assertIn('\n[\n  {\n    "jobGroupId": "11-1011"', output_value)
 
 
 if __name__ == '__main__':

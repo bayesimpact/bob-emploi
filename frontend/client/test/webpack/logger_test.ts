@@ -1,6 +1,6 @@
 import {expect} from 'chai'
 import {subDays} from 'date-fns'
-import {RootState} from 'store/actions'
+import type {RootState} from 'store/actions'
 import {Logger, daysSince} from 'store/logging'
 
 describe('Logger', (): void => {
@@ -39,7 +39,7 @@ describe('Logger', (): void => {
         city: {name: 'Troyes'},
         targetJob: {masculineName: 'Pompier'},
       },
-      type: 'DIAGNOSTIC_TALK_IS_SHOWN',
+      type: 'STATS_PAGE_IS_SHOWN',
     }, emptyState)
     expect(eventProperties['Project Job Name']).to.eq('Pompier')
     expect(eventProperties['Project City']).to.eq('Troyes')
@@ -47,7 +47,7 @@ describe('Logger', (): void => {
 
   it("does not crash when the action's project data is incomplete", (): void => {
     const logger = new Logger({})
-    logger.getEventProperties({project: {}, type: 'DIAGNOSTIC_TALK_IS_SHOWN'}, emptyState)
+    logger.getEventProperties({project: {}, type: 'STATS_PAGE_IS_SHOWN'}, emptyState)
   })
 })
 

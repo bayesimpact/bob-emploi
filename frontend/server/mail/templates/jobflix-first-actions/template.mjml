@@ -1,0 +1,56 @@
+<mjml owa="desktop" version="4.6.3">
+  <mj-body background-color="#ffffff" font-family="Arial, sans-serif">
+    <mj-section>
+      <mj-column>
+        <mj-text font-size="14px" line-height="22px">
+          <p>Bonjour,</p>
+          <p>Comment allez-vous ?</p>
+          <p>J'ai vu que {%if var:hasSeveralJobs=="True"%}les métiers suivants vous intéressent :</p>
+          <ul>{%for job in var:jobs%}
+            <li>{{job}}</li>
+          {%endfor%}</ul>
+          <p>Vos choix m'inspirent{%else%}le métier de {{var:ofJobName}} vous intéresse. Votre choix m'inspire{%endif%} 🤩. Je ne peux que vous encourager ! Selon les informations que j'ai, {%if var:hasSeveralJobs=="True"%}ce sont des métiers qui présentent{%else%}c'est un métier qui présente{%endif%} de belles perspectives.</p>
+          <p>Dans ce mail vous trouverez mon premier conseil pour commencer à transformer cette envie en réalité.</p>
+          <p>On y va !</p>
+        </mj-text>
+        <mj-text font-size="14px" line-height="22px">
+          <p style="font-size:20px;font-weight:700">Mon premier conseil : transformer “il faut que je réfléchisse” ❌ en “voici comment je vais agir” ✅</p>
+          <ul>
+            <li style="margin-bottom:10px">“Faire une formation, ça m'intéresse, mais il faut que je réfléchisse”</li>
+            <li style="margin-bottom:10px">“Il y a des jours où je pense à changer de job, d'autres ou ça va. On verra.”</li>
+            <li style="margin-bottom:10px">“J'ai quelques idées pour me reconvertir. A voir.”</li>
+          </ul>
+        </mj-text>
+        <mj-text font-size="14px" line-height="22px">Souvent dans la vie on se met beaucoup de pression tout·e seul·e en pensant pouvoir trouver seul·e les réponses à toutes nos questions.</mj-text>
+        <mj-text font-size="14px" line-height="22px">Mes recherches ont montré que ce qui marche, c'est de découper des tâches lourdes en petites actions.</mj-text>
+        <mj-text font-size="14px" line-height="22px">Et si je ne sais pas où commencer ?</mj-text>
+        <mj-text font-size="14px" line-height="22px">C'est normal. Personne ne sait où commencer. Il faut juste commencer quelque part.</mj-text>
+        <mj-text font-size="14px" line-height="22px">Le plus important, c'est de vous mettre de tous petits objectifs, et d'y aller petite étape par petite étape.</mj-text>
+        <mj-text font-size="14px" line-height="22px">
+          <p>Voici une liste de choses que vous pourriez faire pour commencer :</p>
+          <ul>
+            <li style="margin-bottom:10px">Envoyer un message à quelqu'un qui fait le métier {{var:ofJobName}}{%if var:hasSeveralJobs=="True"%}, par exemple{%endif%}</li>
+            <li style="margin-bottom:10px">Lisez la fiche métier sur <a style="color:inherit;" target="_blank" href="{{var:optLink}}">Orientation pour tous</a> et écrire les pour et les contre</li>
+            <li style="margin-bottom:10px">Contactez un <a style="color:inherit;" target="_blank" href="https://mon-cep.org/">Conseiller en Orientation Professionnelle</a></li>
+            <li style="margin-bottom:10px">Regardez votre <a style="color:inherit;" target="_blank" href="https://www.moncompteformation.gouv.fr/espace-prive/html/">solde CPF</a> pour voir si vous avez un budget de formation</li>
+            <li style="margin-bottom:10px">Aller vous balader avec un·e ami·e de confiance pour lui en parler</li>
+            <li style="margin-bottom:10px">...</li>
+          </ul>
+        </mj-text>
+        <mj-button align="center" background-color="#258afb" border-radius="3px" border="0px solid #ffffff" color="#ffffff" font-family="Arial, sans-serif" font-size="16px" font-weight="normal" href="https://docs.google.com/forms/d/e/1FAIpQLSeqTpPKqQ67aDd07OBDbIelzDIiHZcCaHwNT1-n_Q0FEyndCA/viewform?usp=pp_url&amp;entry.1494697879={{var:jobIds}}&amp;entry.1597100518={{var:departements}}" inner-padding="10px 25px 10px 25px" padding-left="25px" padding-right="25px" padding="10px 25px 10px 25px" text-decoration="none" text-transform="none" vertical-align="middle">
+          <span style="font-size:16px;"><b>Je fais une de ces actions</b></span>
+        </mj-button>
+        <mj-text font-size="14px" line-height="22px">
+          <p>À bientôt,</p>
+          <p>{{var:senderName}}</p>
+          <p>PS : Vous pouvez répondre à cet email</p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column>
+        <mj-text color="#55575d" font-size="11px" line-height="22px">Vous recevez cet email car vous avez demandé du coaching sur <a style="color:inherit;" target="_blank" href="{{var:productUrl}}">{{var:productName}}</a>. <a style="color:inherit;" target="_blank" href="{{var:unsubscribeLink}}">Cliquez ici</a> si vous ne souhaitez plus recevoir d'email de notre part.</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

@@ -1,0 +1,12 @@
+US	99553	Akutan	Alaska	AK	Aleutians East	013			54.143	-165.7854	1
+US	99571	Cold Bay	Alaska	AK	Aleutians East	013			55.1858	-162.7211	1
+US	45501	Springfield	Ohio	OH	Clark	023			39.9271	-83.8132	4
+US	97475	Springfield	Oregon	OR	Lane	039			44.0462	-123.022	4
+US	10002	New York	New York	NY	New York	061			40.7152	-73.9877	4
+US	10001	New York	New York	NY	New York	061			40.7484	-73.9967	4
+US	10003	New York	New York	NY	New York	061			40.7313	-73.9892	4
+US	10451	Bronx	New York	NY	Bronx	005			40.8222	-73.9217	4
+US	10452	Bronx	New York	NY	Bronx	005			40.8376	-73.9216	4
+US	10453	Bronx	New York	NY	Bronx	005			40.852	-73.9129	4
+US	15201	Pittsburgh	Pennsylvania	PA	Allegheny	003			40.4752	-79.9528	4
+US	15202	Pittsburgh	Pennsylvania	PA	Allegheny	003			40.5053	-80.0685	4

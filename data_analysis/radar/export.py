@@ -20,6 +20,7 @@ If needed, you can clean up the indices with:
 """
 
 import argparse
+import base64
 import collections
 import datetime
 import itertools
@@ -29,9 +30,7 @@ import logging
 import os
 import sys
 import typing
-from typing import (
-    Any, Dict, Iterator, List, Literal, Mapping, Optional, Sequence, Set, TextIO, Tuple, Union,
-)
+from typing import Any, Iterator, Literal, Mapping, Optional, Sequence, Set, TextIO, Tuple, Union
 
 import boto3
 import certifi as _  # Needed to handle SSL in elasticsearch connections, for production use.
@@ -39,6 +38,7 @@ import elasticsearch
 from elasticsearch import helpers
 from google.protobuf import json_format
 from google.protobuf import timestamp_pb2
+import pandas
 import requests
 import requests_aws4auth
 
@@ -93,8 +93,8 @@ def _get_user_id(photo: typeform_pb2.Photo) -> str:
 
 
 def _sort_photos(all_photos: Sequence[typeform_pb2.Photo]) \
-        -> Dict[str, List[typeform_pb2.Photo]]:
-    sorted_photos: Dict[str, List[typeform_pb2.Photo]] = {}
+        -> dict[str, list[typeform_pb2.Photo]]:
+    sorted_photos: dict[str, list[typeform_pb2.Photo]] = {}
     for each_user, user_photos in itertools.groupby(
             sorted(all_photos, key=_get_user_id), _get_user_id):
         sorted_photos[str(each_user)] = sorted(
@@ -110,19 +110,45 @@ class _StructureDetails(typing.NamedTuple):
 class _Structures:
 
     def __init__(self) -> None:
-        self._details: Dict[str, _StructureDetails] = {}
+        self._details: dict[str, _StructureDetails] = {}
+        self._dossiers: dict[str, _StructureDetails] = {}
 
-    def __getitem__(self, structure_id: str) -> _StructureDetails:
-        return self._details.get(structure_id, _StructureDetails('', ''))
+    def match(self, fields: typeform_pb2.HiddenFields) -> _StructureDetails:
+        """Find the best structure details from typeform info."""
+
+        try:
+            return self._details[fields.structure_id]
+        except KeyError:
+            pass
+
+        try:
+            return self._dossiers[fields.dossier_id]
+        except KeyError:
+            pass
+
+        return _StructureDetails('', '')
 
     def load_from_tsv(self, tsv_filename: str) -> None:
         """Load structures info from a TSV file."""
 
-        with open(tsv_filename, 'r') as tsv_file:
+        with open(tsv_filename, 'r', encoding='utf-8') as tsv_file:
             for structure in tsv_file:
                 dep_and_name, unused_postcode, structure_id = structure.strip().split('\t')
                 departement_id, name = dep_and_name.split('-')
                 self._details[structure_id] = _StructureDetails(departement_id, name)
+
+    def load_from_listing(self, xlsx_filename: str) -> None:
+        """Load dossier IDs sorted by structures from an XLSX file."""
+
+        xlsx_file = pandas.ExcelFile(xlsx_filename)
+        for structure_name in xlsx_file.sheet_names:
+            structure = _StructureDetails('', structure_name.upper())
+            try:
+                dossier_ids = xlsx_file.parse(structure_name).ID_DOSSIER
+            except AttributeError as error:
+                raise ValueError(f'No ID_DOSSIER column in {structure_name} sheet') from error
+            for dossier_id in dossier_ids:
+                self._dossiers[str(dossier_id)] = structure
 
 
 _STRUCTURES = _Structures()
@@ -142,12 +168,13 @@ def _get_answer_level(answer: typeform_pb2.ChoiceAnswer) -> int:
 
 
 def _make_filters(hidden: typeform_pb2.HiddenFields) -> output_pb2.FiltersExport:
-    departement_id, structure_name = _STRUCTURES[hidden.structure_id]
+    departement_id, structure_name = _STRUCTURES.match(hidden)
     return output_pb2.FiltersExport(
         age=int(hidden.age) if hidden.age else 0,
         counselor_id=hidden.counselor_id,
         current_policies=hidden.current_policies.split(','),
-        dossier_id=hashlib.sha1((hidden.dossier_id + _HASH_SALT).encode('utf-8')).hexdigest(),
+        dossier_id=hidden.dossier_id and
+        hashlib.sha1((hidden.dossier_id + _HASH_SALT).encode('utf-8')).hexdigest(),
         referent_id=hidden.referent_id,
         school_level=hidden.school_level,
         structure_id=hidden.structure_id,
@@ -183,7 +210,7 @@ class _UserStats:
     _skill_exports: Mapping[Tuple[str, str], output_pb2.SkillExport]
     _autonomous_domains: Set[str]
     _initial_autonomous_domains: Set[str]
-    _domain_achievements: Dict[Tuple[str, str], int]
+    _domain_achievements: dict[Tuple[str, str], int]
 
     def __init__(self, base_photo: typeform_pb2.Photo) -> None:
         self._filters = _make_filters(base_photo.hidden)
@@ -260,7 +287,7 @@ class _UserStats:
 
     def _parse_photo(
             self, is_first_answer: bool, date_in_months: int, photo: typeform_pb2.Photo) -> None:
-        autonomy_levels: Dict[str, Tuple[int, ...]] = collections.defaultdict(tuple)
+        autonomy_levels: dict[str, Tuple[int, ...]] = collections.defaultdict(tuple)
         for answer in photo.answers:
             domain, skill_id = _get_answer_id(answer)
             level = _get_answer_level(answer)
@@ -331,18 +358,20 @@ def prepare_domain_export(user: Sequence[typeform_pb2.Photo]) -> Iterator[_Outpu
     yield from stats.prepare_all_outputs(user)
 
 
-def _convert_to_json(output: _Filterable) -> Dict[str, Any]:
+def _convert_to_json(output: _Filterable) -> dict[str, Any]:
     result = json_format.MessageToDict(output, including_default_value_fields=True)
     if 'filters' in result:
         del result['filters']
-        result.update(json_format.MessageToDict(
-            output.filters, including_default_value_fields=True))
+        result |= json_format.MessageToDict(
+            output.filters, including_default_value_fields=True)
     return result
 
 
 def _prepare_all_outputs(all_photos: Sequence[typeform_pb2.Photo]) -> Iterator[_Output]:
     sorted_photos = _sort_photos(all_photos)
     for user_id, user in sorted_photos.items():
+        if not user_id:
+            continue
         for index, output_id, output in prepare_domain_export(user):
             yield _Output(index, f'{user_id}:{output_id}', output)
 
@@ -374,14 +403,20 @@ def _get_es_client_from_env() -> elasticsearch.Elasticsearch:
     """Get an Elasticsearch client configured from environment variables."""
 
     env = os.environ
+    api_key: Optional[tuple[str, ...]]
+    if api_key_encoded := env.get('ELASTICSEARCH_API_KEY'):
+        api_key = tuple(base64.urlsafe_b64decode(api_key_encoded).decode('ascii').split(':'))
+    else:
+        api_key = None
     return elasticsearch.Elasticsearch(
         env.get('ELASTICSEARCH_URL', 'http://elastic:changeme@elastic-dev:9200').split(','),
-        http_auth=_get_auth_from_env(env),
+        http_auth=None if api_key else _get_auth_from_env(env),
+        api_key=api_key,
         connection_class=elasticsearch.RequestsHttpConnection,
         timeout=600)
 
 
-def _convert_to_bulk_format(output_iterator: Iterator[_Output]) -> Iterator[Dict[str, Any]]:
+def _convert_to_bulk_format(output_iterator: Iterator[_Output]) -> Iterator[dict[str, Any]]:
     for index, output_id, output in output_iterator:
         yield {
             '_id': output_id,
@@ -393,7 +428,7 @@ def _convert_to_bulk_format(output_iterator: Iterator[_Output]) -> Iterator[Dict
         }
 
 
-def main(string_args: Optional[List[str]] = None, out: TextIO = sys.stdout) -> None:
+def main(string_args: Optional[list[str]] = None, out: TextIO = sys.stdout) -> None:
     """Export Radar documents to ElasticSearch for Kibana.
 
     Right now, its stdout output can be used as a request body for creating ElasticSearch documents
@@ -417,7 +452,15 @@ def main(string_args: Optional[List[str]] = None, out: TextIO = sys.stdout) -> N
         '--structures_tsv', type=str,
         help='A TSV file containing information about structures.',
         default=os.path.join(os.path.dirname(__file__), 'structures.tsv'))
+    parser.add_argument(
+        '--listing_dossiers_xlsx', type=str,
+        help='An XLSX file containing the list of dossier IDs with one sheet per structure.')
     args = parser.parse_args(string_args)
+
+    if args.structures_tsv:
+        _STRUCTURES.load_from_tsv(args.structures_tsv)
+    if args.listing_dossiers_xlsx:
+        _STRUCTURES.load_from_listing(args.listing_dossiers_xlsx)
 
     all_photos: Sequence[typeform_pb2.Photo]
     if args.fake:
@@ -430,9 +473,6 @@ def main(string_args: Optional[List[str]] = None, out: TextIO = sys.stdout) -> N
             if not ignore_before or photo.submitted_at.ToDatetime() >= ignore_before
         ]
 
-    if args.structures_tsv:
-        _STRUCTURES.load_from_tsv(args.structures_tsv)
-
     all_outputs = _prepare_all_outputs(all_photos)
 
     if args.dump:
@@ -441,10 +481,12 @@ def main(string_args: Optional[List[str]] = None, out: TextIO = sys.stdout) -> N
                 '_index': index,
                 '_id': output_id,
             }}))
+            out.write('\n')
             out.write(json.dumps({
                 'doc': _convert_to_json(output),
                 'doc_as_upsert': True,
             }))
+            out.write('\n')
     else:
         es_client = _get_es_client_from_env()
         for index in _ELASTICSERCH_INDICES:

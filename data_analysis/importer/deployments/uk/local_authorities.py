@@ -1,7 +1,7 @@
 """Importer for local authority names."""
 
 import csv
-from typing import Any, Dict, Iterable
+from typing import Any, Iterable
 
 from bob_emploi.data_analysis.lib import mongo
 
@@ -20,7 +20,7 @@ from bob_emploi.data_analysis.lib import mongo
 #         - NM for Name
 
 
-def csv2dicts(wards_counties_regions_local_authorities_csv: str) -> Iterable[Dict[str, Any]]:
+def csv2dicts(wards_counties_regions_local_authorities_csv: str) -> Iterable[dict[str, Any]]:
     """Prepare the cities from the wards file."""
 
     with open(wards_counties_regions_local_authorities_csv, 'rt', encoding='utf-8-sig') as file:

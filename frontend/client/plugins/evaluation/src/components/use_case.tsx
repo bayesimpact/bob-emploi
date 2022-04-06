@@ -1,7 +1,6 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 import GoogleIcon from 'mdi-react/GoogleIcon'
 import OpenNewIcon from 'mdi-react/OpenInNewIcon'
-import PropTypes from 'prop-types'
 import React, {useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useDispatch} from 'react-redux'
@@ -23,7 +22,7 @@ import ExternalLink from 'components/external_link'
 import Textarea from 'components/textarea'
 import {Routes} from 'components/url'
 
-import {DispatchAllEvalActions} from '../store/actions'
+import type {DispatchAllEvalActions} from '../store/actions'
 
 
 const emptyObject = {} as const
@@ -265,7 +264,7 @@ const UseCase = (props: UseCaseProps): React.ReactElement => {
     }
     const userDataAsProtoString = await dispatch(convertToProto('user', userData))
     if (userDataAsProtoString && !checkIfCanceled()) {
-      setUserExample(userDataAsProtoString)
+      setUserExample(encodeURIComponent(userDataAsProtoString))
     }
   }, [dispatch, userData])
   const createSimilarAccountUrl = Routes.ROOT + '?userExample=' + userExample
@@ -281,22 +280,11 @@ const UseCase = (props: UseCaseProps): React.ReactElement => {
     <Section title={t('Frustrations')} elements={totalFrustrations} />
     <div style={{textAlign: 'center'}}>
       <ExternalLink href={createSimilarAccountUrl}>
-        <Button type="back">{t('Créer un compte similaire')}</Button>
+        <Button type="discreet">{t('Créer un compte similaire')}</Button>
       </ExternalLink>
     </div>
     <Textarea value={json} readOnly={true} style={textareaStyle} />
   </div>
-}
-UseCase.propTypes = {
-  t: PropTypes.func.isRequired,
-  useCase: PropTypes.shape({
-    userData: PropTypes.shape({
-      projects: PropTypes.arrayOf(PropTypes.shape({
-        projectId: PropTypes.string,
-      }).isRequired),
-      registeredAt: PropTypes.string.isRequired,
-    }).isRequired,
-  }).isRequired,
 }
 
 

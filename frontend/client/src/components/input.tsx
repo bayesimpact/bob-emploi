@@ -6,9 +6,10 @@ import {Styles} from 'components/theme'
 
 
 type HTMLInputElementProps = React.HTMLProps<HTMLInputElement>
-interface Props
-  extends Pick<HTMLInputElementProps, Exclude<keyof HTMLInputElementProps, 'onChange' | 'ref'>> {
+interface Props extends Omit<HTMLInputElementProps, 'onChange' | 'ref'> {
   applyFunc?: (inputValue: string) => string
+  // Name is required for https://www.w3.org/TR/WCAG22/#identify-input-purpose
+  name: string
   onChange?: (inputValue: string) => void
   // If this is set to a non-zero value, the components will wait the given amount of time before
   // calling onChange, to avoid calling it for each key pressed. It also calls it on blur events

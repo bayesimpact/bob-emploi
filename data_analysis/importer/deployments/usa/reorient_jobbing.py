@@ -11,7 +11,7 @@ TODO(émilie): Add this script to the USA scheduled tasks.
 """
 
 import typing
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import pandas as pd
 
@@ -24,7 +24,7 @@ ONET_VERSION = '22_3'
 def csv2dicts(
         job_zones_tsv: str,
         occupation_data_txt: str,
-        market_scores_csv: Optional[str] = None) -> List[Dict[str, Any]]:
+        market_scores_csv: Optional[str] = None) -> list[dict[str, Any]]:
     """Import reorient jobbing data per county in MongoDB."""
 
     # Get the jobs, filter for zone1 and clean the columns
@@ -46,7 +46,7 @@ def csv2dicts(
 
     # Get market score and keep only jobs that have at least a market score
     # (offers per 10 candidates) of 13, as described here:
-    # https://github.com/bayesimpact/bob-emploi-internal/blob/master/data_analysis/notebooks/datasets/usa/market_stress.ipynb
+    # https://github.com/bayesimpact/bob-emploi-internal/blob/HEAD/data_analysis/notebooks/datasets/usa/market_stress.ipynb
     # (13 is the median of the USA market scores)
     if not market_scores_csv:
         market_scores = usa_cleaned_data.usa_compute_market_score()
@@ -84,7 +84,7 @@ def csv2dicts(
         .to_frame('departementJobStats')\
         .reset_index()
 
-    return typing.cast(List[Dict[str, Any]], jobbing_stats.to_dict(orient='records'))
+    return typing.cast(list[dict[str, Any]], jobbing_stats.to_dict(orient='records'))
 
 
 if __name__ == '__main__':

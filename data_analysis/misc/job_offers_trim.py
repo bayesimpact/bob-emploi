@@ -15,7 +15,7 @@ docker-compose run --rm data-analysis-prepare \
 
 import argparse
 import csv
-from typing import List, Optional, Set, TextIO
+from typing import Optional, Set, TextIO
 
 import tqdm
 
@@ -32,7 +32,7 @@ def _trim_job_offers_csv(args: argparse.Namespace, out: Optional[TextIO]) -> Non
 
     number_offers_estimate = 8500000
 
-    with open(args.out_csv, 'w') as out_file:
+    with open(args.out_csv, 'w', encoding='utf-8') as out_file:
         writer = csv.DictWriter(out_file, fieldnames=fieldnames)
         writer.writeheader()
 
@@ -52,7 +52,7 @@ def _trim_job_offers_csv(args: argparse.Namespace, out: Optional[TextIO]) -> Non
             writer.writerow(row)
 
 
-def main(string_args: Optional[List[str]] = None, out: Optional[TextIO] = None) -> None:
+def main(string_args: Optional[list[str]] = None, out: Optional[TextIO] = None) -> None:
     """Trim job offers CSV."""
 
     parser = argparse.ArgumentParser()

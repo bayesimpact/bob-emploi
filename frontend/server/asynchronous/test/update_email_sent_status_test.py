@@ -6,22 +6,21 @@ import unittest
 from unittest import mock
 
 import mailjet_rest
-import mongomock
 
+from bob_emploi.common.python.test import nowmock
 from bob_emploi.frontend.server.asynchronous import update_email_sent_status
+from bob_emploi.frontend.server.asynchronous.test import asynchronous_test_case
 from bob_emploi.frontend.server.test import mailjetmock
 
 
 @mailjetmock.patch()
-class MainTestCase(unittest.TestCase):
+class MainTestCase(asynchronous_test_case.TestCase):
     """Unit tests for the update_email_sent_status module."""
 
     def setUp(self) -> None:
         super().setUp()
-        self.database = mongomock.MongoClient().test
-        db_patcher = mock.patch(update_email_sent_status.__name__ + '._DB', self.database)
-        db_patcher.start()
-        self.addCleanup(db_patcher.stop)
+
+        self.database = self._user_db.user.database
 
     def _send_email(self, email_address: str = 'hello@example.com') -> int:
         return typing.cast(int, mailjet_rest.Client(version='v3.1').send.create({'Messages': [{
@@ -57,14 +56,14 @@ class MainTestCase(unittest.TestCase):
             'EMAIL_SENT_OPENED',
             updated_data.get('emailsSent')[0].get('status'))
 
-    @mock.patch(update_email_sent_status.__name__ + '.now')
+    @nowmock.patch()
     def test_refresh_old_status(self, mock_now: mock.MagicMock) -> None:
         """Test refreshing old status."""
 
         # On Nov. the 5th, the email had been opened.
         message_id = self._send_email('pascal@example.com')
         mailjetmock.get_message(message_id).open()
-        mock_now.get.return_value = datetime.datetime(2017, 11, 5, 15, 13)
+        mock_now.return_value = datetime.datetime(2017, 11, 5, 15, 13)
         self.database.user.insert_one({
             'other': 'field',
             'profile': {'email': 'pascal@example.com'},
@@ -76,7 +75,7 @@ class MainTestCase(unittest.TestCase):
         update_email_sent_status.main(['--disable-sentry'])
 
         # A week later the email link had been clicked.
-        mock_now.get.return_value = datetime.datetime(2017, 11, 13, 15, 13)
+        mock_now.return_value = datetime.datetime(2017, 11, 13, 15, 13)
         mailjetmock.get_message(message_id).click()
         update_email_sent_status.main(['--disable-sentry'])
 
@@ -130,7 +129,7 @@ class MainTestCase(unittest.TestCase):
         assert not_updated_user
         self.assertIsNone(not_updated_user.get('emailsSent')[0].get('status'))
 
-    @mock.patch(update_email_sent_status.__name__ + '.now')
+    @nowmock.patch()
     @mock.patch(update_email_sent_status.__name__ + '.mail_send')
     def test_multiple_checks(self, mock_mail: mock.MagicMock, mock_now: mock.MagicMock) -> None:
         """Test checking the status of an email several times."""
@@ -138,7 +137,7 @@ class MainTestCase(unittest.TestCase):
         # Note that in this test we do not use mailjetmock because what's
         # important is to check when calls to Mailjet are made (i.e. not too often).
 
-        mock_now.get.return_value = datetime.datetime(2017, 9, 8, 15, 13)
+        mock_now.return_value = datetime.datetime(2017, 9, 8, 15, 13)
         mock_mail.get_message.return_value = {
             'ArrivedAt': '2017-09-08T09:25:48Z',
             'ID': 6789,
@@ -157,34 +156,34 @@ class MainTestCase(unittest.TestCase):
         mock_mail.get_message.reset_mock()
 
         # Check again, an hour later.
-        mock_now.get.return_value = datetime.datetime(2017, 9, 8, 16, 13)
+        mock_now.return_value = datetime.datetime(2017, 9, 8, 16, 13)
         update_email_sent_status.main(['--disable-sentry'])
 
         mock_mail.get_message.assert_called_once()
         mock_mail.get_message.reset_mock()
 
         # Check again the next day.
-        mock_now.get.return_value = datetime.datetime(2017, 9, 9, 17, 13)
+        mock_now.return_value = datetime.datetime(2017, 9, 9, 17, 13)
         update_email_sent_status.main(['--disable-sentry'])
 
         mock_mail.get_message.assert_called_once()
         mock_mail.get_message.reset_mock()
 
         # Check again an hour later the next day.
-        mock_now.get.return_value = datetime.datetime(2017, 9, 9, 18, 13)
+        mock_now.return_value = datetime.datetime(2017, 9, 9, 18, 13)
         update_email_sent_status.main(['--disable-sentry'])
 
         mock_mail.get_message.assert_not_called()
 
         # Check again 15 days later.
-        mock_now.get.return_value = datetime.datetime(2017, 9, 24, 18, 14)
+        mock_now.return_value = datetime.datetime(2017, 9, 24, 18, 14)
         update_email_sent_status.main(['--disable-sentry'])
 
         mock_mail.get_message.assert_called_once()
         mock_mail.get_message.reset_mock()
 
         # Check again the next day.
-        mock_now.get.return_value = datetime.datetime(2017, 9, 25, 18, 14)
+        mock_now.return_value = datetime.datetime(2017, 9, 25, 18, 14)
         update_email_sent_status.main(['--disable-sentry'])
 
         mock_mail.get_message.assert_not_called()

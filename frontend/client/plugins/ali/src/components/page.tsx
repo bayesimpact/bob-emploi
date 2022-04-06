@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 import {useSelector} from 'react-redux'
 
@@ -8,8 +7,25 @@ import bobLogo from '../images/bob_blue_transparent.png'
 import rmlLogo from '../images/RML_logo_verti_rvb.png'
 
 import SaveButton from './save_button'
-import {MiniRootState} from '../store'
+import type {MiniRootState} from '../store'
 
+
+const getFooterLineStyle = (color: string, width: number): React.CSSProperties => ({
+  border: `1px solid ${color}`,
+  margin: '2px 0',
+  width: `${width}%`,
+})
+
+const PageDecorationBase: React.FC = (): React.ReactElement => {
+  return <div style={{marginBottom: 15, width: '100%'}}>
+    <hr style={getFooterLineStyle(colors.LOGO_ORANGE, 70)} />
+    <hr style={getFooterLineStyle(colors.LOGO_GREEN, 75)} />
+    <hr style={getFooterLineStyle(colors.LOGO_BLUE, 82)} />
+    <hr style={getFooterLineStyle(colors.LOGO_RED, 90)} />
+    <hr style={getFooterLineStyle(colors.LOGO_PURPLE, 95)} />
+  </div>
+}
+const PageDecoration = React.memo(PageDecorationBase)
 
 const saveButtonStyle: React.CSSProperties = {
   position: 'absolute',
@@ -29,10 +45,6 @@ const rmlLogoStyle: React.CSSProperties = {
   marginBottom: 8,
   width: 140,
 }
-const bobLogoContainerStyle: React.CSSProperties = {
-  alignItems: 'center',
-  display: 'flex',
-}
 const bobLogoTextStyle: React.CSSProperties = {
   marginRight: '0.3em',
 }
@@ -48,11 +60,11 @@ const logoStyle: React.CSSProperties = {
   width: 80,
 }
 
-
 interface PageProps {
   bottomButton?: React.ReactNode
   children?: React.ReactNode
   footerSize?: number
+  hasLargeDecoration?: boolean
   hasLogo?: boolean
   style?: React.CSSProperties
 }
@@ -63,7 +75,7 @@ const GenericPage: React.FC<PageProps> = (props: PageProps): React.ReactElement 
     ({user: {answers, priorities}}: MiniRootState): boolean =>
       !!(Object.keys(answers).length || Object.keys(priorities).length),
   )
-  const {bottomButton, children, footerSize = 150, hasLogo, style} = props
+  const {bottomButton, children, footerSize = 150, hasLargeDecoration, hasLogo, style} = props
   const pageStyle = useMemo((): React.CSSProperties => ({
     alignItems: 'center',
     backgroundColor: colors.BACKGROUND_GREY,
@@ -72,6 +84,11 @@ const GenericPage: React.FC<PageProps> = (props: PageProps): React.ReactElement 
     minHeight: '100vh',
     ...style,
   }), [style])
+  const bobLogoContainerStyle = useMemo((): React.CSSProperties => ({
+    alignItems: 'center',
+    display: 'flex',
+    ...!hasLargeDecoration && {marginBottom: 10},
+  }), [hasLargeDecoration])
   const footerStyle = useMemo((): React.CSSProperties => ({
     alignItems: 'center',
     display: 'flex',
@@ -97,16 +114,11 @@ const GenericPage: React.FC<PageProps> = (props: PageProps): React.ReactElement 
             <img src={bobLogo} style={bobLogoStyle} alt={config.productName} />
           </ExternalLink>
         </span>
+        {hasLargeDecoration ? null : <PageDecoration />}
       </div>
     </div>
+    {hasLargeDecoration ? <PageDecoration /> : null}
   </div>
-}
-GenericPage.propTypes = {
-  bottomButton: PropTypes.node,
-  children: PropTypes.node,
-  footerSize: PropTypes.number,
-  hasLogo: PropTypes.bool,
-  style: PropTypes.object,
 }
 
 

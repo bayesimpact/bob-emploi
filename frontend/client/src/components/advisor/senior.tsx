@@ -1,12 +1,12 @@
-import {TOptions} from 'i18next'
-import PropTypes from 'prop-types'
+import type {TOptions} from 'i18next'
 import React, {useMemo} from 'react'
 
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
 import Picto from 'images/advices/picto-senior.svg'
 
-import {CardProps, MethodSuggestionList} from './base'
+import type {CardProps} from './base'
+import {MethodSuggestionList} from './base'
 
 
 interface SeniorTipProps {
@@ -25,10 +25,6 @@ const TipBase: React.FC<SeniorTipProps> =
       {children}
     </div>
   }
-TipBase.propTypes = {
-  children: PropTypes.node.isRequired,
-  style: PropTypes.object,
-}
 const Tip = React.memo(TipBase)
 
 
@@ -55,9 +51,6 @@ const SeniorMethod: React.FC<CardProps> =
       </Trans>
     </MethodSuggestionList>
   }
-SeniorMethod.propTypes = {
-  profile: PropTypes.object.isRequired,
-}
 const ExpandedAdviceCardContent = React.memo(SeniorMethod)
 
 export default {ExpandedAdviceCardContent, Picto}

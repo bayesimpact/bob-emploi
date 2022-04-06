@@ -1,5 +1,4 @@
-import {TFunction} from 'i18next'
-import PropTypes from 'prop-types'
+import type {TFunction} from 'i18next'
 import React, {useCallback, useMemo} from 'react'
 
 import {inCityPrefix, lowerFirstLetter} from 'store/french'
@@ -12,7 +11,8 @@ import {useRadium} from 'components/radium'
 import Tag from 'components/tag'
 import Picto from 'images/advices/picto-commute.svg'
 
-import {CardProps, PercentageBoxes, useAdviceData} from './base'
+import type {CardProps} from './base'
+import {PercentageBoxes, useAdviceData} from './base'
 
 
 interface CommuteCitySuggestionProps {
@@ -40,7 +40,10 @@ const multiplierStyle: React.CSSProperties = {
 
 const CommuteCitySuggestionBase: React.FC<CommuteCitySuggestionProps> =
 (props: CommuteCitySuggestionProps): React.ReactElement => {
-  const {city: {name}, isTargetCity, onClick, style, t, targetCity: {name: targetName}} = props
+  const {
+    city: {distanceKm = 0, name, relativeOffersPerInhabitant = 0},
+    isTargetCity, onClick, style, t, targetCity: {name: targetName},
+  } = props
   const handleClick = useCallback((): void => {
     // TODO(cyrille): Add INSEE code to avoid sending user to an homonymous city.
     const searchOrigin = encodeURIComponent(`${targetName}, ${config.countryName}`)
@@ -73,7 +76,7 @@ const CommuteCitySuggestionBase: React.FC<CommuteCitySuggestionProps> =
     const {hasComplexTarget} = props
     const {prefix, cityName} = inCityPrefix(name || '', t)
     const hasSimpleLayout = !hasComplexTarget || isMobileVersion
-    return <button style={containerStyle} onClick={handleClick}>
+    return <button style={containerStyle} onClick={handleClick} type="button">
       <span style={targetCityStyle}>
         {hasSimpleLayout ? t("Plus d'offres à\u00A0:") :
           t('{{cityName}}, votre ville', {cityName: name})}
@@ -86,14 +89,13 @@ const CommuteCitySuggestionBase: React.FC<CommuteCitySuggestionProps> =
     </button>
   }
 
-  const {distanceKm = 0, relativeOffersPerInhabitant = 0} = props.city
   const roundedOffers = Math.round(relativeOffersPerInhabitant * 10) / 10
 
   const tagStyle = {
     backgroundColor: distanceKm > 20 ? colors.SQUASH : colors.GREENISH_TEAL,
   }
 
-  return <button {...radiumProps} onClick={handleClick}>
+  return <button {...radiumProps} onClick={handleClick} type="button">
     <span style={{fontWeight: 'bold', marginRight: 10}}>
       {name}
     </span>
@@ -109,21 +111,6 @@ const CommuteCitySuggestionBase: React.FC<CommuteCitySuggestionProps> =
         null}
     </span>
   </button>
-}
-CommuteCitySuggestionBase.propTypes = {
-  city: PropTypes.shape({
-    distanceKm: PropTypes.number,
-    name: PropTypes.string.isRequired,
-    relativeOffersPerInhabitant: PropTypes.number,
-  }).isRequired,
-  hasComplexTarget: PropTypes.bool,
-  isTargetCity: PropTypes.bool,
-  onClick: PropTypes.func,
-  style: PropTypes.object,
-  t: PropTypes.func.isRequired,
-  targetCity: PropTypes.shape({
-    name: PropTypes.string.isRequired,
-  }).isRequired,
 }
 const CommuteCitySuggestion = React.memo(CommuteCitySuggestionBase)
 
@@ -182,20 +169,6 @@ const Commute: React.FC<CardProps> = (props: CardProps): React.ReactElement|null
       {[targetCityList, ...otherCitiesList]}
     </AppearingList>
   </div>
-}
-Commute.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-  project: PropTypes.shape({
-    city: PropTypes.shape({
-      name: PropTypes.string.isRequired,
-    }),
-    targetJob: PropTypes.shape({
-      jobGroup: PropTypes.shape({
-        name: PropTypes.string.isRequired,
-      }).isRequired,
-    }),
-  }).isRequired,
-  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(Commute)
 

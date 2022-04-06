@@ -1,0 +1,264 @@
+syntax = "proto3";
+
+import "bob_emploi/frontend/api/boolean.proto";
+import "bob_emploi/frontend/api/email.proto";
+import "bob_emploi/frontend/api/geo.proto";
+import "bob_emploi/frontend/api/job.proto";
+import "bob_emploi/frontend/api/options.proto";
+
+package bayes.bob;
+option go_package="bayes.org/bob_emploi/frontend/api/user_profile";
+
+// Profile of a user, a job seeker.
+// Next IDs: 14, 30, 31.
+message UserProfile {
+  // Where the user is living.
+  // We wanted to distinguish where the user is living from where they search
+  // for a job, but we've simplified the onboarding.
+  // TODO(pascal): Clean up completely.
+  FrenchCity city = 1 [deprecated = true];
+
+  // The job, the user had just before being unemployed.
+  // We wanted to know the previous job of the user, but we simplified the onboarding.
+  // TODO(guillaume): Clean up completely.
+  Job latest_job = 3 [deprecated = true];
+
+  // The gender of the user, at least the one they prefer when we have to use a
+  // masculine or feminine grammatical form.
+  Gender gender = 5;
+
+  // The gender of the user, how they identify it themselves.
+  string custom_gender = 14;
+
+  // User's email.
+  string email = 7 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // User's first name (e.g.: Stephan).
+  string name = 8 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // User's last name (e.g.: Corpet).
+  // DEPRECATED: We don't display it anywhere anymore, so no need to ask for it.
+  string last_name = 16 [(field_usage) = PERSONAL_IDENTIFIER, deprecated = true];
+
+  // User's year of birth.
+  uint32 year_of_birth = 9;
+
+  // Whether the user has a recognized handicaped.
+  bool has_handicap = 19;
+
+  // Whether the user is a recognized army veteran.
+  bool is_army_veteran = 4;
+
+  // The user's races or ethnicities. Only used for analytics purposes.
+  // DO NOT USE in France.
+  repeated string races = 6 [(list_format) = REPLACEABLE];
+
+  // URL of a picture of the user.
+  string picture_url = 12 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // The current situation of the user (e.g.: Fresh graduate, lost job, etc...).
+  // TODO(pascal): Clean up old users and remove completly.
+  Situation situation = 10 [deprecated = true];
+
+  // The current family situation of the user (e.g.: single, with kids, etc.).
+  FamilySituation family_situation = 20;
+
+  // The users highest school degree.
+  DegreeLevel highest_degree = 18;
+
+  // User frustration reasons (e.g.: no offers, no answers, single parent, ...).
+  repeated Frustration frustrations = 32 [(list_format) = REPLACEABLE];
+
+  // User custom frustration reasons.
+  repeated string custom_frustrations = 22 [(list_format) = REPLACEABLE];
+
+  // The preferred salary unit of the user.
+  SalaryUnit preferred_salary_unit = 39 [(field_usage) = APP_ONLY];
+
+  // Whether the user opted-in to receive the newsletter.
+  bool is_newsletter_enabled = 11 [(field_usage) = APP_ONLY];
+
+  // Whether the user opted-in to receive a weekly summary of their activity.
+  bool is_weekly_summary_enabled = 13 [(field_usage) = APP_ONLY];
+
+  // Phone number of the user (only to call them to get more precise feedback).
+  string phone_number = 15 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // How the user is OK to give us feedback.
+  FeedbackMedium feedback_medium = 17 [(field_usage) = APP_ONLY];
+
+  // How did the user found out about the application.
+  UserOrigin origin = 21 [(field_usage) = APP_ONLY];
+
+  // The locale that the user prefers. E.g. "en", "nl", "fr", "fr@tu" (the tutoiement version of
+  // French).
+  string locale = 28 [(field_usage) = APP_ONLY];
+
+  // The driving licenses the user has.
+  repeated DrivingLicense driving_licenses = 24 [(list_format) = REPLACEABLE];
+
+  // Whether the user has the car driving license.
+  OptionalBool has_car_driving_license = 25;
+
+  // How frequent should we send coaching emails (aka focus emails).
+  EmailFrequency coaching_email_frequency = 26 [(field_usage) = APP_ONLY];
+
+  // Whether the user has completed their profile end to end.
+  // It can be used not to ask a question a second time when editing a project for instance.
+  // Do not rely on it for users before 2019-12.
+  bool has_completed_onboarding = 27 [(field_usage) = APP_ONLY];
+
+  // Set of languages on which we know the user's level. If a language is missing here, it means
+  // that we don't know its current level.
+  repeated LanguageKnowledge languages = 29;
+
+  // Whether the user is autonomous in their job search, and can apply without much help
+  // regarding how.
+  OptionalBool is_autonomous = 2;
+}
+
+enum Gender {
+  UNKNOWN_GENDER = 0;
+
+  MASCULINE = 1;
+
+  FEMININE = 2;
+}
+
+// The current job search situation of a user.
+enum Situation {
+  UNKNOWN_SITUATION = 0;
+
+  // First time looking for a job, e.g. a student.
+  FIRST_TIME = 1;
+
+  // User lost or quit their job. This might be due to an ending contract.
+  LOST_QUIT = 2;
+
+  // User is currently in a training.
+  IN_TRAINING = 3;
+
+  // User is currently employed.
+  EMPLOYED = 5;
+}
+
+// Family situation of a user.
+enum FamilySituation {
+  UNKNOWN_FAMILY_SITUATION = 0;
+  SINGLE = 1;
+  IN_A_RELATIONSHIP = 2;
+  FAMILY_WITH_KIDS = 3;
+  // The suffix below is needed because of a conflict with frustration.
+  SINGLE_PARENT_SITUATION = 4;
+}
+
+// Next ID: 17
+enum Frustration {
+  UNKNOWN_JOB_SEARCH_FRUSTRATION = 0;
+
+  // User cannot find enough offers that fit their criteria.
+  NO_OFFERS = 1;
+
+  // User does not receive enough answers to their applications.
+  NO_OFFER_ANSWERS = 2;
+
+  // User has trouble to come up with a decent CV.
+  RESUME = 3;
+
+  // User struggles in interview situations.
+  INTERVIEW = 4;
+
+  // User struggles finding a training.
+  TRAINING = 5;
+
+  // User has problems to stay motivated.
+  MOTIVATION = 6;
+
+  // User has problems with general time management.
+  TIME_MANAGEMENT = 7;
+
+  // User is a single parent.
+  SINGLE_PARENT = 8 [deprecated = true];
+
+  // User is handicaped.
+  // DEPRECATED: Use has_handicap boolean in profile instead.
+  HANDICAPED = 9 [deprecated = true];
+
+  // The users profile does not fit what recruiters have in mind.
+  ATYPIC_PROFILE = 10;
+
+  // The user feels discriminated against because of their age.
+  AGE_DISCRIMINATION = 11;
+
+  // The user feels discriminated against because of their sex.
+  SEX_DISCRIMINATION = 12;
+
+  // The user experience does not fit what the recruiters expect.
+  // Added on 09/07/2017.
+  EXPERIENCE = 13;
+
+  // The user fell they lack self-confidence.
+  SELF_CONFIDENCE = 14;
+
+  // The user has difficulty to come back to work after a long absence as a stay-at-home parent.
+  // Added on 2018-10-16.
+  STAY_AT_HOME_PARENT = 15;
+
+  // The user feels discriminated against because of their race/ethnicity.
+  RACE_DISCRIMINATION = 16;
+
+  // The user has difficulties speaking/writing/understing the country's main language(s).
+  // Added on 2020-11-06.
+  LANGUAGE = 17;
+
+  // The user has qualifications obtained in another country that are not recognized properly.
+  // Added on 2020-11-06.
+  FOREIGN_QUALIFICATIONS = 18;
+
+  // The user has difficulties getting access to childcare.
+  CHILD_CARE = 19;
+}
+
+enum FeedbackMedium {
+  UNKNOWN_FEEDBACL_MEDIUM = 0;
+
+  PHONE = 1;
+
+  ON_SITE = 2;
+
+  PHONE_OR_ON_SITE = 3;
+}
+
+enum UserOrigin {
+  UNKNOWN_ORIGIN = 0;
+
+  FROM_A_FRIEND = 1;
+
+  FROM_JOBSEEKER_GROUP = 2;
+
+  FROM_PE_WORKSHOP = 3;
+
+  FROM_PE_COUNSELOR = 4;
+
+  FROM_PRESS = 5;
+
+  FROM_WEBSITE = 6;
+
+  FROM_OTHER = 7;
+
+  // See http://www.pimms.org.
+  FROM_PIMMS = 8;
+}
+
+message LanguageKnowledge {
+  // Locale of the language (e.g. "fr", "fr-BE", "en", "nl").
+  string locale = 1;
+
+  // Whether the user has a good read/write knowledge of the language
+  // (at least B CEFRL level https://europass.cedefop.europa.eu/resources/european-language-levels-cefr).
+  OptionalBool has_written_knowledge = 2;
+
+  // Whether the user has a good listen/speak knowledge of the language
+  // (at least B CEFRL level https://europass.cedefop.europa.eu/resources/european-language-levels-cefr).
+  OptionalBool has_spoken_knowledge = 3;
+}

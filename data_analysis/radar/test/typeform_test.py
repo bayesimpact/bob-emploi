@@ -133,7 +133,7 @@ class FormTests(unittest.TestCase):
         files = os.listdir(self._tmpdir)
         self.assertEqual({'VAj8bEvq.json', 'beviMNpK.json'}, set(files))
 
-        with open(os.path.join(self._tmpdir, 'beviMNpK.json'), 'r') as json_file:
+        with open(os.path.join(self._tmpdir, 'beviMNpK.json'), 'r', encoding='utf-8') as json_file:
             definition = json.load(json_file)
         self.assertEqual({
             'id': 'beviMNpK',
@@ -144,9 +144,9 @@ class FormTests(unittest.TestCase):
     def test_upload_forms(self, mock_requests: requests_mock.Mocker) -> None:
         """Upload the files from a folder."""
 
-        with open(os.path.join(self._tmpdir, 'abcdef.json'), 'w') as json_file:
+        with open(os.path.join(self._tmpdir, 'abcdef.json'), 'w', encoding='utf-8') as json_file:
             json_file.write('{"id": "abcdef", "title": "Yipee"}')
-        with open(os.path.join(self._tmpdir, 'README.md'), 'w') as md_file:
+        with open(os.path.join(self._tmpdir, 'README.md'), 'w', encoding='utf-8') as md_file:
             md_file.write('Not related')
 
         mock_requests.put('https://api.typeform.com/forms/abcdef')

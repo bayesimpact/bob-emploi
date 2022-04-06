@@ -1,7 +1,8 @@
-import {AllActions, RootState} from 'store/actions'
-import {Logger, Properties} from 'store/logging'
+import type {AllActions, RootState} from 'store/actions'
+import type {Properties} from 'store/logging'
+import {Logger} from 'store/logging'
 
-import {AllUpskillingActions, UpskillingAction} from './actions'
+import type {AllUpskillingActions, UpskillingAction} from './actions'
 
 export default class UpskillingLogger extends Logger {
   public shouldLogAction(action: AllUpskillingActions): boolean {
@@ -29,9 +30,7 @@ export default class UpskillingLogger extends Logger {
     const properties: Properties = {}
     if (action.type === 'PAGE_IS_LOADED') {
       const path = action.location.pathname.slice(1)
-      if (path.startsWith('accueil')) {
-        properties['Step'] = path.slice(8)
-      } else {
+      if (!path.startsWith('accueil')) {
         properties['Section'] = path
       }
     }
@@ -43,13 +42,33 @@ export default class UpskillingLogger extends Logger {
     }
     if (action.type === 'UPSKILLING_SECTION_IS_SHOWN') {
       properties['Section'] = action.sectionId
-      properties['Number of jobs shown'] = action.nbJobsShown
+      if (action.nbJobsShown) {
+        properties['Number of jobs shown'] = action.nbJobsShown
+      }
+    }
+    // TODO(sil): This could be more strict.
+    if (action.type === 'UPSKILLING_SELECT_JOB' && action.evaluation) {
+      if (action.evaluation.interest) {
+        properties['Interest for the job'] = action.evaluation.interest
+      }
+      if (action.evaluation.trainingWill) {
+        properties['Training will for the job'] = action.evaluation.trainingWill
+      }
+    }
+    if (action.type === 'UPSKILLING_SET_CITY' && action.city.departementId) {
+      properties['Area'] = action.city.departementId
     }
     const upskillingAction = action as UpskillingAction<string>
     if (upskillingAction.sectionId && upskillingAction.job) {
       properties['Section'] = upskillingAction.sectionId
-      properties['Job'] = upskillingAction.job?.jobGroup?.samples?.[0]?.name ||
+      properties['Job'] = upskillingAction.job.jobGroup?.samples?.[0]?.name ||
         upskillingAction.job?.jobGroup?.romeId || 'unknown'
+      if (upskillingAction.job.perks) {
+        properties['Badges'] = upskillingAction.job.perks
+      }
+    }
+    if (action.type === 'UPSKILLING_REGISTER_COACHING') {
+      properties['Coach'] = action.coach
     }
     return {
       ...super.getEventProperties(action as AllActions, state),

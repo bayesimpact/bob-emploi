@@ -1,12 +1,14 @@
-
-import PropTypes from 'prop-types'
 import React from 'react'
 import {useTranslation} from 'react-i18next'
-import {Redirect, RouteComponentProps} from 'react-router'
+import type {RouteComponentProps} from 'react-router'
+import {Redirect} from 'react-router'
 
+import {STATIC_ADVICE_MODULES} from 'components/static'
 import {Routes} from 'components/url'
 
-import {STATIC_ADVICE_MODULES} from './static_advice/base'
+import registerAllStaticAdviceModules from './static_advice/register'
+
+registerAllStaticAdviceModules()
 
 
 type PagesProps = RouteComponentProps<{adviceId: string}>
@@ -21,13 +23,6 @@ const StaticAdvicePages = (props: PagesProps): React.ReactElement => {
     return <Redirect to={Routes.ROOT} />
   }
   return <module.Page {...props} t={t} />
-}
-StaticAdvicePages.propTypes = {
-  match: PropTypes.shape({
-    params: PropTypes.shape({
-      adviceId: PropTypes.string,
-    }).isRequired,
-  }).isRequired,
 }
 
 

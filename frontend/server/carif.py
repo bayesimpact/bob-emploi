@@ -2,7 +2,7 @@
 
 import logging
 import typing
-from typing import Any, Dict, List, Set, Union
+from typing import Any, Set, Union
 
 import requests
 import xmltodict
@@ -22,7 +22,7 @@ def _make_key(title: str, city: str) -> str:
 _XmlType = typing.TypeVar('_XmlType')
 
 
-def _get_list_from_xml(xml: Union[_XmlType, List[_XmlType]]) -> List[_XmlType]:
+def _get_list_from_xml(xml: Union[_XmlType, list[_XmlType]]) -> list[_XmlType]:
     """Wrap an xml node in a list, if it is not already a list of nodes.
 
     When querying an xml dict, we get a list if there are sibling elements with the same tag, but
@@ -35,14 +35,14 @@ def _get_list_from_xml(xml: Union[_XmlType, List[_XmlType]]) -> List[_XmlType]:
     return [xml]
 
 
-def get_trainings(rome_id: str, departement_id: str) -> List[training_pb2.Training]:
+def get_trainings(rome_id: str, departement_id: str) -> list[training_pb2.Training]:
     """Helper function to get trainings from the CARIF API.
 
     Carif sends us multiple trainings that have the same city and title, this function only return
     one training per city/title.
     """
 
-    no_trainings: List[training_pb2.Training] = []
+    no_trainings: list[training_pb2.Training] = []
 
     try:
         xml = requests.get(
@@ -51,7 +51,7 @@ def get_trainings(rome_id: str, departement_id: str) -> List[training_pb2.Traini
         logging.warning('XML request for intercarif failed:\n%s', error)
         return no_trainings
 
-    trainings: List[training_pb2.Training] = []
+    trainings: list[training_pb2.Training] = []
 
     if xml.status_code != 200:
         logging.warning('XML request for intercarif failed with error code %d', xml.status_code)
@@ -67,10 +67,10 @@ def get_trainings(rome_id: str, departement_id: str) -> List[training_pb2.Traini
 
     info = xmltodict.parse(xml.text)
 
-    offers: List[Dict[str, Any]] = []
+    offers: list[dict[str, Any]] = []
     try:
         offers = _get_list_from_xml(info['lheo-index']['resumes-offres']['resume-offre'])
-    except KeyError:
+    except (KeyError, TypeError):
         return no_trainings
 
     # Since our goal is not to give a super tool to find all the precise training and their
@@ -79,7 +79,7 @@ def get_trainings(rome_id: str, departement_id: str) -> List[training_pb2.Traini
 
     for offer in offers:
         try:
-            formacodes: List[str] = _get_list_from_xml(
+            formacodes: list[str] = _get_list_from_xml(
                 offer['domaine-formation']['code-FORMACODE'])
 
             name = offer['intitule-formation'].replace('\n', ' ')
@@ -100,7 +100,7 @@ def get_trainings(rome_id: str, departement_id: str) -> List[training_pb2.Traini
 
             trainings_keys.add(key)
             trainings.append(training)
-        except KeyError:
+        except (KeyError, TypeError):
             # If an important field is missing, we skip this training.
             logging.info('Skipping the offer from CARIF, an important field is missing: %s', offer)
             continue

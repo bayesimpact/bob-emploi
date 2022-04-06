@@ -193,10 +193,76 @@ class ExtractTests(unittest.TestCase):
             msgstr ""
         '''), output)
         self.assertIn('msgid "Modifiez votre mot de passe Bob Emploi"', output)
-        self.assertIn('msgid "http://r.bob-emploi.fr/tplimg/6u2u/b/p43g/2vro0.png"', output)
+        self.assertIn('msgid "https://t.bob-emploi.fr/tplimg/6u2u/b/p43g/2vro0.png"', output)
         self.assertIn('msgid "https://www.google.com?hl=fr"', output)
         self.assertIn('msgid "https://www.google.com?q={0}&amp;hl=fr"', output)
         self.assertIn('msgid "{0}/home"', output)
+
+    def test_mjml_as_xml(self) -> None:
+        """Extract tool used on a folder with MJML stored as XML."""
+
+        output = extract_mailjet_strings.main(
+            (path.join(path.dirname(__file__), 'testdata/mjml-as-xml'), ),
+        )
+        self.assertTrue(output.startswith(
+            textwrap.dedent('''\
+                #
+                msgid ""
+                msgstr ""
+
+            ''')), msg=output)
+        self.assertIn(textwrap.dedent('''
+            msgid "Une petite vidéo que j'aimerais vous partager"
+            msgstr ""
+        '''), output)
+        self.assertIn('msgid "https://t.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png"', output)
+        self.assertIn('msgid "https://t.bob-emploi.fr/tplimg/6u2u/b/4psz/24mpu.png"', output)
+
+    def test_load_from_json(self) -> None:
+        """Extract tool used on files loaded from a json file."""
+
+        output = extract_mailjet_strings.main(
+            (path.join(path.dirname(__file__), 'testdata/index.json'), ),
+        )
+        self.assertTrue(output.startswith(
+            textwrap.dedent('''\
+                #
+                msgid ""
+                msgstr ""
+
+            ''')), msg=output)
+        self.assertIn(textwrap.dedent('''
+            msgid "Une petite vidéo que j'aimerais vous partager"
+            msgstr ""
+        '''), output)
+        self.assertIn(textwrap.dedent('''
+            msgid "Modifier le mot de passe"
+            msgstr ""
+
+        '''), output)
+
+    def test_load_from_json_no_translation(self) -> None:
+        """Json file specify some templates not to translates."""
+
+        output = extract_mailjet_strings.main(
+            (path.join(path.dirname(__file__), 'testdata/index-exclude.json'), ),
+        )
+        self.assertTrue(output.startswith(
+            textwrap.dedent('''\
+                #
+                msgid ""
+                msgstr ""
+
+            ''')), msg=output)
+        self.assertIn(textwrap.dedent('''
+            msgid "Une petite vidéo que j'aimerais vous partager"
+            msgstr ""
+        '''), output)
+        self.assertNotIn(textwrap.dedent('''
+            msgid "Modifier le mot de passe"
+            msgstr ""
+
+        '''), output)
 
 
 if __name__ == '__main__':

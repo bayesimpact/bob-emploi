@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "bob_emploi/frontend/api/options.proto";
+
 package bayes.bob;
 option go_package="bayes.org/bob_emploi/frontend/api/geo";
 
@@ -74,6 +76,8 @@ message FrenchCity {
 
 // Type of geographical area (order matters).
 enum AreaType {
+  option (is_enum_translatable) = true;
+
   UNKNOWN_AREA_TYPE = 0;
   CITY = 1;
   DEPARTEMENT = 2;

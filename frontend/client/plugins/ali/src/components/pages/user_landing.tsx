@@ -44,10 +44,10 @@ const logoStyle: React.CSSProperties = {
 }
 
 
-// TODO(sil): Update bottom part.
 const UserLandingPage = (): React.ReactElement => {
   useFastForward(undefined, [], Routes.HUB_PAGE)
-  return <GenericPage bottomButton={<Button to={Routes.HUB_PAGE}>Suivant</Button>}>
+  return <GenericPage
+    hasLargeDecoration={true} bottomButton={<Button to={Routes.HUB_PAGE}>Suivant</Button>}>
     <div style={contentStyle}>
       <img src={aliLogo} alt="logo ali" style={logoStyle} />
       <div style={textPanelStyle}>

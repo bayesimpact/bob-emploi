@@ -24,7 +24,7 @@ def main(
 
     output_file: TextIO
     if isinstance(output_csv, str):
-        output_file = open(output_csv, 'w')
+        output_file = open(output_csv, 'w', encoding='utf-8')
     else:
         output_file = output_csv
 

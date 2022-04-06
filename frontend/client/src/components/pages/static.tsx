@@ -31,5 +31,4 @@ const StaticPages = (): React.ReactElement => <Switch>
   <Route path={Routes.STATIC_ADVICE_PATH} component={StaticAdvice} />
 </Switch>
 
-
 export default React.memo(StaticPages)

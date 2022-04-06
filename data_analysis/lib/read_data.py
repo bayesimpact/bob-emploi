@@ -9,7 +9,7 @@ import glob
 import os
 import re
 import typing
-from typing import Any, Dict, Iterable, List
+from typing import Any, Iterable
 
 import pandas as pd
 import xmltodict
@@ -61,27 +61,27 @@ def parse_intitule_fap(filename: str = 'data/intitule_fap2009.txt') -> pd.DataFr
     return faps_df
 
 
-def load_fiches_from_xml(xml_folder: str) -> List[Dict[Any, Any]]:
+def load_fiches_from_xml(xml_folder: str) -> list[dict[Any, Any]]:
     """Load ROME files ("fiches" in French) from XML."""
 
     fiche_dicts = []
     for fname in glob.glob(os.path.join(xml_folder, '*.xml')):
-        with open(fname) as xml_file:
+        with open(fname, encoding='utf-8') as xml_file:
             fiche = xmltodict.parse(xml_file.read())
             fiche_dicts.append(fiche['fiche_emploi_metier'])
     return fiche_dicts
 
 
-def _extract_path(tree: Dict[str, Any], path: Iterable[str]) -> List[Any]:
+def _extract_path(tree: dict[str, Any], path: Iterable[str]) -> list[Any]:
     res = copy.copy(tree)
     for elem in path:
-        res = typing.cast(Dict[str, Any], res.get(elem))
+        res = typing.cast(dict[str, Any], res.get(elem))
     if isinstance(res, list):
         return res
     return [res]
 
 
-def _extract_activities(tree: Dict[str, Any]) -> List[Dict[str, str]]:
+def _extract_activities(tree: dict[str, Any]) -> list[dict[str, str]]:
     acts = _extract_path(
         tree, ['bloc_activites_de_base', 'activites_de_base', 'item_ab'])
     for act in acts:
@@ -91,8 +91,8 @@ def _extract_activities(tree: Dict[str, Any]) -> List[Dict[str, str]]:
     return acts
 
 
-def _compute_riasec_profile(activities: Iterable[Dict[str, str]]) \
-        -> Dict[str, int]:
+def _compute_riasec_profile(activities: Iterable[dict[str, str]]) \
+        -> dict[str, int]:
     riasec_profile = {c: 0 for c in 'RIASEC'}
     for act in activities:
         if 'riasec_majeur' in act:
@@ -100,8 +100,8 @@ def _compute_riasec_profile(activities: Iterable[Dict[str, str]]) \
     return riasec_profile
 
 
-def _extract_skills(tree: Dict[str, Dict[str, str]]) -> List[Dict[str, str]]:
-    action_skills: List[Dict[str, str]] = []
+def _extract_skills(tree: dict[str, dict[str, str]]) -> list[dict[str, str]]:
+    action_skills: list[dict[str, str]] = []
     acts_block = tree['bloc_activites_de_base']
     theory_skills = _extract_path(
         acts_block, ['savoir_theorique_et_proceduraux', 'item_ab_stp'])
@@ -115,7 +115,7 @@ def _extract_skills(tree: Dict[str, Dict[str, str]]) -> List[Dict[str, str]]:
     return res
 
 
-def fiche_extractor(fiche: Dict[str, Any]) -> Dict[str, Any]:
+def fiche_extractor(fiche: dict[str, Any]) -> dict[str, Any]:
     """Extract info from a ROME file ("fiche" in French).
 
     Args:
@@ -125,7 +125,7 @@ def fiche_extractor(fiche: Dict[str, Any]) -> Dict[str, Any]:
     """
 
     fiche = copy.deepcopy(fiche)
-    rome = typing.cast(Dict[str, Any], copy.copy(fiche['bloc_code_rome']))
+    rome = typing.cast(dict[str, Any], copy.copy(fiche['bloc_code_rome']))
     rome['description'] = _extract_path(fiche, ['definition', '#text'])
     rome['work_cond'] = _extract_path(
         fiche, ['condition_exercice_activite', '#text'])

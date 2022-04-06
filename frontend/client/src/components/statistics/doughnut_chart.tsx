@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 import {useTranslation} from 'react-i18next'
 
@@ -68,6 +67,8 @@ const captionRowStyle: React.CSSProperties = {
 }
 
 const captionEltStyle = (color?: string): React.CSSProperties => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ['WebkitPrintColorAdjust' as any]: 'exact',
   backgroundColor: color,
   borderRadius: '.2em',
   height: '1em',
@@ -126,13 +127,6 @@ const DoughnutChart: React.FC<Props> = (props: Props): React.ReactElement => {
     </div>
     <DataSource style={{marginTop: 30}}>{translate(...bobSourceText)}</DataSource>
   </figure>
-}
-DoughnutChart.propTypes = {
-  counts: PropTypes.objectOf(PropTypes.number.isRequired).isRequired,
-  labels: PropTypes.arrayOf(PropTypes.shape({
-    name: PropTypes.string.isRequired,
-    value: PropTypes.string.isRequired,
-  }).isRequired).isRequired,
 }
 
 

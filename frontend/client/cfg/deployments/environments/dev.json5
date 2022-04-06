@@ -1,0 +1,11 @@
+{
+  aliAmplitudeToken: '84272c8018835dff932e59447cc33694',
+  amplitudeToken: '84272c8018835dff932e59447cc33694',
+  facebookSSOAppId: '1048782155234293',
+  googleSSOClientId: '1052239456978-tgef7mpqd3qoq723hag0v45035nqnivt.apps.googleusercontent.com',
+  googleTMID: 'GTM-M499WVP',
+  googleUAID: 'UA-97637389-2',
+  linkedInClientId: '86r4xh5py0mw9k',
+  sentryDSN: 'https://3e822889b32a40b28722074cc68e1bc5@sentry.io/192128',
+  zendeskDomain: '',
+}

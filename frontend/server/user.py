@@ -4,8 +4,9 @@ import datetime
 import itertools
 import os
 import re
+import textwrap
 import typing
-from typing import Literal
+from typing import Any, Callable, Literal, Optional
 from urllib import parse
 
 import bson
@@ -13,12 +14,16 @@ from bson import objectid
 import flask
 from google.protobuf import json_format
 from google.protobuf import timestamp_pb2
+from pymongo import collection as pymongo
 import requests
 
 from bob_emploi.common.python import now
+from bob_emploi.common.python import proto as common_proto
 from bob_emploi.frontend.server import advisor
 from bob_emploi.frontend.server import auth
+from bob_emploi.frontend.server import auth_token
 from bob_emploi.frontend.server import diagnostic
+from bob_emploi.frontend.server import features
 from bob_emploi.frontend.server import i18n
 from bob_emploi.frontend.server import jobs
 from bob_emploi.frontend.server import mongo
@@ -27,6 +32,7 @@ from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server import strategist
 from bob_emploi.frontend.server import tick
 from bob_emploi.frontend.api import diagnostic_pb2
+from bob_emploi.frontend.api import features_pb2
 from bob_emploi.frontend.api import feedback_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
@@ -45,7 +51,15 @@ _EMAIL_REGEX = re.compile(r'(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)')
 
 # A Slack WebHook URL to send final reports to. Defined in the Incoming
 # WebHooks of https://bayesimpact.slack.com/apps/manage/custom-integrations
-_SLACK_WEBHOOK_URL = os.getenv('SLACK_WEBHOOK_URL')
+# TODO(cyrille): Remove the fallback once the feedback URL is set up.
+_SLACK_FEEDBACK_WEBHOOK_URL = \
+    os.getenv('SLACK_FEEDBACK_WEBHOOK_URL', os.getenv('SLACK_WEBHOOK_URL'))
+
+_UPSKILLING_SLACK_WEBHOOK_URL = \
+    os.getenv('UPSKILLING_SLACK_WEBHOOK_URL', _SLACK_FEEDBACK_WEBHOOK_URL)
+
+# An email address where the processing done in server#direct_email_to_user will happen.
+_ANONYMOUS_USER_EMAIL = os.getenv('ANONYMOUS_USER_EMAIL')
 
 # For testing on old users, we sometimes want to enable advisor for newly
 # created users.
@@ -82,10 +96,14 @@ def safe_object_id(_id: str) -> objectid.ObjectId:
             400, f'L\'identifiant "{_id}" n\'est pas un identifiant MongoDB valide.')
 
 
-def _save_low_level(user_data: user_pb2.User, is_new_user: bool = False) -> user_pb2.User:
-    user_collection = _get_user_db().user
-    user_dict = json_format.MessageToDict(user_data)
-    user_dict.update(SERVER_TAG)
+def save_low_level(
+        user_data: user_pb2.User, *,
+        is_new_user: bool = False,
+        collection: Optional[pymongo.Collection] = None) -> user_pb2.User:
+    """Save the user almost 'as is' in database."""
+
+    user_collection = collection or _get_user_db().user
+    user_dict = json_format.MessageToDict(user_data) | SERVER_TAG
     user_dict.pop('userId', None)
     if is_new_user:
         result = user_collection.insert_one(user_dict)
@@ -108,19 +126,13 @@ def _populate_feature_flags(user_proto: user_pb2.User) -> None:
         user_proto.features_enabled.pole_emploi = True
     if _EXCLUDE_FROM_ANALYTICS_REGEXP.search(user_proto.profile.email):
         user_proto.features_enabled.exclude_from_analytics = True
-    # TODO(pascal): Replace by a central deployment config.
-    if os.getenv('BOB_DEPLOYMENT') == 'uk':
-        any_unknown_job = any(
-            project.has_clear_project and
-            not project.target_job.job_group.rome_id
-            for project in user_proto.projects)
-        user_proto.features_enabled.job_unknown_disabled = not any_unknown_job
 
 
-def get_user_data(user_id: str) -> user_pb2.User:
+def get_user_data(user_id: str, *, collection: Optional[pymongo.Collection] = None) \
+        -> user_pb2.User:
     """Load user data from DB."""
 
-    user_dict = _get_user_db().user.find_one(
+    user_dict = (collection or _get_user_db().user).find_one(
         {'_id': safe_object_id(user_id)})
     user_proto = proto.create_from_mongo(user_dict, user_pb2.User, 'user_id', always_create=False)
     if not user_proto or user_proto.HasField('deleted_at'):
@@ -137,14 +149,54 @@ def get_user_data(user_id: str) -> user_pb2.User:
     return user_proto
 
 
+def delete_user(
+        user_data: user_pb2.User, token: str, *,
+        user_db: Optional[mongo.UsersDatabase] = None) -> Optional[str]:
+    """Delete a user."""
+
+    if not user_db:
+        user_db = _get_user_db()
+
+    filter_user: Optional[dict[str, Any]]
+    if user_data.user_id:
+        try:
+            auth_token.check_token(user_data.user_id, token, role='unsubscribe')
+        except ValueError:
+            try:
+                auth_token.check_token(user_data.user_id, token, role='auth')
+            except ValueError:
+                flask.abort(403, i18n.flask_translate("Mauvais jeton d'authentification"))
+        filter_user = {'_id': safe_object_id(user_data.user_id)}
+    elif user_data.profile.email:
+        try:
+            auth_token.check_admin_token(token)
+        except ValueError:
+            flask.abort(403, i18n.flask_translate(
+                'Accès refusé, action seulement pour le super-administrateur.'))
+        filter_user = user_db.user.find_one({
+            'hashedEmail': auth.hash_user_email(user_data.profile.email)}, {'_id': 1})
+    else:
+        flask.abort(400, i18n.flask_translate(
+            'Impossible de supprimer un utilisateur sans son ID.'))
+
+    if not filter_user:
+        return None
+
+    user_proto = get_user_data(str(filter_user['_id']), collection=user_db.user)
+    if not auth.delete_user(user_proto, user_db):
+        flask.abort(500, i18n.flask_translate('Erreur serveur, impossible de supprimer le compte.'))
+
+    return str(filter_user['_id'])
+
+
 def _update_returning_user(
-        user_data: user_pb2.User, force_update: bool = False, has_set_email: bool = False) \
+        user_data: user_pb2.User, /, force_update: bool = False, has_set_email: bool = False) \
         -> timestamp_pb2.Timestamp:
     if user_data.HasField('requested_by_user_at_date'):
         start_of_day = now.get().replace(hour=0, minute=0, second=0, microsecond=0)
         if user_data.requested_by_user_at_date.ToDatetime() >= start_of_day:
             if force_update:
-                _save_low_level(user_data)
+                save_low_level(user_data)
             return user_data.requested_by_user_at_date
         last_connection = timestamp_pb2.Timestamp()
         last_connection.CopyFrom(user_data.requested_by_user_at_date)
@@ -155,19 +207,17 @@ def _update_returning_user(
         user_data.hashed_email = auth.hash_user_email(user_data.profile.email)
 
     if last_connection.ToDatetime() < datetime.datetime(2019, 10, 25) and \
-            user_data.features_enabled.strat_two != user_pb2.ACTIVE:
+            user_data.features_enabled.strat_two != features_pb2.ACTIVE:
         for project in user_data.projects:
             _save_project(project, project, user_data)
 
     if has_set_email:
-        base_url = parse.urljoin(flask.request.base_url, '/')[:-1]
+        base_url = flask.request.url_root
         advisor.maybe_send_late_activation_emails(
             user_data, mongo.get_connections_from_env().stats_db, base_url)
 
-    user_data.requested_by_user_at_date.FromDatetime(now.get())
-    # No need to pollute our DB with super precise timestamps.
-    user_data.requested_by_user_at_date.nanos = 0
-    _save_low_level(user_data)
+    common_proto.set_date_now(user_data.requested_by_user_at_date)
+    save_low_level(user_data)
 
     return last_connection
 
@@ -186,12 +236,69 @@ def _create_new_project_id(user_data: user_pb2.User) -> str:
     raise ValueError('Should never happen as itertools.count() does not finish')  # pragma: no-cover
 
 
-def give_feedback(feedback: feedback_pb2.Feedback, slack_text: str) -> None:
+def give_feedback(
+        feedback: feedback_pb2.Feedback, slack_text: str, *,
+        users_database: Optional[mongo.UsersDatabase] = None) -> None:
     """Save feedback in database, and publish it to slack."""
 
-    if slack_text and _SLACK_WEBHOOK_URL:
-        requests.post(_SLACK_WEBHOOK_URL, json={'text': f':mega: {slack_text}'})
-    _get_user_db().feedbacks.insert_one(json_format.MessageToDict(feedback))
+    # TODO(cyrille): Move the upskilling part to the jobflix blueprint/app.
+    if feedback.source == feedback_pb2.UPSKILLING_FEEDBACK:
+        webhook_url = _UPSKILLING_SLACK_WEBHOOK_URL
+    else:
+        webhook_url = _SLACK_FEEDBACK_WEBHOOK_URL
+    if slack_text and webhook_url:
+        requests.post(webhook_url, json={'text': f':mega: {slack_text}'})
+    (users_database or _get_user_db()).feedbacks.insert_one(json_format.MessageToDict(feedback))
+
+
+def give_project_feedback(
+        user_id: str, has_email: bool, project: project_pb2.Project, *,
+        base_feedback: feedback_pb2.Feedback = feedback_pb2.Feedback(),
+        header: str = '', prefix: str = '') -> None:
+    """Give feedback on project."""
+
+    if not project.feedback.text:
+        return
+    user_url = parse.urljoin(
+        flask.request.url_root, f'eval?userId={user_id}')
+    feedback = '\n> '.join(project.feedback.text.split('\n'))
+    if project.feedback.score:
+        stars = ':star:' * project.feedback.score
+        header += f'[{stars}] <{user_url}|{user_id}>\n'
+    elif project.feedback.challenge_agreement_score:
+        self_diagnostic: str
+        if project.original_self_diagnostic.status == diagnostic_pb2.UNDEFINED_SELF_DIAGNOSTIC:
+            self_diagnostic = "don't know"
+        elif project.original_self_diagnostic.status == diagnostic_pb2.OTHER_SELF_DIAGNOSTIC:
+            self_diagnostic = project.original_self_diagnostic.category_details
+        else:
+            self_diagnostic = project.original_self_diagnostic.category_id
+        stars = f'Agree with {project.diagnostic.category_id}: ' \
+            f'{project.feedback.challenge_agreement_score - 1}/4'
+        feedback = f'Self diagnosed to: {self_diagnostic}\n>{feedback}'
+        header += f'[{stars}] <{user_url}|{user_id}>\n'
+    if _ANONYMOUS_USER_EMAIL and has_email:
+        mail_params = parse.urlencode({
+            'body': textwrap.dedent('''\
+                # Please, keep the user ID as the beginning of your subject.
+                # It will be deleted by the email pre-processing.
+                # Also, please remove these lines
+                # (pre-processing should take care of it in a future version).'''),
+            'subject': f'{prefix}:{user_id} # Your message here',
+        })
+        prefilled_email = f'mailto:{_ANONYMOUS_USER_EMAIL}?{mail_params}'
+        header += f'<{prefilled_email}|Send an email>\n'
+    slack_text = f'{header}> {feedback}'
+    saved_feedback = feedback_pb2.Feedback(
+        user_id=str(user_id),
+        project_id=str(project.project_id),
+        feedback=project.feedback.text,
+        source=feedback_pb2.PROJECT_FEEDBACK,
+        score=project.feedback.score)
+    # Override input fields.
+    saved_feedback.MergeFrom(base_feedback)
+    give_feedback(
+        saved_feedback, slack_text=slack_text, users_database=_get_user_db().with_prefix(prefix))
 
 
 def _save_project(
@@ -207,8 +314,7 @@ def _save_project(
     if not project.project_id:
         # Add ID, timestamp and stats to new projects
         project.project_id = _create_new_project_id(user_data)
-        project.created_at.FromDatetime(now.get())
-        project.created_at.nanos = 0
+        common_proto.set_date_now(project.created_at)
 
     database = mongo.get_connections_from_env().stats_db
     tick.tick('Populate local stats')
@@ -223,78 +329,61 @@ def _save_project(
 
     tick.tick('Advisor')
     advisor.maybe_advise(
-        user_data, project, database, parse.urljoin(flask.request.base_url, '/')[:-1])
+        user_data, project, database, flask.request.url_root)
 
     tick.tick('Strategies')
     strategist.maybe_strategize(user_data, project, database)
 
     tick.tick('New feedback')
     if project.feedback.text and not previous_project.feedback.text:
-        user_url = parse.urljoin(
-            flask.request.base_url, f'/eval?userId={user_data.user_id}')
-        feedback = '\n> '.join(project.feedback.text.split('\n'))
-        if project.feedback.score:
-            stars = ':star:' * project.feedback.score
-        elif project.feedback.challenge_agreement_score:
-            self_diagnostic: str
-            if project.original_self_diagnostic.status == diagnostic_pb2.UNDEFINED_SELF_DIAGNOSTIC:
-                self_diagnostic = "don't know"
-            elif project.original_self_diagnostic.status == diagnostic_pb2.OTHER_SELF_DIAGNOSTIC:
-                self_diagnostic = project.original_self_diagnostic.category_details
-            else:
-                self_diagnostic = project.original_self_diagnostic.category_id
-            stars = f'Agree with {project.diagnostic.category_id}: ' \
-                f'{project.feedback.challenge_agreement_score - 1}/4'
-            feedback = f'Self diagnosed to: {self_diagnostic}\n>{feedback}'
-        slack_text = f'[{stars}] <{user_url}|{user_data.user_id}>\n> {feedback}'
-        give_feedback(
-            feedback_pb2.Feedback(
-                user_id=str(user_data.user_id),
-                project_id=str(project.project_id),
-                feedback=project.feedback.text,
-                source=feedback_pb2.PROJECT_FEEDBACK,
-                score=project.feedback.score),
-            slack_text=slack_text)
+        give_project_feedback(user_data.user_id, '@' in user_data.profile.email, project)
 
     tick.tick('Process project end')
     return project
 
 
-def save_user(user_data: user_pb2.User, is_new_user: bool) \
-        -> user_pb2.User:
+_SaveProject = Callable[
+    [project_pb2.Project, project_pb2.Project, user_pb2.User], project_pb2.Project]
+
+
+def save_user(
+        user_data: user_pb2.User, is_new_user: bool,
+        collection: Optional[pymongo.Collection] = None,
+        save_project: _SaveProject = _save_project) -> user_pb2.User:
     """Save a user, updating all the necessary computed fields while doing so."""
 
     tick.tick('Save user start')
 
     if is_new_user:
         previous_user_data = user_data
+        features.assign_features(user_data.features_enabled, is_new=True)
     else:
         tick.tick('Load old user data')
-        previous_user_data = get_user_data(user_data.user_id)
+        previous_user_data = get_user_data(user_data.user_id, collection=collection)
         if user_data.revision and previous_user_data.revision > user_data.revision:
             # Do not overwrite newer data that was saved already: just return it.
             return previous_user_data
+        features.assign_features(previous_user_data.features_enabled, is_new=False)
 
     if not previous_user_data.registered_at.seconds:
-        user_data.registered_at.FromDatetime(now.get())
-        # No need to pollute our DB with super precise timestamps.
-        user_data.registered_at.nanos = 0
+        common_proto.set_date_now(user_data.registered_at)
         # Disable Advisor for new users in tests.
         if ADVISOR_DISABLED_FOR_TESTING:
-            user_data.features_enabled.advisor = user_pb2.CONTROL
-            user_data.features_enabled.advisor_email = user_pb2.CONTROL
+            user_data.features_enabled.advisor = features_pb2.CONTROL
+            user_data.features_enabled.advisor_email = features_pb2.CONTROL
     elif not _is_test_user(previous_user_data):
         user_data.registered_at.CopyFrom(previous_user_data.registered_at)
         user_data.features_enabled.advisor = previous_user_data.features_enabled.advisor
         user_data.features_enabled.strat_two = previous_user_data.features_enabled.strat_two
 
+    # TODO(pascal): Clean up those multiple populate_feature_flags floating around.
     _populate_feature_flags(user_data)
 
     for project in user_data.projects:
         previous_project = next(
             (p for p in previous_user_data.projects if p.project_id == project.project_id),
             project_pb2.Project())
-        _save_project(project, previous_project, user_data)
+        save_project(project, previous_project, user_data)
 
     if user_data.profile.coaching_email_frequency != \
             previous_user_data.profile.coaching_email_frequency:
@@ -314,14 +403,13 @@ def save_user(user_data: user_pb2.User, is_new_user: bool) \
         _populate_feature_flags(user_data)
 
         if user_data.profile.email and not previous_user_data.profile.email:
-            base_url = parse.urljoin(flask.request.base_url, '/')[:-1]
             advisor.maybe_send_late_activation_emails(
-                user_data, mongo.get_connections_from_env().stats_db, base_url)
+                user_data, mongo.get_connections_from_env().stats_db, flask.request.url_root)
 
     user_data.revision += 1
 
     tick.tick('Save user')
-    _save_low_level(user_data, is_new_user=is_new_user)
+    save_low_level(user_data, is_new_user=is_new_user, collection=collection)
     tick.tick('Return user proto')
 
     return user_data
@@ -353,7 +441,7 @@ def _copy_unmodifiable_fields(previous_user_data: user_pb2.User, user_data: user
     from the previous state.
     """
 
-    if _is_test_user(user_data):
+    if _is_test_user(user_data) or previous_user_data.features_enabled.alpha:
         # Test users can do whatever they want.
         return
     for field in ('features_enabled', 'last_email_sent_at', 'ma_voie'):

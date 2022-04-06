@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 import {useTranslation} from 'react-i18next'
 
@@ -11,20 +10,22 @@ import {Styles} from 'components/theme'
 import noCoverImage from 'images/no-job-cover.png'
 
 
-interface CoverImageWithTextProps {
+interface CoverImageWithTitleAndTextProps {
   children?: React.ReactNode
   cityName?: string
   cityStyle?: React.CSSProperties
   imageStyle?: React.CSSProperties
   jobStyle?: React.CSSProperties
   targetJob?: bayes.bob.Job
+  titleElement?: 'p'|'h1'|'h2'
   style?: React.CSSProperties
 }
 
-const CoverImageWithTextBase = (props: CoverImageWithTextProps): React.ReactElement => {
-  const {children, cityName, cityStyle, imageStyle, jobStyle,
-    targetJob, targetJob: {jobGroup: {romeId = undefined} = {}} = {}, style} = props
-  const {t} = useTranslation()
+const CoverImageWithTitleAndTextBase = (props: CoverImageWithTitleAndTextProps):
+React.ReactElement => {
+  const {children, cityName, cityStyle, imageStyle, jobStyle, targetJob,
+    titleElement = 'p', targetJob: {jobGroup: {romeId = undefined} = {}} = {}, style} = props
+  const {t} = useTranslation('components')
   const gender = useGender()
   const jobName = genderizeJob(targetJob, gender) || t('Trouver un emploi')
   const jobTextStyle: React.CSSProperties = {
@@ -62,12 +63,12 @@ const CoverImageWithTextBase = (props: CoverImageWithTextProps): React.ReactElem
   }
   return <div style={containerStyle}>
     <JobGroupCoverImage romeId={romeId} style={JobCoverImageStyle} />
-    <p style={jobTextStyle}>{jobName}</p>
+    {React.createElement(titleElement, {style: jobTextStyle}, jobName)}
     {cityName ? <p style={cityTextStyle}>{cityName}</p> : null}
     {children}
   </div>
 }
-export const CoverImageWithText = React.memo(CoverImageWithTextBase)
+export const CoverImageWithTitleAndText = React.memo(CoverImageWithTitleAndTextBase)
 
 interface Props {
   blur?: number
@@ -146,19 +147,6 @@ const JobGroupCoverImage: React.FC<Props> = (props: Props): React.ReactElement =
     {coverUrl ? <div style={coverImageStyle} /> : null}
     <div style={opaqueCoverStyle} />
   </div>
-}
-JobGroupCoverImage.propTypes = {
-  blur: PropTypes.number,
-  coverOpacity: PropTypes.number,
-  grayScale: PropTypes.number,
-  opaqueCoverColor: PropTypes.string,
-  opaqueCoverGradient: PropTypes.shape({
-    left: PropTypes.string.isRequired,
-    middle: PropTypes.string,
-    right: PropTypes.string.isRequired,
-  }),
-  romeId: PropTypes.string,
-  style: PropTypes.object,
 }
 
 

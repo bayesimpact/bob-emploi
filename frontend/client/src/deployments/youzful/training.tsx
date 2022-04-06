@@ -1,0 +1,1 @@
+../fr/training.tsx

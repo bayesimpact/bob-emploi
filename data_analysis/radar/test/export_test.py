@@ -3,6 +3,8 @@
 import datetime
 import io
 import itertools
+import json
+import os
 import typing
 import unittest
 from unittest import mock
@@ -151,6 +153,72 @@ class PrepareExportsTest(unittest.TestCase):
         ])
 
 
+def _generate_sample_photos(profile: typeform_pb2.HiddenFields) -> list[typeform_pb2.Photo]:
+    return [
+        typeform_pb2.Photo(
+            hidden=profile,
+            submitted_at=_create_proto_timestamp(datetime.datetime(2021, 3, 1)),
+            answers=[
+                typeform_pb2.ChoiceAnswer(
+                    field=typeform_pb2.AnswerField(ref='job-people'),
+                    choice=typeform_pb2.Choice(label='Niveau 1'),
+                ),
+                typeform_pb2.ChoiceAnswer(
+                    field=typeform_pb2.AnswerField(ref='job-tools'),
+                    choice=typeform_pb2.Choice(label='Niveau 2'),
+                ),
+                typeform_pb2.ChoiceAnswer(
+                    field=typeform_pb2.AnswerField(ref='job-skills'),
+                    choice=typeform_pb2.Choice(label='Niveau 4'),
+                ),
+            ],
+        ),
+        typeform_pb2.Photo(
+            hidden=profile,
+            submitted_at=_create_proto_timestamp(datetime.datetime(2021, 7, 1)),
+            answers=[
+                typeform_pb2.ChoiceAnswer(
+                    field=typeform_pb2.AnswerField(ref='job-people'),
+                    choice=typeform_pb2.Choice(label='Niveau 3'),
+                ),
+                typeform_pb2.ChoiceAnswer(
+                    field=typeform_pb2.AnswerField(ref='job-tools'),
+                    choice=typeform_pb2.Choice(label='Niveau 4'),
+                ),
+                typeform_pb2.ChoiceAnswer(
+                    field=typeform_pb2.AnswerField(ref='job-skills'),
+                    choice=typeform_pb2.Choice(label='Niveau 4'),
+                ),
+            ],
+        ),
+        # Photo with no dossier_id: will be ignored.
+        typeform_pb2.Photo(
+            hidden=typeform_pb2.HiddenFields(
+                age='16',
+                counselor_email='martin@milo.fr',
+                counselor_id='123',
+                school_level='ii',
+                structure_id='structure-for-photo-with-no-dossier-id',
+            ),
+            submitted_at=_create_proto_timestamp(datetime.datetime(2021, 3, 1)),
+            answers=[
+                typeform_pb2.ChoiceAnswer(
+                    field=typeform_pb2.AnswerField(ref='job-people'),
+                    choice=typeform_pb2.Choice(label='Niveau 1'),
+                ),
+                typeform_pb2.ChoiceAnswer(
+                    field=typeform_pb2.AnswerField(ref='job-tools'),
+                    choice=typeform_pb2.Choice(label='Niveau 2'),
+                ),
+                typeform_pb2.ChoiceAnswer(
+                    field=typeform_pb2.AnswerField(ref='job-skills'),
+                    choice=typeform_pb2.Choice(label='Niveau 4'),
+                ),
+            ],
+        ),
+    ]
+
+
 class ExportTest(unittest.TestCase):
     """Test the main function."""
 
@@ -174,44 +242,7 @@ class ExportTest(unittest.TestCase):
             school_level='ii',
             structure_id='502',
         )
-        mock_iterate_results.return_value = iter([
-            typeform_pb2.Photo(
-                hidden=profile,
-                submitted_at=_create_proto_timestamp(datetime.datetime(2021, 3, 1)),
-                answers=[
-                    typeform_pb2.ChoiceAnswer(
-                        field=typeform_pb2.AnswerField(ref='job-people'),
-                        choice=typeform_pb2.Choice(label='Niveau 1'),
-                    ),
-                    typeform_pb2.ChoiceAnswer(
-                        field=typeform_pb2.AnswerField(ref='job-tools'),
-                        choice=typeform_pb2.Choice(label='Niveau 2'),
-                    ),
-                    typeform_pb2.ChoiceAnswer(
-                        field=typeform_pb2.AnswerField(ref='job-skills'),
-                        choice=typeform_pb2.Choice(label='Niveau 4'),
-                    ),
-                ],
-            ),
-            typeform_pb2.Photo(
-                hidden=profile,
-                submitted_at=_create_proto_timestamp(datetime.datetime(2021, 7, 1)),
-                answers=[
-                    typeform_pb2.ChoiceAnswer(
-                        field=typeform_pb2.AnswerField(ref='job-people'),
-                        choice=typeform_pb2.Choice(label='Niveau 3'),
-                    ),
-                    typeform_pb2.ChoiceAnswer(
-                        field=typeform_pb2.AnswerField(ref='job-tools'),
-                        choice=typeform_pb2.Choice(label='Niveau 4'),
-                    ),
-                    typeform_pb2.ChoiceAnswer(
-                        field=typeform_pb2.AnswerField(ref='job-skills'),
-                        choice=typeform_pb2.Choice(label='Niveau 4'),
-                    ),
-                ],
-            ),
-        ])
+        mock_iterate_results.return_value = iter(_generate_sample_photos(profile))
 
         mock_boto3_session().get_credentials().access_key = 'my-access-key'
         mock_boto3_session().get_credentials().secret_key = 'my-secret-key'
@@ -231,6 +262,51 @@ class ExportTest(unittest.TestCase):
         self.assertEqual('502', docs[0].get('doc', {}).get('structureId'))
         self.assertEqual('50', docs[0].get('doc', {}).get('departementId'))
         self.assertEqual('ML GRANVILLE', docs[0].get('doc', {}).get('structureName'))
+
+        all_docs_as_json = json.dumps(docs)
+        self.assertNotIn('margin@milo.fr', all_docs_as_json)
+        self.assertNotIn('structure-for-photo-with-no-dossier-id', all_docs_as_json)
+
+    @mock.patch(export.__name__ + '.typeform.iterate_results')
+    @mock.patch('elasticsearch.Elasticsearch')
+    @mock.patch('elasticsearch.helpers.bulk')
+    @mock.patch('boto3.Session')
+    def test_main_listing_dossiers(
+            self,
+            mock_boto3_session: mock.MagicMock,
+            mock_elasticsearch_bulk: mock.MagicMock,
+            unused_mock_elasticsearch: mock.MagicMock,
+            mock_iterate_results: mock.MagicMock) -> None:
+        """Complete missing structures with the dossier listing file."""
+
+        profile = typeform_pb2.HiddenFields(
+            age='16',
+            counselor_email='martin@milo.fr',
+            counselor_id='123',
+            dossier_id='456',
+            school_level='ii',
+            structure_id='7705',
+        )
+        mock_iterate_results.return_value = iter(_generate_sample_photos(profile))
+
+        mock_boto3_session().get_credentials().access_key = 'my-access-key'
+        mock_boto3_session().get_credentials().secret_key = 'my-secret-key'
+        mock_boto3_session().get_credentials().token = None
+        mock_elasticsearch_bulk.return_value = 'Success!!'
+
+        output = io.StringIO()
+        export.main([
+            '--listing_dossiers_xlsx',
+            os.path.join(os.path.dirname(__file__), 'testdata/listing_global_experimentation.xlsx'),
+        ], out=output)
+
+        self.assertEqual('Success!!', output.getvalue())
+
+        docs = list(mock_elasticsearch_bulk.call_args[0][1])
+
+        self.assertEqual('7705', docs[0].get('doc', {}).get('structureId'))
+        self.assertEqual('', docs[0].get('doc', {}).get('departementId'))
+        self.assertEqual('LYON', docs[0].get('doc', {}).get('structureName'))
 
 
 if __name__ == '__main__':

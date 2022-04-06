@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useRef} from 'react'
 
 
@@ -31,10 +30,6 @@ const OutsideClickHandler = (props: Props): React.ReactElement => {
   return <div ref={wrapperRef} {...extraProps}>
     {children}
   </div>
-}
-OutsideClickHandler.propTypes = {
-  children: PropTypes.element.isRequired,
-  onOutsideClick: PropTypes.func,
 }
 
 

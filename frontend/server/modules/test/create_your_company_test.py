@@ -2,10 +2,9 @@
 
 import datetime
 import unittest
-from unittest import mock
 
-from bob_emploi.common.python import now
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.common.python.test import nowmock
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
@@ -19,7 +18,7 @@ class AdviceCreateYourCompanyTestCase(scoring_test.ScoringModelTestBase):
         """Test the scoring function before the events with an atypic profile."""
 
         persona = self._random_persona().clone()
-        persona.user_profile.frustrations.append(user_pb2.ATYPIC_PROFILE)
+        persona.user_profile.frustrations.append(user_profile_pb2.ATYPIC_PROFILE)
         score = self._score_persona(persona)
         self.assertEqual(2, score, msg=f'Fail for "{persona.name}"')
 
@@ -199,8 +198,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         data = self.json_from_response(response)
         self.assertFalse(data.get('closeByEvents'))
 
-    @mock.patch(now.__name__ + '.get', mock.MagicMock(
-        return_value=datetime.datetime(2018, 5, 9)))
+    @nowmock.patch(new=lambda: datetime.datetime(2018, 5, 9))
     def test_start_date(self) -> None:
         """Test events with start dates."""
 

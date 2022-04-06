@@ -1,0 +1,41 @@
+{
+  "actionPlanUrl": "https://www.bob-emploi.fr/projet/0/plan-action",
+  "actions": {
+    "done": [
+      {
+        "title": "Refaites votre CV",
+        "url": "https://www.bob-emploi.fr/projet/0/action/fresh-resume"
+      }
+    ],
+    "today": [
+      {
+        "title": "Trouvez une formation",
+        "url": "https://www.bob-emploi.fr/projet/0/action/training"
+      },
+      {
+        "title": "Prenez l'air",
+        "url": "https://www.bob-emploi.fr/projet/0/action/life-balance"
+      }
+    ],
+    "tomorrow": [
+      {
+        "title": "Boostez votre confiance",
+        "url": "https://www.bob-emploi.fr/projet/0/action/body-language"
+      }
+    ]
+  },
+  "baseUrl": "https://www.bob-emploi.fr",
+  "changeEmailSettingsUrl": "https://www.bob-emploi.fr",
+  "creationDate": "2021-10-12",
+  "firstName": "Angèle",
+  "gender": "FEMININE",
+  "numActionsBySections": {
+    "done": "1",
+    "today": "2",
+    "tomorrow": "1",
+    "week": "0"
+  },
+  "productLogoUrl": "https://t.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
+  "productName": "Bob",
+  "statusUpdateUrl": "https://www.bob-emploi.fr"
+}

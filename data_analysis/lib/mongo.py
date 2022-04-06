@@ -2,7 +2,6 @@
 
 import argparse
 import collections
-import datetime
 import inspect
 import itertools
 import json
@@ -12,7 +11,7 @@ import re
 import sys
 import time
 import typing
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Mapping, NoReturn, Optional, \
+from typing import Any, Callable, Iterable, Iterator, Mapping, NoReturn, Optional, \
     Set, TextIO, Tuple, Type, Union
 
 import pymongo
@@ -24,11 +23,10 @@ import tqdm
 from google.protobuf import json_format
 from google.protobuf import message
 
+from bob_emploi.common.python import now
 from bob_emploi.data_analysis.lib import batch
 
 _TQDM_OUTPUT = sys.stdout
-
-_GET_NOW = datetime.datetime.now
 
 # Get mongo URL from the environment.
 _MONGO_URL = os.getenv('MONGO_URL') or ''
@@ -37,7 +35,7 @@ _MONGO_URL = os.getenv('MONGO_URL') or ''
 # WebHooks of https://bayesimpact.slack.com/apps/manage/custom-integrations
 _SLACK_IMPORT_URL = os.getenv('SLACK_IMPORT_URL')
 
-JsonType = Dict[str, Any]
+JsonType = dict[str, Any]
 _FlagableCallable = Callable[..., Iterable[JsonType]]
 
 
@@ -58,17 +56,13 @@ class Importer:
     def __init__(self, flags: argparse.Namespace, out: TextIO = sys.stdout) -> None:
         self.flag_values = flags
         self.out = out
+        self._report: list[str] = []
 
     def _print(self, arg: Any) -> None:
         self.out.write(f'{arg}\n')
 
     def _print_in_report(self, arg: Any) -> None:
-        if _SLACK_IMPORT_URL:
-            requests.post(_SLACK_IMPORT_URL, json={'attachments': [{
-                'mrkdwn_in': ['text'],
-                'title': f'Automatic import of {self.flag_values.mongo_collection}',
-                'text': f'{arg}\n',
-            }]})
+        self._report.append(str(arg))
         self._print(arg)
 
     def import_in_collection(
@@ -79,10 +73,27 @@ class Importer:
             check_error: Optional[Exception] = None) -> None:
         """Import items in a MongoDB collection."""
 
+        self._report = []
+        try:
+            self._import_in_collection(items, collection_name, count_estimate, check_error)
+        finally:
+            if _SLACK_IMPORT_URL and self._report:
+                requests.post(_SLACK_IMPORT_URL, json={'attachments': [{
+                    'mrkdwn_in': ['text'],
+                    'title': f'Automatic import of {self.flag_values.mongo_collection}',
+                    'text': '\n'.join(self._report),
+                }]})
+
+    def _import_in_collection(
+            self,
+            items: Iterable[JsonType],
+            collection_name: str,
+            count_estimate: Optional[int] = None,
+            check_error: Optional[Exception] = None) -> None:
         real_collection = self._collection_from_flags(collection_name)
         has_old_data = bool(real_collection.estimated_document_count())
 
-        items_list: List[JsonType] = []
+        items_list: list[JsonType] = []
         if count_estimate is None:
             items_list = list(items)
             total = len(items_list)
@@ -90,7 +101,7 @@ class Importer:
             total = count_estimate
 
         if items_list and has_old_data:
-            has_diff_to_review, has_diff = self.print_diff(items_list, real_collection)
+            has_diff_to_review, has_diff = self._print_diff(items_list, real_collection)
         else:
             has_diff_to_review, has_diff = False, True
 
@@ -104,7 +115,7 @@ class Importer:
             self._print_in_report('There are some diffs to import.')
             raise ValueError('There are some diffs to import.')
 
-        if has_diff_to_review and not self.approve_diff():
+        if has_diff_to_review and not self._approve_diff():
             return
 
         unique_suffix = f'_{round(time.time() * 1e6):x}'
@@ -140,7 +151,7 @@ class Importer:
 
         # Archive current content if any.
         if has_old_data:
-            today = _GET_NOW().date().isoformat()
+            today = now.get().date().isoformat()
             archive_collection = self._collection_from_flags(
                 collection_name, suffix=f'.{today}{unique_suffix}')
             real_collection.aggregate([{'$out': archive_collection.name}])
@@ -155,9 +166,12 @@ class Importer:
 
         collection.rename(real_collection.name, dropTarget=True)
         meta = self._collection_from_flags('meta', collection_name_from_flags=False)
+        setter = {'updated_at': now.get()}
+        if self.flag_values.run_every:
+            setter['run_every'] = self.flag_values.run_every
         meta.update_one(
             {'_id': real_collection.name},
-            {'$set': {'updated_at': _GET_NOW()}},
+            {'$set': setter},
             upsert=True)
 
     def _collection_from_flags(
@@ -171,9 +185,9 @@ class Importer:
         _database = client.get_database()
         return _database.get_collection(collection_name + suffix)
 
-    def print_diff(
+    def _print_diff(
             self,
-            new_list: List[JsonType],
+            new_list: list[JsonType],
             old_mongo_collection: pymongo_collection.Collection) -> Tuple[bool, bool]:
         """Print the difference between an old and new dataset.
 
@@ -197,7 +211,7 @@ class Importer:
 
         return True, True
 
-    def approve_diff(self) -> bool:
+    def _approve_diff(self) -> bool:
         """Review the difference between an old and new dataset."""
 
         if self.flag_values.always_accept_diff:
@@ -221,7 +235,7 @@ def _get_doc_section(docstring: str, section_name: str) -> Optional[str]:
     return None
 
 
-def _remove_left_padding(lines: List[str], min_padding: int) -> Iterator[str]:
+def _remove_left_padding(lines: list[str], min_padding: int) -> Iterator[str]:
     if not lines:
         return []
     padding = len(lines[0]) - len(lines[0].lstrip())
@@ -233,7 +247,7 @@ def _remove_left_padding(lines: List[str], min_padding: int) -> Iterator[str]:
         yield line[padding:]
 
 
-def parse_args_doc(docstring: Optional[str]) -> Dict[str, str]:
+def parse_args_doc(docstring: Optional[str]) -> dict[str, str]:
     """Parse the args documentation in a function's docstring.
 
     This function expects a very specific documentation format and parses it to
@@ -320,7 +334,7 @@ def _exec_from_flags(
         extra_args: Mapping[str, str]) -> Iterable[JsonType]:
     """Execute a function pulling arguments from flags."""
 
-    kwargs: Dict[str, str] = {}
+    kwargs: dict[str, str] = {}
     for func_arg in _arg_names(func):
         if func_arg in extra_args:
             kwargs[func_arg] = extra_args[func_arg]
@@ -332,7 +346,7 @@ def _exec_from_flags(
 def importer_main(
         func: _FlagableCallable,
         collection_name: str,
-        args: Optional[List[str]] = None,
+        args: Optional[list[str]] = None,
         count_estimate: Optional[int] = None,
         out: TextIO = sys.stdout) -> None:
     """Main function for an importer to MongoDB.
@@ -368,7 +382,9 @@ def importer_main(
 
     extra_args = {'collection_name': collection_name}
 
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        exit_on_error=False)
 
     _define_flags_args(func, parser, extra_args)
 
@@ -381,6 +397,9 @@ def importer_main(
         'it drops the whole collection to replace it only with a subset of it')
     parser.add_argument('--mongo_collection', help='Name of the collection to access.')
     parser.add_argument(
+        '--run_every',
+        help='The frequency at which the import should be made, if it were automated.')
+    parser.add_argument(
         '--chunk-size', type=int, default=10000, help='Import data in chunks of chunk_size.')
     parser.add_argument(
         '--always_accept_diff', action='store_true',
@@ -391,7 +410,12 @@ def importer_main(
     parser.add_argument(
         '--check-args', action='store_true', help='Only check that the args are valid.')
 
-    flags = parser.parse_args(args)
+    try:
+        flags = parser.parse_args(args)
+    except SystemExit as error:
+        # TODO(cyrille): Drop the try wrapper once the bug is resolved
+        # https://github.com/python/cpython/pull/27295.
+        raise argparse.ArgumentError(None, '') from error
 
     if flags.check_args:
         # The script was only called to check that the call above to parse_args did not fail.
@@ -404,7 +428,7 @@ def importer_main(
     check_error: Optional[Exception] = None
 
     if flags.from_json:
-        with open(flags.from_json) as input_file:
+        with open(flags.from_json, encoding='utf-8') as input_file:
             # TODO(cyrille): Fix data type to Iterable[JsonType].
             data = json.load(input_file)
     else:
@@ -421,7 +445,7 @@ def importer_main(
             if match_id.match(document.get('_id', '')))
 
     if flags.to_json:
-        with open(flags.to_json, 'w') as output_file:
+        with open(flags.to_json, 'w', encoding='utf-8') as output_file:
             json.dump(
                 data, output_file,
                 indent=1, sort_keys=True, ensure_ascii=False, cls=_IterEncoder)
@@ -431,7 +455,7 @@ def importer_main(
         importer.import_in_collection(data, collection_name, count_estimate, check_error)
 
 
-class _IterableAsList(List[_AType]):
+class _IterableAsList(list[_AType]):
     """Used to trick JSON encoder (dump) into serializing iterators."""
 
     # pylint: disable=super-init-not-called
@@ -451,10 +475,10 @@ class _IterableAsList(List[_AType]):
     def __len__(self) -> NoReturn:
         raise NotImplementedError('Iterable as list has unknown length')
 
-    def __getitem__(self, item: Union[int, slice]) -> NoReturn:
+    def __getitem__(self, item: Union[int, slice]) -> NoReturn:  # type: ignore
         raise NotImplementedError('Iterable as list has no getitem')
 
-    def __setitem__(self, item: Union[int, slice], value: Any) -> NoReturn:
+    def __setitem__(self, item: Union[int, slice], value: Any) -> None:  # type: ignore
         raise NotImplementedError('Iterable as list has no setitem')
 
     def __bool__(self) -> bool:
@@ -520,9 +544,9 @@ def parse_doc_to_proto(document: JsonType, proto_type: Type[_ProtoType]) -> _Pro
 
 
 def _compute_diff(
-        list_a: List[JsonType],
-        list_b: List[JsonType],
-        key: str = '_id') -> Dict[Any, Any]:
+        list_a: list[JsonType],
+        list_b: list[JsonType],
+        key: str = '_id') -> dict[Any, Any]:
     dict_a = collections.OrderedDict((str(value.get(key)), value) for value in list_a)
     dict_b = collections.OrderedDict((str(value.get(key)), value) for value in list_b)
 
@@ -530,9 +554,9 @@ def _compute_diff(
 
 
 def _compute_dict_diff(
-        dict_a: Dict[Any, Any],
-        dict_b: Dict[Any, Any]) -> Dict[Any, Any]:
-    diff: Dict[Any, Any] = collections.OrderedDict()
+        dict_a: dict[Any, Any],
+        dict_b: dict[Any, Any]) -> dict[Any, Any]:
+    diff: dict[Any, Any] = collections.OrderedDict()
 
     for a_key, a_value in dict_a.items():
         if a_key not in dict_b:

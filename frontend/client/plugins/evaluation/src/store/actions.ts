@@ -1,11 +1,11 @@
-import {GoogleLoginResponse} from 'react-google-login'
-import {Action, Dispatch} from 'redux'
-import {ThunkAction, ThunkDispatch} from 'redux-thunk'
+import type {GoogleLoginResponse} from 'react-google-login'
+import type {Action, Dispatch} from 'redux'
+import type {ThunkAction, ThunkDispatch} from 'redux-thunk'
 
-import {AsyncAction, ComputeAdvicesForProjectAction, ConvertToProtoAction,
-  DisplayToastMessageAction, GetLocalStatsAction, ensureAuth, wrapAsyncAction,
-  HideToasterMessageAction,
-} from 'store/actions'
+import type {AsyncAction, ComputeActionsForProjectAction, ComputeAdvicesForProjectAction,
+  ConvertToProtoAction, DisplayToastMessageAction, GetLocalStatsAction,
+  HideToasterMessageAction} from 'store/actions'
+import {ensureAuth, wrapAsyncAction} from 'store/actions'
 import {projectDiagnosePost, projectStrategizePost, sendEmailPost} from 'store/api'
 
 import {evalUseCasePoolsGet, evalUseCasesGet, evalFiltersUseCasesPost, useCaseDistributionPost,
@@ -27,6 +27,7 @@ export interface EvalRootState {
   asyncState: AsyncState<AllEvalActions>
   auth: AuthEvalState
   eval: EvalAppState
+  user: bayes.bob.User
 }
 
 type DiagnoseProjectAction = AsyncAction<'DIAGNOSE_PROJECT', bayes.bob.Diagnostic>
@@ -123,6 +124,21 @@ Promise<bayes.bob.UseCase|void>, EvalRootState, unknown, CreateUseCaseAction> {
   )
 }
 
+type ExportFeedbackAction = AsyncAction<'EXPORT_FEEDBACK', unknown>
+
+function exportFeedback(request: bayes.bob.FeedbackExportRequest):
+ThunkAction<Promise<unknown>, EvalRootState, unknown, ExportFeedbackAction> {
+  return wrapGoogleAuthAction(
+    'EXPORT_FEEDBACK',
+    (googleIdToken): Promise<unknown> => {
+      const encodedRequest = encodeURIComponent(JSON.stringify(request))
+      const encodedToken = encodeURIComponent(googleIdToken)
+      window.open(`/api/eval/feedback/export?data=${encodedRequest}&token=${encodedToken}`)
+      return Promise.resolve()
+    },
+  )
+}
+
 type SaveUseCaseEvalAction = AsyncAction<'SAVE_USE_CASE_EVAL', unknown> & {
   readonly poolName?: string
   readonly useCaseId: string
@@ -160,6 +176,7 @@ ThunkAction<Promise<bayes.bob.Strategies|void>, unknown, unknown, StrategizeProj
 // Type of the eval dispatch function.
 export type DispatchAllEvalActions =
   // Add actions as required.
+  ThunkDispatch<EvalRootState, unknown, ComputeActionsForProjectAction> &
   ThunkDispatch<EvalRootState, unknown, ComputeAdvicesForProjectAction> &
   ThunkDispatch<EvalRootState, unknown, DiagnoseProjectAction> &
   ThunkDispatch<EvalRootState, unknown, CreateUseCaseAction> &
@@ -201,6 +218,7 @@ export type AllEvalActions =
 export {
   createUseCase,
   diagnoseProject,
+  exportFeedback,
   getAllMainChallenges,
   getEvalFiltersUseCases,
   getEvalUseCasePools,

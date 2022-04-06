@@ -43,3 +43,7 @@ class MatchTestCase(unittest.TestCase):
             self.assertEqual(10, len(each_batch))
         self.assertEqual(
             expected_list, [a for each_batch in batches for a in each_batch])
+
+
+if __name__ == '__main__':
+    unittest.main()

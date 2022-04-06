@@ -1,4 +1,4 @@
-import React from 'react'
+import type React from 'react'
 
 import isMobileVersion from 'store/mobile'
 
@@ -35,21 +35,6 @@ function vendorProperties<K extends keyof React.CSSProperties>(
 
 
 export const Styles = {
-  // Style for the sticker on top of a box that tells the users why we show them this box.
-  BOX_EXPLANATION: {
-    backgroundColor: colors.BOB_BLUE,
-    borderRadius: 4,
-    color: '#fff',
-    display: 'inline-block',
-    fontSize: 13,
-    fontStyle: 'italic',
-    fontWeight: 500,
-    left: -12,
-    padding: 10,
-    position: 'absolute',
-    textAlign: 'center',
-    top: -12,
-  },
   CENTERED_COLUMN: {
     alignItems: 'center',
     display: 'flex',

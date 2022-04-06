@@ -1,11 +1,10 @@
 """Module to advise the user to get helped by a local association."""
 
 import random
-from typing import List
 
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import association_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 
 
 class _AdviceAssociationHelp(scoring_base.ModelBase):
@@ -17,7 +16,7 @@ class _AdviceAssociationHelp(scoring_base.ModelBase):
 
     @scoring_base.ScoringProject.cached('associations')
     def list_associations(self, project: scoring_base.ScoringProject) \
-            -> List[association_pb2.Association]:
+            -> list[association_pb2.Association]:
         """List all associations for a project."""
 
         all_associations = self._db.get_collection(project.database)
@@ -31,10 +30,10 @@ class _AdviceAssociationHelp(scoring_base.ModelBase):
         associations = self.list_associations(project)
         search_length_reason = project.translate_static_string(
             "vous nous avez dit que vous êtes en recherche d'emploi "
-            'depuis %jobSearchLengthMonthsAtCreation mois')
+            'depuis %jobSearchLengthAtCreation')
         if not associations:
             return scoring_base.NULL_EXPLAINED_SCORE
-        if user_pb2.MOTIVATION in project.user_profile.frustrations:
+        if user_profile_pb2.MOTIVATION in project.user_profile.frustrations:
             return scoring_base.ExplainedScore(3, [project.translate_static_string(
                 'vous nous avez dit avoir du mal à garder votre ' +
                 'motivation au top')])

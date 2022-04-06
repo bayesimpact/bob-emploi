@@ -1,5 +1,4 @@
 import React, {useEffect} from 'react'
-import PropTypes from 'prop-types'
 
 import {useAsynceffect} from 'store/promise'
 
@@ -135,15 +134,6 @@ const ZendeskChatButton = (props: ButtonProps): null => {
   }, [isShown, email, name])
 
   return null
-}
-ZendeskChatButton.propTypes = {
-  domain: PropTypes.string.isRequired,
-  isShown: PropTypes.bool,
-  language: PropTypes.string,
-  user: PropTypes.shape({
-    email: PropTypes.string,
-    name: PropTypes.string,
-  }),
 }
 
 

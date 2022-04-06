@@ -1,11 +1,13 @@
 import _keyBy from 'lodash/keyBy'
 import _sortBy from 'lodash/sortBy'
-import React, {useState} from 'react'
+import React, {useRef} from 'react'
 import {useTranslation} from 'react-i18next'
-import VisibilitySensor from 'react-visibility-sensor'
 
-import {LocalizableString, prepareT} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {prepareT} from 'store/i18n'
 import {dataSourceYear as yearForData} from 'store/statistics'
+
+import useOnScreen from 'hooks/on_screen'
 
 import DataSource from 'components/data_source'
 import {SmoothTransitions} from 'components/theme'
@@ -52,9 +54,12 @@ const JobGroupStressBarBase: React.FC<StressBarProps> =
     value,
   } = props
   const {t} = useTranslation()
-  const [hasStarted, setHasStarted] = useState(false)
+  const domRef = useRef<HTMLDivElement>(null)
+  const hasStarted = useOnScreen(domRef, {isForAppearing: true})
   const width = hasStarted ? `${isLogScale ? fixScale(value) : value}%` : 1
   const barStyle: React.CSSProperties = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ['WebkitPrintColorAdjust' as any]: 'exact',
     backgroundColor: color,
     flex: 'none',
     height: 5,
@@ -63,6 +68,8 @@ const JobGroupStressBarBase: React.FC<StressBarProps> =
     ...SmoothTransitions,
   }
   const bulletStyle: React.CSSProperties = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ['WebkitPrintColorAdjust' as any]: 'exact',
     backgroundColor: barStyle.backgroundColor,
     borderRadius: 10,
     height: 20,
@@ -87,15 +94,11 @@ const JobGroupStressBarBase: React.FC<StressBarProps> =
   return <div
     style={containerStyle}
     title={isMarketScoreShown ? marketScore : undefined}>
-    <VisibilitySensor
-      active={!hasStarted} intervalDelay={250}
-      partialVisibility={true} onChange={setHasStarted}>
-      <div style={{flexShrink: 0, width: maxBarWidth}}>
-        {value ? <div style={barStyle}>
-          <div style={bulletStyle} />
-        </div> : null}
-      </div>
-    </VisibilitySensor>
+    <div ref={domRef} style={{flexShrink: 0, width: maxBarWidth}}>
+      {value ? <div style={barStyle}>
+        <div style={bulletStyle} />
+      </div> : null}
+    </div>
     <span style={titleStyle}>
       {name}
       {isTarget ? ` (${t('vous')})` : null}
@@ -113,8 +116,7 @@ g is bayes.bob.RelatedJobGroup & {jobGroup: {romeId: string}} =>
 
 
 interface Props {
-  // TODO(cyrille): Rename to areValuesShown
-  areMarketScoresShown?: boolean
+  areValuesShown?: boolean
   context?: string
   getValue?: (jobGroup: bayes.bob.RelatedJobGroup) => number
   getValueColor?: (value: number) => string
@@ -151,7 +153,7 @@ const JobGroupStressBars: React.FC<Props> = (props: Props): React.ReactElement =
   const {t, t: translate} = useTranslation()
   const defaultSource = translate(config.dataSourceLMI, {dataSourceYear: yearForData})
   const {
-    areMarketScoresShown,
+    areValuesShown,
     getValue = getMarketStressValue,
     getValueColor = colorFromMarketScore,
     isLogScale = true,
@@ -185,7 +187,7 @@ const JobGroupStressBars: React.FC<Props> = (props: Props): React.ReactElement =
       <JobGroupStressBar
         maxBarWidth={maxBarWidth}
         style={{marginTop: index ? 15 : 0}} key={relatedJobGroup.jobGroup.romeId}
-        isMarketScoreShown={areMarketScoresShown} isLogScale={isLogScale}
+        isMarketScoreShown={areValuesShown} isLogScale={isLogScale}
         value={getValue(relatedJobGroup)} color={getValueColor(getValue(relatedJobGroup))}
         isTarget={targetRomeIds.has(relatedJobGroup.jobGroup.romeId)} {...relatedJobGroup} />)}
     <figcaption style={jobGroupStressBarsCaptionStyle}>

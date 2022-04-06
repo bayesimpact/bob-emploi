@@ -1,6 +1,6 @@
 import Storage from 'local-storage-fallback'
 
-import {AllActions} from './actions'
+import type {AllActions} from './actions'
 import {increaseRevision, keepMostRecentRevision} from './user'
 
 // Name of the cookie containing the user ID.
@@ -9,7 +9,8 @@ const USER_ID_COOKIE_NAME = 'userId'
 // All data for a user of the companion app, a job seeker.
 // Keep in sync with User protobuf.
 const initialData = {
-  userId: Storage.getItem(USER_ID_COOKIE_NAME) || undefined,
+  userId: Storage.getItem(USER_ID_COOKIE_NAME) ||
+    window.sessionStorage.getItem(USER_ID_COOKIE_NAME) || undefined,
 }
 
 
@@ -47,8 +48,14 @@ export function updateProject(
   return isFromServer ? updatedState : increaseRevision(updatedState)
 }
 
-function updateAdvice(
-  state: bayes.bob.User, project: bayes.bob.Project, advice: bayes.bob.Advice,
+function updateProjectItem<
+  ItemIdFieldType extends string,
+  ItemType extends {[K in ItemIdFieldType]?: string},
+  FieldType extends keyof bayes.bob.Project,
+  ProjectType extends {[K in FieldType]?: readonly ItemType[]}
+>(
+  field: FieldType, item: ItemType, itemIdField: ItemIdFieldType, shouldCreateMissing: boolean,
+  state: bayes.bob.User, project: ProjectType & bayes.bob.Project,
   isFromServer?: boolean): bayes.bob.User {
   let projectModified = false
   const updatedState = {
@@ -57,27 +64,26 @@ function updateAdvice(
       if (stateProject.projectId !== project.projectId) {
         return stateProject
       }
-      let adviceModified = false
-      const updatedProjectState = {
-        ...stateProject,
-      }
-
-      const advices = (stateProject.advices || []).map((stateAdvice): bayes.bob.Advice => {
-        if (stateAdvice.adviceId !== advice.adviceId) {
-          return stateAdvice
+      let itemModified = false
+      const items = (stateProject[field] as readonly ItemType[] || []).map(
+        (stateItem: ItemType): ItemType => {
+          if (stateItem[itemIdField] !== item[itemIdField]) {
+            return stateItem
+          }
+          itemModified = true
+          return {...stateItem, ...item}
+        })
+      if (!itemModified) {
+        if (!shouldCreateMissing) {
+          return stateProject
         }
-        adviceModified = true
-        return {...stateAdvice, ...advice}
-      })
-      if (adviceModified) {
-        updatedProjectState.advices = advices
-      }
-
-      if (!adviceModified) {
-        return stateProject
+        items.push(item)
       }
       projectModified = true
-      return updatedProjectState
+      return {
+        ...stateProject,
+        [field]: items,
+      }
     }),
   }
   return projectModified ?
@@ -85,41 +91,25 @@ function updateAdvice(
     : state
 }
 
+function updateAdvice(
+  state: bayes.bob.User, project: bayes.bob.Project, advice: bayes.bob.Advice,
+  isFromServer?: boolean): bayes.bob.User {
+  return updateProjectItem('advices', advice, 'adviceId', false, state, project, isFromServer)
+}
+
+
+function updateAction(
+  state: bayes.bob.User, project: bayes.bob.Project, action: bayes.bob.Action,
+  isFromServer?: boolean): bayes.bob.User {
+  return updateProjectItem('actions', action, 'actionId', false, state, project, isFromServer)
+}
+
 
 function updateStrategy(
   state: bayes.bob.User, project: bayes.bob.Project, strategy: bayes.bob.WorkingStrategy,
   isFromServer?: boolean): bayes.bob.User {
-  let projectModified = false
-  const updatedState = {
-    ...state,
-    projects: (state.projects || []).map((stateProject): bayes.bob.Project => {
-      if (stateProject.projectId !== project.projectId) {
-        return stateProject
-      }
-      let strategyModified = false
-      const updatedProjectState = {
-        ...stateProject,
-      }
-
-      const strategies = (stateProject.openedStrategies || []).
-        map((stateStrategy): bayes.bob.WorkingStrategy => {
-          if (stateStrategy.strategyId !== strategy.strategyId) {
-            return stateStrategy
-          }
-          strategyModified = true
-          return strategy
-        })
-      if (!strategyModified) {
-        strategies.push(strategy)
-      }
-      projectModified = true
-      updatedProjectState.openedStrategies = strategies
-      return updatedProjectState
-    }),
-  }
-  return projectModified ?
-    isFromServer ? increaseRevision(updatedState) : updatedState
-    : state
+  return updateProjectItem(
+    'openedStrategies', strategy, 'strategyId', true, state, project, isFromServer)
 }
 
 
@@ -141,7 +131,6 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
     case 'MIGRATE_USER_TO_ADVISOR': // Fallthrough intended.
     case 'POST_USER_DATA':
       if (action.status === 'success') {
-        action.response.userId && Storage.setItem(USER_ID_COOKIE_NAME, action.response.userId)
         return keepMostRecentRevision(state, action.response)
       }
       return state
@@ -152,7 +141,11 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
       const user = action.response && action.response.authenticatedUser
       if (user) {
         if (user.userId) {
-          Storage.setItem(USER_ID_COOKIE_NAME, user.userId)
+          if (action.isPersistent) {
+            Storage.setItem(USER_ID_COOKIE_NAME, user.userId)
+          } else {
+            window.sessionStorage.setItem(USER_ID_COOKIE_NAME, user.userId)
+          }
         }
         return user
       }
@@ -161,11 +154,13 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
     case 'DELETE_USER_DATA':
       if (action.status === 'success') {
         Storage.removeItem(USER_ID_COOKIE_NAME)
+        window.sessionStorage.removeItem(USER_ID_COOKIE_NAME)
         return {profile: {}}
       }
       return state
     case 'LOGOUT':
       Storage.removeItem(USER_ID_COOKIE_NAME)
+      window.sessionStorage.removeItem(USER_ID_COOKIE_NAME)
       return {
         profile: {
           email: state && state.profile && state.profile.email,
@@ -173,6 +168,7 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
       }
     case 'REMOVE_AUTH_DATA':
       Storage.removeItem(USER_ID_COOKIE_NAME)
+      window.sessionStorage.removeItem(USER_ID_COOKIE_NAME)
       return {
         ...state,
         userId: undefined,
@@ -196,7 +192,6 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
         projects: [project],
       })
     }
-    case 'FINISH_PROJECT_CRITERIA': // Fallthrough intended.
     case 'FINISH_PROJECT_GOAL': // Fallthrough intended.
     case 'FINISH_PROJECT_EXPERIENCE': // Fallthrough intended.
     case 'FINISH_PROJECT_SELF_DIAGNOSTIC': // Fallthrough intended.
@@ -216,6 +211,9 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
     }
     case 'MODIFY_PROJECT':
       return updateProject(state, {
+        actionPlanName: '',
+        actionPlanStartedAt: undefined,
+        actions: [],
         advices: [],
         diagnostic: undefined,
         feedback: {},
@@ -226,7 +224,7 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
         strategies: [],
         userHasReviewed: undefined,
       })
-    case 'ADVICE_PAGE_IS_SHOWN':
+    case 'ADVICE_PAGE_IS_SHOWN': // Fallthrough intended.
     case 'EXPLORE_ADVICE':
       if (!action.status) {
         // Before sending the update to the server, let's modify the client
@@ -237,10 +235,11 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
         return updateAdvice(state, action.project, action.response, true)
       }
       return state
-    case 'DIAGNOSTIC_IS_SHOWN': // Fallthrough intended.
+    case 'RENAME_ACTION_PLAN': // Fallthrough intended.
     case 'REVIEW_PROJECT_ACHIEVEMENTS': // Fallthrough intended.
     case 'REVIEW_PROJECT_MAIN_CHALLENGE': // Fallthrough intended.
     case 'REVIEW_PROJECT_PREVIEW_STRATS': // Fallthrough intended.
+    case 'FINISH_ACTION_PLAN_ONBOARDING': // Fallthrough intended.
     case 'SCORE_PROJECT_CHALLENGE_AGREEMENT':
       if (!action.status && action.projectDiff) {
         // Before sending the update to the server, let's modify the client
@@ -264,12 +263,12 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
         return updateProject(state, action.response, true)
       }
       return state
-    case 'ACTIVATE_DEMO':
+    case 'ACTIVATE_EXPERIMENTS':
       return {
         ...state,
         featuresEnabled: {
           ...state.featuresEnabled,
-          [action.demo]: 'ACTIVE',
+          ...Object.fromEntries(action.experiments.map(experiment => [experiment, 'ACTIVE'])),
         },
       }
     case 'DIAGNOSE_ONBOARDING': {
@@ -318,11 +317,22 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
         ...state,
         origin: state.origin || action.utm,
       }
-    case 'TRACK_INITIAL_FEATURES':
-      return {
-        ...state,
-        featuresEnabled: state.featuresEnabled || action.features,
+    case 'ACTION_IS_SHOWN': // Fallthrough intended.
+    case 'SELECT_ACTION': // Fallthrough intended.
+    case 'UNSELECT_ACTION': // Fallthrough intended.
+    case 'COMPLETE_ACTION': // Fallthrough intended.
+    case 'UNCOMPLETE_ACTION': // Fallthrough intended.
+    case 'EXPLORE_ACTION': // Fallthrough intended.
+    case 'SAVE_ACTION_DATE':
+      if (!action.status) {
+        // Before sending the update to the server, let's modify the client
+        // state to make the change faster.
+        return updateAction(state, action.project, {...action.action, ...action.actionDiff})
+      } else if (action.status === 'success' && action.response) {
+        // Coming back from server: replace the advice by the result.
+        return updateAction(state, action.project, action.response, true)
       }
+      return state
     default:
       return state
   }

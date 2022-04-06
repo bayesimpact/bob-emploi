@@ -3,11 +3,12 @@ import {useTranslation} from 'react-i18next'
 import {useSelector} from 'react-redux'
 import {Redirect} from 'react-router'
 
-import {DispatchAllActions, RootState, simulateFocusEmails} from 'store/actions'
+import type {DispatchAllActions, RootState} from 'store/actions'
+import {simulateFocusEmails} from 'store/actions'
 import useKeyListener from 'hooks/key_listener'
 import isMobileVersion from 'store/mobile'
 import {useSafeDispatch} from 'store/promise'
-import {useEmailsInProfile} from 'store/user'
+import {useAuthTokens, useEmailsInProfile} from 'store/user'
 
 import Button from 'components/button'
 import {colorToAlpha} from 'components/colors'
@@ -15,14 +16,12 @@ import {Routes} from 'components/url'
 
 
 type EmailSent = bayes.bob.EmailSent & {
-  campaignId: string
-  subject: string
+  campaignId: NonNullable<bayes.bob.EmailSent['campaignId']>
 }
 
 const emptyArray = [] as const
-const emptyEmail: EmailSent = {campaignId: '', subject: ''}
+const emptyEmail: EmailSent = {campaignId: ''}
 
-// TODO(sil): Maybe D.R.Y all of this with the profile's equivalent.
 
 interface ItemProps {
   email: EmailSent
@@ -31,10 +30,11 @@ interface ItemProps {
 }
 
 const ListItemBase: React.FC<ItemProps> = (props: ItemProps): React.ReactElement => {
-  const {email, onChange, style} = props
+  const {email, email: {campaignId, subject}, onChange, style} = props
+  const {t} = useTranslation()
   const handleSelectEmail = useCallback((): void => onChange(email), [email, onChange])
   return <Button style={style} onClick={handleSelectEmail}>
-    {email.subject}
+    {subject || t('Campagne {{campaignId}}', {campaignId})}
   </Button>
 }
 const ListItem = React.memo(ListItemBase)
@@ -47,9 +47,8 @@ interface TabsProps {
   tabs: readonly EmailSent[]
 }
 
-// TODO(émilie): Handle the emails with no subject.
 const isEmailShowable = (email: bayes.bob.EmailSent): email is EmailSent =>
-  !!(email.campaignId && email.isCoaching && email.subject)
+  !!(email.campaignId && email.isCoaching)
 
 const tabStyle = (isSelected: boolean): RadiumCSSProperties => ({
   ':hover': isSelected ? {} : {
@@ -64,6 +63,7 @@ const tabStyle = (isSelected: boolean): RadiumCSSProperties => ({
   'margin': '5px 0',
   'padding': '0 20px',
   'textAlign': 'initial',
+  'textShadow': 'none',
   'width': '100%',
 })
 const iframeStyle: React.CSSProperties = {
@@ -99,7 +99,8 @@ const listStyle = {
 const EmailsPage = (): null|React.ReactElement => {
   const dispatch = useSafeDispatch<DispatchAllActions>()
   const user = useSelector(({user}: RootState) => user)
-  const token = useSelector(({app: {authToken}}: RootState) => authToken)
+  const authTokens = useAuthTokens(user.userId)
+  const token = authTokens?.emails || ''
   const {t} = useTranslation()
 
   const emailsSent = useSelector(({user: {emailsSent = emptyArray}}: RootState) => emailsSent)
@@ -127,14 +128,15 @@ const EmailsPage = (): null|React.ReactElement => {
   if (!useEmailsInProfile()) {
     return isMobileVersion ? null : <Redirect to={Routes.PROFILE_PAGE} />
   }
+  const validSubject = subject || t('Campagne {{campaignId}}', {campaignId})
   return <div style={{alignItems: 'flex-start', display: 'flex', margin: '40px 20px 0'}}>
     {shownEmails.length ? <React.Fragment>
       <EmailList
         tabs={shownEmails} emailName={campaignId} onChange={setSelectedEmail}
         style={{marginRight: 40, minWidth: 360}} />
       {campaignId ? <div style={isMobileVersion ? {marginTop: -40} : listStyle}>
-        {isMobileVersion ? null : <h3 style={{margin: '0 0 30px'}}>{subject}</h3>}
-        <iframe onLoad={onLoad} style={iframeStyle} title={subject} src={emailContentUrl} />
+        {isMobileVersion ? null : <h3 style={{margin: '0 0 30px'}}>{validSubject}</h3>}
+        <iframe onLoad={onLoad} style={iframeStyle} title={validSubject} src={emailContentUrl} />
       </div> : null}
     </React.Fragment> : <p>{t("Il n'y a pas d'email à afficher pour le moment.")}</p>}
   </div>

@@ -1,5 +1,6 @@
 import React from 'react'
 
+import {useRadium} from 'components/radium'
 import useMedia from 'hooks/media'
 
 
@@ -10,6 +11,7 @@ type Props = React.ComponentPropsWithoutRef<'a'>
 const ExternalLink = (props: Props): React.ReactElement => {
   const {children, href, ...otherProps} = props
   const isForPrint = useMedia() === 'print'
+  const [radiumProps] = useRadium<HTMLAnchorElement>(otherProps)
   if (isForPrint) {
     return <React.Fragment>
       {children}
@@ -18,7 +20,7 @@ const ExternalLink = (props: Props): React.ReactElement => {
       </a>)
     </React.Fragment>
   }
-  return <a rel="noopener noreferrer" target="_blank" href={href} {...otherProps}>
+  return <a rel="noopener noreferrer" target="_blank" href={href} {...radiumProps}>
     {children}
   </a>
 }

@@ -8,7 +8,7 @@ from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import company_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import job_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 
 
 class _SpontaneousApplicationScoringModel(scoring_base.ModelBase):
@@ -41,7 +41,7 @@ class _SpontaneousApplicationScoringModel(scoring_base.ModelBase):
                 "c'est un des meilleurs canaux de recrutement pour votre métier")])
 
         if project.details.diagnostic.category_id == 'bravo' and \
-                user_pb2.NO_OFFERS in project.user_profile.frustrations:
+                user_profile_pb2.NO_OFFERS in project.user_profile.frustrations:
             return scoring_base.ExplainedScore(2, [project.translate_static_string(
                 "vous nous avez dit ne pas trouver assez d'offres.")])
         return scoring_base.NULL_EXPLAINED_SCORE
@@ -88,7 +88,7 @@ class _SpontaneousApplicationScoringModel(scoring_base.ModelBase):
 class _GreatApplicationModeFilter(scoring_base.BaseFilter):
     """A filter for projects where a given application mode is interesting.
     Following recommandations from notebook on delta percentage:
-    https://github.com/bayesimpact/bob-emploi-internal/blob/master/data_analysis/notebooks/datasets/imt/application_modes.ipynb
+    https://github.com/bayesimpact/bob-emploi-internal/blob/HEAD/data_analysis/notebooks/datasets/imt/application_modes.ipynb
     """
 
     def __init__(self, application_mode: 'job_pb2.ApplicationMode.V', delta_percentage: float) \

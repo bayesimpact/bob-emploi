@@ -1,17 +1,17 @@
 """Module to score the language requirements of a project."""
 
 import typing
-from typing import Dict, Iterable, Iterator, Mapping, List, Optional, Tuple
+from typing import Iterable, Iterator, Mapping, Optional, Tuple
 
 from bob_emploi.frontend.api import boolean_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server import scoring_base
 
-_UNKNOWN_LANG = user_pb2.LanguageKnowledge()
+_UNKNOWN_LANG = user_profile_pb2.LanguageKnowledge()
 
 
 class _LanguageRequirement(typing.NamedTuple):
-    rome_prefixes: List[str] = []
+    rome_prefixes: list[str] = []
     is_spoken_required: bool = False
     is_written_required: bool = False
 
@@ -49,7 +49,7 @@ _JOBS_REQUIREMENTS: Iterable[_LanguageRequirement] = (
 
 def _ensure_no_prefix_conflicts(items: Iterator[Tuple[str, _LanguageRequirement]]) \
         -> Mapping[str, _LanguageRequirement]:
-    result: Dict[str, _LanguageRequirement] = {}
+    result: dict[str, _LanguageRequirement] = {}
     for prefix, requirement in items:
         for existing_prefix in result:
             if existing_prefix.startswith(prefix) or prefix.startswith(existing_prefix):
@@ -196,4 +196,4 @@ scoring_base.register_model('for-missing-language', _MissingLanguage())
 scoring_base.register_model('for-missing-job-language', _MissingJobLanguage())
 scoring_base.register_model('language-relevance', _LanguageRelevance())
 scoring_base.register_model('for-foreign-language', scoring_base.BaseFilter(
-    lambda project: user_pb2.LANGUAGE in project.user_profile.frustrations))
+    lambda project: user_profile_pb2.LANGUAGE in project.user_profile.frustrations))

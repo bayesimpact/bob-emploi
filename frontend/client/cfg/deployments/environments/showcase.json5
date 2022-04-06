@@ -1,0 +1,10 @@
+{
+  aliAmplitudeToken: 'c77cb214eabe0ef1bac27983d42f75f2',
+  amplitudeToken: 'c77cb214eabe0ef1bac27983d42f75f2',
+  facebookSSOAppId: '1048782155234293',
+  googleSSOClientId: '1052239456978-tgef7mpqd3qoq723hag0v45035nqnivt.apps.googleusercontent.com',
+  googleTMID: 'GTM-M499WVP',
+  googleUAID: 'UA-97637389-3',
+  linkedInClientId: '86r4xh5py0mw9k',
+  sentryDSN: 'https://d9678cbb35254964b47c21fb2010dff0:97f3f5eb78554dd88c740c0872b13039@sentry.io/218378',
+}

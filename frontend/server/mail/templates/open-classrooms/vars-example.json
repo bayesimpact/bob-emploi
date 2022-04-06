@@ -1,0 +1,16 @@
+{
+  "baseUrl": "https://www.bob-emploi.fr",
+  "changeEmailSettingsUrl": "https://www.bob-emploi.fr/settings",
+  "firstName": "Timothée",
+  "gender": "MASCULINE",
+  "hasAtypicProfile": "True",
+  "hasFamilyAndManagementIssue": "",
+  "hasSeniority": "",
+  "hasSimpleApplication": "",
+  "isFrustratedOld": "",
+  "isReorienting": "",
+  "ofFirstName": "de Timothée",
+  "productLogoUrl": "https://t.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
+  "productName": "Bob",
+  "statusUpdateUrl": "https://www.bob-emploi.fr/update"
+}

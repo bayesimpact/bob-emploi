@@ -1,14 +1,26 @@
 """Common function to handle jobs."""
 
 import logging
+import os
 import typing
-from typing import KeysView, Mapping, Optional, Set
+from typing import KeysView, Mapping, Iterable, Optional, Set
 
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.server import cache
 from bob_emploi.frontend.server import i18n
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import proto
+
+
+EMPLOYMENT_TYPES = {
+    job_pb2.INTERNSHIP: i18n.make_translatable_string('stage'),
+    job_pb2.CDI: i18n.make_translatable_string('CDI'),
+    job_pb2.CDD_OVER_3_MONTHS: i18n.make_translatable_string('CDD de plus de 3 mois'),
+    job_pb2.CDD_LESS_EQUAL_3_MONTHS: i18n.make_translatable_string('CDD de moins de 3 mois'),
+    job_pb2.INTERIM: i18n.make_translatable_string('intérim'),
+    job_pb2.ANY_CONTRACT_LESS_THAN_A_MONTH: i18n.make_translatable_string(
+        "contrat de moins d'un mois"),
+}
 
 
 # Cache (from MongoDB) of job group info.
@@ -55,7 +67,8 @@ def _is_mostly_temp_job(job_group: job_pb2.JobGroup) -> bool:
 
 
 def get_all_good_job_group_ids(
-        database: mongo.NoPiiMongoDatabase, *, automation_risk_threshold: int = 85) -> Set[str]:
+        database: mongo.NoPiiMongoDatabase, *, automation_risk_threshold: int = 85,
+        unknown_risk_value: int = 0) -> Set[str]:
     """Get the ID of all "good" job groups.
 
     Good jobs are the ones that we (Bayes) think can make a good career or at least a good first
@@ -64,44 +77,47 @@ def get_all_good_job_group_ids(
      - more than 50% of jobs are in less than 3-months CDD
     """
 
-    has_any_covid_risk_info = has_covid_risk_info(mongo.HashableNoPiiMongoDatabase(database))
+    # TODO(pascal): Improve this heuristic.
+    are_all_jobs_good = os.getenv('BOB_DEPLOYMENT', 'fr') == 't_pro'
+    has_any_covid_risk_info = has_covid_risk_info(database)
     return {
         rome_id
         for rome_id, job_group in _JOB_GROUPS_INFO.get_collection(database).items()
-        if job_group.automation_risk < automation_risk_threshold and
-        not _is_mostly_temp_job(job_group) and
-        (job_group.covid_risk != job_pb2.COVID_RISKY or not has_any_covid_risk_info)
+        if are_all_jobs_good or (
+            (job_group.automation_risk or unknown_risk_value) < automation_risk_threshold and
+            not _is_mostly_temp_job(job_group) and
+            (job_group.covid_risk != job_pb2.COVID_RISKY or not has_any_covid_risk_info))
     }
 
 
 # TODO(cyrille): Localize for sector descriptions.
 @cache.lru(maxsize=10)
 def get_best_jobs_in_area(
-        proxy: mongo.HashableNoPiiMongoDatabase, area_id: str) -> job_pb2.BestJobsInArea:
+        database: mongo.NoPiiMongoDatabase, area_id: str) -> job_pb2.BestJobsInArea:
     """Get the best jobs in an area."""
 
     return proto.create_from_mongo(
-        proxy.database.best_jobs_in_area.find_one({'_id': area_id}),
+        database.best_jobs_in_area.find_one({'_id': area_id}),
         job_pb2.BestJobsInArea)
 
 
 @cache.lru()
-def has_covid_risk_info(proxy: mongo.HashableNoPiiMongoDatabase) -> bool:
+def has_covid_risk_info(database: mongo.NoPiiMongoDatabase) -> bool:
     """Check whether any job group has Covid-risk information."""
 
     return any(
         bool(job_group.covid_risk)
-        for job_group in _JOB_GROUPS_INFO.get_collection(proxy.database).values()
+        for job_group in _JOB_GROUPS_INFO.get_collection(database).values()
     )
 
 
 @cache.lru()
-def has_automation_risk_info(proxy: mongo.HashableNoPiiMongoDatabase) -> bool:
+def has_automation_risk_info(database: mongo.NoPiiMongoDatabase) -> bool:
     """Check whether any job group has automation-risk information."""
 
     return any(
         job_group.automation_risk > 0
-        for job_group in _JOB_GROUPS_INFO.get_collection(proxy.database).values()
+        for job_group in _JOB_GROUPS_INFO.get_collection(database).values()
     )
 
 
@@ -154,7 +170,7 @@ _SUPER_GROUPS = [
         {'K2204', 'K2303', 'G1501'}),
     _SuperGroup(
         i18n.make_translatable_string('Relations internationales'),
-        {'K140101', 'K140401', 'K240101'}),
+        {'K140101', 'K140401'}),
     _SuperGroup(
         i18n.make_translatable_string('Enseignement et recherche'),
         {'K21', 'K24'}),
@@ -176,19 +192,31 @@ _SUPER_GROUPS = [
 ]
 
 
-# TODO(pascal): Make sure that there are no conflicts (a job in several super groups).
-_SUPER_GROUPS_BY_PREFIX = {
-    prefix: group.name
-    for group in _SUPER_GROUPS
-    for prefix in group.prefixes
-}
+def _group_by_prefix(super_groups: Iterable[_SuperGroup]) -> Mapping[str, str]:
+    super_groups_by_prefix: dict[str, str] = {}
+    for group in super_groups:
+        for prefix in group.prefixes:
+            for i in range(len(prefix)):
+                if prefix[:-i] in super_groups_by_prefix:
+                    raise ValueError(f'Conflict in super groups for {prefix} and {prefix[:-i]}')
+            for existing_prefix in super_groups_by_prefix:
+                if existing_prefix.startswith(prefix):
+                    raise ValueError(f'Conflict in super groups for {prefix} and {existing_prefix}')
+            super_groups_by_prefix[prefix] = group.name
+    return super_groups_by_prefix
+
+
+_SUPER_GROUPS_BY_PREFIX = _group_by_prefix(_SUPER_GROUPS)
 
 
 def upgrade_to_super_group(
         rome_id: str,
-        super_groups: Mapping[str, str] = _SUPER_GROUPS_BY_PREFIX,
+        super_groups: Optional[Mapping[str, str]] = None,
 ) -> Optional[str]:
     """Get a super_group name for a given job group ID if it exists."""
+
+    if super_groups is None:
+        super_groups = _SUPER_GROUPS_BY_PREFIX
 
     for i in range(len(rome_id)):
         try:

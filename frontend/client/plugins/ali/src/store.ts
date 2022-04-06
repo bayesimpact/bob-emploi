@@ -1,11 +1,11 @@
 import {detect} from 'detect-browser'
-import {Dispatch} from 'redux'
-import {ThunkDispatch} from 'redux-thunk'
+import type {Dispatch} from 'redux'
+import type {ThunkDispatch} from 'redux-thunk'
 
-import {AsyncAction} from 'store/actions'
+import type {AsyncAction} from 'store/actions'
 
-import {AnswerType} from './components/answers'
-import {TopicId} from './components/questions_tree'
+import type {AnswerType} from './components/answers'
+import type {TopicId} from './components/questions_tree'
 
 export const Routes = {
   BILAN_PAGE: '/bilan',
@@ -65,11 +65,14 @@ interface PrintSummaryAction {
   type: 'MINI_PRINT_SUMMARY'
 }
 
+export interface MiloCity extends bayes.bob.FrenchCity {
+  cityName?: string
+}
+
 export interface OrgInfo {
   advisor: string
-  city: bayes.bob.FrenchCity
   email: string
-  milo: string
+  milo: MiloCity
 }
 
 interface UpdateOrgInfo {
@@ -186,18 +189,14 @@ export class Logger {
     const {app: {orgInfo}} = state
 
     const {
-      milo = '',
-      city = {},
+      milo = {},
     } = orgInfo || {}
     const orgData: Properties = {}
-    if (milo) {
-      orgData['Mission locale'] = milo
+    if (milo && milo.name) {
+      orgData['Ville'] = milo.name
     }
-    if (city && city.departementId) {
-      orgData['Département'] = city.departementId
-    }
-    if (city && city.name) {
-      orgData['Ville'] = city.name
+    if (milo && milo.departementId) {
+      orgData['Département'] = milo.departementId
     }
     return orgData
   }

@@ -1,5 +1,5 @@
 import {expect} from 'chai'
-import {validateEmail, validateObjectId} from 'store/validations'
+import {scorePasswordComplexity, validateEmail, validateObjectId} from 'store/validations'
 
 describe('validateEmail', (): void => {
   it('should return true for a valid email', (): void => {
@@ -47,5 +47,37 @@ describe('validateObjectId', (): void => {
   it('should return false for a string with other elements than an ObjectId', (): void => {
     const res = validateObjectId('ObjectId("e9d58eb646883a7d5bc9089a")')
     expect(res).to.equal(false)
+  })
+})
+
+describe('scorePasswordComplexity', (): void => {
+  it('should not fail on an empty string', (): void => {
+    const {isStrongEnough, score} = scorePasswordComplexity('')
+    expect(score).to.equal(0)
+    expect(isStrongEnough).to.equal(false)
+  })
+
+  it('should have a low score for a simple pin code', (): void => {
+    const {isStrongEnough, score} = scorePasswordComplexity('2022')
+    expect(score).to.be.within(1, 20)
+    expect(isStrongEnough).to.equal(false)
+  })
+
+  it('should have a medium score for a short password depsite using complexity', (): void => {
+    const {isStrongEnough, score} = scorePasswordComplexity('aA;3')
+    expect(score).to.be.within(5, 40)
+    expect(isStrongEnough).to.equal(false)
+  })
+
+  it('should have a medium score for "password"', (): void => {
+    const {isStrongEnough, score} = scorePasswordComplexity('password')
+    expect(score).to.be.within(30, 50)
+    expect(isStrongEnough).to.equal(false)
+  })
+
+  it('should have a high score for a complex password', (): void => {
+    const {isStrongEnough, score} = scorePasswordComplexity('qvWvJxcAW7yzn32')
+    expect(score).to.be.above(80)
+    expect(isStrongEnough).to.equal(true)
   })
 })

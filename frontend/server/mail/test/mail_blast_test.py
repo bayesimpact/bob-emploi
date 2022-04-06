@@ -12,7 +12,8 @@ import mongomock
 import pymongo
 import requests
 
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.common.python.test import nowmock
+from bob_emploi.frontend.api import email_pb2
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server.mail import campaign
 from bob_emploi.frontend.server.mail import mail_blast
@@ -21,9 +22,9 @@ from bob_emploi.frontend.server.test import mailjetmock
 
 
 _FAKE_CAMPAIGNS = {'fake-user-campaign': campaign.Campaign(
-    typing.cast(mailjet_templates.Id, 'fake-user-campaign'), {},
-    lambda user, **unused_kwargs: {'key': 'value'},
-    'Sender', 'sender@example.com')}
+    typing.cast(mailjet_templates.Id, 'fake-user-campaign'),
+    get_vars=lambda user, **unused_kwargs: {'key': 'value'},
+    sender_name='Sender', sender_email='sender@example.com')}
 
 
 class EmailPolicyTestCase(unittest.TestCase):
@@ -31,9 +32,9 @@ class EmailPolicyTestCase(unittest.TestCase):
 
     def _make_email(
             self, campaign_id: str, days_ago: int = 0, hours_ago: int = 0,
-            status: 'user_pb2.EmailSentStatus.V' = user_pb2.EMAIL_SENT_SENT,
-            status_updated_days_after: Optional[int] = 8) -> user_pb2.EmailSent:
-        email = user_pb2.EmailSent(campaign_id=campaign_id, status=status)
+            status: 'email_pb2.EmailSentStatus.V' = email_pb2.EMAIL_SENT_SENT,
+            status_updated_days_after: Optional[int] = 8) -> email_pb2.EmailSent:
+        email = email_pb2.EmailSent(campaign_id=campaign_id, status=status)
         email.sent_at.FromDatetime(
             datetime.datetime.now() - datetime.timedelta(days_ago, hours_ago))
         if status_updated_days_after:
@@ -78,7 +79,7 @@ class EmailPolicyTestCase(unittest.TestCase):
             # We sent the email, but user ignored it.
             self._make_email('focus-network', days_ago=100),
             # We re-sent the email and users clicked a link in it.
-            self._make_email('focus-network', days_ago=93, status=user_pb2.EMAIL_SENT_CLICKED),
+            self._make_email('focus-network', days_ago=93, status=email_pb2.EMAIL_SENT_CLICKED),
         ]
         self.assertTrue(email_policy.can_send('focus-network', emails_sent))
 
@@ -86,7 +87,7 @@ class EmailPolicyTestCase(unittest.TestCase):
             # We sent the email, but user ignored it.
             self._make_email('focus-network', days_ago=91),
             # We re-sent the email and users clicked a link in it.
-            self._make_email('focus-network', days_ago=78, status=user_pb2.EMAIL_SENT_CLICKED),
+            self._make_email('focus-network', days_ago=78, status=email_pb2.EMAIL_SENT_CLICKED),
         ]
         self.assertFalse(email_policy.can_send('focus-network', emails_sent))
 
@@ -132,7 +133,7 @@ class EmailPolicyTestCase(unittest.TestCase):
             typing.cast(mailjet_templates.Id, 'focus-marvel'), emails_sent))
 
 
-@mock.patch(mail_blast.auth.__name__ + '.SECRET_SALT', new=b'prod-secret')
+@mock.patch(mail_blast.auth_token.__name__ + '.SECRET_SALT', new=b'prod-secret')
 @mailjetmock.patch()
 @mongomock.patch(('mydata.com', 'myprivatedata.com'))
 @mock.patch.dict(
@@ -149,8 +150,10 @@ class BlastCampaignTest(unittest.TestCase):
         mongo.cache.clear()
         super().tearDown()
 
-    @mock.patch(mail_blast.logging.__name__ + '.info')
-    def test_blast_campaign(self, mock_logging: mock.MagicMock) -> None:
+    @mock.patch(mail_blast.report.__name__ + '.notify_slack')
+    @mock.patch('logging.info')
+    def test_blast_campaign(
+            self, mock_logging: mock.MagicMock, mock_notify_slack: mock.MagicMock) -> None:
         """Basic test."""
 
         mock_db = pymongo.MongoClient('mongodb://mydata.com/test').test
@@ -163,8 +166,8 @@ class BlastCampaignTest(unittest.TestCase):
         mock_user_db.user.drop()
         mock_user_db.user.insert_many([
             {
-                '_id': objectid.ObjectId('7b18313aa35d807e631ea3d%d' % month),
-                'registeredAt': '2017-%02d-15T00:00:00Z' % month,
+                '_id': objectid.ObjectId(f'7b18313aa35d807e631ea3d{month}'),
+                'registeredAt': f'2017-{month:02d}-15T00:00:00Z',
                 'profile': {
                     'name': f'{month} user',
                     'email': f'email{month}@corpet.net',
@@ -243,8 +246,12 @@ class BlastCampaignTest(unittest.TestCase):
 
         mock_logging.assert_any_call('Email sent to %s', '7b18313aa35d807e631ea3d4')
         mock_logging.assert_called_with('%d emails sent.', 3)
+        mock_notify_slack.assert_called_once()
+        [slack_notification] = mock_notify_slack.call_args[0]
+        self.assertIn('You can check opening and click stats', slack_notification)
+        self.assertIn('https://app.mailjet.com/stats/campaigns', slack_notification)
 
-    @mock.patch(mail_blast.now.__name__ + '.get')
+    @nowmock.patch()
     def test_change_policy(self, mock_now: mock.MagicMock) -> None:
         """Test with non-default emailing policy."""
 
@@ -289,7 +296,7 @@ class BlastCampaignTest(unittest.TestCase):
         emails_sent = mailjetmock.get_all_sent_messages()
         self.assertEqual(1, len(emails_sent), msg=emails_sent)
 
-    @mock.patch(mail_blast.logging.__name__ + '.info')
+    @mock.patch('logging.info')
     def test_stop_seeking(self, unused_mock_logging: mock.MagicMock) -> None:
         """Basic test."""
 
@@ -328,13 +335,13 @@ class BlastCampaignTest(unittest.TestCase):
             ['emailSTILL_SEEKING@corpet.net'],
             [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
 
-    @mock.patch(mail_blast.logging.__name__ + '.info')
+    @mock.patch('logging.info')
     @mock.patch(mail_blast.campaign.__name__ + '._CAMPAIGNS', new=_FAKE_CAMPAIGNS)
     @mock.patch.dict(mailjet_templates.MAP, {'fake-user-campaign': {'mailjetTemplate': 0}})
     @mock.patch(campaign.__name__ + '.get_campaign_subject', lambda campaign_id: {
         'fake-user-campaign': 'Un faux email de campagne',
     }[campaign_id])
-    @mock.patch(mail_blast.hashlib.__name__ + '.sha1')
+    @mock.patch('hashlib.sha1')
     def test_blast_hash_start(
             self, mock_hasher: mock.MagicMock, unused_mock_logging: mock.MagicMock) -> None:
         """Send mail to users with given hash start."""
@@ -438,9 +445,9 @@ class BlastCampaignTest(unittest.TestCase):
     def test_fake_secret_salt(self) -> None:
         """Raise an error when using the fake secret salt when trying to send."""
 
-        auth = mail_blast.auth
+        auth_token = mail_blast.auth_token
 
-        with mock.patch(auth.__name__ + '.SECRET_SALT', new=auth.FAKE_SECRET_SALT):
+        with mock.patch(auth_token.__name__ + '.SECRET_SALT', new=auth_token.FAKE_SECRET_SALT):
             with self.assertRaises(ValueError):
                 mail_blast.main([
                     'focus-network', 'send',
@@ -501,7 +508,7 @@ class BlastCampaignTest(unittest.TestCase):
                 {'networkEstimate': 1, 'targetJob': {'jobGroup': {'romeId': 'A1234'}}},
             ],
         })
-        with mock.patch(mail_blast.now.__name__ + '.get') as mock_now:
+        with nowmock.patch() as mock_now:
             mock_now.return_value = datetime.datetime(2017, 7, 11, 12, 0, 0, 0)
             mail_blast.main([
                 'focus-network', 'send',
@@ -684,6 +691,34 @@ class BlastCampaignTest(unittest.TestCase):
             '--registered-to', '2017-07-10',
             '--disable-sentry'])
         self.assertFalse(mailjetmock.get_all_sent_messages())
+
+    def test_collection_prefix(self) -> None:
+        """Test the --user-collection-prefix option."""
+
+        mock_user_db = pymongo.MongoClient('mongodb://myprivatedata.com/user_test').user_test
+        mock_user_db.jobflix_user.insert_many([
+            {
+                'registeredAt': '2017-05-15T00:00:00Z',
+                'profile': {
+                    'name': 'The user',
+                    'email': 'jobflix.user@gmail.com',
+                },
+                'projects': [
+                    {'networkEstimate': 1, 'targetJob': {'jobGroup': {'romeId': 'A1234'}}},
+                ],
+            },
+        ])
+        user_collection = list(mock_user_db.user.find({}))
+        mail_blast.main([
+            'focus-network', 'send',
+            '--registered-from', '2017-04-01',
+            '--registered-to', '2017-07-10',
+            '--user-collection-prefix', 'jobflix_',
+            '--disable-sentry'])
+        messages = mailjetmock.get_all_sent_messages()
+        self.assertEqual(
+            ['jobflix.user@gmail.com'], [m.recipient['Email'] for m in messages], msg=messages)
+        self.assertEqual(user_collection, list(mock_user_db.user.find({})))
 
 
 if __name__ == '__main__':

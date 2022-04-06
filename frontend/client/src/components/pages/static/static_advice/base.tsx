@@ -1,16 +1,16 @@
-import {TFunction} from 'i18next'
 import CheckIcon from 'mdi-react/CheckIcon'
-import PropTypes from 'prop-types'
 import {stringify} from 'query-string'
-import React, {useCallback, useEffect, useMemo, useState} from 'react'
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useDispatch, useSelector} from 'react-redux'
 import {useLocation} from 'react-router'
 import {Link, Redirect} from 'react-router-dom'
-import VisibilitySensor from 'react-visibility-sensor'
 
-import {DispatchAllActions, RootState, staticAdvicePageIsShown} from 'store/actions'
-import {LocalizableString} from 'store/i18n'
+import type {DispatchAllActions, RootState} from 'store/actions'
+import {staticAdvicePageIsShown} from 'store/actions'
+import type {LocalizableString} from 'store/i18n'
+
+import useOnScreen from 'hooks/on_screen'
 
 import CardCarousel from 'components/card_carousel'
 import {CookieMessageOverlay} from 'components/cookie_message'
@@ -19,42 +19,13 @@ import {LoginButton} from 'components/login'
 import {useModal} from 'components/modal'
 import isMobileVersion from 'store/mobile'
 import {ShareModal} from 'components/share'
-import {StaticPage, TitleSection} from 'components/static'
+import type {AdviceModule, AdvicePageProps, CardProps} from 'components/static'
+import {STATIC_ADVICE_MODULES, StaticPage,
+  TitleSection} from 'components/static'
 import {MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING, Styles} from 'components/theme'
 import {getAbsoluteUrl, Routes} from 'components/url'
 
 import defaultAdviceImage from 'images/improve-resume.png'
-
-import AssociationHelp from './association_help'
-import Events from './events'
-import Interview from './interview'
-import MotivationLetter from './motivation_letter'
-import Offers from './offers'
-import Relocate from './relocate'
-import Resume from './resume'
-import SelfConfidence from './confidence'
-import Skills from './skills'
-
-
-interface AdviceModule {
-  adviceId: string
-  name: LocalizableString
-  StaticAdviceCard: React.ComponentType<CardProps>
-  Page: React.ComponentType<AdvicePageProps>
-}
-
-
-const STATIC_ADVICE_MODULES: readonly AdviceModule[] = [
-  AssociationHelp,
-  Events,
-  Interview,
-  MotivationLetter,
-  Offers,
-  Relocate,
-  Resume,
-  SelfConfidence,
-  Skills,
-]
 
 const TRACK_HASH = '#sa'
 
@@ -62,6 +33,7 @@ const TRACK_HASH = '#sa'
 interface TestimonialsProps {
   children: readonly React.ReactElement<{author: {name: string}}>[]
   maxShown?: number
+  onVisibilityChange: (isVisible: boolean) => void
   visualElement: string
 }
 
@@ -79,7 +51,7 @@ const loginButtonStyle: React.CSSProperties = {
 const TestimonialSectionBase: React.FC<TestimonialsProps> =
 (props: TestimonialsProps): React.ReactElement => {
   // TODO(cyrille): Use Carousel 3 by 3 on Desktop.
-  const {children, maxShown = isMobileVersion ? 5 : 3, visualElement} = props
+  const {children, maxShown = isMobileVersion ? 5 : 3, onVisibilityChange, visualElement} = props
   const {t} = useTranslation('staticAdvice')
   const firstHelped = useMemo(
     (): string => children.slice(0, 2).map(({props: {author: {name}}}): string => name).join(', '),
@@ -97,7 +69,9 @@ const TestimonialSectionBase: React.FC<TestimonialsProps> =
     margin: '100px auto 0',
     maxWidth: isMobileVersion ? 320 : MAX_CONTENT_WIDTH,
   }
-  return <section style={sectionStyle}>
+  const domRef = useRef<HTMLElement>(null)
+  useOnScreen(domRef, {onChange: onVisibilityChange})
+  return <section style={sectionStyle} ref={domRef}>
     <Trans style={titleStyle} t={t} parent="h2">
       {{productName: config.productName}} a aidé {{names: firstHelped}} et bien d'autres...<br />
       Pourquoi pas vous&nbsp;?
@@ -112,24 +86,7 @@ const TestimonialSectionBase: React.FC<TestimonialsProps> =
     </LoginButton>
   </section>
 }
-TestimonialSectionBase.propTypes = {
-  children: PropTypes.arrayOf(PropTypes.shape({
-    props: PropTypes.shape({
-      author: PropTypes.shape({
-        name: PropTypes.string.isRequired,
-      }),
-    }),
-  })).isRequired,
-  maxShown: PropTypes.number,
-  visualElement: PropTypes.string,
-}
 const TestimonialSection = React.memo(TestimonialSectionBase)
-
-
-export interface CardProps {
-  style?: React.CSSProperties
-  t: TFunction
-}
 
 
 interface AdviceCardProps extends CardProps {
@@ -156,12 +113,6 @@ const StaticAdviceCard = (props: AdviceCardProps): React.ReactElement => {
     <img style={imageCardStyle} src={picto} alt={translate(...name)} />
     <div style={childrenCardStyle}>{children}</div>
   </div>
-}
-StaticAdviceCard.ropTypes = {
-  children: PropTypes.node,
-  name: PropTypes.arrayOf(PropTypes.string),
-  picto: PropTypes.string,
-  style: PropTypes.object,
 }
 const StaticAdviceCardBase = React.memo(StaticAdviceCard)
 
@@ -219,15 +170,7 @@ const StaticAdviceNavigationBase = (props: {currentAdviceId?: string}): React.Re
     </CardCarousel>
   </section>
 }
-StaticAdviceNavigationBase.propTypes = {
-  currentAdviceId: PropTypes.string,
-}
 const StaticAdviceNavigation = React.memo(StaticAdviceNavigationBase)
-
-
-export interface AdvicePageProps {
-  t: TFunction
-}
 
 
 interface StaticAdvicePageProps extends AdvicePageProps {
@@ -280,7 +223,7 @@ const StaticAdvicePageBase = (props: StaticAdvicePageProps): React.ReactElement 
   }
   return <StaticPage
     page={`static-${adviceId}`} isContentScrollable={false} isNavBarTransparent={true}
-    style={{overflow: 'hidden'}} isChatButtonShown={true}
+    style={{overflow: 'hidden'}} isChatButtonShown={false}
     isCookieDisclaimerShown={!!isMobileVersion}>
 
     {isMobileVersion ? null : <CookieMessageOverlay />}
@@ -288,11 +231,11 @@ const StaticAdvicePageBase = (props: StaticAdvicePageProps): React.ReactElement 
     <div style={{height: 70, position: 'absolute', width: '100%'}} />
     <TitleSection pageContent={{title: title}} />
     {children}
-    <VisibilitySensor onChange={handleVisibilityChange} partialVisibility={true}>
-      <TestimonialSection visualElement={`static-advice-testimonial-${adviceId}`}>
-        {testimonials}
-      </TestimonialSection>
-    </VisibilitySensor>
+    <TestimonialSection
+      onVisibilityChange={handleVisibilityChange}
+      visualElement={`static-advice-testimonial-${adviceId}`}>
+      {testimonials}
+    </TestimonialSection>
     <StaticAdviceNavigation currentAdviceId={adviceId} />
     <ShareModal
       onClose={hideShareBob} isShown={isShareBobShown} dispatch={dispatch}
@@ -300,12 +243,6 @@ const StaticAdvicePageBase = (props: StaticAdvicePageProps): React.ReactElement 
       url={url} visualElement={`static-advice-modal-${adviceId}`}
       intro={<strong>{t('Envoyez-leur directement ce lien\u00A0!')}</strong>} />
   </StaticPage>
-}
-StaticAdvicePageBase.propTypes = {
-  adviceId: PropTypes.string.isRequired,
-  children: PropTypes.node,
-  testimonials: PropTypes.arrayOf(PropTypes.element.isRequired),
-  title: PropTypes.string.isRequired,
 }
 const StaticAdvicePage = React.memo(StaticAdvicePageBase)
 
@@ -331,9 +268,6 @@ const AdviceDetailBase = (props: {children?: React.ReactNode}): React.ReactEleme
     <CheckIcon style={adviceDetailIconStyle} />
     <span>{props.children}</span>
   </div>
-}
-AdviceDetailBase.propTypes = {
-  children: PropTypes.node,
 }
 const AdviceDetail = React.memo(AdviceDetailBase)
 
@@ -410,14 +344,7 @@ const AdviceSectionBase = (props: AdviceSectionProps): React.ReactElement => {
     </div>
   </section>
 }
-AdviceSectionBase.propTypes = {
-  adviceId: PropTypes.string,
-  children: PropTypes.node,
-  image: PropTypes.string,
-  title: PropTypes.string.isRequired,
-}
 const AdviceSection = React.memo(AdviceSectionBase)
 
 
-export {AdviceDetail, AdviceSection, StaticAdviceCardBase, StaticAdvicePage,
-  STATIC_ADVICE_MODULES}
+export {AdviceDetail, AdviceSection, StaticAdviceCardBase, StaticAdvicePage}

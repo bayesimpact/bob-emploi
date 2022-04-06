@@ -1,6 +1,5 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 import React, {useCallback, useMemo, useState} from 'react'
-import PropTypes from 'prop-types'
 
 import {combineTOptions} from 'store/i18n'
 import {FRUSTRATION_OPTIONS, useUserExample} from 'store/user'
@@ -8,11 +7,11 @@ import {FRUSTRATION_OPTIONS, useUserExample} from 'store/user'
 import Checkbox from 'components/checkbox'
 import CheckboxList from 'components/checkbox_list'
 import FieldSet from 'components/field_set'
-import Trans from 'components/i18n_trans'
 import Input from 'components/input'
 import Markdown from 'components/markdown'
 
-import {ProfileStepProps, useProfileChangeCallback, useProfileUpdater, Step} from './step'
+import type {ProfileStepProps} from './step'
+import {useProfileChangeCallback, useProfileUpdater, Step} from './step'
 
 
 const countryContext = {
@@ -67,22 +66,20 @@ const CustomFrustrationBase = (props: CustomFrustrationProps): React.ReactElemen
     }
   }, [handleRemove, isSelected])
 
+  const title = t('Frustration supplémentaire - {{number}}', {number: index})
+
   return <div style={customFrustrationStyle}>
     <Checkbox
       isSelected={isSelected}
-      onClick={isSelected ? handleRemove : undefined} />
+      onClick={isSelected ? handleRemove : undefined}
+      disabled={!isSelected} tabIndex={isSelected ? undefined : -1}
+      title={title} />
     <Input
-      value={value} style={inputStyle}
+      value={value} style={inputStyle} name="frustration"
       placeholder={t('Autre…')} onChangeDelayMillisecs={1000}
-      onEdit={handleEditValue}
+      onEdit={handleEditValue} title={title}
       onChange={handleChange} onBlur={removeEmpty} />
   </div>
-}
-CustomFrustrationBase.propTypes = {
-  onChange: PropTypes.func,
-  onRemove: PropTypes.func,
-  t: PropTypes.func.isRequired,
-  value: PropTypes.string,
 }
 const CustomFrustration = React.memo(CustomFrustrationBase)
 
@@ -104,7 +101,6 @@ const fieldsRequired = {
   customFrustrations: false,
   frustrations: false,
 } as const
-
 
 const FrustrationsStep = (props: ProfileStepProps): React.ReactElement => {
   const {isShownAsStepsDuringOnboarding, onBack, onChange, onSubmit, profile, t,
@@ -164,40 +160,33 @@ const FrustrationsStep = (props: ProfileStepProps): React.ReactElement => {
           name, isCountryDependent ? countryContext : genderContext))} />,
       value,
     }))
-  const explanation = isShownAsStepsDuringOnboarding ? <Trans>
-    Y a-t-il des choses qui vous bloquent dans votre recherche d'emploi&nbsp;?<br />
-  </Trans> : null
   const maybeShownCustomFrustrationsPlusOne = maybeShownCustomFrustrations.
     some(({isShown, value}): boolean => isShown && !value) ? maybeShownCustomFrustrations :
     [...maybeShownCustomFrustrations, {isShown: true, value: ''}]
-  const label = isShownAsStepsDuringOnboarding ? '' : t('Éléments bloquants de votre recherche')
+  const legend = isShownAsStepsDuringOnboarding ?
+    t("Y a-t-il des choses qui vous bloquent dans votre recherche d'emploi\u00A0?") :
+    t('Éléments bloquants de votre recherche')
   return <Step
     title={t('Vos éventuelles difficultés')}
-    explanation={explanation}
     fastForward={fastForward}
     onNextButtonClick={handleSubmit}
     onPreviousButtonClick={handleBack}
     {...props}>
-    <FieldSet isInline={isShownAsStepsDuringOnboarding} label={label}>
+    <FieldSet isInline={isShownAsStepsDuringOnboarding} legend={legend}>
       <CheckboxList<bayes.bob.Frustration>
         options={filteredFrustrationOptions}
         values={frustrations}
-        onChange={handleChangeFrustrations} />
+        onChange={handleChangeFrustrations}
+        key="regular" />
+      {maybeShownCustomFrustrationsPlusOne.
+        map(({isShown, value}, index): React.ReactElement|null =>
+          isShown ? <CustomFrustration
+            key={index} value={value} t={t} index={index}
+            onChange={handleChangeCustomFrustration}
+            onRemove={handleRemoveCustomFrustration} /> : null).
+        filter((e: React.ReactElement|null): e is React.ReactElement => !!e)}
     </FieldSet>
-    {maybeShownCustomFrustrationsPlusOne.map(({isShown, value}, index): React.ReactNode =>
-      isShown ? <CustomFrustration
-        key={index} value={value} t={t} index={index}
-        onChange={handleChangeCustomFrustration}
-        onRemove={handleRemoveCustomFrustration} /> : null)}
   </Step>
-}
-FrustrationsStep.propTypes = {
-  isShownAsStepsDuringOnboarding: PropTypes.bool,
-  profile: PropTypes.shape({
-    customFrustrations: PropTypes.arrayOf(PropTypes.string.isRequired),
-    frustrations: PropTypes.arrayOf(PropTypes.string.isRequired),
-    gender: PropTypes.string,
-  }),
 }
 
 

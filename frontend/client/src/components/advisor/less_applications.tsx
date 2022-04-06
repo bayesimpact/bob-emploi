@@ -1,11 +1,12 @@
-import PropTypes from 'prop-types'
 import React from 'react'
 
-import {LocalizableString, prepareT} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {prepareT} from 'store/i18n'
 
 import Picto from 'images/advices/picto-less-applications.svg'
 
-import {CardProps, MethodSuggestionList} from './base'
+import type {CardProps} from './base'
+import {MethodSuggestionList} from './base'
 
 
 const tips = [
@@ -29,9 +30,6 @@ const LessApplicationCard = (props: CardProps): React.ReactElement => {
         {translate(...tip)}
       </span>)}
   </MethodSuggestionList>
-}
-LessApplicationCard.propTypes = {
-  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(LessApplicationCard)
 

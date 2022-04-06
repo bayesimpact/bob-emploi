@@ -2,13 +2,14 @@
 
 import datetime
 import json
-from typing import Any, Dict
+from typing import Any
 import unittest
 from unittest import mock
 
+from bob_emploi.frontend.api import boolean_pb2
 from bob_emploi.frontend.api import project_pb2
-from bob_emploi.frontend.api import user_pb2
-from bob_emploi.frontend.server import auth
+from bob_emploi.frontend.api import user_profile_pb2
+from bob_emploi.frontend.server import auth_token
 from bob_emploi.frontend.server.test import filters_test
 from bob_emploi.frontend.server.test import base_test
 
@@ -27,6 +28,9 @@ class FindWhatYouLikeTestCase(filters_test.FilterTestBase):
                 'yearlyAvgOffersPer10Candidates': 5,
             }
         })
+        if not self.persona.project.target_job.job_group.rome_id:
+            self.persona.project.has_clear_project = boolean_pb2.TRUE
+            self.persona.project.target_job.job_group.rome_id = 'A1234'
 
     # TODO(cyrille): Consider moving in FilterTestBase.
     def _set_persona_age(self, age: int) -> None:
@@ -102,7 +106,7 @@ class FindWhatYouLikeTestCase(filters_test.FilterTestBase):
         """User creating a company fails."""
 
         self.persona.project.kind = project_pb2.CREATE_OR_TAKE_OVER_COMPANY
-        if user_pb2.MOTIVATION in self.persona.user_profile.frustrations[:]:
+        if user_profile_pb2.MOTIVATION in self.persona.user_profile.frustrations[:]:
             del self.persona.user_profile.frustrations[:]
         self._assert_fail_filter()
 
@@ -151,7 +155,7 @@ class FindWhatYouLikeTestCase(filters_test.FilterTestBase):
         self.persona.project.previous_job_similarity = project_pb2.NEVER_DONE
         self.persona.project.job_search_has_not_started = True
         del self.persona.user_profile.frustrations[:]
-        self.persona.user_profile.frustrations.append(user_pb2.MOTIVATION)
+        self.persona.user_profile.frustrations.append(user_profile_pb2.MOTIVATION)
         self._assert_pass_filter()
 
     def test_unmotivated_entrepreneur_pass(self) -> None:
@@ -161,7 +165,14 @@ class FindWhatYouLikeTestCase(filters_test.FilterTestBase):
         self.persona.project.kind = project_pb2.CREATE_OR_TAKE_OVER_COMPANY
         self.persona.project.passionate_level = project_pb2.LIKEABLE_JOB
         del self.persona.user_profile.frustrations[:]
-        self.persona.user_profile.frustrations.append(user_pb2.MOTIVATION)
+        self.persona.user_profile.frustrations.append(user_profile_pb2.MOTIVATION)
+        self._assert_pass_filter()
+
+    def test_undefined_project(self) -> None:
+        """Users with an undefined project fall in this category."""
+
+        self.persona.project.ClearField('target_job')
+        self.persona.project.has_clear_project = boolean_pb2.FALSE
         self._assert_pass_filter()
 
 
@@ -179,21 +190,29 @@ class MissingDiplomaTestCase(filters_test.FilterTestBase):
                 'diplomas': [{
                     'name': 'Bac+2',
                     'percentRequired': 50,
+                    'diploma': {'level': 'BTS_DUT_DEUG'},
                 }],
             },
         })
-        # This job gorup needs no diploma.
+        # This job group needs no diploma.
         self.database.job_group_info.insert_one({
             '_id': 'B5678',
             'requirements': {'diplomas': []},
+        })
+        # This job group needs no diploma, and it's marked as a requirement (UK-data style).
+        self.database.job_group_info.insert_one({
+            '_id': 'C9012',
+            'requirements': {'diplomas': [
+                {'name': 'No diploma', 'diploma': {'level': 'NO_DEGREE'}, 'percentRequired': 50},
+            ]},
         })
 
     def _set_persona_age(self, age: int) -> None:
         self.persona.user_profile.year_of_birth = datetime.datetime.now().year - age
 
-    def _set_job_group(self, is_diploma_required: bool) -> None:
+    def _set_job_group(self, is_diploma_required: bool, is_uk_data: bool = False) -> None:
         self.persona.project.target_job.job_group.rome_id = \
-            'A1234' if is_diploma_required else 'B5678'
+            'A1234' if is_diploma_required else 'C9012' if is_uk_data else 'B5678'
 
     def test_undefined_project(self) -> None:
         """User that don't know what to do raise an error."""
@@ -206,6 +225,12 @@ class MissingDiplomaTestCase(filters_test.FilterTestBase):
         """User that don't require a diploma doesn't fall in this category."""
 
         self._set_job_group(is_diploma_required=False)
+        self._assert_fail_filter()
+
+    def test_no_required_diploma_in_the_uk(self) -> None:
+        """User that doesn't require a diploma doesn't fall in this category."""
+
+        self._set_job_group(is_diploma_required=False, is_uk_data=True)
         self._assert_fail_filter()
 
     def test_already_got_diploma(self) -> None:
@@ -249,11 +274,11 @@ class MissingDiplomaTestCase(filters_test.FilterTestBase):
         self._assert_pass_filter()
 
 
-@mock.patch(auth.__name__ + '._ADMIN_AUTH_TOKEN', 'ze-admin-token')
+@mock.patch(auth_token.__name__ + '._ADMIN_AUTH_TOKEN', 'ze-admin-token')
 class MainChallengeRelevanceTest(base_test.ServerTestCase):
     """Test the relevance of main challenges."""
 
-    def _get_challenges_relevance(self, use_case_json: Dict[str, Any]) -> Dict[str, str]:
+    def _get_challenges_relevance(self, use_case_json: dict[str, Any]) -> dict[str, str]:
         response = self.app.post(
             '/api/eval/use-case/main-challenges',
             data=json.dumps(use_case_json), headers={'Authorization': 'ze-admin-token'})

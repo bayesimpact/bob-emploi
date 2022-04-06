@@ -10,11 +10,10 @@ docker-compose run --rm \
     frontend-flask python bob_emploi/frontend/server/mail_nps.py 2
 """
 
-from typing import Any, Dict
-from urllib import parse
+from typing import Any
 
-from bob_emploi.frontend.server import auth
-from bob_emploi.frontend.server import french
+from bob_emploi.frontend.server import auth_token
+from bob_emploi.frontend.server import product
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server.mail import campaign
 from bob_emploi.frontend.server.mail.templates import mailjet_templates
@@ -26,15 +25,14 @@ _CAMPAIGN_ID: mailjet_templates.Id = 'nps'
 _DAY_CUT_UTC_HOUR = 1
 
 
-def _get_nps_vars(user: user_pb2.User, **unused_kwargs: Any) -> Dict[str, str]:
+def _get_nps_vars(user: user_pb2.User, **unused_kwargs: Any) -> dict[str, str]:
     user_id = user.user_id
-    nps_form_url = f'{campaign.BASE_URL}/retours?hl={parse.quote(user.profile.locale)}'
-    return {
-        'baseUrl': campaign.BASE_URL,
-        'firstName': french.cleanup_firstname(user.profile.name),
-        'npsFormUrl':
-        f'{campaign.BASE_URL}/api/nps?user={user_id}&token={auth.create_token(user_id, "nps")}&'
-        f'redirect={parse.quote(nps_form_url)}',
+    return campaign.get_default_vars(user) | {
+        'npsFormUrl': campaign.get_bob_link('/api/nps', {
+            'user': user_id,
+            'token': auth_token.create_token(user_id, 'nps'),
+            'redirect': campaign.get_bob_link('/retours', {'hl': user.profile.locale}),
+        }),
     }
 
 
@@ -48,7 +46,7 @@ _NPS_CAMPAIGN = campaign.Campaign(
         'registeredAt': {'$gt': '2018-01-01'},
     },
     get_vars=_get_nps_vars,
-    sender_name='Bob',
+    sender_name=product.bob.name,
     sender_email='bob@bob-emploi.fr',
 )
 

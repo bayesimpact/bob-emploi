@@ -4,7 +4,7 @@ import json
 import os
 import sys
 import typing
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Iterable, Optional, Tuple
 
 from google.protobuf import json_format
 import requests
@@ -40,18 +40,18 @@ def _iterate_form_results(uid: str) -> Iterable[typeform_pb2.Photo]:
             yield photo
 
 
-def fetch_forms(uids: Tuple[str, ...] = _TYPEFORM_UIDS) -> Iterable[Tuple[str, Dict[str, Any]]]:
+def fetch_forms(uids: Tuple[str, ...] = _TYPEFORM_UIDS) -> Iterable[Tuple[str, dict[str, Any]]]:
     """Fetch all form definitions from Typeform API."""
 
     for uid in uids:
         yield uid, _fetch_form(uid)
 
 
-def _fetch_form(uid: str) -> Dict[str, Any]:
+def _fetch_form(uid: str) -> dict[str, Any]:
     response = requests.get(f'https://api.typeform.com/forms/{uid}')
     definition = response.json()
     assert isinstance(definition, dict)
-    return typing.cast(Dict[str, Any], definition)
+    return typing.cast(dict[str, Any], definition)
 
 
 def download_forms(output_path: str = _FORMS_PATH, uids: Tuple[str, ...] = _TYPEFORM_UIDS) -> None:
@@ -61,7 +61,7 @@ def download_forms(output_path: str = _FORMS_PATH, uids: Tuple[str, ...] = _TYPE
 
     for uid, definition in fetch_forms(uids):
         output_filename = os.path.join(output_path, f'{uid}.json')
-        with open(output_filename, 'w') as output_file:
+        with open(output_filename, 'w', encoding='utf-8') as output_file:
             json.dump(definition, output_file, sort_keys=True, indent=2, ensure_ascii=False)
 
 
@@ -77,12 +77,12 @@ def upload_forms(json_input_folder: str = _FORMS_PATH) -> None:
         if not filename.endswith('.json'):
             continue
         uid = filename[:-len('.json')]
-        with open(os.path.join(json_input_folder, filename), 'r') as input_file:
+        with open(os.path.join(json_input_folder, filename), 'r', encoding='utf-8') as input_file:
             data = json.load(input_file)
         forms.update(uid, data)
 
 
-def main(string_args: Optional[List[str]] = None) -> None:
+def main(string_args: Optional[list[str]] = None) -> None:
     """Handle download or upload of forms definitions depending on the arguments."""
 
     if string_args and 'upload' in string_args:

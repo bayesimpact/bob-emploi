@@ -1,6 +1,7 @@
-import React, {useCallback, useState} from 'react'
+import _uniqueId from 'lodash/uniqueId'
+import React, {useCallback, useMemo, useState} from 'react'
 
-import {Focusable} from 'hooks/focus'
+import type {Focusable} from 'hooks/focus'
 
 import Checkbox from 'components/checkbox'
 import RadioButton from 'components/radio_button'
@@ -12,14 +13,16 @@ const TOGGLE_INPUTS = {
 } as const
 
 
-interface Props {
+interface Props extends
+  Pick<React.ComponentPropsWithoutRef<typeof RadioButton>,
+  'role'|'aria-describedby'|'aria-invalid'|'aria-required'> {
+  inputStyle?: React.CSSProperties
   isSelected?: boolean
   label: React.ReactNode
   onBlur?: (event?: React.FocusEvent<Element>) => void
   onClick?: (event?: React.MouseEvent<Element>) => void
   onFocus?: (event?: React.FocusEvent<Element>) => void
   style?: React.CSSProperties
-  tabIndex?: number
   type: keyof typeof TOGGLE_INPUTS
 }
 
@@ -29,7 +32,7 @@ interface ToggleInputProps extends React.ComponentPropsWithoutRef<typeof Checkbo
 }
 
 // Label + checkbox / radio
-// - focusing programatically from parent
+// - focusing programmatically from parent
 // - hovering on label changes the style of the the input
 // - click on the label calls onClick
 // - radio groups should work
@@ -37,7 +40,7 @@ interface ToggleInputProps extends React.ComponentPropsWithoutRef<typeof Checkbo
 //   - using arrow keys changes the focus
 // - one tabIndex except when disabled and for multiple radios
 const LabeledToggle = (props: Props, ref: React.Ref<Focusable>): React.ReactElement => {
-  const {isSelected, label, onBlur, onClick, onFocus, style, tabIndex, type, ...otherProps} = props
+  const {inputStyle, isSelected, label, onClick, role, style, type, ...otherProps} = props
   const [isHovered, setIsHovered] = useState(false)
 
   const onMouseEnter = useCallback((): void => setIsHovered(true), [])
@@ -57,16 +60,18 @@ const LabeledToggle = (props: Props, ref: React.Ref<Focusable>): React.ReactElem
     ...style,
   }
   const ToggleInput: React.ComponentType<ToggleInputProps> = TOGGLE_INPUTS[type]
-  return <label
-    {...otherProps} style={containerStyle}
-    onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+  const toggleId = useMemo(_uniqueId, [])
+  // Adding a visual hovering effect on the whole component for users with a cursor.
+  // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+  return <span style={containerStyle}
+    onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} role={role === type ? undefined : role}>
     <ToggleInput
       style={{flex: 'none'}} ref={ref} onClick={onClick && handleClick}
-      {...{isHovered, isSelected, onBlur, onFocus, tabIndex}} />
-    <span style={{marginLeft: 10}}>
+      {...otherProps} {...{inputStyle, isHovered, isSelected}} id={toggleId} />
+    <label style={{paddingLeft: 10}} htmlFor={toggleId}>
       {label}
-    </span>
-  </label>
+    </label>
+  </span>
 }
 
 

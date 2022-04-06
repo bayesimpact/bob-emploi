@@ -74,6 +74,8 @@ const CountryMap: React.FC<Props> = (props: Props): React.ReactElement => {
   }, [stats, selectedAreaId])
   const hasSelectedValue = selectedValue !== undefined
   const scaleStyle = useMemo((): React.CSSProperties => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ['WebkitPrintColorAdjust' as any]: 'exact',
     background: `linear-gradient(to right,
       ${colorGradient('#fff', colors.BOB_BLUE, .1)}, ${colors.BOB_BLUE})`,
     height: 20,

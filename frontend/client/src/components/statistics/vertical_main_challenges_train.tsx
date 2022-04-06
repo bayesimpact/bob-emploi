@@ -2,11 +2,10 @@
 import CheckIcon from 'mdi-react/CheckIcon'
 import CloseIcon from 'mdi-react/CloseIcon'
 import InformationOutlineIcon from 'mdi-react/InformationOutlineIcon'
-import PropTypes from 'prop-types'
 import React, {useCallback, useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 
-import {getTranslatedMainChallenges} from 'store/i18n'
+import {getTranslatedMainChallenges} from 'store/main_challenges'
 import {CHALLENGE_RELEVANCE_COLORS, NO_CHALLENGE_CATEGORY_ID} from 'store/project'
 
 import {colorToAlpha} from 'components/colors'
@@ -93,9 +92,6 @@ const WagonDetailsHoverBase: React.FC<WagonDetailsProps> = ({children}): React.R
     <div style={hoveredDetailsBubbleStyle}>{children}</div>
   </div>
 }
-WagonDetailsHoverBase.propTypes = {
-  children: PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)]),
-}
 const WagonDetailsHover = React.memo(WagonDetailsHoverBase)
 
 
@@ -106,13 +102,12 @@ const WagonDetailsBase: React.FC<WagonDetailsProps> = ({children}): React.ReactE
   const {t} = useTranslation()
   return <div style={{fontWeight: 'normal'}}>
     {isExpanded ? <div style={{padding: '10px 0'}}>{children}</div> : null}
-    <button style={toggleStyle} onClick={toggleExpanded}>
+    <button style={toggleStyle} onClick={toggleExpanded} aria-expanded={isExpanded} type="button">
       {isExpanded ? t("J'ai compris") : t('En savoir plus')}
       <UpDownIcon icon="chevron" isUp={isExpanded} size={14} />
     </button>
   </div>
 }
-WagonDetailsBase.propTypes = WagonDetailsHoverBase.propTypes
 const WagonDetails = React.memo(WagonDetailsBase)
 
 
@@ -134,6 +129,8 @@ const wagonMarkerWidth = 20 as const
 
 const getWagonMarkerStyle = (relevance?: bayes.bob.MainChallengeRelevance):
 React.CSSProperties => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ['WebkitPrintColorAdjust' as any]: 'exact',
   backgroundColor: CHALLENGE_RELEVANCE_COLORS[relevance || 'NEUTRAL_RELEVANCE'],
   borderRadius: 20,
   color: '#fff',
@@ -163,10 +160,6 @@ React.ReactElement => {
       <CheckIcon size={17} style={wagonMarkerIconStyle} /> : null}
   </div>
   {line ? <WagonLine type={line} /> : null}</div>
-}
-WagonMarkerBase.propTypes = {
-  line: PropTypes.oneOf(['arrow', 'dash']),
-  relevance: PropTypes.string,
 }
 const WagonMarker = React.memo(WagonMarkerBase)
 
@@ -256,10 +249,11 @@ const MainChallengeWagonBase: React.FC<MainChallengeWagonProps> = (props): React
     (!areDetailsShownAsHover || isHovered)
   const Details = areDetailsShownAsHover ? WagonDetailsHover : WagonDetails
   const isLmiBeta = config.isLmiInBeta && categoryId === 'stuck-market'
+  // Interactivity is handled specifically to show the tooltip: no real interactions on this
+  // element.
+  // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
   return <li
     onMouseEnter={handleHover} onMouseLeave={handleLeave}
-    // Interactivity is handled specifically to show the tooltip: no real interactions on this
-    // element.
     // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
     tabIndex={0} onFocus={handleHover} onBlur={handleLeave}
     style={containerStyle} title={isMainChallengeShown ? categoryId : undefined}>
@@ -282,20 +276,6 @@ const MainChallengeWagonBase: React.FC<MainChallengeWagonProps> = (props): React
     {isHighlighted ? <div style={wagonBackgroundOverlayStyle} /> : null}
     {hasTopBorder ? <div style={wagonTopBorderStyle} /> : null}
   </li>
-}
-MainChallengeWagonBase.propTypes = {
-  areDetailsShownAsHover: PropTypes.bool,
-  areNeutralDetailsShown: PropTypes.bool,
-  categoryId: PropTypes.string.isRequired,
-  hasFirstBlockerTag: PropTypes.bool,
-  hasTopBorder: PropTypes.bool,
-  isHighlighted: PropTypes.bool,
-  isMainChallengeShown: PropTypes.bool,
-  line: PropTypes.string,
-  metricDetails: PropTypes.string,
-  metricTitle: PropTypes.string.isRequired,
-  relevance: PropTypes.string.isRequired,
-  style: PropTypes.object,
 }
 const MainChallengeWagon = React.memo(MainChallengeWagonBase)
 
@@ -353,21 +333,6 @@ const MainChallengesTrain: React.FC<Props> = (props): React.ReactElement => {
           index < firstBlockerIndex ? 'arrow' : 'dash'}
         style={wagonStyle} {...mainChallenge} />)}
   </ul>
-}
-MainChallengesTrain.propTypes = {
-  areDetailsShownAsHover: PropTypes.bool,
-  areMainChallengeIdsShown: PropTypes.bool,
-  areNeutralDetailsShown: PropTypes.bool,
-  gender: PropTypes.oneOf(['MASCULINE', 'FEMININE']),
-  hasFirstBlockerTag: PropTypes.bool,
-  mainChallenges: PropTypes.arrayOf(PropTypes.shape({
-    categoryId: PropTypes.string.isRequired,
-    metricTitle: PropTypes.string,
-    relevance: PropTypes.string,
-  }).isRequired),
-  style: PropTypes.shape({
-    padding: PropTypes.number.isRequired,
-  }),
 }
 
 

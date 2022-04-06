@@ -1,6 +1,6 @@
 """Importer of US Counties data in MongoDB."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 from bob_emploi.data_analysis.importer.deployments.usa import geonames_city_suggest
 from bob_emploi.data_analysis.lib import geonames
@@ -19,7 +19,7 @@ NEW_YORK_AGGREGATION = {
 
 def make_dicts(
         geonames_admin_dump_filename: str = 'data/usa/geonames_admin.txt',
-        states_fips_codes_filename: str = 'data/usa/states.txt') -> List[Dict[str, Any]]:
+        states_fips_codes_filename: str = 'data/usa/states.txt') -> list[dict[str, Any]]:
     """Import counties info in MongoDB.
 
     Args:

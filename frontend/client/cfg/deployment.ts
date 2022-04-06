@@ -7,27 +7,19 @@
 
 import {promises as fs} from 'fs'
 import JSON5 from 'json5'
-import _flatMap from 'lodash/flatMap'
+import _isEqual from 'lodash/isEqual'
 import _keyBy from 'lodash/keyBy'
+import _uniqBy from 'lodash/uniqBy'
 import path from 'path'
 import {fileURLToPath} from 'url'
 
-import prodToDev from './deployments/environments/dev'
-import prodToDemo from './deployments/environments/demo'
+import type {Constants, Plugin} from './plugins'
+import getAllPlugins, {getCorePlugin} from './plugins'
 
-import getAllPlugins, {Plugin} from './plugins'
 
-interface Constants extends Record<string, unknown> {
-  productName: string
-}
+export type PluginInDeployment = Omit<Plugin, 'deploymentConstants'>
 
-export type PluginInDeployment = Omit<Plugin, 'demoConstants'|'devConstants'|'constants'> & {
-  constants: Constants
-}
-
-interface DeploymentConfig {
-  readonly colors?: {[name: string]: string}
-  readonly constants?: Record<string, unknown>
+interface DeploymentConfig extends Constants {
   readonly plugins: readonly string[]
 }
 
@@ -51,9 +43,63 @@ async function readJson5<T>(fileName: string): Promise<T> {
   return JSON5.parse(content) as T
 }
 
-async function readDeploymentsFromFile(
-  fileName: string, defaultConstants: Constants,
-): Promise<readonly Deployment[]> {
+type ConfigRecord<T> = Record<string, T extends 'colors' ? string : unknown>
+export const ensureOverride = (deployment: string) => <T extends 'colors'|'config'>(
+  configType: T,
+  plugin: string,
+  isCore: boolean,
+  defaultConfig: ConfigRecord<T> = {},
+  fromPlugin: ConfigRecord<T> = {},
+  fromDeployment: ConfigRecord<T> = {},
+  fromPluginDeployment: ConfigRecord<T> = {},
+): ConfigRecord<T> => {
+  const mergedConfig: ConfigRecord<T> = {
+    ...defaultConfig,
+    ...fromPlugin,
+    ...fromDeployment,
+    ...fromPluginDeployment,
+  }
+  if (isCore) {
+    if (!_isEqual(defaultConfig, fromPlugin)) {
+      throw new Error('The core plugin config is not the default.')
+    }
+    if (Object.keys(fromPluginDeployment).length) {
+      throw new Error(`The core plugin overrides its own config for deployment ${deployment}`)
+    }
+    return mergedConfig
+  }
+  const pluginKeys = new Set(Object.keys(fromPlugin))
+  const pluginDeploymentKeys = new Set(Object.keys(fromPluginDeployment))
+  const conflictingKeys = Object.keys(fromDeployment).
+    filter(key => pluginKeys.has(key) && !pluginDeploymentKeys.has(key))
+  if (conflictingKeys.length) {
+    throw new Error(
+      `The following keys are defined in conflicting ${configType} files
+      for deployment ${deployment} and plugin ${plugin}:
+      ${conflictingKeys.join(', ')}`)
+  }
+  return mergedConfig
+}
+
+type Config = Constants['config']
+const overrideEnv = async (env: 'dev'|'demo'|'showcase', config: Partial<Config>) => {
+  const overrides =
+    await readJson5<Partial<Config>>(path.join(deploymentsDir, `environments/${env}.json5`))
+  return {
+    ...config,
+    ...Object.fromEntries(
+      // Only keep the overrides that actually override a value.
+      Object.entries(overrides).filter(([key]) => !!config[key as keyof Config]),
+    ),
+    ...config.radarProductName as string && {
+      radarProductName: `${config.radarProductName} ${env.toUpperCase()}`,
+    },
+    ...config.productName && env === 'dev' && {productName: `${config.productName} DEV`},
+  }
+}
+
+async function readDeploymentsFromFile(fileName: string, {colors, config}: Constants):
+Promise<readonly Deployment[]> {
   if (!CONFIG_REGEX.test(fileName)) {
     return []
   }
@@ -65,30 +111,41 @@ async function readDeploymentsFromFile(
   const deployment = await readJson5<DeploymentConfig>(path.join(deploymentsDir, fileName))
   const allPlugins = await getAllPlugins()
   const pluginsForDeployment = allPlugins.
-    // TODO(cyrille): Consider defaulting to all plugins.
     filter(({name}) => (deployment.plugins || ['core']).includes(name))
   const demoConstants = Object.fromEntries(
-    pluginsForDeployment.map(({name, demoConstants}) => [name, demoConstants]),
+    pluginsForDeployment.map(({name, deploymentConstants}) =>
+      [name, (deploymentConstants.demo || {}).config]),
   )
   const devConstants = Object.fromEntries(
-    pluginsForDeployment.map(({name, demoConstants}) => [name, demoConstants]),
+    pluginsForDeployment.map(({name, deploymentConstants}) =>
+      [name, (deploymentConstants.dev || {}).config]),
   )
+  const overrideDeployment = ensureOverride(name)
   const prodDeployment: Deployment = {
     name,
     plugins: pluginsForDeployment.map(({
-      colors, constants: pluginConstants,
-      devConstants: unusedDevConstants,
-      demoConstants: unusedDemoConstants,
+      constants,
+      deploymentConstants: {[name]: fromBoth = {}},
+      isCore,
+      name: pluginName,
       ...rest
     }) => ({
       ...rest,
-      colors: {...colors, ...deployment.colors},
       constants: {
-        clientVersion: `prod.${name}.${process.env.CLIENT_VERSION}`,
-        ...defaultConstants,
-        ...deployment.constants,
-        ...pluginConstants,
+        colors: overrideDeployment(
+          'colors', pluginName, isCore, colors, constants.colors,
+          deployment.colors, fromBoth.colors,
+        ),
+        config: {
+          ...overrideDeployment(
+            'config', pluginName, isCore, config, constants.config,
+            deployment.config, fromBoth.config,
+          ),
+          clientVersion: `prod.${name}.${pluginName}.${process.env.CLIENT_VERSION}`,
+        },
       },
+      isCore,
+      name: pluginName,
     })),
     prodName: name,
   }
@@ -97,49 +154,83 @@ async function readDeploymentsFromFile(
     {
       ...prodDeployment,
       name: `${name}Demo`,
-      plugins: prodDeployment.plugins.map(({constants, name: pluginName, ...rest}) => ({
-        ...rest,
-        constants: prodToDemo(name, constants, demoConstants[pluginName]),
-        name: pluginName,
-      })),
+      plugins: await Promise.all(
+        prodDeployment.plugins.map(async ({constants, name: pluginName, ...rest}) => ({
+          ...rest,
+          constants: {
+            colors: constants.colors,
+            config: {
+              ...await overrideEnv('demo', constants.config),
+              ...demoConstants[pluginName],
+            },
+          },
+          name: pluginName,
+        })),
+      ),
+      prodName: name,
+    },
+    {
+      ...prodDeployment,
+      name: `${name}Showcase`,
+      plugins: await Promise.all(
+        prodDeployment.plugins.map(async ({constants, name: pluginName, ...rest}) => ({
+          ...rest,
+          constants: {
+            colors: constants.colors,
+            config: {
+              ...await overrideEnv('showcase', constants.config),
+              ...demoConstants[pluginName],
+            },
+          },
+          name: pluginName,
+        })),
+      ),
       prodName: name,
     },
     {
       ...prodDeployment,
       name: `${name}Dev`,
-      plugins: prodDeployment.plugins.map(
-        ({constants, name: pluginName, ...rest}): PluginInDeployment => ({
+      plugins: await Promise.all(
+        prodDeployment.plugins.map(async ({constants, name: pluginName, ...rest}) => ({
           ...rest,
-          constants: prodToDev(name, constants, devConstants[pluginName]),
+          constants: {
+            colors: constants.colors,
+            config: {
+              ...await overrideEnv('dev', constants.config),
+              ...devConstants[pluginName],
+            },
+          },
           name: pluginName,
-        }),
+        })),
       ),
       prodName: name,
     },
   ]
 }
 
-function getDefaultConstants(): Promise<Constants> {
-  return readJson5<Constants>(fileURLToPath(new URL('const.json5', import.meta.url)))
+async function getDefaultConstants(): Promise<Constants> {
+  const {constants} = await getCorePlugin()
+  return constants
 }
 
-const defaultProduct = process.env.BOB_DEPLOYMENT || 'fr'
+export const defaultProduct = process.env.BOB_DEPLOYMENT || 'fr'
 
-export async function getDefaultDeploymentConstants(): Promise<Constants> {
-  const deployment = await readJson5<DeploymentConfig>(
+export async function getDefaultDeploymentConstants(): Promise<Constants['config']> {
+  const {config} = await readJson5<DeploymentConfig>(
     path.join(deploymentsDir, `${defaultProduct}.json5`))
+  const {config: defaultConfig} = await getDefaultConstants()
   return {
-    ...await getDefaultConstants(),
-    ...deployment.constants,
+    ...defaultConfig,
+    ...config,
   }
 }
 
 async function getAllDeployments(): Promise<Deployments> {
   const defaultConstants = await getDefaultConstants()
   const filesAndFolders = await fs.readdir(deploymentsDir)
-  const deploymentsPerFile = await Promise.all(filesAndFolders.map(
-    async (fileName) => await readDeploymentsFromFile(fileName, defaultConstants)))
-  const keyedDeployments = _keyBy(_flatMap(deploymentsPerFile), 'name')
+  const deploymentsPerFile = await Promise.all(
+    filesAndFolders.map(fileName => readDeploymentsFromFile(fileName, defaultConstants)))
+  const keyedDeployments = _keyBy(deploymentsPerFile.flat(), 'name')
 
   const devDeployment = keyedDeployments[`${defaultProduct}Dev`]
   if (!devDeployment) {
@@ -151,7 +242,23 @@ async function getAllDeployments(): Promise<Deployments> {
     ...keyedDeployments,
     demo: keyedDeployments[`${defaultProduct}Demo`],
     dev: devDeployment,
+    showcase: keyedDeployments[`${defaultProduct}Showcase`],
   }
+}
+
+export async function getDistDeployments(pattern?: string): Promise<readonly Deployment[]> {
+  const allDeployments = await getAllDeployments()
+
+  const deploymentsRegexp = new RegExp(pattern || '.*(?<!Showcase)$')
+  const keptDeployments = _uniqBy(
+    Object.keys(allDeployments).
+      filter(name => name !== 'test' &&
+        !name.toLowerCase().endsWith('dev') &&
+        deploymentsRegexp.test(name)).
+      map(name => allDeployments[name]),
+    'name')
+
+  return keptDeployments
 }
 
 export default getAllDeployments

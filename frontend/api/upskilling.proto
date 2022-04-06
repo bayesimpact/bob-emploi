@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "bob_emploi/frontend/api/job.proto";
+import "bob_emploi/frontend/api/options.proto";
 
 package bayes.upskilling;
 option go_package="bayes.org/bob_emploi/frontend/api/upskilling";
@@ -12,7 +13,20 @@ message Job {
   bob.JobGroup job_group = 1;
 
   // Metric shown for this job, such as "salary".
-  string shown_metric = 2;
+  // DEPRECATED(2021-09): Use perks instead.
+  string shown_metric = 2 [deprecated = true];
+
+  // Local stats to override the IMT ones.
+  bob.ImtLocalJobStats local_stats = 3;
+
+  repeated JobPerk perks = 4;
+}
+
+enum JobPerk {
+  UNKNOWN_PERK = 0;
+  NOW_HIRING = 1;
+  PAID_TRAINING = 2;
+  GOOD_SALARY = 3;
 }
 
 // Description of a section, like "top 10 of best wage jobs".
@@ -20,7 +34,7 @@ message Section {
   // Identifier of the section for analytics.
   string id = 1;
 
-  // Name of the section
+  // Name of the section.
   string name = 2;
 
   // List of this section's jobs.
@@ -28,9 +42,25 @@ message Section {
 
   // Opaque state parameter to describe this section for the recommendation engine.
   string state = 4;
+
+  // Whether this is the specific OCR section.
+  bool is_o_c_r = 5;
+
+  // How this section's jobs should be generated in the server.
+  // This field is empty when sent to the client.
+  string generator = 6 [(string_format) = GENERATOR_ID];
+
+  // Whether this section is given only because the user is using the Alpha
+  // version of the app.
+  bool is_for_alpha_only = 7;
 }
 
 message Sections {
   // Sorted list of sections to show.
   repeated Section sections = 1;
+}
+
+message Areas {
+  // IDs of areas.
+  repeated string area_ids = 1;
 }

@@ -6,7 +6,7 @@ import logging
 import random
 import re
 import typing
-from typing import Dict, Iterable, List, Optional, Set
+from typing import Iterable, Iterator, Literal, Optional, Set
 
 from bson import objectid
 import requests
@@ -15,10 +15,10 @@ from bob_emploi.common.python import now
 from bob_emploi.frontend.api import email_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
-from bob_emploi.frontend.server import auth
+from bob_emploi.frontend.server import auth_token
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import proto
-from bob_emploi.frontend.server import scoring_base
+from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server.asynchronous import report
 from bob_emploi.frontend.server.mail import campaign
 # pylint: disable=unused-import
@@ -28,9 +28,12 @@ from bob_emploi.frontend.server.mail import all_campaigns
 from bob_emploi.frontend.server.mail.templates import mailjet_templates
 
 _EMAIL_PERIOD_DAYS = {
-    user_pb2.EMAIL_ONCE_A_MONTH: 30,
-    user_pb2.EMAIL_MAXIMUM: 6,
+    email_pb2.EMAIL_ONCE_A_MONTH: 30,
+    email_pb2.EMAIL_MAXIMUM: 6,
 }
+# Time of the day (as a number of hours since midnight) at which focus emails are sent.
+# Only used for simulation, the actual timing is handled by scheduled tasks.
+_FOCUS_EMAIL_SENDING_TIME = 9
 
 _FOCUS_CAMPAIGNS = campaign.get_coaching_campaigns()
 _DURATION_BEFORE_FIRST_EMAIL = datetime.timedelta(days=3)
@@ -39,10 +42,12 @@ _CAMPAIGNS_DB: proto.MongoCachedCollection[email_pb2.Campaign] = \
     proto.MongoCachedCollection(email_pb2.Campaign, 'focus_emails')
 
 
-def _get_possible_campaigns(
+def get_possible_campaigns(
         database: mongo.NoPiiMongoDatabase,
         restricted_campaigns: Optional[Iterable[mailjet_templates.Id]] = None) \
-        -> Dict[mailjet_templates.Id, email_pb2.Campaign]:
+        -> dict[mailjet_templates.Id, email_pb2.Campaign]:
+    """List all the available campaigns."""
+
     restricted_campaigns_set: Optional[Set[mailjet_templates.Id]]
     if restricted_campaigns:
         if isinstance(restricted_campaigns, set):
@@ -65,25 +70,26 @@ def _get_possible_campaigns(
 
 
 def _send_focus_emails(
-        action: 'campaign.Action', dry_run_email: str,
+        action: 'campaign.NoGhostAction', dry_run_email: str,
         restricted_campaigns: Optional[Iterable[mailjet_templates.Id]] = None) -> None:
-    database, users_database, unused_eval_database = mongo.get_connections_from_env()
+    database, users_database, eval_database = mongo.get_connections_from_env()
 
     instant = now.get()
     email_errors = 0
     counts = {
         campaign_id: 0
-        for campaign_id in sorted(_get_possible_campaigns(database, restricted_campaigns))
+        for campaign_id in sorted(get_possible_campaigns(database, restricted_campaigns))
     }
     potential_users = users_database.user.find({
         'profile.email': {
             '$regex': re.compile(r'[^ ]+@[^ ]+\.[^ ]+'),
+            '$not': re.compile(r'@example.com$'),
         },
         'projects': {'$elemMatch': {
             'isIncomplete': {'$ne': True},
         }},
         'profile.coachingEmailFrequency': {'$in': [
-            user_pb2.EmailFrequency.Name(setting) for setting in _EMAIL_PERIOD_DAYS]},
+            email_pb2.EmailFrequency.Name(setting) for setting in _EMAIL_PERIOD_DAYS]},
         # Note that "not >" is not equivalent to "<=" in the case the field
         # is not defined: in that case we do want to select the user.
         'sendCoachingEmailAfter': {'$not': {'$gt': proto.datetime_to_json_string(instant)}},
@@ -101,7 +107,7 @@ def _send_focus_emails(
         try:
             campaign_id = send_focus_email_to_user(
                 action, user, dry_run_email=dry_run_email, database=database,
-                users_database=users_database, instant=instant,
+                users_database=users_database, eval_database=eval_database, instant=instant,
                 restricted_campaigns=restricted_campaigns_set)
         except requests.exceptions.HTTPError as error:
             if action == 'dry-run':
@@ -139,16 +145,16 @@ _BIG_WEIGHT = 1
 _SCORES_WEIGHT = 5
 _RANDOM_WEIGHTS = {
     # Less random if user receives less emails.
-    user_pb2.EMAIL_ONCE_A_MONTH: 2,
-    user_pb2.EMAIL_MAXIMUM: 4,
+    email_pb2.EMAIL_ONCE_A_MONTH: 2,
+    email_pb2.EMAIL_MAXIMUM: 4,
 }
 
 
 def _shuffle(
         campaigns: Set[mailjet_templates.Id],
-        last_focus_email_sent: Optional[user_pb2.EmailSent],
-        campaigns_scores: Dict[mailjet_templates.Id, float],
-        frequency: 'user_pb2.EmailFrequency.V') -> List[mailjet_templates.Id]:
+        last_focus_email_sent: Optional[email_pb2.EmailSent],
+        campaigns_scores: dict[mailjet_templates.Id, float],
+        frequency: 'email_pb2.EmailFrequency.V') -> list[mailjet_templates.Id]:
     """Shuffles the focus emails and simulates a random sort"""
 
     last_one_was_big = bool(
@@ -158,7 +164,7 @@ def _shuffle(
             typing.cast(mailjet_templates.Id, last_focus_email_sent.campaign_id)
         ].is_big_focus)
 
-    random_weight = _RANDOM_WEIGHTS.get(frequency, _RANDOM_WEIGHTS[user_pb2.EMAIL_MAXIMUM])
+    random_weight = _RANDOM_WEIGHTS.get(frequency, _RANDOM_WEIGHTS[email_pb2.EMAIL_MAXIMUM])
 
     return sorted(
         campaigns,
@@ -170,19 +176,48 @@ def _shuffle(
     )
 
 
+@typing.overload
+def send_focus_email_to_user(
+        action: Literal['ghost'], user: user_pb2.User, *, dry_run_email: None = None,
+        database: mongo.NoPiiMongoDatabase,
+        users_database: None = None,
+        eval_database: None = None,
+        instant: datetime.datetime,
+        restricted_campaigns: Optional[Set[mailjet_templates.Id]] = None) \
+        -> Optional[mailjet_templates.Id]:
+    ...
+
+
+@typing.overload
+def send_focus_email_to_user(
+        action: 'campaign.NoGhostAction', user: user_pb2.User, *,
+        dry_run_email: Optional[str] = None,
+        database: mongo.NoPiiMongoDatabase,
+        users_database: mongo.UsersDatabase,
+        eval_database: mongo.NoPiiMongoDatabase,
+        instant: datetime.datetime,
+        restricted_campaigns: Optional[Set[mailjet_templates.Id]] = None) \
+        -> Optional[mailjet_templates.Id]:
+    ...
+
+
 def send_focus_email_to_user(
         action: 'campaign.Action', user: user_pb2.User, *, dry_run_email: Optional[str] = None,
-        database: mongo.NoPiiMongoDatabase, users_database: mongo.UsersDatabase,
+        database: mongo.NoPiiMongoDatabase,
+        users_database: Optional[mongo.UsersDatabase] = None,
+        eval_database: Optional[mongo.NoPiiMongoDatabase] = None,
         instant: datetime.datetime,
         restricted_campaigns: Optional[Set[mailjet_templates.Id]] = None) \
         -> Optional[mailjet_templates.Id]:
     """Try to send a focus email to the user and returns the campaign ID."""
 
+    if user.profile.coaching_email_frequency == email_pb2.EMAIL_NONE:
+        return None
     if not user.HasField('send_coaching_email_after'):
         send_coaching_email_after = _compute_next_coaching_email_date(user)
         if send_coaching_email_after > instant:
             user.send_coaching_email_after.FromDatetime(send_coaching_email_after)
-            if user.user_id:
+            if user.user_id and action != 'ghost' and users_database:
                 users_database.user.update_one(
                     {'_id': objectid.ObjectId(user.user_id)}, {'$set': {
                         'sendCoachingEmailAfter': proto.datetime_to_json_string(
@@ -202,12 +237,12 @@ def send_focus_email_to_user(
         last_focus_email_sent = email_sent
         focus_emails_sent.add(typing.cast(mailjet_templates.Id, email_sent.campaign_id))
 
-    project = scoring_base.ScoringProject(
+    project = scoring.ScoringProject(
         user.projects[0] if user.projects else project_pb2.Project(),
         user, database, instant,
     )
 
-    possible_campaigns = _get_possible_campaigns(database, restricted_campaigns)
+    possible_campaigns = get_possible_campaigns(database, restricted_campaigns)
     campaigns_scores = {
         campaign_id: (
             project.score(possible_campaign.scoring_model)
@@ -227,8 +262,8 @@ def send_focus_email_to_user(
 
     for campaign_id in potential_campaigns:
         if _FOCUS_CAMPAIGNS[campaign_id].send_mail(
-                user, database=database, users_database=users_database, action=action,
-                dry_run_email=dry_run_email,
+                user, database=database, users_database=users_database, eval_database=eval_database,
+                action=action, dry_run_email=dry_run_email,
                 mongo_user_update={'$set': {
                     'sendCoachingEmailAfter': proto.datetime_to_json_string(
                         next_send_coaching_email_after,
@@ -245,7 +280,7 @@ def send_focus_email_to_user(
         _compute_last_coaching_email_date(user, user.registered_at.ToDatetime())
     send_coaching_email_after = instant + (instant - last_coaching_email_sent_at)
     user.send_coaching_email_after.FromDatetime(send_coaching_email_after)
-    if user.user_id and action != 'ghost':
+    if user.user_id and action != 'ghost' and users_database:
         logging.debug('No more available focus email for "%s"', user.user_id)
         users_database.user.update_one({'_id': objectid.ObjectId(user.user_id)}, {'$set': {
             'sendCoachingEmailAfter': proto.datetime_to_json_string(send_coaching_email_after),
@@ -289,7 +324,40 @@ def _compute_duration_to_next_coaching_email(user: user_pb2.User) -> datetime.ti
     return datetime.timedelta(days=period_days) * (1 + .2 * (2 * random.random() - 1))
 
 
-def main(string_args: Optional[List[str]] = None) -> None:
+def simulate_coaching_emails(
+        user_proto: user_pb2.User, *,
+        database: mongo.NoPiiMongoDatabase,
+        attempts: int = 200, retry_after_fail: bool = False) -> Iterator[email_pb2.EmailSent]:
+    """Compute the email coaching schedule."""
+
+    instant = now.get()
+
+    # Complete the user's proto with mandatory fields.
+    if not user_proto.HasField('registered_at'):
+        user_proto.registered_at.FromDatetime(instant)
+    if not user_proto.profile.coaching_email_frequency:
+        user_proto.profile.coaching_email_frequency = email_pb2.EMAIL_MAXIMUM
+    if not user_proto.projects:
+        user_proto.projects.add()
+
+    for attempt in range(attempts):
+        campaign_id = send_focus_email_to_user(
+            'ghost', user_proto, database=database, instant=instant)
+        if attempt and not campaign_id and not retry_after_fail:
+            # No more email to send.
+            # Note that the first call might not return a campaign ID as we do not send focus emails
+            # right away.
+            return
+        if campaign_id:
+            yield user_proto.emails_sent[-1]
+        instant = user_proto.send_coaching_email_after.ToDatetime()
+        if instant.hour > _FOCUS_EMAIL_SENDING_TIME or \
+                instant.hour == _FOCUS_EMAIL_SENDING_TIME and instant.minute:
+            instant += datetime.timedelta(days=1)
+        instant = instant.replace(hour=9, minute=0)
+
+
+def main(string_args: Optional[list[str]] = None) -> None:
     """Parse command line arguments and send mails."""
 
     parser = argparse.ArgumentParser(
@@ -309,7 +377,7 @@ def main(string_args: Optional[List[str]] = None) -> None:
     if not report.setup_sentry_logging(args, dry_run=args.action != 'send'):
         return
 
-    if args.action == 'send' and auth.SECRET_SALT == auth.FAKE_SECRET_SALT:
+    if args.action == 'send' and auth_token.SECRET_SALT == auth_token.FAKE_SECRET_SALT:
         raise ValueError('Set the prod SECRET_SALT env var before continuing.')
 
     if args.action == 'list':

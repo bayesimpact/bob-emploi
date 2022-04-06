@@ -1,1 +1,2 @@
+protobuf==3.20.0
 requests

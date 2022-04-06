@@ -1,7 +1,7 @@
 // Convert Imilo Props to Bob User Props.
 import * as Sentry from '@sentry/browser'
 
-import {CursusPage, ImiloProps, SituationsPage} from './imilo_api'
+import type {CursusPage, ImiloProps, SituationsPage} from './imilo_api'
 
 
 Sentry.init({

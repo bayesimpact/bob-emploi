@@ -2,7 +2,7 @@
 
 import argparse
 import json
-from typing import Optional, List, TypedDict
+from typing import Optional, TypedDict
 
 import requests
 
@@ -46,7 +46,7 @@ def main(
     job_groups.to_csv(output_csv, index=False, sep='\t')
 
 
-def _parser_main(string_args: Optional[List[str]] = None) -> None:
+def _parser_main(string_args: Optional[list[str]] = None) -> None:
 
     parser = argparse.ArgumentParser(
         description='Get the unemployment rate for a specific year for a list of SOC codes.')

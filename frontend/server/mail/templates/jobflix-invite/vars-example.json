@@ -1,0 +1,10 @@
+{
+  "baseUrl": "https://www.bob-emploi.fr",
+  "changeEmailSettingsUrl": "https://www.bob-emploi.fr",
+  "firstName": "Pascal",
+  "gender": "FEMININE",
+  "productName": "Bob",
+  "sideProductName": "Jobflix",
+  "sideProductUrl": "https://www.jobflix.app",
+  "statusUpdateUrl": "https://www.bob-emploi.fr"
+}

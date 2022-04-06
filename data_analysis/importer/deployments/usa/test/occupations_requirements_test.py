@@ -32,6 +32,10 @@ class OccupationRequirementsImporterTestCase(unittest.TestCase):
         self.assertEqual(job_pb2.LICENCE_MAITRISE, soc_11_1011.diplomas[1].diploma.level)
         self.assertEqual(35, soc_11_1011.diplomas[1].percent_required)
 
+        soc_11_3071 = requirements_proto['11-3071']
+        self.assertEqual(5, len(soc_11_3071.diplomas), soc_11_3071.diplomas)
+        self.assertEqual(55, soc_11_3071.diplomas[0].percent_required)
+
 
 if __name__ == '__main__':
     unittest.main()

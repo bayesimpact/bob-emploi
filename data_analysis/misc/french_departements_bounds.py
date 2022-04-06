@@ -8,7 +8,7 @@ import csv
 import json
 from os import path
 import sys
-from typing import Any, Dict, Iterator, Optional, TextIO, Tuple, Union
+from typing import Any, Iterator, Optional, TextIO, Tuple, Union
 
 
 def main(
@@ -24,12 +24,12 @@ def main(
 
     if not filename:
         filename = path.join(data_folder, 'geo/departements-avec-outre-mer.geojson')
-    with open(filename) as file_handle:
+    with open(filename, encoding='utf-8') as file_handle:
         geo_json = json.load(file_handle)
 
     output_file: TextIO
     if isinstance(output_csv, str):
-        output_file = open(output_csv, 'w')
+        output_file = open(output_csv, 'w', encoding='utf-8')
     else:
         output_file = output_csv
 
@@ -46,7 +46,7 @@ def main(
         output_file.close()
 
 
-def _compute_bounding_box(geometry: Dict[str, Any]) -> Dict[str, float]:
+def _compute_bounding_box(geometry: dict[str, Any]) -> dict[str, float]:
     points_iterator = iter(_list_all_points(geometry))
     min_longitude, min_latitude = next(points_iterator)
     max_longitude, max_latitude = min_longitude, min_latitude
@@ -68,7 +68,7 @@ def _compute_bounding_box(geometry: Dict[str, Any]) -> Dict[str, float]:
     }
 
 
-def _list_all_points(geometry: Dict[str, Any]) -> Iterator[Tuple[float, float]]:
+def _list_all_points(geometry: dict[str, Any]) -> Iterator[Tuple[float, float]]:
     if geometry['type'] == 'Polygon':
         for ring in geometry['coordinates']:
             for point in ring:

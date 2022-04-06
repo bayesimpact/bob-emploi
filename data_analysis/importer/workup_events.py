@@ -6,7 +6,7 @@ WorkUp dataset.
 
 import json
 import math
-from typing import Any, Dict, List, TextIO, Union
+from typing import Any, TextIO, Union
 
 import pandas as pd
 
@@ -27,7 +27,7 @@ _WORKUP_EVENT_URL = 'https://www.workuper.com/events/{}'
 
 
 def events2dicts(events_json: str, departement_bounds_csv: Union[str, TextIO]) \
-        -> List[Dict[str, Any]]:
+        -> list[dict[str, Any]]:
     """Convert the events JSON to our own format before mongo import.
 
     Args:
@@ -39,14 +39,14 @@ def events2dicts(events_json: str, departement_bounds_csv: Union[str, TextIO]) \
     """
 
     departements = pd.read_csv(departement_bounds_csv, dtype={'departement_id': str})
-    with open(events_json, 'r') as events_file:
+    with open(events_json, 'r', encoding='utf-8') as events_file:
         events = json.load(events_file)
     return [
         _workup_to_proto(e, departements)
         for e in events if _is_valid_event(e)]
 
 
-def _is_valid_event(event: Dict[str, Any]) -> bool:
+def _is_valid_event(event: dict[str, Any]) -> bool:
     # Display only Free events.
     if event['price']:
         return False
@@ -61,8 +61,8 @@ def _is_valid_event(event: Dict[str, Any]) -> bool:
     return True
 
 
-def _workup_to_proto(event: Dict[str, Any], departements: pd.DataFrame) -> Dict[str, Any]:
-    geo_filters: List[str]
+def _workup_to_proto(event: dict[str, Any], departements: pd.DataFrame) -> dict[str, Any]:
+    geo_filters: list[str]
     if event.get('address', '').strip().lower() in ('en ligne', 'internet'):
         geo_filters = []
     else:

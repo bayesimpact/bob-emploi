@@ -2,17 +2,29 @@
 EXIT=0
 
 echo "Running type analysis..."
-# TODO(pascal): Check https://github.com/python/mypy/issues/7030 to see what to do with the
-# --implicit-reexport flag
-mypy bob_emploi/data_analysis --strict --ignore-missing-imports --implicit-reexport || EXIT=$?
+mypy bob_emploi/data_analysis --strict --ignore-missing-imports || EXIT=$?
 
 echo "Running pycodestyle..."
-find bob_emploi/data_analysis -name "*.py" | grep -v _pb2.py$ | xargs pycodestyle || EXIT=$?
+pycodestyle bob_emploi/data_analysis || EXIT=$?
 
 echo "Running pylint..."
-find bob_emploi/data_analysis -name "*.py" | grep -v _pb2.py$ | xargs pylint || EXIT=$?
+pylint bob_emploi/data_analysis || EXIT=$?
 
+function run_tests() {
+    local coverage="$1" exit_code
+    local cmd=(-m unittest discover bob_emploi/data_analysis '*_test.py' --buffer)
+    if [ -z "$coverage" ]; then
+        python "${cmd[*]}" || return $?
+    else
+        coverage erase
+        coverage run "${cmd[@]}" || exit_code=$?
+        coverage report --fail-under 90 || exit_code=$?
+        coverage html -d cover
+        coverage xml
+        return ${exit_code:-0}
+    fi
+}
 echo "Running tests..."
-nosetests bob_emploi/data_analysis $@ || EXIT=$?
+run_tests "$COVERAGE" || EXIT=$?
 
 exit $EXIT

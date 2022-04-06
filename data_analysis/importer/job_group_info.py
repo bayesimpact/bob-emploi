@@ -20,7 +20,7 @@ import json
 import os
 import re
 import typing
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Tuple
+from typing import Any, Callable, Iterable, Mapping, Optional, Tuple
 
 from airtable import airtable
 import pandas
@@ -38,31 +38,40 @@ _JOB_PROTO_JSON_FIELDS = [
     'name', 'masculineName', 'feminineName', 'codeOgr']
 AIRTABLE_API_KEY = os.getenv('AIRTABLE_API_KEY', '')
 USERS_MONGO_URL = os.getenv('USERS_MONGO_URL')
+Sampler = Callable[[pandas.DataFrame], list[dict[str, Any]]]
 
 
-# TODO(cyrille): Add domain from ROME letter prefix.
+def _create_jobs_sampler(num_samples: Optional[int]) -> Sampler:
+    def _sampling(jobs: pandas.DataFrame) -> list[dict[str, Any]]:
+        if num_samples is not None and len(jobs) > num_samples:
+            jobs = jobs.sample(n=num_samples)
+        return typing.cast(list[dict[str, Any]], jobs[_JOB_PROTO_JSON_FIELDS].to_dict('records'))
+    return _sampling
+
+
 def make_dicts(
         *,
         rome_csv_pattern: str,
-        job_requirements_json: str,
-        job_application_complexity_json: str,
-        application_mode_csv: str,
-        rome_fap_crosswalk_txt: str,
-        handcrafted_assets_airtable: str,
-        domains_airtable: str,
-        strict_diplomas_airtable: str,
-        info_by_prefix_airtable: str,
-        fap_growth_2012_2022_csv: str,
-        imt_market_score_csv: str,
-        jobboards_airtable: Optional[str] = None,
-        skills_for_future_airtable: Optional[str] = None,
-        specific_to_job_airtable: Optional[str] = None,
+        application_mode_csv: Optional[str] = None,
         brookings_json: Optional[str] = None,
+        domains_airtable: Optional[str] = None,
+        fap_growth_2012_2022_csv: Optional[str] = None,
+        handcrafted_assets_airtable: Optional[str] = None,
+        imt_market_score_csv: Optional[str] = None,
+        info_by_prefix_airtable: Optional[str] = None,
+        jobboards_airtable: Optional[str] = None,
+        job_application_complexity_json: Optional[str] = None,
+        job_requirements_json: Optional[str] = None,
+        rome_fap_crosswalk_txt: Optional[str] = None,
+        rome_isco_crosswalk_xlsx: Optional[str] = None,
+        skills_for_future_airtable: Optional[str] = None,
         soc_2010_xls: Optional[str] = None,
         soc_isco_crosswalk_xls: Optional[str] = None,
-        rome_isco_crosswalk_xlsx: Optional[str] = None,
-        trainings_csv: Optional[str] = None) \
-        -> List[Dict[str, Any]]:
+        specific_to_job_airtable: Optional[str] = None,
+        strict_diplomas_airtable: Optional[str] = None,
+        trainings_csv: Optional[str] = None,
+        sampler_generator: Callable[[Optional[int]], Sampler] = _create_jobs_sampler) \
+        -> list[dict[str, Any]]:
     """Import job info in MongoDB.
 
     Args:
@@ -72,36 +81,57 @@ def make_dicts(
             'liens_rome_referentiels' and 'referentiel_appellation'.
         job_requirements_json: path to a JSON file containing requirements per
             job group.
+                For `requirements`.
         job_application_complexity_json: path to a JSON file containing the
             application complexity of each job group.
+                For `application_complexity`.
         application_mode_csv: path to a CSV file containing the application mode
             data from emploi-store-dev API.
+                For `application_modes`.
         rome_fap_crosswalk_txt: path to a TXT file containing the crosswalk
             from FAP codes to ROME job group codes.
+                For `application_modes`, `growth_2012_2022`.
         handcrafted_assets_airtable: the base ID and the table named joined by
             a ':' of the AirTable containing the advice per job group (short
             texts describing assets required).
+                For `requirements`.
         domains_airtable: the base ID and the table name joined by a ':' of the
             AirTable containing the domain name for each sector.
+                For `work_environment_keywords`.
         strict_diplomas_airtable: the base ID and the table name joined by a ':' of the
             AirTable which tells if a diploma is strictly required.
+                For `is_diploma_strictly_required`.
         info_by_prefix_airtable: the base ID and the table name joined by a ':'
+                For `covidRisk`, `domain`, `hasFreelancers`, `inAWorkplace`, `inDomain`,
+                `likeYourWorkplace`, `placePlural`, `preferredApplicationMedium`, `whatILoveAbout`,
+                `toTheWorkplace`, `whySpecificCompany`, `atVariousCompanies`,
+                `whatILoveAboutFeminine`.
             of the AirTable containing some manually specified info for group of
             job group (by ROME ID prefix).
         fap_growth_2012_2022_csv: path to a CSV file containing the growth of
             FAP job groups for the period 2012-2022.
+                For `growth_2012_2022`.
         imt_market_score_csv: path to a CSV containing market score info from IMT.
+                For `best_departements`, `departement_scores`, `nationam_market_score`.
         jobboards_airtable: the base ID and the table name joined by a ':' of the Airtable of the
             job boards.
+                For `job_boards`.
         skills_for_future_airtable: the base ID and the table name joined by a ':' of the Airtable
             of the skills for the future.
+                For `skills_for_future`.
         specific_to_job_airtable: the base ID and the table name joined by a ':' of the Airtable
             of the specific to job pieces advice.
+                For `specific_advice`
         brookings_json: path to a JSON file with data from Brookings report for automation risk.
+                For `automation_risk`.
         soc_2010_xls: path to an XLS file with the names of US SOC 2010 groups.
+                For `automation_risk`.
         soc_isco_crosswalk_xls: path to an XLS file of the crosswalk btw US SOC 2010 and ISCO-08.
+                For `automation_risk`.
         rome_isco_crosswalk_xlsx: path to an XLSX file of the crosswalk btw ROME and ISCO-08.
+                For `automation_risk`.
         trainings_csv: path to a CSV with trainings data.
+                For `training_count`.
     Returns:
         A list of dict that maps the JSON representation of JobGroup protos.
     """
@@ -117,18 +147,26 @@ def make_dicts(
     rome_work_environments = cleaned_data.rome_work_environments(
         links_filename=rome_csv_pattern.format('liens_rome_referentiels'),
         ref_filename=rome_csv_pattern.format('referentiel_env_travail'))
-    handcrafted_assets = _load_assets_from_airtable(*handcrafted_assets_airtable.split(':'))
-    sector_domains = _load_domains_from_airtable(*domains_airtable.split(':'))
-    info_by_prefix = _load_prefix_info_from_airtable(job_groups.index, info_by_prefix_airtable)
+    handcrafted_assets = _load_assets_from_airtable(*handcrafted_assets_airtable.split(':')) \
+        if handcrafted_assets_airtable else {}
+    sector_domains = _load_domains_from_airtable(*domains_airtable.split(':')) \
+        if domains_airtable else {}
+    info_by_prefix = _load_prefix_info_from_airtable(job_groups.index, info_by_prefix_airtable) \
+        if info_by_prefix_airtable else None
     application_modes = _get_application_modes(
-        application_mode_csv, rome_fap_crosswalk_txt)
-    fap_growth_2012_2022 = pandas.read_csv(fap_growth_2012_2022_csv)
-    jobboards_by_rome = _load_items_from_airtable(
-        'JobBoard', job_groups.index, jobboards_airtable, 'for-job-group')
-    skills_for_future_by_rome = _load_items_from_airtable(
-        'Skill', job_groups.index, skills_for_future_airtable, 'rome_prefixes')
-    specific_to_job_by_rome = _load_items_from_airtable(
-        'DynamicAdvice', job_groups.index, specific_to_job_airtable, 'fr:for-job-group')
+        application_mode_csv, rome_fap_crosswalk_txt,
+    ) if application_mode_csv and rome_fap_crosswalk_txt else None
+    fap_growth_2012_2022 = pandas.read_csv(fap_growth_2012_2022_csv) if fap_growth_2012_2022_csv \
+        else None
+    jobboards_by_rome = airtable_to_protos.load_items_from_prefix(
+        'JobBoard', job_groups.index, jobboards_airtable, 'for-job-group',
+    ) if jobboards_airtable else None
+    skills_for_future_by_rome = airtable_to_protos.load_items_from_prefix(
+        'Skill', job_groups.index, skills_for_future_airtable, 'rome_prefixes',
+    ) if skills_for_future_airtable else None
+    specific_to_job_by_rome = airtable_to_protos.load_items_from_prefix(
+        'DynamicAdvice', job_groups.index, specific_to_job_airtable, 'fr:for-job-group',
+    ) if specific_to_job_airtable else None
     users_highest_degrees = _load_highest_degrees_from_mongo()
 
     # Genderize names.
@@ -140,35 +178,39 @@ def make_dicts(
     jobs.index.name = 'codeOgr'
     jobs.reset_index(inplace=True)
     jobs_grouped = jobs.groupby('code_rome')
-    job_groups['samples'] = jobs_grouped.apply(_create_jobs_sampler(3))
+    job_groups['samples'] = jobs_grouped.apply(sampler_generator(3))
     job_groups['samples'] = job_groups.samples.apply(
         lambda s: s if isinstance(s, list) else [])
-    job_groups['jobs'] = jobs_grouped.apply(_create_jobs_sampler(None))
+    job_groups['jobs'] = jobs_grouped.apply(sampler_generator(None))
     job_groups['jobs'] = job_groups.jobs.apply(
         lambda s: s if isinstance(s, list) else [])
 
     # Add info by prefix.
-    job_groups = job_groups.join(info_by_prefix)
+    if info_by_prefix is not None:
+        job_groups = job_groups.join(info_by_prefix)
 
     # Combine requirements from json file.
-    with open(job_requirements_json) as job_requirements_file:
-        job_requirements_list = json.load(job_requirements_file)
-        job_requirements_dict = {
-            job_requirement.pop('_id'): job_requirement
-            for job_requirement in job_requirements_list}
-    job_groups['requirements'] = job_groups.index.map(job_requirements_dict)
-    # Replace NaN by empty dicts.
-    job_groups['requirements'] = job_groups.requirements.apply(
-        lambda r: r if isinstance(r, dict) else {})
+    if job_requirements_json:
+        with open(job_requirements_json, encoding='utf-8') as job_requirements_file:
+            job_requirements_list = json.load(job_requirements_file)
+            job_requirements_dict = {
+                job_requirement.pop('_id'): job_requirement
+                for job_requirement in job_requirements_list}
+        job_groups['requirements'] = job_groups.index.map(job_requirements_dict)
+        # Replace NaN by empty dicts.
+        job_groups['requirements'] = job_groups.requirements.apply(
+            lambda r: r if isinstance(r, dict) else {})
 
-    # Combine requirements from AirTable.
-    for job_group in job_groups.itertuples():
-        job_group.requirements.update(handcrafted_assets.get(job_group.Index, {}))
+        # Combine requirements from AirTable.
+        if handcrafted_assets:
+            for job_group in job_groups.itertuples():
+                job_group.requirements.update(handcrafted_assets.get(job_group.Index, {}))
 
-    application_complexity = pandas.read_json(job_application_complexity_json)
-    application_complexity.set_index('_id', inplace=True)
-    job_groups['applicationComplexity'] = application_complexity['applicationComplexity']
-    job_groups.applicationComplexity.fillna('UNKNOWN_APPLICATION_COMPLEXITY', inplace=True)
+    if job_application_complexity_json:
+        application_complexity = pandas.read_json(job_application_complexity_json)
+        application_complexity.set_index('_id', inplace=True)
+        job_groups['applicationComplexity'] = application_complexity['applicationComplexity']
+        job_groups.applicationComplexity.fillna('UNKNOWN_APPLICATION_COMPLEXITY', inplace=True)
 
     # Add Hollande Code https://en.wikipedia.org/wiki/Holland_Codes.
     # Will later be used for job similarity measures.
@@ -186,23 +228,26 @@ def make_dicts(
     job_groups.requirementsText.fillna('', inplace=True)
 
     # Add work environment items.
-    rome_work_environments['domain'] = rome_work_environments['name'].map(sector_domains)
-    job_groups['workEnvironmentKeywords'] = \
-        rome_work_environments.groupby('code_rome').apply(_group_work_environment_items)
-    # Fill NaN with empty {}.
-    job_groups['workEnvironmentKeywords'] = job_groups.workEnvironmentKeywords.apply(
-        lambda k: k if isinstance(k, dict) else {})
+    if sector_domains:
+        rome_work_environments['domain'] = rome_work_environments['name'].map(sector_domains)
+        job_groups['workEnvironmentKeywords'] = \
+            rome_work_environments.groupby('code_rome').apply(_group_work_environment_items)
+        # Fill NaN with empty {}.
+        job_groups['workEnvironmentKeywords'] = job_groups.workEnvironmentKeywords.apply(
+            lambda k: k if isinstance(k, dict) else {})
 
     # Add application modes.
-    job_groups['applicationModes'] = application_modes
-    job_groups['applicationModes'] = job_groups.applicationModes.apply(
-        lambda m: m if isinstance(m, dict) else {})
+    if application_modes is not None:
+        job_groups['applicationModes'] = application_modes
+        job_groups['applicationModes'] = job_groups.applicationModes.apply(
+            lambda m: m if isinstance(m, dict) else {})
 
     # Add growth for the 2012-2022 period.
-    job_groups['growth20122022'] = _get_growth_2012_2022(
-        fap_growth_2012_2022, rome_fap_crosswalk_txt)
-    job_groups.loc[job_groups.growth20122022 == 0, 'growth20122022'] = .000001
-    job_groups['growth20122022'].fillna(0, inplace=True)
+    if fap_growth_2012_2022 is not None and rome_fap_crosswalk_txt:
+        job_groups['growth20122022'] = _get_growth_2012_2022(
+            fap_growth_2012_2022, rome_fap_crosswalk_txt)
+        job_groups.loc[job_groups.growth20122022 == 0, 'growth20122022'] = .000001
+        job_groups['growth20122022'].fillna(0, inplace=True)
 
     # Add automation risk.
     if brookings_json and soc_2010_xls and soc_isco_crosswalk_xls and rome_isco_crosswalk_xlsx:
@@ -217,32 +262,38 @@ def make_dicts(
         job_groups['automationRisk'].fillna(0, inplace=True)
 
     # Add best departements.
-    market_scores = cleaned_data.market_scores(filename=imt_market_score_csv)
-    market_scores = market_scores[market_scores.AREA_TYPE_CODE == 'D'].\
-        reset_index().\
-        drop(['market_score', 'yearly_avg_offers_denominator', 'AREA_TYPE_CODE'], axis='columns').\
-        rename({
-            'departement_id': 'district_id',
-            'rome_id': 'job_group',
-            'yearly_avg_offers_per_10_candidates': 'market_score',
-        }, axis='columns')
-    job_groups['departementScores'] = market_score_derivatives.get_less_stressful_districts(
-        market_scores)
-    # Fill NaN with empty [].
-    job_groups['departementScores'] = job_groups.departementScores.apply(
-        lambda s: s if isinstance(s, list) else [])
-    # TODO(cyrille): Drop this, once we're sure it's no more used in server.
-    job_groups['bestDepartements'] = job_groups.departementScores.apply(lambda ds: ds[:11])
+    if imt_market_score_csv:
+        market_scores = cleaned_data.market_scores(filename=imt_market_score_csv)
+        market_scores = market_scores[market_scores.AREA_TYPE_CODE == 'D'].\
+            reset_index().\
+            drop([
+                'market_score',
+                'yearly_avg_offers_denominator',
+                'AREA_TYPE_CODE',
+            ], axis='columns').\
+            rename({
+                'departement_id': 'district_id',
+                'rome_id': 'job_group',
+                'yearly_avg_offers_per_10_candidates': 'market_score',
+            }, axis='columns')
+        job_groups['departementScores'] = market_score_derivatives.get_less_stressful_districts(
+            market_scores)
+        # Fill NaN with empty [].
+        job_groups['departementScores'] = job_groups.departementScores.apply(
+            lambda s: s if isinstance(s, list) else [])
+        # TODO(cyrille): Drop this, once we're sure it's no more used in server.
+        job_groups['bestDepartements'] = job_groups.departementScores.apply(lambda ds: ds[:11])
 
-    # Add national market score.
-    # TODO(cyrille): Add this in market_score_derivatives.
-    job_groups['nationalMarketScore'] = _get_national_market_scores(imt_market_score_csv)
-    job_groups['nationalMarketScore'].fillna(0, inplace=True)
+        # Add national market score.
+        # TODO(cyrille): Add this in market_score_derivatives.
+        job_groups['nationalMarketScore'] = _get_national_market_scores(imt_market_score_csv)
+        job_groups['nationalMarketScore'].fillna(0, inplace=True)
 
     # Add diploma requirements.
-    job_groups['is_diploma_strictly_required'] = _load_strict_diplomas_from_airtable(
-        *strict_diplomas_airtable.split(':'))
-    job_groups['is_diploma_strictly_required'].fillna(False, inplace=True)
+    if strict_diplomas_airtable:
+        job_groups['is_diploma_strictly_required'] = _load_strict_diplomas_from_airtable(
+            *strict_diplomas_airtable.split(':'))
+        job_groups['is_diploma_strictly_required'].fillna(False, inplace=True)
 
     # Add job_boards.
     if jobboards_by_rome:
@@ -282,28 +333,7 @@ def make_dicts(
     job_groups.reset_index(inplace=True)
     job_groups['_id'] = job_groups['romeId']
 
-    return typing.cast(List[Dict[str, Any]], job_groups.to_dict('records'))
-
-
-# TODO(cyrille): Factorize with local_diagnosis.
-def _get_less_stressful_departements_count(market_score_csv: str) -> pandas.DataFrame:
-    market_stats = cleaned_data.market_scores(filename=market_score_csv)
-    market_stats_dept = market_stats[market_stats.AREA_TYPE_CODE == 'D'].reset_index()
-
-    def _zero_to_minus_one(val: int) -> int:
-        return val if val else -1
-
-    return market_stats_dept\
-        .sort_values('market_score', ascending=False)\
-        .groupby(['rome_id'])\
-        .apply(lambda x: x.to_dict(orient='records'))\
-        .apply(lambda departements: [{
-            'departementId': d['departement_id'],
-            'localStats': {'imt': {
-                'yearlyAvgOffersPer10Candidates':
-                _zero_to_minus_one(d['yearly_avg_offers_per_10_candidates']),
-            }},
-        } for d in departements])
+    return typing.cast(list[dict[str, Any]], job_groups.to_dict('records'))
 
 
 def _get_national_market_scores(market_score_csv: str) -> pandas.Series:
@@ -312,16 +342,7 @@ def _get_national_market_scores(market_score_csv: str) -> pandas.Series:
         .market_score
 
 
-def _create_jobs_sampler(num_samples: Optional[int]) \
-        -> Callable[[pandas.DataFrame], List[Dict[str, Any]]]:
-    def _sampling(jobs: pandas.DataFrame) -> List[Dict[str, Any]]:
-        if num_samples is not None and len(jobs) > num_samples:
-            jobs = jobs.sample(n=num_samples)
-        return typing.cast(List[Dict[str, Any]], jobs[_JOB_PROTO_JSON_FIELDS].to_dict('records'))
-    return _sampling
-
-
-def _group_work_environment_items(work_environments: pandas.DataFrame) -> Dict[str, List[str]]:
+def _group_work_environment_items(work_environments: pandas.DataFrame) -> dict[str, list[str]]:
     """Combine work environment items as a dict.
 
     Returns:
@@ -352,7 +373,7 @@ def _group_work_environment_items(work_environments: pandas.DataFrame) -> Dict[s
 
 
 def _load_domains_from_airtable(base_id: str, table: str, view: Optional[str] = None) \
-        -> Dict[str, str]:
+        -> dict[str, str]:
     """Load domain data from AirTable.
 
     Args:
@@ -368,8 +389,8 @@ def _load_domains_from_airtable(base_id: str, table: str, view: Optional[str] = 
             'https://airtable.com/account and set it in the AIRTABLE_API_KEY '
             'env var.')
     client = airtable.Airtable(base_id, AIRTABLE_API_KEY)
-    domains: Dict[str, str] = {}
-    errors: List[ValueError] = []
+    domains: dict[str, str] = {}
+    errors: list[ValueError] = []
     for record in client.iterate(table, view=view):
         fields = record['fields']
         sector = fields.get('name')
@@ -414,7 +435,7 @@ def _load_strict_diplomas_from_airtable(
 
 
 def _load_assets_from_airtable(base_id: str, table: str, view: Optional[str] = None) \
-        -> Dict[str, Dict[str, str]]:
+        -> dict[str, dict[str, str]]:
     """Load assets data from AirTable.
 
     Args:
@@ -428,8 +449,8 @@ def _load_assets_from_airtable(base_id: str, table: str, view: Optional[str] = N
             'https://airtable.com/account and set it in the AIRTABLE_API_KEY '
             'env var.')
     client = airtable.Airtable(base_id, AIRTABLE_API_KEY)
-    assets: List[Tuple[str, Dict[str, str]]] = []
-    errors: List[ValueError] = []
+    assets: list[Tuple[str, dict[str, str]]] = []
+    errors: list[ValueError] = []
     for record in client.iterate(table, view=view):
         try:
             assets.append(_load_asset_from_airtable(record['fields']))
@@ -451,9 +472,9 @@ _AIRTABLE_ASSET_TO_PROTO_FIELD = {
 _MARKDOWN_LIST_LINE_REGEXP = re.compile(r'^\* [A-ZÀÉÇÊ]|^  \* ')
 
 
-def _load_asset_from_airtable(airtable_fields: Mapping[str, Any]) -> Tuple[str, Dict[str, str]]:
-    assets: Dict[str, str] = {}
-    errors: List[ValueError] = []
+def _load_asset_from_airtable(airtable_fields: Mapping[str, Any]) -> Tuple[str, dict[str, str]]:
+    assets: dict[str, str] = {}
+    errors: list[ValueError] = []
     for proto_name, airtable_name in _AIRTABLE_ASSET_TO_PROTO_FIELD.items():
         value = airtable_fields.get(airtable_name)
         if value:
@@ -508,35 +529,6 @@ def _load_prefix_info_from_airtable(
             'atVariousCompanies': '',
             'whatILoveAboutFeminine': '',
         })
-
-
-def _load_items_from_airtable(
-        proto_name: str, job_groups: Iterable[str],
-        airtable_connection: Optional[str], rome_prefix_field: str) \
-        -> Optional[Mapping[str, List[Dict[str, Any]]]]:
-    if not airtable_connection:
-        return None
-    parts = airtable_connection.split(':')
-    if len(parts) <= 2:
-        base_id, table = parts
-        view = None
-    else:
-        base_id, table, view = parts
-    items: Dict[str, List[Dict[str, Any]]] = {job_group: [] for job_group in job_groups}
-    converter = airtable_to_protos.PROTO_CLASSES[proto_name]
-    client = airtable.Airtable(base_id, AIRTABLE_API_KEY)
-    for record in client.iterate(table, view=view):
-        item = converter.convert_record(record)
-        del item['_id']
-        job_group_prefixes = record['fields'].get(rome_prefix_field, '')
-        for job_group_prefix in job_group_prefixes.split(','):
-            job_group_prefix = job_group_prefix.strip()
-            if not job_group_prefix:
-                continue
-            for job_group, items_for_group in items.items():
-                if job_group.startswith(job_group_prefix):
-                    items_for_group.append(item)
-    return items
 
 
 def _get_application_modes(application_mode_csv: str, rome_fap_crosswalk_txt: str) \
@@ -624,12 +616,15 @@ def _get_automation_risk(
     return rome_automation.groupby('rome_id').automation_risk.mean().dropna()
 
 
-def _count_trainings(trainings: pandas.DataFrame) -> Dict[str, int]:
+def _count_trainings(trainings: pandas.DataFrame) -> dict[str, int]:
     counts = {
         'veryShortTrainings': int((trainings.duration < 120).sum()),
         'shortTrainings': int(((trainings.duration >= 120) & (trainings.duration < 720)).sum()),
         'longTrainings': int((trainings.duration > 720).sum()),
         'openTrainings': int(trainings['formation.specificCondition'].isnull().sum()),
+        # Modality code is 0 -> in offices, 1 -> both, 2 -> online.
+        # We only filter for 2, to be consistent with CPF's own filter.
+        'onlineTrainings': int((trainings['formation.codeModaliteEnseign'] == 2).sum()),
     }
     return {key: value for key, value in counts.items() if value}
 

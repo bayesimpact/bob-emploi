@@ -6,6 +6,7 @@ from bob_emploi.data_analysis.importer import importers
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import jobboard_pb2
 from bob_emploi.frontend.api import reorient_jobbing_pb2
+from bob_emploi.frontend.api import training_pb2
 
 _HERE = os.path.relpath(
     os.path.dirname(__file__),
@@ -25,12 +26,14 @@ IMPORTERS = dict(
             'translations'
         }
     },
+    action_templates=importers.IMPORTERS['action_templates'].updated_with_args(
+        view='Export Bob US'),
     advice_modules=importers.IMPORTERS['advice_modules'].updated_with_args(view='Export Bob US'),
     application_tips=importers.IMPORTERS['application_tips'].updated_with_args(
         view='Export Bob US'),
     diagnostic_main_challenges=importers.IMPORTERS['diagnostic_main_challenges'].updated_with_args(
         view='Export Bob US'),
-    focus_emails=importers.IMPORTERS['focus_emails'].updated_with_args(view='Export Bob US'),
+    focus_emails=importers.IMPORTERS['focus_emails'].updated_with_args(view='Live in Bob US'),
     jobboards=importers.IMPORTERS['jobboards'].updated_with_args(view='Export Bob US'),
     local_diagnosis=importers.Importer(
         name='Local Diagnosis',
@@ -58,6 +61,8 @@ IMPORTERS = dict(
             'states_txt': 'data/usa/states.txt',
             'soc_structure_xls': 'data/usa/soc/soc_structure_2010.xls',
             'brookings_automation_risk_json': 'data/usa/automation-risk.json',
+            'occupation_requirements_json': 'data/usa/job_requirements.json',
+            'skills_for_future_airtable': 'appXmyc7yYj0pOcae:skills_for_future:viwfJ3L3qKPMVV2wp',
         },
         is_imported=True,
         run_every='30 days',
@@ -69,7 +74,7 @@ IMPORTERS = dict(
         script=f'{_HERE}/reorient_jobbing',
         args={
             'job_zones_tsv': f'data/usa/onet_{_ONET_VERSION}/job_zones.tsv',
-            'occupation_data_txt': f'data/usa/onet_{_ONET_VERSION}/Occupation_Data.txt'
+            'occupation_data_txt': f'data/usa/onet_{_ONET_VERSION}/Occupation_Data.txt',
         },
         is_imported=True,
         run_every='30 days',
@@ -78,4 +83,18 @@ IMPORTERS = dict(
         has_pii=False),
     specific_to_job_advice=importers.IMPORTERS['specific_to_job_advice'].updated_with_args(
         view='Export Bob US'),
+    vocational_rehabilitation_agencies=importers.Importer(
+        name='Vocational rehabilitiation agencies',
+        script='airtable_to_protos',
+        args={
+            'table': 'usa_vocational_rehabilitation_agencies',
+            'proto': 'TrainingAgency',
+            'base_id': 'appXmyc7yYj0pOcae',
+            'view': 'Ready to import',
+        },
+        is_imported=True,
+        run_every=None,
+        proto_type=training_pb2.TrainingAgency,
+        key='Airtable key',
+        has_pii=False),
 )

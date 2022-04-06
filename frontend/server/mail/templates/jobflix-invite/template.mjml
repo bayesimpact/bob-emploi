@@ -1,0 +1,27 @@
+<mjml owa="desktop" version="4.6.3">
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-text line-height="1.38">Bonjour {{var:firstName:"Olivier"}},</mj-text>
+        <mj-text line-height="1.38">Comment allez-vous aujourd'hui ?</mj-text>
+        <mj-text line-height="1.38">La recherche d'un métier peut s'avérer difficile lorsque les options disponibles ne sont pas claires ou lorsque l'on ne sait pas quel métier on voudrait occuper. À la suite de votre récente expérience avec {{var:productName}}, nous avons pensé que notre outil pour découvrir les métiers, <strong>{{var:sideProductName}}</strong>, vous serait utile.</mj-text>
+        <mj-text line-height="1.38">{{var:sideProductName}} peut vous aider à découvrir les métiers qui <strong>paient bien</strong> et <strong>embauchent</strong> dans votre région, ainsi qu'à explorer des emplois par secteurs !</mj-text>
+        <mj-text line-height="1.38">Vous pourrez également en apprendre davantage sur chaque type de métier, voir les qualifications généralement exigées et explorer les programmes de formation disponibles.</mj-text>
+        <mj-text line-height="1.38"><strong>Comment se lancer ?</strong></mj-text>
+        <mj-text line-height="1.38">Pour consulter {{var:sideProductName}} et découvrir les métiers porteurs près de chez vous, <strong>cliquez sur le bouton ci-dessous !</strong></mj-text>
+        <mj-button align="center" background-color="#58BBFB" border-radius="100px" border="none" color="#ffffff" container-background-color="transparent" font-family="Ubuntu, Helvetica, Arial, sans-serif" font-size="13px" font-weight="normal" href="{{var:sideProductUrl}}" inner-padding="10px 25px" padding="10px 25px" text-decoration="none" text-transform="none" vertical-align="middle">
+          Découvrir {{var:sideProductName}}
+        </mj-button>
+        <mj-text line-height="1.38">
+          <p>À bientôt</p>
+          <p>{{var:senderName}}</p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-text font-size="11px" color="#55575d" line-height="2">Vous recevez cet email car vous êtes inscrit{%if var:gender:""=="FEMININE"%}e{%elseif var:gender:""=="MASCULINE"%}{%else%}·e{%endif%} sur <a href="{{var:baseUrl}}?utm_source=bob-emploi&amp;utm_medium=email" target="_blank">{{var:productName}}</a> et avez demandé des emails de coaching. <a href="{{var:changeEmailSettingsUrl}}" target="_blank">Cliquez ici</a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte {{var:productName}} en veille ? <a href="{{var:statusUpdateUrl}}" target="_blank">cliquez ici</a>.</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

@@ -25,7 +25,7 @@ class BestJobsInAreaTests(unittest.TestCase):
             collection, job_pb2.BestJobsInArea))
 
         self.assertIn('09', protos)
-        self.assertEqual(
+        self.assertCountEqual(
             ['F1702', 'XXXXX'],
             [j.job_group.rome_id for j in protos['09'].best_local_market_score_jobs],
             protos['09'])
@@ -33,7 +33,8 @@ class BestJobsInAreaTests(unittest.TestCase):
             ['F1702'],
             [j.job_group.rome_id for j in protos['09'].best_relative_score_jobs],
             protos['09'])
-        self.assertEqual(
+        # TODO(cyrille): Test order when some job groups have different min salaries.
+        self.assertCountEqual(
             ['F1402', 'F1702'],
             [j.job_group.rome_id for j in protos['09'].best_salaries_jobs],
             protos['09'])
@@ -41,13 +42,15 @@ class BestJobsInAreaTests(unittest.TestCase):
             'De 2\u202f200\xa0€ à 2\u202f800\xa0€',
             protos['09'].best_salaries_jobs[0].local_stats.imt.junior_salary.short_text)
 
-        self.assertEqual(['defense'], [s.sector_id for s in protos['10'].sectors])
+        self.assertEqual(
+            ['defense', 'engineering', 'sea'], [s.sector_id for s in protos['10'].sectors])
         sector = next(iter(protos['10'].sectors))
         self.assertEqual(
             'Des métiers dans le secteur de la défense et de la sécurité publique %inDepartement',
             sector.description)
-        self.assertEqual(
-            ['F1702'], [j.job_group.rome_id for j in sector.best_local_market_score_jobs])
+        self.assertCountEqual(
+            ['F1702', 'F1302', 'F1107'],
+            [j.job_group.rome_id for j in sector.best_local_market_score_jobs])
 
 
 if __name__ == '__main__':

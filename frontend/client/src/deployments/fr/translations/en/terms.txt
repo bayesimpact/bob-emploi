@@ -1,0 +1,200 @@
+### Preamble
+
+{{productName}} is an independent platform developed by the non-profit organization {{orgName}}. The objective of the project and the functioning of the association are dedicated to the general interest. The contents of the website and the platform are made available under a Creative Commons license. The source code of the software is made available as free software.
+
+The algorithm developed by the association analyzes data from the labor market and millions of job search paths in order to provide users with a diagnostic of their job search. The user data will remain under the control of each user for as long as they are on the {{productName}} website, and they maintain the ability to review, update or delete the data. It will not be used commercially, nor given to third parties.
+
+## 1. Definitions
+
+The term "{{productName}}" or "THE SERVICE" refers to a platform that offers advice and actions to users looking for work according to their profile.
+
+In order to operate this platform, {{productName}} uses databases of the job market, millions of job search paths, training courses, advertisements and usage (hereinafter referred to as "THE INFORMATION").
+
+The association " {{orgName}} " is the developer and the host of the platform is Amazon Web Services.
+
+The "users" are the persons who use the platform.
+
+The service is accessible on "THE SITE" at the following address: {{canonicalUrl}}
+
+## 2. Validity and acceptance
+
+These terms and conditions are communicated to each user. Each user acknowledges and accepts them by using the platform, as well as by ticking a box confirming their acceptance.
+
+The present conditions are accessible at any time on the site.
+
+They govern the relationship between users and {{productName}} in the context of the use of the service.
+
+Users acknowledge that they have the right to use the service.
+
+Use of the service and of the information implies full and unreserved acceptance of these terms. Non-acceptance of these terms and conditions shall entail renunciation of the use of the service and the use of the information.
+
+## 3. Scope of application
+
+The present contract governs exclusively the use of {{productName}} by users.
+
+This service is provided by {{orgName}} free of charge and without any consideration other than the respect of the present conditions of use.
+
+The responsibility of {{orgName}} is exclusively limited to facilitate the access to the platform.
+
+## 4. Description of the service
+
+{{productName}} is a platform developed by the association {{orgName}}. {{productName}}'s algorithm analyzes data from the job market as well as millions of job search paths in order to provide each person with a diagnostic of their job search.
+
+#### 4.1. Obtain a data-driven diagnostic
+{{productName}} produces the diagnostic by studying the user's profile and the current job market to help them identify how to boost their job search. After receiving the diagnostic, users are given a set of strategies to help them make progress in their job search, according to their diagnostic.
+
+## 5. Use of {{productName}}
+
+#### 5.1. Use of {{productName}}
+
+In the context of their use of the platform, users must respect the laws and regulations in place and must not infringe on the rights of third parties or public order.
+
+The users acknowledge that they are aware of the characteristics and constraints of the platform, especially the technical ones. They are solely responsible for its use. Users are informed and accept that the implementation of the platform requires an Internet connection for which they are solely responsible, and that the quality of the service may depend directly on it.
+
+Users are responsible for entering into confidentiality and non-competition agreements and for respecting professional secrecy when necessary to make use of the facilities and services offered on the Platform. {{productName}} shall not be held liable in any way in this regard.
+
+Users must limit their use of {{productName}} to strictly personal use. Consequently, they shall refrain from assigning, conceding or transferring all or part of their rights or obligations hereunder to a third party, in any manner whatsoever.
+
+Where applicable, users undertake to provide {{orgName}} with all information necessary for the proper execution of {{productName}}.
+
+More generally, users agree to actively cooperate with {{productName}} for the proper execution of the present conditions.
+
+#### 5.2. User accounts
+Users are in control of their data, and they can update, edit, or delete their data as long as they remain on the {{productName}} website. Seven days after using {{productName}}, the user's data is cleaned and all personal information is removed (e.g. first name, email address, exact time of signing into {{productName}}).
+
+#### 5.3. Free use of {{productName}}
+The use of the {{productName}} platform is free of charge.
+
+## 6. Responsibilities and guarantees
+
+#### 6.1. Absence of responsibility regarding third parties
+
+{{orgName}} excludes all responsibility of agreements or obligations made with third parties as well as legislation or regulations in place.
+
+#### 6.2. Absence of responsibility for the operation of {{productName}}
+
+{{productName}} cannot guarantee that its service will not be interrupted. {{productName}} undertakes to provide its service diligently and in accordance with the rules of the trade, it being specified that this is only an obligation of means, to the exclusion of any obligation of result, which users expressly recognize and accept. {{productName}} shall not be held responsible for any difficulties or temporary impossibility of accessing the platform due to circumstances beyond its control, force majeure, or due to disruptions in the telecommunication networks.
+
+{{productName}} cannot guarantee users in the event of loss of their account information. Users are responsible for saving a copy of their information. They may not claim any compensation for any loss of data whatsoever.
+
+The platform is provided as is. {{productName}} cannot guarantee users that it is totally free of errors, defects or faults. The platform is developed in a standardized manner for all users. It is in no way designed to be adapted to their personal constraints.
+
+In any case, the liability that may be incurred by {{productName}} is expressly limited to direct damage suffered by users.
+
+{{productName}} expressly reserves the right to interrupt access to its service temporarily for maintenance purposes.
+
+#### 6.3. Prohibited behavior
+
+In addition to the other prohibitions set out in the present conditions, users undertake to use the platform in a virtuous manner. In particular, they shall refrain from using the platform for the following purposes: engaging in illegal or fraudulent activities or activities that infringe on the rights or safety of third parties; undermining public order or violating the laws and regulations in force; intrusion into the computer system of a third party or any activity of a nature to harm, control, interfere with, or intercept all or part of the computer system of a third party, violate its integrity or security; sending unsolicited emails or commercial solicitations; manipulations intended to improve the referencing of a third party site; aiding or abetting, in any form or manner whatsoever, one or more of the acts and activities described above; and more generally any practice that diverts the service for purposes other than those for which it was designed.
+
+Users undertake to respect the continuity of the platform's service. In particular, they shall refrain from: any behavior that may interrupt, suspend, slow down or prevent the continuity of the service; any intrusion or attempted intrusion into the service; any detour of the system resources of the service; any actions of a nature to impose a disproportionate load on the service's infrastructure; any infringement of security and authentication measures; any act that may prejudice the financial, commercial or moral rights and interests of {{productName}} or of users of the service.
+
+Users undertake to respect the value of the platform. They shall refrain from monetizing, selling or conceding all or part of the access to the platform.
+
+#### 6.4. Users' guarantee towards {{orgName}}
+
+The users guarantee {{orgName}} against all complaints, claims, actions, demands that {{orgName}} could suffer because of the violation by them of any of their obligations or guarantees under the terms of these general conditions.
+
+The users commit themselves to compensate {{orgName}} for any prejudice suffered and to pay all the costs, charges, condemnations supported by this fact.
+
+## 7. Links to other sites
+
+{{productName}} may propose links to third-party websites. The linked sites are not under the control of {{orgName}}, which is not responsible for their content and does not offer any guarantee in this regard. It is up to the users to make all the necessary or opportune verifications before proceeding with any transaction with one of these third parties.
+
+## 8. Notification and removal of illicit content
+
+{{productName}} allows users to notify illicit content or behavior by sending an email to attention@bob-emploi.fr.
+
+{{orgName}} will make reasonable efforts to remove the illicit content, or to delete the offending accounts, as soon as possible and within the framework of the existing law.
+
+## 9. License and intellectual property
+
+The users expressly recognize the property of {{orgName}} on the whole platform, and notably on the systems, software, structures, infrastructures, databases and contents of any nature (texts, images, visuals, music, logos, brands, databases, etc.) which are exploited by {{orgName}} for the service and are protected by the copyrights, the intellectual property rights, the industrial property rights or the rights of the producers of databases in force.
+
+But the contents of the site and the platform are made available under a Creative Commons license. The source code of the software is made available as free software.
+
+Users are prohibited from copying and diverting the concept, technologies or any other element of the platform for their own purposes or those of third parties. All disassemblies, decompilations, decryptions, extractions, reuses, copies and more generally, all acts of reproduction, representation, diffusion and use of any of these elements, in whole or in part, without the authorization of {{orgName}} are strictly forbidden and may be subject to legal proceedings.
+
+{{orgName}} does not claim any property on the possible contents put online by the users on the platform, nor on their personal data. On the other hand, but only for the needs of the operation of {{productName}} and its promotion, users expressly grant {{orgName}} and its affiliates the irrevocable right to make them available, and to freely use, copy, publish, translate and distribute them without any other form of additional agreement, on any medium and in any form whatsoever. They also authorize {{orgName}} to concede this right to partners under the same conditions and for the same purposes.
+
+## 10. Personal data
+
+{{orgName}} is concerned about the protection of personal data. It commits itself to respect the best level of protection in conformity with the regulation "Informatique et Libertés".
+
+The person in charge of the treatment is the association {{orgName}}.
+
+In order to offer the service, {{orgName}} collects personal data on the users, in particular: optional name, first name, pseudonym, connection data, and more generally any data concerning them and having a personal character within the meaning of the legislation in force and which is collected through the service. This data is used to provide {{productName}}'s service (described in Description of service.) and for analytics to improve the product and the audience targeting. This data is also kept for security purposes within the framework of legal and regulatory obligations. It will not be transferred to third parties or used for commercial purposes.
+
+The users agree to communicate their personal data in order to allow the exploitation of the service. In particular, they agree to be contacted to receive information from {{productName}} and its partners about the platform.
+
+Users have the right to access, rectify and delete their data at any time by email: donnees@bob-emploi.fr
+
+Users may unsubscribe from {{productName}} at any time by sending a request to this effect to: desinscription@bob-emploi.fr
+
+Unsubscription is effective immediately, and will be effective as soon as the computerized deletion process is completed, which may take several weeks. It leads to the automatic deletion of the user's account.
+
+In order to guarantee the best protection of the personal data of its users, {{orgName}} has a Data Protection Officer.
+
+## 11. General provisions
+
+In case some provisions of the present conditions would be declared invalid or inapplicable, the others would remain in force and full effect.
+
+{{orgName}} will have the right to transfer, transmit, subcontract or delegate rights, duties or obligations under these conditions.
+
+The users agree that neither the present conditions, nor the use of the service create a company or a joint venture, an employment contract or a mandate between them and {{orgName}}.
+
+In the event of a translation of the present conditions in one or several languages, the language of interpretation will be the French language in case of contradiction or dispute on the meaning of a term or a provision.
+
+The present conditions are subscribed for an indefinite period.
+
+## 12. Modification
+
+{{orgName}} reserves the right to modify the present general terms and conditions at any time, including with regard to the user fees as well as the elements relating to personal data.
+
+Users will be informed of these modifications by any useful means, including publication on {{productName}}.
+
+The date of the update will always be indicated at the top and bottom of these conditions.
+
+Use of the service after a modification has been posted on {{productName}} implies full acceptance of these modified conditions.
+
+The only way to refuse acceptance of a modification to the present conditions is to stop using {{productName}}.
+
+Any user who does not accept the modified general conditions must unsubscribe from the service.
+
+Any user who uses the service after the modified general conditions come into effect is deemed to have accepted these modifications.
+
+## 13. Litigation
+
+{{orgName}} reserves the right to take any appropriate measure in case of breach by the users of the present conditions, or infringement of the laws and regulations in force, and in particular:
+
+* suspend or terminate access to the service;
+* delete any content or training posted on the site;
+* publish any useful information message;
+* to warn any concerned authority;
+
+* initiate any legal action.
+The use of the service is subject to French law.
+
+In the event of a dispute, the courts of the Paris area have exclusive jurisdiction.
+
+Prior to any recourse to the arbitral or state judge, users undertake to negotiate with {{orgName}} in a spirit of loyalty and good faith an amicable agreement in the event of any conflict relating to the platform or to the present conditions, including those concerning their validity.
+
+The users wishing to implement the process of negotiation will have to inform {{orgName}} by registered letter with acknowledgement of receipt by indicating the elements of the conflict. At least one meeting will then be organized between the users and {{orgName}}. If, at the end of a six month period, the users and {{orgName}} do not manage to reach an agreement, the dispute will be submitted to the competent jurisdiction designated above. The course of the prescription will be suspended as from the implementation of the negotiation process, that is to say the date of reception of the act of information sent by registered letter with acknowledgement of receipt. The suspension of the statute of limitations will end on the date of the signing of the conciliation or non-conciliation minutes. In case of refusal of the users or of {{orgName}} to sign the aforementioned report, the other party can take note of this refusal by informing them that in the absence of reaction of their part within one month, the referral to the competent judge will be possible. During all the negotiation process and until its end, the users forbid themselves to exercise any legal action against {{orgName}} for the conflict object of the negotiation.
+
+## 14. Coordinates of the person in charge and of the host
+
+{{productName}} is edited by the association {{orgName}}
+
+The person in charge of the publication is: Paul DUAN
+
+Address: {{orgName}} c/o Ovio 2919 23rd Street, Unit 2 San Francisco, CA 94110 USA
+
+Telephone number: +33 6 65 14 73 87
+
+Email contact: {{contactEmailAddress}}
+
+{{productName}} is hosted by the company Amazon Web Services, located at 410 Terry Avenue North, Seattle, WA 98109 USA.
+
+## 15. Date
+
+These terms and conditions came into effect on: {{publishedDate}}.

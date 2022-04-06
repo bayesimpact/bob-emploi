@@ -126,6 +126,16 @@ describe('download.ts', () => {
       },
       // Advice base.
       appXmyc7yYj0pOcae: {
+        action_templates: [
+          {fields: {
+            action_template_id: 'network-application',
+            resource_content: 'appelle ton réseau',
+          }},
+          {fields: {
+            action_template_id: 'network-article',
+            resource_url: 'https://www.google.com?q=how+to+network',
+          }},
+        ],
         advice_modules: [
           {fields: {
             advice_id: 'some-advice',
@@ -192,7 +202,11 @@ describe('download.ts', () => {
     // TODO(cyrille): Fallback to Map deep-equality once
     // https://github.com/chaijs/chai/issues/1228 is resolved.
     expect(_sortBy([...filesWritten], 0)).to.deep.eq(_sortBy(Object.entries({
-      'src/components/advisor/data/advice_modules.json': `{
+      'src/store/data/actionTemplates.json': `{
+  "network-application": "network-application:resource_content"
+}
+`,
+      'src/store/data/advice_modules.json': `{
   "some-advice": {
     "goal": "some-advice:goal",
     "resourceTheme": "rec12345",
@@ -205,7 +219,7 @@ describe('download.ts', () => {
   }
 }
 `,
-      'src/components/advisor/data/diagnosticIllustrations.json': `{
+      'src/store/data/diagnosticIllustrations.json': `{
   "bravo": [
     {
       "highlight": "top-20:highlight",
@@ -224,25 +238,7 @@ describe('download.ts', () => {
   ]
 }
 `,
-      'src/components/advisor/data/email_templates.json': '{\n}\n',
-      'src/components/advisor/data/resource_themes.json': `[
-  {
-    "name": "choose-a-job:name",
-    "themeId": "choose-a-job"
-  }
-]
-`,
-      'src/components/advisor/data/vae.json': `[
-  {
-    "name": "receducspe002:name",
-    "romeIds": [
-      "K1207"
-    ],
-    "vaeRatioInDiploma": 43
-  }
-]
-`,
-      'src/components/strategist/data/diagnosticMainChallenges.json': `{
+      'src/store/data/diagnosticMainChallenges.json': `{
   "bravo": {
   },
   "stuck-market": {
@@ -251,7 +247,22 @@ describe('download.ts', () => {
   }
 }
 `,
-      'src/components/strategist/data/goals.json': `{
+      'src/store/data/email_templates.json': '{\n}\n',
+      'src/store/data/impactMeasurement.json': `[
+  {
+    "actionId": "explore-jobs",
+    "name": "explore-jobs:name"
+  }
+]
+`,
+      'src/store/data/resource_themes.json': `[
+  {
+    "name": "choose-a-job:name",
+    "themeId": "choose-a-job"
+  }
+]
+`,
+      'src/store/data/strategy_goals.json': `{
   "get-moving": [
     {
       "content": "better-cities:content",
@@ -266,12 +277,19 @@ describe('download.ts', () => {
   ]
 }
 `,
-      'src/components/strategist/data/impactMeasurement.json': `[
+      'src/store/data/vae.json': `[
   {
-    "actionId": "explore-jobs",
-    "name": "explore-jobs:name"
+    "name": "receducspe002:name",
+    "romeIds": [
+      "K1207"
+    ],
+    "vaeRatioInDiploma": 43
   }
 ]
+`,
+      'src/translations/fr/actionTemplates.json': `{
+  "network-application:resource_content": "appelle ton réseau"
+}
 `,
       'src/translations/fr/adviceModules.json': `{
   "some-advice:goal": "atteindre la lune",
@@ -355,7 +373,7 @@ describe('download.ts', () => {
     // TODO(cyrille): Fallback to Map deep-equality once
     // https://github.com/chaijs/chai/issues/1228 is resolved.
     expect(_sortBy([...filesWritten], 0)).to.deep.eq(_sortBy(Object.entries({
-      'src/components/strategist/data/goals.json': `{
+      'src/store/data/strategy_goals.json': `{
   "get-moving": [
     {
       "content": "better-cities:content",

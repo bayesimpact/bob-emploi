@@ -1,0 +1,31 @@
+<mjml owa="desktop" version="4.6.3">
+  <mj-body background-color="#ffffff" font-family="Arial, sans-serif">
+    <mj-section>
+      <mj-column>
+        <mj-text font-size="14px" line-height="22px">
+          <p>Bonjour,</p>
+          <p>La dernière fois que vous nous avez rendu visite, vous vous êtes inscrit·e au coaching de Jobflix pour {%if var:hasSeveralJobs=="True"%}les métiers suivants :{%else%}le métier {{var:ofJobName}}.{%endif%}</p>
+          {%if var:hasSeveralJobs=="True"%}
+            <ul>{%for job in var:jobs%}
+              <li>{{job}}</li>
+              {%endfor%}
+            </ul>
+          {%endif%}
+          <p>Pour que nous puissions vous aider au maximum, <b>nous avons besoin de bien comprendre vos besoins et objectifs</b>. Suivez le lien ci-dessous pour nous en dire un peu plus — cela ne vous prendra que <b>4 minutes</b>, promis ! 🙏</p>
+        </mj-text>
+        <mj-button align="center" background-color="#258afb" border-radius="3px" border="0px solid #ffffff" color="#ffffff" font-family="Arial, sans-serif" font-size="16px" font-weight="normal" href="https://v54vcxdjroj.typeform.com/to/gp8gQxmF" inner-padding="10px 25px 10px 25px" padding-left="25px" padding-right="25px" padding="10px 25px 10px 25px" text-decoration="none" text-transform="none" vertical-align="middle">
+          <span style="font-size:16px;"><b>Répondre au questionnaire</b></span>
+        </mj-button>
+        <mj-text font-size="14px" line-height="22px">
+          <p>À très vite,</p>
+          <p>{{var:senderName}}</p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column>
+        <mj-text color="#55575d" font-size="11px" line-height="22px">Vous recevez cet email car vous avez demandé du coaching sur <a style="color:inherit;" target="_blank" href="{{var:productUrl}}">{{var:productName}}</a>. <a style="color:inherit;" target="_blank" href="{{var:unsubscribeLink}}">Cliquez ici</a> si vous ne souhaitez plus recevoir d'email de notre part.</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

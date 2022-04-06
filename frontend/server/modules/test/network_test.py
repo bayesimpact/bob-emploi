@@ -211,7 +211,7 @@ class EndpointTestCase(base_test.ServerTestCase):
                 'contactTip': 'Après le conseil municipal',
             },
         ])
-        self._db.translations.insert_many([
+        self.add_translations([
             {
                 'string': 'Bonjour, je cherche un emploi %ofJobName.',
                 'en': "Hi, I'm looking for a job %ofJobName.",

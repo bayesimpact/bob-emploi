@@ -2,19 +2,18 @@
   box-sizing: border-box;
 }
 
-/* Placeholder colors.COOL_GREY */
 ::-webkit-input-placeholder { /* Chrome/Opera/Safari */
-  color: #9596a0 !important;
+  color: $colors-COOL_GREY !important;
 }
 ::-moz-placeholder { /* Firefox 19+ */
-  color: #9596a0 !important;
+  color: $colors-COOL_GREY !important;
   opacity: 1;
 }
 :-ms-input-placeholder { /* IE 10+ */
-  color: #9596a0 !important;
+  color: $colors-COOL_GREY !important;
 }
 :-moz-placeholder { /* Firefox 18- */
-  color: #9596a0 !important;
+  color: $colors-COOL_GREY !important;
 }
 
 /* Drop IE icons to clear field or reveal password. */
@@ -23,7 +22,7 @@ input::-ms-reveal, input::-ms-clear {
 }
 
 input, select, textarea {
-  border: solid 1px #d9d9e0;  /* silver */
+  border: solid 1px $colors-SILVER;
 }
 
 div:focus, input:focus, select:focus, button:focus, a:focus, textarea:focus {
@@ -31,11 +30,11 @@ div:focus, input:focus, select:focus, button:focus, a:focus, textarea:focus {
 }
 
 input:hover, select:hover, textarea:hover {
-  border-color: #9596a0;  /* cool-grey */
+  border-color: $colors-COOL_GREY;
 }
 
 input:focus, select:focus, textarea:focus {
-  border-color: #96c222;  /* colors.PEA */
+  border-color: $colors-PEA;
 }
 
 

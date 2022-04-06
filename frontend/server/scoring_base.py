@@ -6,8 +6,9 @@ import logging
 import os
 import random
 import re
+import threading
 import typing
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Pattern, Set, Tuple, \
+from typing import Any, Callable, Iterable, Iterator, Mapping, Optional, Pattern, Set, Tuple, \
     Union
 
 from google.protobuf import message
@@ -21,6 +22,7 @@ from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import training_pb2
 from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server import carif
 from bob_emploi.frontend.server import french
 from bob_emploi.frontend.server import i18n
@@ -54,7 +56,7 @@ _SKIP_VAR_PATTERN = re.compile(r'(https?://[^\?\s]*\?)\S+')
 
 # Keep in sync with frontend/client/src/store/project.ts
 # TODO(pascal): Use deployment factors for the gross/net ratio.
-_TO_GROSS_ANNUAL_FACTORS: Dict[int, float] = {
+_TO_GROSS_ANNUAL_FACTORS: dict[int, float] = {
     # net = gross x 80%
     job_pb2.ANNUAL_GROSS_SALARY: 1,
     job_pb2.HOURLY_GROSS_SALARY: 52 * 35,
@@ -69,14 +71,10 @@ ASSOCIATIONS: proto.MongoCachedCollection[association_pb2.Association] = \
 _AType = typing.TypeVar('_AType')
 
 
-# TODO(cyrille): Drop once all old users are migrated from can_tutoie to locale.
-def get_user_locale(profile: user_pb2.UserProfile) -> str:
-    """
-    Get the locale for a given profile,
-    assuming it might be for a user that comes from the can_tutoie era.
-    """
-
-    return profile.locale or 'fr'
+class _Scores(typing.NamedTuple):
+    scores: Mapping[str, float]
+    reasons: Mapping[str, tuple[str, ...]]
+    missing_fields: Mapping[str, frozenset[str]]
 
 
 def _keep_only_departement_filters(
@@ -112,30 +110,35 @@ class ScoringProject:
         self.now = now or datetime.datetime.utcnow()
 
         # Cache for scoring models.
-        self._scores: Dict[str, Union[Exception, float]] = {}
+        self._scores: dict[str, Union[Exception, float]] = {}
 
         # Cache for DB data.
         self._job_group_info: Optional[job_pb2.JobGroup] = None
         self._local_diagnosis: Optional[job_pb2.LocalJobStats] = None
-        self._application_tips: List[application_pb2.ApplicationTip] = []
+        self._application_tips: list[application_pb2.ApplicationTip] = []
         self._region: Optional[geo_pb2.Region] = None
-        self._trainings: Optional[List[training_pb2.Training]] = None
+        self._trainings: Optional[list[training_pb2.Training]] = None
         self._mission_locale_data: Optional[association_pb2.MissionLocaleData] = None
 
         # Cache for modules.
-        self._module_cache: Dict[str, Any] = {}
+        self._module_cache: dict[str, Any] = {}
 
         # Cache for template variables
-        self._template_variables: Dict[str, str] = {}
+        self._template_variables: dict[str, str] = {}
 
     def __str__(self) -> str:
-        return 'Profile:\n{profile}Project:\n{project}Features:\n{features}'.format(**{
+        padded = {
             k: _add_left_pad_to_message(str(privacy.get_redacted_copy(v))) for k, v in {
                 'features': self.features_enabled,
                 'profile': self.user_profile,
                 'project': self.details,
             }.items()
-        })
+        }
+        return (
+            f'Profile:\n{padded["profile"]}'
+            f'Project:\n{padded["project"]}'
+            f'Features:\n{padded["features"]}'
+        )
 
     def get_other_project(self, project: project_pb2.Project) -> 'ScoringProject':
         """Get a ScoringProject for a secondary project for the same user."""
@@ -245,7 +248,7 @@ class ScoringProject:
 
     # TODO(cyrille): Add trainings from fagerh.fr for for-handicapped.
     # TODO(sil): Add tests for UK.
-    def get_trainings(self) -> List[training_pb2.Training]:
+    def get_trainings(self) -> list[training_pb2.Training]:
         """Get the training opportunities from our partner's API."""
 
         if self._trainings is not None:
@@ -265,13 +268,13 @@ class ScoringProject:
         new_tip.ClearField('content_masculine')
 
         content = tip.content
-        if tip.content_masculine and self.user_profile.gender == user_pb2.MASCULINE:
+        if tip.content_masculine and self.user_profile.gender == user_profile_pb2.MASCULINE:
             content = tip.content_masculine
         content = self.translate_string(content)
         new_tip.content = content
         return new_tip
 
-    def list_application_tips(self) -> List[application_pb2.ApplicationTip]:
+    def list_application_tips(self) -> list[application_pb2.ApplicationTip]:
         """List all application tips available for this project."""
 
         if self._application_tips:
@@ -382,14 +385,16 @@ class ScoringProject:
             context: str = '', can_log_exception: bool = True) -> str:
         """Translate a string to a language and locale defined by the project."""
 
-        locale = get_user_locale(self.user_profile)
+        locale = self.user_profile.locale or 'fr'
 
         keys = [string]
         if context:
             keys.insert(0, f'{string}_{context}')
         if is_genderized and self.user_profile.gender:
-            keys.insert(0, f'{string}_{user_pb2.Gender.Name(self.user_profile.gender)}')
-
+            gender = user_profile_pb2.Gender.Name(self.user_profile.gender)
+            keys.insert(0, f'{string}_{gender}')
+            if context:
+                keys.insert(0, f'{string}_{context}_{gender}')
         try:
             return i18n.translate_string(keys, locale, None if is_static else self._db)
         except i18n.TranslationMissingException:
@@ -409,20 +414,56 @@ class ScoringProject:
 
     def translate_airtable_string(
             self, collection: str, record_id: str, field_name: str, hint: str = '',
-            is_genderized: bool = False) -> str:
+            is_genderized: bool = False, context: str = '') -> str:
         """Translate a string from Airtable to a language and locale defined by the project."""
 
-        if record_id:
-            key = f'{collection}:{record_id}:{field_name}'
+        return self.translate_key_string(
+            f'{collection}:{record_id}:{field_name}' if record_id else '',
+            hint=hint, is_genderized=is_genderized, context=context)
+
+    def translate_key_string(
+            self, key: str, *, hint: str = '',
+            is_genderized: bool = False, is_hint_static: bool = False, context: str = '') -> str:
+        """Translate a string from a given key to a language and locale defined by the project."""
+
+        if key:
             translation = self.translate_string(
-                key, is_genderized=is_genderized, can_log_exception=False)
+                key, is_genderized=is_genderized, can_log_exception=False, context=context)
             if translation != key:
                 return translation
 
         if not hint:
             return ''
 
-        return self.translate_string(hint, is_genderized=is_genderized)
+        return self.translate_string(
+            hint, is_genderized=is_genderized, is_static=is_hint_static, context=context)
+
+    # Dynamic strings that are never used but here to help pybabel to extract those keys as strings
+    # to translate.
+    _DYNAMIC_STRINGS = (
+        i18n.make_translatable_string_with_context('1', 'AS_TEXT'),
+        i18n.make_translatable_string_with_context('2', 'AS_TEXT'),
+        i18n.make_translatable_string_with_context('3', 'AS_TEXT'),
+        i18n.make_translatable_string_with_context('4', 'AS_TEXT'),
+        i18n.make_translatable_string_with_context('5', 'AS_TEXT'),
+    )
+
+    def get_several_months_text(self, number_months: int) -> str:
+        """Get the literal text for several months, e.g. "three months" in the proper locale."""
+
+        if number_months < 0:
+            logging.warning('Trying to show negative months:\n%s', str(self))
+            return self.translate_static_string('quelques mois')
+
+        number_as_str = self.translate_static_string(
+            str(number_months), context='AS_TEXT', can_log_exception=False)
+        if number_as_str == str(number_months):
+            if number_months > 6:
+                return self.translate_static_string('plus de six mois')
+            return self.translate_static_string('quelques mois')
+        count_months = self.translate_static_string(
+            '{{count}} mois', context='' if number_months == 1 else 'plural')
+        return count_months.replace('{{count}}', number_as_str)
 
     def get_search_length_at_creation(self) -> float:
         """Compute job search length (in months) relatively to a project creation date."""
@@ -494,8 +535,44 @@ class ScoringProject:
 
         return all(self.score(f, force_exists=force_exists) > 0 for f in filters)
 
+    def score_and_explain_all(
+        self, iterable: Iterable[tuple[str, str]], scoring_timeout_seconds: float = 3,
+    ) -> _Scores:
+        """Score and explain many items (advice modules, action templates)."""
 
-_TEMPLATE_VARIABLES: Dict[str, Callable[[ScoringProject], str]] = {}
+        scores: dict[str, float] = {}
+        reasons: dict[str, list[str]] = {}
+        missing_fields: dict[str, Set[str]] = {}
+        for item_id, item_scoring_model in iterable:
+            scoring_model = get_scoring_model(item_scoring_model)
+            if scoring_model is None:
+                logging.warning(
+                    'Not able to score item "%s", the scoring model "%s" is unknown.',
+                    item_id, item_scoring_model)
+                continue
+            if typing.TYPE_CHECKING:
+                _compute_score_and_reasons(
+                    scores, reasons, item_id, item_scoring_model, scoring_model, self,
+                    missing_fields)
+            else:
+                thread = threading.Thread(
+                    target=_compute_score_and_reasons,
+                    args=(
+                        scores, reasons, item_id, item_scoring_model, scoring_model, self,
+                        missing_fields))
+                thread.start()
+                # TODO(pascal): Consider scoring different models in parallel.
+                thread.join(timeout=scoring_timeout_seconds)
+                if thread.is_alive():
+                    logging.warning(
+                        'Timeout while scoring item "%s" for:\n%s', item_scoring_model, str(self))
+        return _Scores(
+            scores,
+            {key: tuple(values) for key, values in reasons.items()},
+            {key: frozenset(values) for key, values in missing_fields.items()})
+
+
+_TEMPLATE_VARIABLES: dict[str, Callable[[ScoringProject], str]] = {}
 
 
 class NotEnoughDataException(Exception):
@@ -504,7 +581,7 @@ class NotEnoughDataException(Exception):
     def __init__(
             self, msg: str = '',
             fields: Optional[Set[str]] = None,
-            reasons: Optional[List[str]] = None) -> None:
+            reasons: Optional[list[str]] = None) -> None:
         super().__init__(msg, fields, reasons)
         self.fields = fields or set()
         self.reasons = reasons or []
@@ -514,7 +591,7 @@ class ExplainedScore(typing.NamedTuple):
     """Score for a metric and its explanations."""
 
     score: float
-    explanations: List[str]
+    explanations: list[str]
 
 
 NULL_EXPLAINED_SCORE = ExplainedScore(0, [])
@@ -540,7 +617,7 @@ class ModelBase:
             raise NotImplementedError(f'Score method not implemented in {self.__class__.__name__}')
         return self.score_and_explain(project).score
 
-    def _explain(self, unused_project: ScoringProject) -> List[str]:
+    def _explain(self, unused_project: ScoringProject) -> list[str]:
         """Compute the explanations for the score of the given ScoringProject.
 
         It should be overriden if explanations are independant from the score. Otherwise override
@@ -651,7 +728,7 @@ class BaseFilter(ModelBase):
     def __init__(
             self,
             filter_func: Callable[[ScoringProject], bool],
-            reasons: Optional[List[str]] = None):
+            reasons: Optional[list[str]] = None):
         self.filter_func = filter_func
         self._reasons = reasons
 
@@ -662,7 +739,7 @@ class BaseFilter(ModelBase):
             return 3
         return 0
 
-    def _explain(self, unused_project: ScoringProject) -> List[str]:
+    def _explain(self, unused_project: ScoringProject) -> list[str]:
         return self._reasons if self._reasons else []
 
 
@@ -690,7 +767,7 @@ class _ScoringModelRegexp(typing.NamedTuple):
     constructor: Callable[..., ModelBase]
 
 
-SCORING_MODEL_REGEXPS: List[
+SCORING_MODEL_REGEXPS: list[
     Tuple[Pattern[str], Callable[..., ModelBase]]] = []
 
 
@@ -729,7 +806,7 @@ class RandomModel(ModelBase):
         return random.random() * 3
 
 
-SCORING_MODELS: Dict[str, ModelBase] = {
+SCORING_MODELS: dict[str, ModelBase] = {
     '': RandomModel(),
 }
 
@@ -787,3 +864,26 @@ def register_template_variable(
             raise ValueError(
                 f'The new variable "{variable_name}" might conflict with "{existing_variable}')
     _TEMPLATE_VARIABLES[variable_name] = value_func
+
+
+def _compute_score_and_reasons(
+        scores: dict[str, float],
+        reasons: dict[str, list[str]],
+        key: str,
+        scoring_model_name: str,
+        scoring_model: ModelBase,
+        scoring_project: ScoringProject,
+        missing_fields: dict[str, Set[str]]) -> None:
+    try:
+        scores[key], reasons[key] = scoring_model.score_and_explain(scoring_project)
+    except NotEnoughDataException as err:
+        if err.fields:
+            # We don't know whether this is useful or not, so we give it anyway,
+            # and ask for missing fields.
+            scores[key] = .1
+            reasons[key] = err.reasons
+            missing_fields[key] = err.fields
+            return
+        logging.exception('Scoring "%s" crashed for:\n%s', scoring_model_name, str(scoring_project))
+    except Exception:  # pylint: disable=broad-except
+        logging.exception('Scoring "%s" crashed for:\n%s', scoring_model_name, str(scoring_project))

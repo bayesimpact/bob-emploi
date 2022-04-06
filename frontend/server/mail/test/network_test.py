@@ -4,8 +4,9 @@ import os
 import unittest
 from unittest import mock
 
+from bob_emploi.frontend.api import email_pb2
 from bob_emploi.frontend.api import project_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server.mail import network
 from bob_emploi.frontend.server.mail.test import campaign_helper
 
@@ -52,9 +53,9 @@ class NetworkVarsTestCase(campaign_helper.CampaignTestBase):
         })
 
         self.user.profile.name = 'Patrick'
-        self.user.profile.gender = user_pb2.MASCULINE
-        self.user.profile.frustrations.append(user_pb2.MOTIVATION)
-        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
+        self.user.profile.gender = user_profile_pb2.MASCULINE
+        self.user.profile.frustrations.append(user_profile_pb2.MOTIVATION)
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_ONCE_A_MONTH
         self.project.target_job.masculine_name = 'Juriste'
         self.project.target_job.job_group.rome_id = 'B1234'
         self.project.network_estimate = 1
@@ -196,12 +197,12 @@ class NetworkPlusTestCase(campaign_helper.CampaignTestBase):
             'prefix': 'dans le ',
         })
 
-        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
-        self.user.profile.frustrations.append(user_pb2.MOTIVATION)
-        self.user.profile.frustrations.append(user_pb2.SELF_CONFIDENCE)
-        self.user.profile.gender = user_pb2.MASCULINE
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_ONCE_A_MONTH
+        self.user.profile.frustrations.append(user_profile_pb2.MOTIVATION)
+        self.user.profile.frustrations.append(user_profile_pb2.SELF_CONFIDENCE)
+        self.user.profile.gender = user_profile_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
-        self.user.profile.family_situation = user_pb2.SINGLE_PARENT_SITUATION
+        self.user.profile.family_situation = user_profile_pb2.SINGLE_PARENT_SITUATION
         self.user.profile.year_of_birth = 1990
 
         self.project.kind = project_pb2.FIND_ANOTHER_JOB
@@ -361,6 +362,7 @@ class NetworkPlusTestCase(campaign_helper.CampaignTestBase):
         """Send vars in English."""
 
         self.user.profile.locale = 'en'
+        self.project.target_job.job_group.name = 'Judicial help and mediation'
         self._assert_user_receives_campaign()
 
         network_application_percentage = self._variables.pop('networkApplicationPercentage')
@@ -375,7 +377,7 @@ class NetworkPlusTestCase(campaign_helper.CampaignTestBase):
         self.assertEqual('dans le juridique', in_target_domain)
 
         job_group_in_departement = self._variables.pop('jobGroupInDepartement')
-        self.assertEqual('aide et médiation judiciaire dans le Rhône', job_group_in_departement)
+        self.assertEqual('judicial help and mediation in Rhône', job_group_in_departement)
 
 
 if __name__ == '__main__':

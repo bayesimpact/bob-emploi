@@ -1,27 +1,27 @@
-formation.title,formation.proximiteRomes.code,duration,totalPriceTTC,address.postalCode,formation.specificCondition
-Gestion d'une entreprise forestière,A1101,150,1428.0,65500,Le candidat devra présenter une prescription de la MSA.
-Gestion d'une entreprise forestière,A1201,150,1428.0,65500,Le candidat devra présenter une prescription de la MSA.
-Gestion d'une entreprise forestière,A1205,150,1428.0,65500,Le candidat devra présenter une prescription de la MSA.
+formation.title,formation.proximiteRomes.code,duration,totalPriceTTC,address.postalCode,formation.specificCondition,formation.codeModaliteEnseign
+Gestion d'une entreprise forestière,A1101,150,1428.0,65500,Le candidat devra présenter une prescription de la MSA.,0
+Gestion d'une entreprise forestière,A1201,150,1428.0,65500,Le candidat devra présenter une prescription de la MSA.,0
+Gestion d'une entreprise forestière,A1205,150,1428.0,65500,Le candidat devra présenter une prescription de la MSA.,0
 Certificat de Spécialisation Arboriste Elagueur,A1201,1085,9496.0,20100,"Justifier d¿un diplôme de niveau Bac dans le domaine forestier ou un domaine proche
 ou
 1 an d¿expérience professionnelle dans le secteur forestier
 ou
 3 ans d¿expérience dans un autre secteur d¿activité
 Le certificat de spécialisation n'est accessible que par la voie de l'apprentissage ou de la formation professionnelle. Il est accessible aux candidats majeurs.
-"
+",1
 BP option responsable de chantiers forestiers,A1205,1350,16369.0,09100,"Être titulaire d¿un certificat d¿aptitude professionnelle agricole ou d¿un diplôme ou titre inscrit au répertoire national des certifications professionnelles de même niveau ou d¿un niveau supérieur
 -   Les candidats ne justifiant pas des diplômes mentionnés ci-dessus doivent attester, avant l¿entrée en formation, soit de l¿équivalent d¿une année d¿activité professionnelle salariée, non salariée, bénévole ou de volontariat à temps plein en lien avec la finalité du diplôme postulé, soit de l¿équivalent de trois années à temps plein.
--   Avoir une bonne condition physique et un certificat médical attestant de la capacité de l¿apprenant à effectuer des tâches de maniements de machines."
+-   Avoir une bonne condition physique et un certificat médical attestant de la capacité de l¿apprenant à effectuer des tâches de maniements de machines.",1
 BP option responsable de chantiers forestiers,A1101,1350,16369.0,09100,"Être titulaire d¿un certificat d¿aptitude professionnelle agricole ou d¿un diplôme ou titre inscrit au répertoire national des certifications professionnelles de même niveau ou d¿un niveau supérieur
 -   Les candidats ne justifiant pas des diplômes mentionnés ci-dessus doivent attester, avant l¿entrée en formation, soit de l¿équivalent d¿une année d¿activité professionnelle salariée, non salariée, bénévole ou de volontariat à temps plein en lien avec la finalité du diplôme postulé, soit de l¿équivalent de trois années à temps plein.
--   Avoir une bonne condition physique et un certificat médical attestant de la capacité de l¿apprenant à effectuer des tâches de maniements de machines."
+-   Avoir une bonne condition physique et un certificat médical attestant de la capacité de l¿apprenant à effectuer des tâches de maniements de machines.",2
 BP option responsable de chantiers forestiers,A1201,1350,16369.0,09100,"Être titulaire d¿un certificat d¿aptitude professionnelle agricole ou d¿un diplôme ou titre inscrit au répertoire national des certifications professionnelles de même niveau ou d¿un niveau supérieur
 -   Les candidats ne justifiant pas des diplômes mentionnés ci-dessus doivent attester, avant l¿entrée en formation, soit de l¿équivalent d¿une année d¿activité professionnelle salariée, non salariée, bénévole ou de volontariat à temps plein en lien avec la finalité du diplôme postulé, soit de l¿équivalent de trois années à temps plein.
--   Avoir une bonne condition physique et un certificat médical attestant de la capacité de l¿apprenant à effectuer des tâches de maniements de machines."
-Sauveteur Secouriste du Travail ,A1201,14,238.0,65500,
-Sauveteur Secouriste du Travail ,A1101,14,238.0,65500,
-Sauveteur Secouriste du Travail ,A1205,14,238.0,65500,
-Licence mention arts du spectacle parcours cinéma - 3ème année,L1301,486,3000.0,92000,"2ème année Licence arts, lettres 
+-   Avoir une bonne condition physique et un certificat médical attestant de la capacité de l¿apprenant à effectuer des tâches de maniements de machines.",0
+Sauveteur Secouriste du Travail ,A1201,14,238.0,65500,,1
+Sauveteur Secouriste du Travail ,A1101,14,238.0,65500,,1
+Sauveteur Secouriste du Travail ,A1205,14,238.0,65500,,0
+Licence mention arts du spectacle parcours cinéma - 3ème année,L1301,486,3000.0,92000,"2ème année Licence arts, lettres
 Savoir mobiliser des compétences en matière d'expression écrite et orale afin de pouvoir analyser, argumenter et raisonner de manière convaincante.
 Cette mention suppose des qualités dans la compréhension fine d'objets de réflexion de toute nature (films, spectacles, textes) et de solides capacités d'expression, à l'écrit comme à l'oral, afin de pouvoir analyser, argumenter, construire un raisonnement, synthétiser, produire et traiter des contenus diversifiés.
 Etre sensibilisé aux pratiques du cinéma, de l'audiovisuel et du spectacle vivant (théâtre, performance, danse, cirque, arts de la rue).
@@ -30,7 +30,7 @@ L'intérêt pour le cinéma, l'audiovisuel et le théâtre est essentiel, mais l
 Disposer d'un bon niveau dans au moins une langue étrangère (niveau B).
 Pouvoir travailler de façon autonome et organiser son travail.
  ou 
-Validation des études, expériences professionnelles ou acquis personnels (anciennement VAPP)."
+Validation des études, expériences professionnelles ou acquis personnels (anciennement VAPP).",2
 Licence mention arts du spectacle parcours cinéma - 3ème année,L1302,486,3000.0,92000,"2ème année Licence arts, lettres 
 Savoir mobiliser des compétences en matière d'expression écrite et orale afin de pouvoir analyser, argumenter et raisonner de manière convaincante.
 Cette mention suppose des qualités dans la compréhension fine d'objets de réflexion de toute nature (films, spectacles, textes) et de solides capacités d'expression, à l'écrit comme à l'oral, afin de pouvoir analyser, argumenter, construire un raisonnement, synthétiser, produire et traiter des contenus diversifiés.
@@ -40,14 +40,14 @@ L'intérêt pour le cinéma, l'audiovisuel et le théâtre est essentiel, mais l
 Disposer d'un bon niveau dans au moins une langue étrangère (niveau B).
 Pouvoir travailler de façon autonome et organiser son travail.
  ou 
-Validation des études, expériences professionnelles ou acquis personnels (anciennement VAPP)."
-Licence Arts du Spectacle parcours Études Cinématographiques et Audiovisuelles 1ère année,G1202,590,5000.0,34199,"Baccalauréat, DAEU, titre de niveau 4 ou validation d'acquis professionnels"
-Licence Arts du Spectacle parcours Études Cinématographiques et Audiovisuelles 1ère année,L1304,590,5000.0,34199,"Baccalauréat, DAEU, titre de niveau 4 ou validation d'acquis professionnels"
-Licence Arts du Spectacle parcours Études Cinématographiques et Audiovisuelles 1ère année,L1203,590,5000.0,34199,"Baccalauréat, DAEU, titre de niveau 4 ou validation d'acquis professionnels"
-Licence Arts du Spectacle parcours Études Cinématographiques et Audiovisuelles 1ère année,L1302,590,5000.0,34199,"Baccalauréat, DAEU, titre de niveau 4 ou validation d'acquis professionnels"
-Licence Arts du Spectacle parcours Études Cinématographiques et Audiovisuelles 1ère année,L1301,590,5000.0,34199,"Baccalauréat, DAEU, titre de niveau 4 ou validation d'acquis professionnels"
-CAP menuisier installateur,H2206,420,5625.0,81990,Diplôme permettant la réduction du parcours de formation
-CAP menuisier installateur,H2201,420,5625.0,81990,Diplôme permettant la réduction du parcours de formation
-CAP menuisier installateur,H2202,420,5625.0,81990,Diplôme permettant la réduction du parcours de formation
-CAP menuisier installateur,F1607,420,5625.0,81990,Diplôme permettant la réduction du parcours de formation
-Training without a ROME,,420,5625.0,81990,Diplôme permettant la réduction du parcours de formation
+Validation des études, expériences professionnelles ou acquis personnels (anciennement VAPP).",0
+Licence Arts du Spectacle parcours Études Cinématographiques et Audiovisuelles 1ère année,G1202,590,5000.0,34199,"Baccalauréat, DAEU, titre de niveau 4 ou validation d'acquis professionnels",1
+Licence Arts du Spectacle parcours Études Cinématographiques et Audiovisuelles 1ère année,L1304,590,5000.0,34199,"Baccalauréat, DAEU, titre de niveau 4 ou validation d'acquis professionnels",0
+Licence Arts du Spectacle parcours Études Cinématographiques et Audiovisuelles 1ère année,L1203,590,5000.0,34199,"Baccalauréat, DAEU, titre de niveau 4 ou validation d'acquis professionnels",0
+Licence Arts du Spectacle parcours Études Cinématographiques et Audiovisuelles 1ère année,L1302,590,5000.0,34199,"Baccalauréat, DAEU, titre de niveau 4 ou validation d'acquis professionnels",0
+Licence Arts du Spectacle parcours Études Cinématographiques et Audiovisuelles 1ère année,L1301,590,5000.0,34199,"Baccalauréat, DAEU, titre de niveau 4 ou validation d'acquis professionnels",1
+CAP menuisier installateur,H2206,420,5625.0,81990,Diplôme permettant la réduction du parcours de formation,0
+CAP menuisier installateur,H2201,420,5625.0,81990,Diplôme permettant la réduction du parcours de formation,0
+CAP menuisier installateur,H2202,420,5625.0,81990,Diplôme permettant la réduction du parcours de formation,0
+CAP menuisier installateur,F1607,420,5625.0,81990,Diplôme permettant la réduction du parcours de formation,0
+Training without a ROME,,420,5625.0,81990,Diplôme permettant la réduction du parcours de formation,0

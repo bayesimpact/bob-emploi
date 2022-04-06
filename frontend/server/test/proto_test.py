@@ -3,13 +3,13 @@
 import datetime
 import time
 import threading
-from typing import Dict
 import unittest
 from unittest import mock
 
 from google.protobuf import json_format
 import mongomock
 
+from bob_emploi.common.python.test import nowmock
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.test.testdata import test_pb2
@@ -135,7 +135,7 @@ class CacheMongoTestCase(unittest.TestCase):
         assert cache_busted_a124
         self.assertEqual('New content in the DB', cache_busted_a124.name)
 
-    @mock.patch(proto.now.__name__ + '.get')
+    @nowmock.patch()
     def test_time_deprecates_cache(self, mock_now: mock.MagicMock) -> None:
         """Test that after some time, cache is deprecated"""
 
@@ -208,7 +208,7 @@ class CacheMongoTestCase(unittest.TestCase):
 
         events = ['STARTING']
 
-        def _get_values() -> Dict[str, int]:
+        def _get_values() -> dict[str, int]:
             is_first_thread = len(events) <= 1
             if is_first_thread:
                 events.append('WAITING')
@@ -333,7 +333,7 @@ class FetchFromMongoTestCase(unittest.TestCase):
         refetched = proto.fetch_from_mongo(self._db, test_pb2.Simple, 'collection', 'id')
         self.assertEqual(fetched, refetched)
 
-    @mock.patch(proto.now.__name__ + '.get')
+    @nowmock.patch()
     def test_cache_has_ttl(self, mock_now: mock.MagicMock) -> None:
         """Cached document has only a short life."""
 

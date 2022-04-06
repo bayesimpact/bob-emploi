@@ -9,7 +9,6 @@ To re-import the templates from mailjet:
 For each template, we keep in a separate subfolder:
 - a headers.json file
 - a template.html file
-- a template.txt file
 - a template.mjml (JSON format) file
 
 Modifications should be done on all three template.XXX files. Later improvement might reduce this overhead.
@@ -17,5 +16,6 @@ Modifications should be done on all three template.XXX files. Later improvement 
 To send the templates back to MailJet (after modification):
 `frontend/server/mail/templates/mailjet.sh upload`
 
+<!-- TODO(pascal): Document the mailjet docker-compose service -->
 You can also only upload or download one template at a time using its ID as defined in
 [mailjet.sh](mailjet.sh), for instance: `frontend/server/mail/templates/mailjet.sh download imt`.

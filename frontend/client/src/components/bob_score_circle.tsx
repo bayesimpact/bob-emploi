@@ -1,9 +1,9 @@
-import PropTypes from 'prop-types'
-import React, {useCallback, useMemo, useState} from 'react'
-import VisibilitySensor from 'react-visibility-sensor'
+import React, {useCallback, useMemo, useRef} from 'react'
+import {useTranslation} from 'react-i18next'
+
+import useOnScreen from 'hooks/on_screen'
 
 import {colorToAlpha} from 'components/colors'
-import Trans from 'components/i18n_trans'
 import GrowingNumber from 'components/growing_number'
 
 interface Props {
@@ -63,13 +63,9 @@ const BobScoreCircle = (props: Props): React.ReactElement => {
     style,
     ...extraProps
   } = props
-  const [hasStartedGrowing, setHasStartedGrowing] = useState(!isAnimated)
-  const startGrowing = useCallback((isVisible: boolean): void => {
-    if (!isVisible) {
-      return
-    }
-    setHasStartedGrowing(true)
-  }, [])
+  const {t} = useTranslation('components')
+  const domRef = useRef<HTMLDivElement>(null)
+  const hasStartedGrowing = useOnScreen(domRef, {isActive: isAnimated, isForAppearing: true})
 
   // Gives the point on the Bob score circle according to clockwise angle with origin at the bottom.
   const getPointFromAngle = useCallback((rad: number): {x: number; y: number} => {
@@ -121,65 +117,46 @@ const BobScoreCircle = (props: Props): React.ReactElement => {
     transition: `stroke ${durationMillisec}ms linear,
       stroke-dashoffset ${durationMillisec}ms linear`,
   }
-  return <VisibilitySensor
-    active={!hasStartedGrowing} intervalDelay={250} partialVisibility={true}
-    onChange={startGrowing}>
-    <div {...extraProps} style={containerStyle}>
-      {isPercentShown ? <div style={percentStyle}>
-        {isAnimated ?
-          <GrowingNumber
-            durationMillisec={durationMillisec} number={percent} isSteady={true} /> :
-          percent
-        }%</div> : null}
-      {isCaptionShown ?
-        <Trans style={bobScoreCaptionStyle}>score d'employabilité</Trans> : null}
-      <svg
-        fill="none"
-        viewBox={`${-largeRadius} ${-largeRadius} ${totalWidth} ${totalHeight}`}>
-        <g strokeLinecap="round">
-          <path
-            d={fullPath} stroke={colorToAlpha(colors.SILVER, .3)} strokeWidth={2 * strokeWidth} />
-          <path
-            style={transitionStyle}
-            d={percentPath}
-            stroke={percentColor}
-            strokeDasharray={`${arcLength}, ${2 * arcLength}`}
-            strokeDashoffset={hasStartedGrowing ? 0 : arcLength}
-            strokeWidth={2 * strokeWidth}
-          />
-          <path
-            d={percentPath}
-            style={transitionStyle}
-            stroke={percentColor}
-            strokeDasharray={`0, ${arcLength}`}
-            strokeDashoffset={hasStartedGrowing ? -arcLength + 1 : 0}
-            strokeWidth={6 * strokeWidth} />
-          <path
-            d={percentPath}
-            stroke="#fff"
-            style={transitionStyle}
-            strokeDasharray={`0, ${arcLength}`}
-            strokeDashoffset={hasStartedGrowing ? -arcLength + 1 : 0}
-            strokeWidth={2 * strokeWidth} />
-        </g>
-      </svg>
-    </div>
-  </VisibilitySensor>
-}
-BobScoreCircle.propTypes = {
-  color: PropTypes.string,
-  durationMillisec: PropTypes.number,
-  halfAngleDeg: PropTypes.number,
-  // TODO(cyrille): Fix the non-animated version.
-  isAnimated: PropTypes.bool,
-  isCaptionShown: PropTypes.bool,
-  isPercentShown: PropTypes.bool,
-  percent: PropTypes.number,
-  radius: PropTypes.number,
-  scoreSize: PropTypes.number,
-  startColor: PropTypes.string,
-  strokeWidth: PropTypes.number,
-  style: PropTypes.object,
+  return <div ref={domRef} {...extraProps} style={containerStyle}>
+    {isPercentShown ? <div style={percentStyle}>
+      {isAnimated ?
+        <GrowingNumber
+          durationMillisec={durationMillisec} number={percent} isSteady={true} /> :
+        percent
+      }%</div> : null}
+    {isCaptionShown ?
+      <div style={bobScoreCaptionStyle}>{t("score d'employabilité")}</div> : null}
+    <svg
+      fill="none"
+      viewBox={`${-largeRadius} ${-largeRadius} ${totalWidth} ${totalHeight}`}>
+      <g strokeLinecap="round">
+        <path
+          d={fullPath} stroke={colorToAlpha(colors.SILVER, .3)} strokeWidth={2 * strokeWidth} />
+        <path
+          style={transitionStyle}
+          d={percentPath}
+          stroke={percentColor}
+          strokeDasharray={`${arcLength}, ${2 * arcLength}`}
+          strokeDashoffset={hasStartedGrowing ? 0 : arcLength}
+          strokeWidth={2 * strokeWidth}
+        />
+        <path
+          d={percentPath}
+          style={transitionStyle}
+          stroke={percentColor}
+          strokeDasharray={`0, ${arcLength}`}
+          strokeDashoffset={hasStartedGrowing ? -arcLength + 1 : 0}
+          strokeWidth={6 * strokeWidth} />
+        <path
+          d={percentPath}
+          stroke="#fff"
+          style={transitionStyle}
+          strokeDasharray={`0, ${arcLength}`}
+          strokeDashoffset={hasStartedGrowing ? -arcLength + 1 : 0}
+          strokeWidth={2 * strokeWidth} />
+      </g>
+    </svg>
+  </div>
 }
 
 

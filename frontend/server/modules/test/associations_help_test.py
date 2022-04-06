@@ -2,7 +2,7 @@
 
 import unittest
 
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
@@ -34,7 +34,7 @@ class AdviceAssociationHelpTestCase(scoring_test.ScoringModelTestBase):
 
         persona = self._random_persona().clone()
         self.database.associations.insert_one({'name': 'SNC'})
-        persona.user_profile.frustrations.append(user_pb2.MOTIVATION)
+        persona.user_profile.frustrations.append(user_profile_pb2.MOTIVATION)
         score = self._score_persona(persona)
         self.assertEqual(3, score, msg=f'Failed for "{persona.name}"')
 

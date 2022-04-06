@@ -5,21 +5,23 @@ See http://go/bob:advisor-design.
 
 import locale
 import logging
-import threading
-from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
+import os
+from typing import Any, Iterable, Iterator, Mapping, Optional, Set, Tuple
 from urllib import parse
 
 import mailjet_rest
 
 from bob_emploi.common.python import now
-from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring
+from bob_emploi.frontend.server import auth_token as token
 from bob_emploi.frontend.server.mail import campaign
 from bob_emploi.frontend.server.mail import mail_send
 from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import advisor_pb2
+from bob_emploi.frontend.api import email_pb2
+from bob_emploi.frontend.api import features_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
 
@@ -63,9 +65,14 @@ def _maybe_recommend_advice(
         user: user_pb2.User,
         project: project_pb2.Project,
         database: mongo.NoPiiMongoDatabase) -> bool:
-    if user.features_enabled.advisor == user_pb2.CONTROL or project.advices:
+    if user.features_enabled.advisor == features_pb2.CONTROL:
         return False
-    advices = compute_advices_for_project(user, project, database)
+    scoring_project = scoring.ScoringProject(project, user, database, now=now.get())
+    if user.features_enabled.action_plan == features_pb2.ACTIVE and not project.actions:
+        compute_actions_for_project(scoring_project)
+    if project.advices:
+        return False
+    advices = compute_advices_for_project(scoring_project)
     for piece_of_advice in advices.advices:
         piece_of_advice.status = project_pb2.ADVICE_RECOMMENDED
     project.advices.extend(advices.advices[:])
@@ -73,9 +80,7 @@ def _maybe_recommend_advice(
 
 
 def compute_advices_for_project(
-        user: user_pb2.User,
-        project: project_pb2.Project,
-        database: mongo.NoPiiMongoDatabase,
+        scoring_project: scoring.ScoringProject,
         scoring_timeout_seconds: float = 3) -> project_pb2.Advices:
     """Advise on a user project.
 
@@ -88,8 +93,7 @@ def compute_advices_for_project(
         an Advices protobuffer containing a list of recommendations.
     """
 
-    scoring_project = scoring.ScoringProject(project, user, database, now=now.get())
-    advice_modules = _advice_modules(database)
+    advice_modules = _advice_modules(scoring_project.database)
     advices = project_pb2.Advices()
     advices.advices.extend(advice for advice, _ in compute_available_methods(
         scoring_project, advice_modules, scoring_timeout_seconds))
@@ -100,7 +104,7 @@ def compute_available_methods(
         scoring_project: scoring.ScoringProject,
         method_modules: Iterable[advisor_pb2.AdviceModule],
         scoring_timeout_seconds: float = 3) \
-        -> Iterator[Tuple[project_pb2.Advice, Set[str]]]:
+        -> Iterator[Tuple[project_pb2.Advice, frozenset[str]]]:
     """Advise on a user project.
 
     Args:
@@ -112,31 +116,21 @@ def compute_available_methods(
         the process.
     """
 
-    scores: Dict[str, float] = {}
-    reasons: Dict[str, List[str]] = {}
-    missing_fields: Dict[str, Set[str]] = {}
-    for module in method_modules:
-        if not module.is_ready_for_prod and not scoring_project.features_enabled.alpha:
-            continue
-        scoring_model = scoring.get_scoring_model(module.trigger_scoring_model)
-        if scoring_model is None:
-            logging.warning(
-                'Not able to score advice "%s", the scoring model "%s" is unknown.',
-                module.advice_id, module.trigger_scoring_model)
-            continue
-        if scoring_project.user.features_enabled.all_modules:
-            scores[module.advice_id] = 3
-        else:
-            thread = threading.Thread(
-                target=_compute_score_and_reasons,
-                args=(scores, reasons, module, scoring_model, scoring_project, missing_fields))
-            thread.start()
-            # TODO(pascal): Consider scoring different models in parallel.
-            thread.join(timeout=scoring_timeout_seconds)
-            if thread.is_alive():
-                logging.warning(
-                    'Timeout while scoring advice "%s" for:\n%s',
-                    module.trigger_scoring_model, str(scoring_project))
+    ready_modules = {
+        module.advice_id: module.trigger_scoring_model
+        for module in method_modules
+        if module.is_ready_for_prod or scoring_project.features_enabled.alpha
+    }
+
+    scores: Mapping[str, float] = {}
+    reasons: Mapping[str, tuple[str, ...]] = {}
+    missing_fields: Mapping[str, frozenset[str]] = {}
+
+    if scoring_project.user.features_enabled.all_modules:
+        scores = {key: 3 for key in ready_modules}
+    else:
+        scores, reasons, missing_fields = scoring_project.score_and_explain_all(
+            ready_modules.items(), scoring_timeout_seconds=scoring_timeout_seconds)
 
     modules = sorted(
         method_modules,
@@ -164,38 +158,13 @@ def compute_available_methods(
 
         _maybe_override_advice_data(piece_of_advice, module, scoring_project)
         has_module = True
-        yield piece_of_advice, missing_fields.get(module.advice_id, set())
+        yield piece_of_advice, missing_fields.get(module.advice_id, frozenset())
 
     if not has_module and method_modules:
         logging.warning(
             'We could not find *any* advice for a project:\nModules tried:\n"%s"\nProject:\n%s',
             '", "'.join(m.advice_id for m in method_modules),
             scoring_project)
-
-
-def _compute_score_and_reasons(
-        scores: Dict[str, float],
-        reasons: Dict[str, List[str]],
-        module: advisor_pb2.AdviceModule,
-        scoring_model: scoring.ModelBase,
-        scoring_project: scoring.ScoringProject,
-        missing_fields: Dict[str, Set[str]]) -> None:
-    try:
-        scores[module.advice_id], reasons[module.advice_id] = \
-            scoring_model.score_and_explain(scoring_project)
-    except scoring.NotEnoughDataException as err:
-        if err.fields:
-            # We don't know whether this is useful or not, so we give it anyway,
-            # and ask for missing fields.
-            scores[module.advice_id] = .1
-            reasons[module.advice_id] = err.reasons
-            missing_fields[module.advice_id] = err.fields
-        else:
-            logging.exception(
-                'Scoring "%s" crashed for:\n%s', module.trigger_scoring_model, str(scoring_project))
-    except Exception:  # pylint: disable=broad-except
-        logging.exception(
-            'Scoring "%s" crashed for:\n%s', module.trigger_scoring_model, str(scoring_project))
 
 
 def _maybe_override_advice_data(
@@ -210,6 +179,56 @@ def _maybe_override_advice_data(
         # Nothing to override.
         return
     piece_of_advice.MergeFrom(override_data)
+
+
+# Cache (from MongoDB) of known action templates.
+_ACTION_TEMPLATES: proto.MongoCachedCollection[action_pb2.ActionTemplate] = \
+    proto.MongoCachedCollection(action_pb2.ActionTemplate, 'action_templates')
+
+
+def compute_actions_for_project(
+    scoring_project: scoring.ScoringProject,
+) -> Iterable[action_pb2.Action]:
+    """Compute all actions possible for a project."""
+
+    action_templates = {
+        action.action_template_id: action
+        for action in _ACTION_TEMPLATES.get_collection(scoring_project.database)
+    }
+    if scoring_project.user.features_enabled.all_modules:
+        scores: Mapping[str, float] = {key: 3 for key in action_templates}
+    else:
+        scores = scoring_project.score_and_explain_all(
+            (key, action_template.trigger_scoring_model)
+            for key, action_template in action_templates.items()).scores
+    sorted_action_templates = sorted(
+        action_templates.values(),
+        key=lambda m: (scores.get(m.action_template_id, 0), m.action_template_id),
+        reverse=True)
+    deployment = os.getenv('BOB_DEPLOYMENT', 'fr')
+    for action_template in sorted_action_templates:
+        action_id = action_template.action_template_id
+        if not (score := scores.get(action_id)) or score <= 0:
+            break
+        scoring_project.details.actions.add(
+            action_id=action_id,
+            title=scoring_project.translate_airtable_string(
+                'actionTemplates', action_id, 'title', hint=action_template.title,
+                is_genderized=True),
+            short_description=scoring_project.translate_airtable_string(
+                'actionTemplates', action_id, 'short_description',
+                hint=action_template.short_description, is_genderized=True),
+            tags=[
+                scoring_project.translate_airtable_string('actionTemplates', 'tags', tag)
+                for tag in action_template.tags],
+            duration=action_template.duration,
+            status=action_pb2.ACTION_UNREAD,
+            advice_id=action_template.advice_id,
+            resource_url=scoring_project.translate_airtable_string(
+                'actionTemplates', action_id, 'resource_url',
+                hint=action_template.resource_url, context=deployment),
+        )
+    return scoring_project.details.actions[:]
 
 
 def _send_activation_email(
@@ -237,10 +256,10 @@ def _send_activation_email(
         logging.exception('Sending an email with an unknown locale: %s', user_locale)
 
     scoring_project = scoring.ScoringProject(project, user, database, now=now.get())
-    auth_token = parse.quote(auth.create_token(user.user_id, is_using_timestamp=True))
-    settings_token = parse.quote(auth.create_token(user.user_id, role='settings'))
+    auth_token = parse.quote(token.create_token(user.user_id, is_using_timestamp=True))
+    settings_token = parse.quote(token.create_token(user.user_id, role='settings'))
     coaching_email_frequency_name = \
-        user_pb2.EmailFrequency.Name(user.profile.coaching_email_frequency)
+        email_pb2.EmailFrequency.Name(user.profile.coaching_email_frequency)
     # This uses tutoiement by default, because its content adressed from the user to a third party
     # (that we assume the user is familiar enough with), not from Bob to the user.
     virality_template = parse.urlencode({
@@ -251,28 +270,53 @@ def _send_activation_email(
             'Tu verras, ça vaut le coup\u00A0: en 15 minutes, tu en sauras plus sur où tu en es, '
             'et ce que tu peux faire pour avancer plus efficacement. '
             "Et en plus, c'est gratuit\u00A0!\n\n"
-            '{base_url}/invite#vm2m\n\n'
+            '{invite_url}\n\n'
             'En tous cas, bon courage pour la suite,\n\n'
             '{first_name}',
-        ).format(base_url=base_url, first_name=user.profile.name),
+        ).format(
+            invite_url=parse.urljoin(base_url, 'invite#vm2m'),
+            first_name=user.profile.name),
         'subject': scoring_project.translate_static_string("Ça m'a fait penser à toi"),
     })
-    data = dict(campaign.get_default_vars(user), **{
-        'changeEmailSettingsUrl':
-            f'{base_url}/unsubscribe.html?user={user.user_id}&auth={settings_token}&'
-            f'coachingEmailFrequency={coaching_email_frequency_name}&'
-            f'hl={parse.quote(user.profile.locale)}',
+    change_email_settings_url = parse.urljoin(base_url, 'unsubscribe.html?' + parse.urlencode({
+        'user': user.user_id,
+        'auth': settings_token,
+        'coachingEmailFrequency': coaching_email_frequency_name,
+        'hl': user.profile.locale,
+    }))
+    team_members = (
+        'Tabitha',
+        'Paul',
+        'John',
+        'Pascal',
+        'Sil',
+        'Cyrille',
+        'Flo',
+        'Nicolas',
+        'Florian',
+        'Lillie',
+        'Benjamin',
+        'Émilie',
+    )
+    data: dict[str, Any] = campaign.get_default_vars(user)
+    data |= {
+        'changeEmailSettingsUrl': change_email_settings_url,
         'date': now.get().strftime(date_format),
+        'firstTeamMember': team_members[0],
         'isCoachingEnabled':
             'True' if
             user.profile.coaching_email_frequency and
-            user.profile.coaching_email_frequency != user_pb2.EMAIL_NONE
+            user.profile.coaching_email_frequency != email_pb2.EMAIL_NONE
             else '',
-        'loginUrl': f'{base_url}?userId={user.user_id}&authToken={auth_token}',
+        'loginUrl': parse.urljoin(base_url, f'?userId={user.user_id}&authToken={auth_token}'),
+        'numberUsers': '270\u00A0000',
+        'numberTeamMembers': len(team_members),
         'ofJob': scoring_project.populate_template('%ofJobName', raise_on_missing_var=True),
+        'teamMembers': ', '.join(team_members[1:]),
         'viralityTemplate': f'mailto:?{virality_template}'
-    })
+    }
     # https://app.mailjet.com/template/636862/build
+    # TODO(cyrille): Use all_campaigns.send_campaign
     response = mail_send.send_template('activation-email', user.profile, data)
     if response.status_code != 200:
         logging.warning(
@@ -296,7 +340,7 @@ def list_all_tips(
         user: user_pb2.User,
         project: project_pb2.Project,
         piece_of_advice: project_pb2.Advice,
-        database: mongo.NoPiiMongoDatabase) -> List[action_pb2.ActionTemplate]:
+        database: mongo.NoPiiMongoDatabase) -> list[action_pb2.ActionTemplate]:
     """List all available tips for a piece of advice.
 
     Args:

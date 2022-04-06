@@ -4,7 +4,7 @@ import csv
 import glob
 import itertools
 import logging
-from typing import Dict, Iterator, Optional, Union
+from typing import Iterator, Optional, Union
 
 import pandas as pd
 import sas7bdat
@@ -12,7 +12,7 @@ import sas7bdat
 _LOGGER = logging.getLogger('alembic')
 
 
-def flatten_iterator(files_pattern: str) -> Iterator[Dict[str, str]]:
+def flatten_iterator(files_pattern: str) -> Iterator[dict[str, str]]:
     """Iterate over all FHS files as if they were one big file.
 
     It iterates through the file and yields each result separately. It adds an
@@ -31,7 +31,7 @@ def flatten_iterator(files_pattern: str) -> Iterator[Dict[str, str]]:
     if not files:
         raise ValueError(f'No files found matching {files_pattern}')
 
-    headers = None
+    headers: list[str] = []
 
     print(f'Flattening {len(files):d} files')
 
@@ -49,7 +49,7 @@ def flatten_iterator(files_pattern: str) -> Iterator[Dict[str, str]]:
             headers = header_line + ['__file__']
         elif headers[:-1] != header_line:
             raise ValueError(
-                f"Headers from file {current_file} don't match those of previous "  # pylint: disable=unsubscriptable-object
+                f"Headers from file {current_file} don't match those of previous "
                 f'files. Was expecting:\n{headers[:-1]}\n'
                 f'  got:\n{header_line}')
         for line in reader:

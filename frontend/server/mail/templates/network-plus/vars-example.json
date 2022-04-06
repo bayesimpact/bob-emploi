@@ -1,0 +1,20 @@
+{
+  "baseUrl": "https://www.bob-emploi.fr",
+  "changeEmailSettingsUrl": "https://www.bob-emploi.fr",
+  "firstName": "Angèle",
+  "frustration": "SELF_CONFIDENCE",
+  "gender": "FEMININE",
+  "hasChildren": "",
+  "hasHighSchoolDegree": "True",
+  "hasLargeNetwork": "",
+  "hasWorkedBefore": "True",
+  "inCity": "à Amiens",
+  "inTargetDomain": "en informatique",
+  "isAbleBodied": "True",
+  "isYoung": "",
+  "jobGroupInDepartement": "ingénieur logiciel dans la Somme",
+  "networkApplicationPercentage": "qu'un tiers",
+  "productLogoUrl": "https://t.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
+  "productName": "Bob",
+  "statusUpdateUrl": "https://www.bob-emploi.fr"
+}

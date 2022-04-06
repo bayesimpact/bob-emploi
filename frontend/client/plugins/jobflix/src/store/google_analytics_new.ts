@@ -1,10 +1,10 @@
 // TODO(cyrille): Move to main store if we add new GA accounts in other plugins.
 import _pick from 'lodash/pick'
-import {AnyAction, Middleware} from 'redux'
+import type {AnyAction, Middleware} from 'redux'
 
-import {RootState} from 'store/actions'
+import type {RootState} from 'store/actions'
 
-import {AllUpskillingActions, DispatchAllUpskillingActions} from './actions'
+import type {AllUpskillingActions, DispatchAllUpskillingActions} from './actions'
 
 interface GAEvent {
   event: string
@@ -46,7 +46,8 @@ Middleware<unknown, RootState, DispatchAllUpskillingActions> {
         const [gaAction, properties] =
           actionsTypesToLog[(anyAction as AllUpskillingActions).type] || []
         if (gaAction) {
-          windowGA.dataLayer.push({event: gaAction, ..._pick(anyAction, properties || [])})
+          // @ts-ignore
+          gtag('event', gaAction, _pick(anyAction, properties || []))
         }
         return next(anyAction)
       }

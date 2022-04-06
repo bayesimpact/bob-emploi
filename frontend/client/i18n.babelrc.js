@@ -23,6 +23,15 @@ module.exports = {
       plugins: [['i18next-extract', {...pluginConfig, defaultNS: 'opengraph'}]],
       test: 'release/lambdas/opengraph_redirect.js',
     },
+    {
+      plugins: [['i18next-extract', {...pluginConfig, defaultNS: 'landing'}]],
+      test: 'src/components/pages/landing.tsx',
+    },
+    {
+      exclude: ['src/components/advisor.tsx'],
+      plugins: [['i18next-extract', {...pluginConfig, defaultNS: 'components'}]],
+      test: ['src/components/*.tsx'],
+    },
   ],
   plugins: [['i18next-extract', pluginConfig]],
 }

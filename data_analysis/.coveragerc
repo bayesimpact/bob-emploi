@@ -16,7 +16,10 @@ exclude_lines =
   if self\.is_real_data:
   # Protocols are for typing only.
   \(typing_extensions\.Protocol\):
+skip_empty = True
+include = bob_emploi/data_analysis/*.*
 [run]
+command_line = -m unittest discover -p *_test.py -s bob_emploi/data_analysis
 omit =
   bob_emploi/frontend/*
   # TODO(cyrille): Find why this is needed.

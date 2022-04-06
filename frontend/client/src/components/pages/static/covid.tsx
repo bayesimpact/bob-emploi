@@ -2,11 +2,11 @@ import copyToClipboard from 'copy-to-clipboard'
 import ContentCopyIcon from 'mdi-react/ContentCopyIcon'
 import React, {useCallback, useEffect, useState} from 'react'
 import {useTranslation} from 'react-i18next'
-import {Link} from 'react-router-dom'
 
 import Button from 'components/button'
 import ExternalLink from 'components/external_link'
 import Trans from 'components/i18n_trans'
+import LinkButton from 'components/link_button'
 import Markdown from 'components/markdown'
 import {useRadium} from 'components/radium'
 import {StaticPage, TitleSection} from 'components/static'
@@ -14,6 +14,7 @@ import {SmoothTransitions} from 'components/theme'
 import {Routes} from 'components/url'
 import covidImage from 'images/covid.svg'
 
+// i18next-extract-mark-ns-start landing
 
 const countryContext = {context: config.countryId}
 
@@ -37,7 +38,7 @@ const buttonStyle: React.CSSProperties = {
   textTransform: 'uppercase',
 }
 const EmailExampleBase = (props: EmailExampleProps): React.ReactElement => {
-  const {t} = useTranslation()
+  const {t} = useTranslation('landing')
   const {children, title} = props
   const [hasJustBeenCopied, setHasJustBeenCopied] = useState(false)
   const copyText = useCallback((): void => {
@@ -65,7 +66,7 @@ const EmailExampleBase = (props: EmailExampleProps): React.ReactElement => {
       <Button style={buttonStyle} isNarrow={true} onClick={copyText}>
         <ContentCopyIcon size={11} /> {t('Copier le texte')}
       </Button>
-      <Trans parent="span" style={copiedStyle}>Texte copié dans le presse-papier</Trans>
+      <span style={copiedStyle}>{t('Texte copié dans le presse-papier')}</span>
     </div>
   </div>
 }
@@ -158,7 +159,7 @@ const TocLink = React.memo(TocLinkBase)
 
 
 const CovidPage = (): React.ReactElement => {
-  const {t} = useTranslation()
+  const {t} = useTranslation('landing')
   const hr = <div style={hrStyle} />
   useEffect((): (() => void) => {
     const html = document.body.parentElement
@@ -173,9 +174,9 @@ const CovidPage = (): React.ReactElement => {
   }, [])
   // TODO(pascal): Fix styling for mobile.
   return <StaticPage
-    page="covid-19" style={pageStyle} isChatButtonShown={true} isContentScrollable={false}
+    page="covid-19" style={pageStyle} isChatButtonShown={false} isContentScrollable={false}
     isNavBarTransparent={true}>
-    <TitleSection pageContent={{title: <Trans style={titleStyle}>
+    <TitleSection pageContent={{title: <Trans style={titleStyle} t={t}>
       Chercher un emploi<br />
       pendant la crise du coronavirus
     </Trans>}} />
@@ -203,19 +204,19 @@ const CovidPage = (): React.ReactElement => {
 
       {hr}
 
-      <Trans style={headerStyle} id="jobsearch">
-        Comment avancer dans sa recherche tout en adoptant les gestes barrières&nbsp;?
-      </Trans>
-      <Trans style={pStyle}>
-      Chercher via quelqu'un que vous connaissez est une méthode très efficace pour trouver un
-      emploi dans la plupart des métiers. On le sait grâce aux statistiques sur comment les gens
-      retrouvent un emploi. Mais pendant quelques temps encore, il peut arriver que vous rencontriez
-      des difficultés pour organiser un rendez-vous avec un contact, chez Pôle emploi, ou même pour
-      être reçu.e en entretien. On va tous devoir s'adapter.
-      </Trans>
+      <div style={headerStyle} id="jobsearch">
+        {t('Comment avancer dans sa recherche tout en adoptant les gestes barrières\u00A0?')}
+      </div>
+      <div style={pStyle}>{t(
+        "Chercher via quelqu'un que vous connaissez est une méthode très efficace pour trouver " +
+        'un emploi dans la plupart des métiers. On le sait grâce aux statistiques sur comment ' +
+        'les gens retrouvent un emploi. Mais pendant quelques temps encore, il peut arriver que ' +
+        'vous rencontriez des difficultés pour organiser un rendez-vous avec un contact, chez ' +
+        "Pôle emploi, ou même pour être reçu.e en entretien. On va tous devoir s'adapter.",
+      )}</div>
       <div style={pStyle}>
         <Markdown
-          // i18next-extract-mark-context-next-line ["uk", "us"]
+          // i18next-extract-mark-context-next-line ["uk", "usa"]
           isSingleLine={true} content={t(
             'Si vous pouvez lire cette page, vous avez probablement accès à internet et ' +
             'pouvez faire bon nombre de démarches via internet. Se renseigner sur un métier, ' +
@@ -229,44 +230,49 @@ const CovidPage = (): React.ReactElement => {
       </div>
       <div style={{margin: '30px auto', textAlign: 'center'}}>
         {/* TODO(sil): DRY this, here and in the landing page. */}
-        <Link to={Routes.INTRO_PAGE}><Button type="validation">
+        <LinkButton to={Routes.INTRO_PAGE} type="validation">
           {t('Se lancer avec {{productName}}', {productName: config.productName})}
-        </Button></Link>
+        </LinkButton>
       </div>
-      <Trans style={pStyle}>
-        Dans un monde qui va très vite et où l'on vous pousse souvent à faire toujours plus,
-        toujours plus de candidatures, toujours plus vite, cette période peut être l'occasion de
-        ralentir et de faire le point (si vous pouvez vous le permettre).
-      </Trans>
-      <Trans style={quoteStyle}>
+      <div style={pStyle}>{t(
+        "Dans un monde qui va très vite et où l'on vous pousse souvent à faire toujours plus, " +
+        "toujours plus de candidatures, toujours plus vite, cette période peut être l'occasion " +
+        'de ralentir et de faire le point (si vous pouvez vous le permettre).',
+      )}</div>
+      <div style={quoteStyle}>
         <div style={quoteBorderStyle} />
-        "Merci pour cette réflexion qui fait du bien et qui permet de se recentrer.
-        Je me sers de ces réflexions pour chercher des postes ou des environnements de travail qui
-        me correspondent."
-      </Trans>
-      <Trans style={pStyle}>
-        Prendre le temps de mieux préparer votre projet professionnel et vos méthodes de recherche
-        est une très bonne utilisation de votre temps. En une semaine, si vous arrivez à faire une
-        candidature soignée à un employeur sur lequel vous vous êtes renseigné, c'est plus efficace
-        que de poster 100 candidatures identiques sur les plateformes.
-      </Trans>
+        {t(
+          '"Merci pour cette réflexion qui fait du bien et qui permet de se recentrer. ' +
+          'Je me sers de ces réflexions pour chercher des postes ou des environnements de ' +
+          'travail qui me correspondent."',
+        )}
+      </div>
+      <div style={pStyle}>{t(
+        'Prendre le temps de mieux préparer votre projet professionnel et vos méthodes de ' +
+        'recherche est une très bonne utilisation de votre temps. En une semaine, si vous ' +
+        'arrivez à faire une candidature soignée à un employeur sur lequel vous vous êtes ' +
+        "renseigné, c'est plus efficace que de poster 100 candidatures identiques sur les " +
+        'plateformes.',
+      )}</div>
       <div style={{margin: '30px auto', textAlign: 'center'}}>
-        <Link to={Routes.INTRO_PAGE}><Button type="validation">
+        <LinkButton to={Routes.INTRO_PAGE} type="validation">
           {t('Faire le point avec {{productName}}', {productName: config.productName})}
-        </Button></Link>
+        </LinkButton>
       </div>
 
-      <Trans style={headerStyle}>
-        Profitez-en pour faire une formation en ligne ou à distance
-      </Trans>
-      <Trans style={quoteStyle}>
+      <div style={headerStyle}>
+        {t('Profitez-en pour faire une formation en ligne ou à distance')}
+      </div>
+      <div style={quoteStyle}>
         <div style={quoteBorderStyle} />
-        "En tant que cheffe d'entreprise, mon candidat idéal post-confinement, c'est quelqu'un
-        qui a profité de cette période pour se former à de nouvelles compétences."
-      </Trans>
+        {t(
+          '"En tant que cheffe d\'entreprise, mon candidat idéal post-confinement, c\'est ' +
+          'quelqu\'un qui a profité de cette période pour se former à de nouvelles compétences."',
+        )}
+      </div>
       <div style={pStyle}>
         <Markdown
-          // i18next-extract-mark-context-next-line ["uk", "us"]
+          // i18next-extract-mark-context-next-line ["", "uk", "usa"]
           isSingleLine={true} content={t(
             "Ce temps où l'économie fonctionne au ralenti peut être l'occasion de suivre une " +
             'formation ou un cours en ligne. Pourquoi ne pas explorer ce domaine qui vous a ' +
@@ -280,29 +286,30 @@ const CovidPage = (): React.ReactElement => {
             countryContext,
           )} />
       </div>
-      <Trans style={pStyle}>
-        Si vous connaissez quelqu'un qui fait le métier que vous aimeriez faire, pourquoi ne pas lui
-        demander de vous recommander une formation qui pourrait augmenter vos chances&nbsp;?
-      </Trans>
+      <div style={pStyle}>{t(
+        "Si vous connaissez quelqu'un qui fait le métier que vous aimeriez faire, pourquoi ne " +
+        'pas lui demander de vous recommander une formation qui pourrait augmenter vos ' +
+        'chances\u00A0?',
+      )}</div>
 
-      <Trans style={headerStyle} id="jobgroup">
-        Comment identifier les secteurs qui recrutent&nbsp;?
-      </Trans>
-      <Trans style={pStyle}>
-        Comme tout est encore très récent, les données dont on dispose sur les secteurs qui
-        recrutent ou non sont encore très partielles. Cependant, voici quelques idées qui pourront
-        vous être utiles&nbsp;:
-      </Trans>
+      <div style={headerStyle} id="jobgroup">
+        {t('Comment identifier les secteurs qui recrutent\u00A0?')}
+      </div>
+      <div style={pStyle}>{t(
+        'Comme tout est encore très récent, les données dont on dispose sur les secteurs qui ' +
+        'recrutent ou non sont encore très partielles. Cependant, voici quelques idées qui ' +
+        'pourront vous être utiles\u00A0:',
+      )}</div>
 
       <div style={pStyle}>
         <ul>
-          <Trans parent="li">
+          <Trans parent="li" t={t}>
             <strong>Suivre l'argent</strong><br />
             Les secteurs qui ont dû accélérer leur activité
             sont ceux qui auront le plus besoin de recruter. En particulier&nbsp;: l'agriculture,
             l'action sociale, la santé. On parle aussi de l'immobilier et l'armée, avec une petite
             reprise également dans la construction, l'éducation et la vente. (<ExternalLink
-              // i18next-extract-mark-context-next-line ["uk", "us"]
+              // i18next-extract-mark-context-next-line ["uk", "usa"]
               href={t(
                 'https://dares.travail-emploi.gouv.fr/IMG/pdf/dares_resultats_detailles_acemo-covid-17-04-2020.pdf',
                 countryContext,
@@ -310,68 +317,69 @@ const CovidPage = (): React.ReactElement => {
               source
             </ExternalLink>)
           </Trans>
-          <Trans parent="li">
+          <Trans parent="li" t={t}>
             <strong>Suivre les comportements</strong><br />
             Achats en ligne, livraison, numérique... beaucoup de gens s'y sont mis pendant le
             confinement. Il s'agit de nouvelles habitudes qui vont s'ancrer dans le quotidien. On
             peut prévoir une forte activité, et donc des recrutements, dans les domaines du
             e-commerce, de la logistique, ainsi que dans le numérique en général.
           </Trans>
-          <Trans parent="li">
+          <Trans parent="li" t={t}>
             <strong>Suivre les tendances</strong><br />
             En plus des tendances comportementales, des économistes prévoient des tendances de ce
             sur quoi on va investir suite à la crise. Ces tendances peuvent vous aider à cibler vos
             recherches. En parler dans une lettre de motivation et en entretien serait aussi une
             bonne méthode pour démontrer que vous avez compris les enjeux de l'employeur&nbsp;:
             <ul>
-              <Trans parent="li">
+              <li>
                 Digitalisation de services (&amp; services publics)
-              </Trans>
-              <Trans parent="li">
+              </li>
+              <li>
                 Aide aux communautés locales à accéder au numérique
-              </Trans>
-              <Trans parent="li">
+              </li>
+              <li>
                 Production alimentaire locale avec chaînes de production plus courtes
-              </Trans>
-              <Trans parent="li">
+              </li>
+              <li>
                 Investissement dans des projets avec des communautés de migrants qui seront
                 davantage marginalisés après la crise
-              </Trans>
-              <Trans parent="li">
+              </li>
+              <li>
                 Implémentation des mesures vertes aux niveaux national et local
-              </Trans>
-              <Trans parent="li">
+              </li>
+              <li>
                 L'économie sociale et solidaire, et les initiatives des entreprises
-              </Trans>
-              <Trans parent="li">
+              </li>
+              <li>
                 Revoir la qualité de vie au travail pour les travailleurs essentiels
-              </Trans>
-              <Trans parent="li">
+              </li>
+              <li>
                 Changements à l'urbanisme (distanciation physique durable&nbsp;?)
-              </Trans>
-              <Trans parent="li">
+              </li>
+              <li>
                 Repenser les évènements culturels et sportifs
-              </Trans>
+              </li>
             </ul>
           </Trans>
         </ul>
       </div>
 
-      <Trans style={headerStyle} id="hiring">
-        Les recrutements ont-ils changé&nbsp;?
-      </Trans>
-      <Trans style={pStyle}>
-        Il est encore trop tôt pour évaluer comment cette crise va affecter les recrutements en
-        France et dans le monde. Les conseils de {{productName: config.productName}} utilisent
-        notamment les statistiques publiées mensuellement par Pôle emploi et vont donc s'ajuster au
-        fur et à mesure que le marché de l'emploi change. Néanmoins nous continuons nos recherches
-        pour comprendre ces changements et ce qu'ils signifient dans votre cas.
-      </Trans>
+      <div style={headerStyle} id="hiring">
+        {t('Les recrutements ont-ils changé\u00A0?')}
+      </div>
+      <div style={pStyle}>{t(
+        'Il est encore trop tôt pour évaluer comment cette crise va affecter les recrutements en ' +
+        'France et dans le monde. Les conseils de {{productName}} utilisent notamment les ' +
+        "statistiques publiées mensuellement par Pôle emploi et vont donc s'ajuster au fur et à " +
+        "mesure que le marché de l'emploi change. Néanmoins nous continuons nos recherches " +
+        "pour comprendre ces changements et ce qu'ils signifient dans votre cas.",
+        {productName: config.productName},
+      )}</div>
 
-      <Trans style={headerStyle} id="examples">
-        Adapter ses formulations
-      </Trans>
-      <Trans style={pStyle}>
+      <div style={headerStyle} id="examples">
+        {t('Adapter ses formulations')}
+      </div>
+      <Trans style={pStyle} t={t}>
         Dans toutes vos communications "emploi"&nbsp;: candidature spontanée, lettre de motivation,
         email de relance, il est toujours important de personnaliser chaque message pour avoir plus
         de chance de toucher son destinataire. En ces temps incertains, il est tout aussi
@@ -407,15 +415,17 @@ const CovidPage = (): React.ReactElement => {
         'lien de connexion pour notre rendez-vous.',
       )}</EmailExample>
 
-      <Trans style={headerStyle} id="allowance">
-        Allocation et radiation
-      </Trans>
-      <Trans style={pStyle}>
+      <div style={headerStyle} id="allowance">
+        {t('Allocation et radiation')}
+      </div>
+      <Trans t={t} style={pStyle}>
         Si vous touchez l'allocation chômage de Pôle emploi, ces derniers ont annulé toutes les
         convocations et vous ne serez donc pas radié·e pour
-        non-présentation. <ExternalLink href={t(
-          'https://www.pole-emploi.fr/actualites/a-laffiche/pole-emploi-face-a-la-crise-sani.html',
-          countryContext)}>
+        non-présentation. <ExternalLink
+          // i18next-extract-mark-context-next-line ["uk", "usa"]
+          href={t(
+            'https://www.pole-emploi.fr/actualites/a-laffiche/pole-emploi-face-a-la-crise-sani.html',
+            countryContext)}>
           Les agent·e·s de Pôle emploi se mobilisent
         </ExternalLink> et sont disponibles par téléphone au 3949 ou sur leur site internet.
       </Trans>
@@ -423,7 +433,7 @@ const CovidPage = (): React.ReactElement => {
       <div style={{height: 100}} />
       {hr}
 
-      <Trans style={{margin: '60px 0', textAlign: 'center'}}>
+      <Trans t={t} style={{margin: '60px 0', textAlign: 'center'}}>
         <div style={{fontWeight: 'bold'}}>
           Besoin d'aide dans votre recherche d'emploi&nbsp;?
         </div>
@@ -432,9 +442,9 @@ const CovidPage = (): React.ReactElement => {
         </div>
       </Trans>
       <div style={{marginBottom: 60, textAlign: 'center'}}>
-        <Link to={Routes.INTRO_PAGE}><Button type="validation">
+        <LinkButton to={Routes.INTRO_PAGE} type="validation">
           {t('Commencer tout de suite')}
-        </Button></Link>
+        </LinkButton>
       </div>
 
     </div>

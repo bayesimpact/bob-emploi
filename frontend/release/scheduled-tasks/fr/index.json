@@ -1,6 +1,14 @@
 {
   "Rules": [
     {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/blast-mail-jobflix",
+      "Description": "Send a first email to Jobflix users",
+      "EventBusName": "default",
+      "Name": "blast-mail-jobflix",
+      "ScheduleExpression": "cron(15 10 ? * * *)",
+      "State": "ENABLED"
+    },
+    {
       "Arn": "arn:aws:events:eu-west-3:951168128976:rule/collect-strings-translation",
       "Description": "Automate strings collect for translation.",
       "EventBusName": "default",
@@ -87,6 +95,14 @@
       "Name": "import-workup-events",
       "ScheduleExpression": "rate(7 days)",
       "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/maintenance",
+      "Description": "Run maintenance on Bob's databases.",
+      "EventBusName": "default",
+      "Name": "maintenance",
+      "ScheduleExpression": "rate(7 days)",
+      "State": "DISABLED"
     },
     {
       "Arn": "arn:aws:events:eu-west-3:951168128976:rule/open-job-groups",

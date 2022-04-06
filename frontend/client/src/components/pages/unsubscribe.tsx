@@ -14,7 +14,7 @@ import Trans from 'components/i18n_trans'
 import Select from 'components/select'
 import {SmoothTransitions} from 'components/theme'
 import WaitingPage from 'components/pages/waiting'
-import logoProductImage from 'deployment/bob-logo.svg'
+import logoProductImage from 'deployment/bob-logo.svg?fill=%23fff'
 
 import 'styles/App.css'
 
@@ -194,7 +194,7 @@ const UnsubscribePageBase = (): React.ReactElement => {
     </Trans>
     <div style={{marginTop: 30}}>
       {isDeleting ? null : <Button
-        type="back" onClick={handleDelete} style={{marginRight: 20}}>
+        type="discreet" onClick={handleDelete} style={{marginRight: 20}}>
         {t('Oui, je supprime mon compte')}
       </Button>}
       <Button onClick={handleCancel} type="validation">

@@ -1,8 +1,7 @@
-import Airtable, {FieldSet, Record as AirtableRecord, Records} from 'airtable'
+import type {Error as AirtableError, FieldSet, Records} from 'airtable'
+import Airtable, {Record as AirtableRecord} from 'airtable'
 import fs from 'fs'
 import stringify from 'json-stable-stringify'
-import _fromPairs from 'lodash/fromPairs'
-import _mapValues from 'lodash/mapValues'
 import {fileURLToPath} from 'url'
 import 'json5/lib/register'
 
@@ -76,7 +75,7 @@ Promise<Records<TFields>> => {
   try {
     return await airtableBase<TFields>(table).select({view}).all()
   } catch (error) {
-    if (error.statusCode !== 404 || !altTable) {
+    if ((error as AirtableError).statusCode !== 404 || !altTable) {
       throw error
     }
     return await airtableBase<TFields>(altTable).select({view}).all()
@@ -102,16 +101,16 @@ const gatherTranslations = <TFields extends FieldSet>(
     '',
     {
       ...record,
-      fields: _mapValues(fields, (value, field) => {
+      fields: Object.fromEntries(Object.entries(fields).map(([field, value]) => {
         if (!translatableFields.includes(field)) {
-          return value
+          return [field, value]
         }
         const recordId = idField ? fields[idField] : record.id
         if (value) {
           translatedStrings[`${recordId}:${field}`] = value as string
         }
-        return `${recordId}:${field}`
-      }) as TFields,
+        return [field, `${recordId}:${field}`]
+      })) as TFields,
     },
   ))
   return [updatedRecords, translatedStrings]
@@ -137,6 +136,15 @@ const readFromSnakeCaseFields = <T extends string>(
     result[camelCaseFieldName] = fields[convertToSnakeCase(camelCaseFieldName)]
   }
   return result
+}
+
+const mapActionTemplates = (record: AirtableRecord<FieldSet>): readonly ([string, string])[] => {
+  const {actionTemplateId, resourceContent = undefined} =
+    readFromSnakeCaseFields(record, ['actionTemplateId', 'resourceContent'])
+  if (!resourceContent) {
+    return []
+  }
+  return [[actionTemplateId as string, resourceContent as string]]
 }
 
 const mapAdviceModules = (record: AirtableRecord<FieldSet>): [string, download.AdviceModule] => {
@@ -239,6 +247,9 @@ function reduceRecords<T, R extends Record<string, unknown>>(
     (acc: R, result: T) => reduceResults(acc, result), {} as R)
 }
 
+const reduceActionTemplates =
+  (records: Records<FieldSet>) => Object.fromEntries(records.flatMap(mapActionTemplates))
+
 const reduceAdviceModules =
   (records: Records<FieldSet>) => Object.fromEntries(records.map(mapAdviceModules))
 
@@ -263,7 +274,7 @@ const reduceStrategyGoals = reduceRecords(mapStrategyGoals,
     strategies: Record<string, readonly download.StrategyGoal[]>,
     {strategyIds, ...goalProps}: download.StrategyGoal,
   ): Record<string, readonly download.StrategyGoal[]> => {
-    const updatedStrategies = _fromPairs((strategyIds || []).map(strategyId => {
+    const updatedStrategies = Object.fromEntries((strategyIds || []).map(strategyId => {
       if (strategies[strategyId] && strategies[strategyId].length > 5) {
         throw new Error(`Strategy ${strategyId} has too many goals, please reduce to at most 6.`)
       }
@@ -287,7 +298,7 @@ const reduceDiagnosticIllustrations = reduceRecords(mapDiagnosticIllustrations,
     illustrations: Record<string, readonly download.Illustration[]>,
     {mainChallenges, ...illustrationProps}: download.Illustration,
   ): Record<string, readonly download.Illustration[]> => {
-    const updatedIllustrations = _fromPairs((mainChallenges || []).map(
+    const updatedIllustrations = Object.fromEntries((mainChallenges || []).map(
       (categoryId: string) => ([categoryId, [
         ...illustrations[categoryId] || [],
         illustrationProps,
@@ -306,6 +317,7 @@ const reduceImpactMeasurement = (records: Records<FieldSet>) => records.map(mapI
 type Reducer<U> = (records: Records<FieldSet>) => U
 
 const reducers: Record<string, Reducer<unknown>> = {
+  actionTemplates: reduceActionTemplates,
   adviceModules: reduceAdviceModules,
   diagnosticIllustrations: reduceDiagnosticIllustrations,
   diagnosticMainChallenges: reduceDiagnosticMainChallenges,

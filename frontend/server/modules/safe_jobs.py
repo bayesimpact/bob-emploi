@@ -5,7 +5,6 @@ import typing
 
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.server import jobs
-from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import scoring_base
 
 
@@ -16,9 +15,8 @@ class _AdviceExploreSafeJobs(scoring_base.ModelBase):
             -> scoring_base.ExplainedScore:
         """Compute a score for the given ScoringProject."""
 
-        cached_db = mongo.HashableNoPiiMongoDatabase(project.database)
-        has_any_covid_risk_info = jobs.has_covid_risk_info(cached_db)
-        has_any_automation_risk_info = jobs.has_automation_risk_info(cached_db)
+        has_any_covid_risk_info = jobs.has_covid_risk_info(project.database)
+        has_any_automation_risk_info = jobs.has_automation_risk_info(project.database)
         if not has_any_covid_risk_info and not has_any_automation_risk_info:
             raise scoring_base.NotEnoughDataException(
                 'No data about jobs being affected by Covid or automation',
@@ -56,9 +54,8 @@ class _AdviceExploreSafeJobs(scoring_base.ModelBase):
             -> job_pb2.SafeJobGroups:
         """Retrieve data for the expanded card."""
 
-        cached_db = mongo.HashableNoPiiMongoDatabase(project.database)
-        has_any_covid_risk_info = jobs.has_covid_risk_info(cached_db)
-        has_any_automation_risk_info = jobs.has_automation_risk_info(cached_db)
+        has_any_covid_risk_info = jobs.has_covid_risk_info(project.database)
+        has_any_automation_risk_info = jobs.has_automation_risk_info(project.database)
 
         good_jobs = jobs.get_all_good_job_group_ids(project.database, automation_risk_threshold=30)
         return job_pb2.SafeJobGroups(

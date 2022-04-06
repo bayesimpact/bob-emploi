@@ -1,9 +1,9 @@
-import PropTypes from 'prop-types'
 import React, {useCallback, useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 
 import {colorFromPercent, computeBobScore} from 'store/score'
 
+import CircularProgress from 'components/circular_progress'
 import Markdown from 'components/markdown'
 import Textarea from 'components/textarea'
 import BobScoreCircle from 'components/bob_score_circle'
@@ -129,11 +129,12 @@ const pepTalkStyle: React.CSSProperties = {
 
 interface AssessmentProps extends EvaluationProps {
   diagnostic: bayes.bob.Diagnostic
+  isLoading: boolean
 }
 
 
 const Assessment = (props: AssessmentProps): React.ReactElement => {
-  const {diagnostic, diagnosticEvaluations, onEvaluateSection} = props
+  const {diagnostic, diagnosticEvaluations, isLoading, onEvaluateSection} = props
   const {t} = useTranslation()
   const evalProps = useMemo((): EvaluationProps => ({
     diagnosticEvaluations,
@@ -143,6 +144,10 @@ const Assessment = (props: AssessmentProps): React.ReactElement => {
   const [thinkCommentButton, thinkComment] = useComment(evalProps, 'think')
   const [titleCommentButton, titleComment] = useComment(evalProps, 'title')
   const [textCommentButton, textComment] = useComment(evalProps, 'text')
+
+  if (isLoading) {
+    return <CircularProgress />
+  }
 
   const {categoryId, text} = diagnostic
   const {percent, shortTitle} = computeBobScore(diagnostic)
@@ -177,14 +182,6 @@ const Assessment = (props: AssessmentProps): React.ReactElement => {
       </div>
     </div>
   </div>
-}
-Assessment.propTypes = {
-  diagnostic: PropTypes.shape({
-    categoryId: PropTypes.string,
-    text: PropTypes.string,
-  }).isRequired,
-  diagnosticEvaluations: PropTypes.objectOf(PropTypes.object.isRequired).isRequired,
-  onEvaluateSection: PropTypes.func.isRequired,
 }
 
 

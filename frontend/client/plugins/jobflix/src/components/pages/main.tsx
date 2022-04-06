@@ -1,7 +1,6 @@
 import {ConnectedRouter, connectRouter, routerMiddleware} from 'connected-react-router'
 import {createBrowserHistory} from 'history'
 import React, {Suspense, useEffect, useMemo, useState} from 'react'
-import {hot} from 'react-hot-loader/root'
 import {useTranslation} from 'react-i18next'
 import {Provider, connect, useDispatch, useSelector} from 'react-redux'
 import {useLocation, Redirect, Route, Switch} from 'react-router'
@@ -11,55 +10,79 @@ import thunk from 'redux-thunk'
 
 import 'styles/App.css'
 
-import useMobileViewport from 'hooks/mobile'
 import TabNavigationProvider from 'hooks/tab_navigation'
-import {RootState, hideToasterMessageAction, pageIsLoaded} from 'store/actions'
+import type {RootState} from 'store/actions'
+import {hideToasterMessageAction, pageIsLoaded} from 'store/actions'
 import createAmplitudeMiddleware from 'store/amplitude'
 import {asyncState} from 'store/app_reducer'
 import {init as i18nInit} from 'store/i18n'
 import isMobileVersion from 'store/mobile'
 import {parseQueryString} from 'store/parse'
-import createSentryMiddleware from 'store/sentry'
+import createSentryEnhancer from 'store/sentry'
 
+import DebugModal from 'components/debug_modal'
 import Snackbar from 'components/snackbar'
+import SkipToContent from 'components/skip_to_content'
+import {Routes} from 'components/url'
 
-import {DispatchAllUpskillingActions, actionTypesToLog, setLocalUser} from '../../store/actions'
+import CoachingModal from 'plugin/deployment/coaching_modal'
+import NetflixBanner from 'plugin/deployment/netflix_banner'
+
+// TODO(émilie): Load the fonts only when needed.
+import '../../styles/fonts/Barlow/font.css'
+import '../../styles/fonts/Poppins/font.css'
+import '../../styles/fonts/Miso/font.css'
+
+import useCoaching from '../../hooks/features'
+import type {DispatchAllUpskillingActions} from '../../store/actions'
+import {actionTypesToLog, setLocalUser, setLocalUserLocale} from '../../store/actions'
 import app from '../../store/app_reducer'
 import createGoogleAnalyticsMiddleWare from '../../store/google_analytics_new'
 import UpskillingLogger from '../../store/logging'
 import user from '../../store/user_reducer'
 
+import JobEvaluationModal from '../job_evaluation'
 import TopBar from '../top_bar'
 import {JobDetailModal} from '../job_detail'
+import CookiesPage from './cookies_page'
 import JobDetailPage from './job_detail'
 import NetflixPage from './netflix'
 import {horizontalPagePadding, verticalPagePadding} from '../padding'
 import SectionPage from './section'
+import TermsPage from './terms'
 import WaitingPage from './waiting'
 import WelcomePage from './welcome'
+
+import '../../styles/App.css'
 
 i18nInit({defaultNS: 'upskilling'})
 
 const createAppState = () => {
   const history = createBrowserHistory(
-    window.location.hostname.includes('jobflix') ? {} : {basename: 'orientation'})
+    window.location.hostname.includes(config.prodDistinctiveFragment) ? {} :
+      {basename: 'orientation'})
 
-  const amplitudeMiddleware =
-    createAmplitudeMiddleware(new UpskillingLogger(actionTypesToLog))
+  const amplitudeMiddleware = createAmplitudeMiddleware(new UpskillingLogger(actionTypesToLog))
 
-  const googleAnalyticsMiddleWare = createGoogleAnalyticsMiddleWare(config.googleUAID, {
-    UPSKILLING_EXPLORE_JOB: ['explore', ['sectionId', 'jobName']],
-  })
+  const {utm_source: utmSource} = parseQueryString(window.location.search)
+  const isUserComingFromGoogleAds = utmSource === 'googleads'
+
+  // Enable Google Analytics only for user coming from Google Ads.
+  const googleAnalyticsMiddleWare = isUserComingFromGoogleAds ?
+    [createGoogleAnalyticsMiddleWare(config.googleUAID, {
+      UPSKILLING_EXPLORE_JOB: ['explore', ['sectionId', 'jobName']],
+    })] : []
+
   // Enable devTools middleware.
   const finalCreateStore = composeWithDevTools(
     // sentryMiddleware needs to be first to correctly catch exception down the line.
     applyMiddleware(
-      createSentryMiddleware(),
       thunk,
       amplitudeMiddleware,
-      googleAnalyticsMiddleWare,
+      ...googleAnalyticsMiddleWare,
       routerMiddleware(history),
     ),
+    createSentryEnhancer(),
   )(createStore)
 
   // Create the store that will be provided to connected components via Context.
@@ -71,7 +94,9 @@ const createAppState = () => {
       user,
     }),
   )
+  // eslint-disable-next-line unicorn/prefer-module
   if (module.hot) {
+    // eslint-disable-next-line unicorn/prefer-module
     module.hot.accept(['../../store/app_reducer', '../../store/user_reducer'], async () => {
       const {default: newApp} = await import('../../store/app_reducer')
       const {default: newUser} = await import('../../store/user_reducer')
@@ -88,26 +113,32 @@ const createAppState = () => {
 
 
 const style: React.CSSProperties = {
-  backgroundColor: colors.PURPLE_BROWN,
-  color: '#fff',
+  backgroundColor: colors.BACKGROUND,
+  color: colors.TEXT,
   display: 'flex',
   flexDirection: 'column',
-  fontFamily: 'Lato, Helvetica',
+  fontFamily: config.font,
   minHeight: '100vh',
 }
 const pagePadding: React.CSSProperties = {
   paddingBottom: verticalPagePadding,
   paddingLeft: horizontalPagePadding,
+  paddingRight: horizontalPagePadding,
   paddingTop: verticalPagePadding,
+}
+const skipToContentStyle: React.CSSProperties = {
+  backgroundColor: colors.BACKGROUND,
+  color: colors.TEXT,
 }
 
 const UserConnectedPageBase = (): React.ReactElement|null => {
-  const hasUserLocation = useSelector(
-    ({user}: RootState) => !!user?.projects?.[0]?.city?.departementId)
+  const [isJobModalOpen, setIsJobModalOpen] = useState(false)
+  const userDepartementId = useSelector(
+    ({user}: RootState) => user?.projects?.[0]?.city?.departementId)
+  const userLocale = useSelector(({user}: RootState) => user?.profile?.locale)
   const dispatch: DispatchAllUpskillingActions = useDispatch()
   const location = useLocation()
   const {i18n} = useTranslation()
-  useMobileViewport()
   useEffect(
     () => void dispatch(pageIsLoaded(location)),
     // This effect should only run when the pathname is updated, and when it's updated then we
@@ -133,26 +164,47 @@ const UserConnectedPageBase = (): React.ReactElement|null => {
       dispatch(setLocalUser(userFromURL))
     }
   }, [dispatch, userFromURL])
-  if (!hasUserLocation && userFromURL) {
+  useEffect((): void => {
+    const locale = i18n.language || 'fr'
+    if (locale !== userLocale) {
+      dispatch(setLocalUserLocale(locale))
+    }
+  }, [dispatch, i18n.language, userLocale])
+  const hasCoaching = useCoaching()
+  const mainStyle = useMemo((): React.CSSProperties => ({
+    outline: 0,
+    ...pagePadding,
+    ...isJobModalOpen && {filter: 'blur(1px)'},
+  }), [isJobModalOpen])
+  if (!userDepartementId && userFromURL || !userLocale) {
     // Waiting for the userFromURL to be set in Redux.
     return <WaitingPage />
   }
   return <div style={style}>
     <Switch>
       <Route path="/accueil" component={WelcomePage} />
-      {hasUserLocation ? null : <Redirect to="/accueil" />}
+      <Route path={Routes.TERMS_AND_CONDITIONS_PAGE} component={TermsPage} />
+      <Route path={Routes.COOKIES_PAGE} component={CookiesPage} />
+      {userDepartementId ? null : <Route>
+        <Redirect to="/accueil" />
+      </Route>}
       <Route path="*">
-        <TopBar />
-        {isMobileVersion ? null : <JobDetailModal />}
-        <div style={pagePadding}>
+        <SkipToContent style={skipToContentStyle} />
+        <TopBar isBlur={isJobModalOpen} />
+        {isMobileVersion ? null : <JobDetailModal setIsJobModalOpen={setIsJobModalOpen} />}
+        {hasCoaching ? <CoachingModal /> : null}
+        <JobEvaluationModal />
+        <NetflixBanner />
+        <main role="main" id="main" tabIndex={-1} style={mainStyle}>
           <Switch>
             <Route path="/:sectionId/:romeId" component={JobDetailPage} />
             <Route path="/:sectionId" component={SectionPage} />
             <Route path="/" component={NetflixPage} />
           </Switch>
-        </div>
+        </main>
       </Route>
     </Switch>
+    <DebugModal />
   </div>
 }
 const UserConnectedPage = React.memo(UserConnectedPageBase)
@@ -182,4 +234,4 @@ const App = (): React.ReactElement => {
   </Provider>
 }
 
-export default hot(React.memo(App))
+export default React.memo(App)

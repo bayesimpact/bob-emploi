@@ -3,19 +3,14 @@
 import unittest
 from unittest import mock
 
-import mongomock
 import requests_mock
 
 from bob_emploi.frontend.server.asynchronous import create_pool
+from bob_emploi.frontend.server.asynchronous.test import asynchronous_test_case
 
 
-@mongomock.patch(on_new='create')
-class CreatePoolTestCase(unittest.TestCase):
+class CreatePoolTestCase(asynchronous_test_case.TestCase):
     """Unit tests for the create pool script."""
-
-    def tearDown(self) -> None:
-        create_pool.mongo.cache.clear()
-        super().tearDown()
 
     @requests_mock.mock()
     @mock.patch(
@@ -23,12 +18,13 @@ class CreatePoolTestCase(unittest.TestCase):
     def test_basic_usage(self, mock_requests: requests_mock.Mocker) -> None:
         """Basic usage."""
 
-        stats_db, user_db, eval_db = create_pool.mongo.get_connections_from_env()
+        stats_db, user_db, eval_db = self._stats_db, self._user_db, self._eval_db
         stats_db.user_count.drop()
         user_db.user.drop()
         eval_db.use_case.drop()
 
         stats_db.user_count.insert_one({
+            '_id': '',
             'frequentFirstnames': {
                 'Nicolas': 1,
             },
@@ -77,12 +73,13 @@ class CreatePoolTestCase(unittest.TestCase):
     def test_no_user(self, mock_requests: requests_mock.Mocker) -> None:
         """Don't create a pool if there are no users."""
 
-        stats_db, user_db, eval_db = create_pool.mongo.get_connections_from_env()
+        stats_db, user_db, eval_db = self._stats_db, self._user_db, self._eval_db
         stats_db.user_count.drop()
         user_db.user.drop()
         eval_db.use_case.drop()
 
         stats_db.user_count.insert_one({
+            '_id': '',
             'frequentFirstnames': {
                 'Nicolas': 1,
             },

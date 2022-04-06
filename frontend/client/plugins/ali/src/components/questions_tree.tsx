@@ -8,7 +8,7 @@ import mobiliteImage from '../images/mobilite.svg'
 import parcoursImage from '../images/parcours.svg'
 import santeImage from '../images/sante.svg'
 
-import {QuestionType} from './answers'
+import type {QuestionType} from './answers'
 
 
 export type TopicId =

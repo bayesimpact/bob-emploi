@@ -12,7 +12,7 @@ import datetime
 import os
 import sys
 import typing
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Set, TextIO, Tuple
+from typing import Any, Callable, Iterable, Mapping, Optional, Set, TextIO, Tuple
 
 import requests
 
@@ -33,7 +33,7 @@ def _plural_s(num: int) -> str:
     return 's'
 
 
-def _report_comments(comments: List[_T], display_func: Callable[[_T], str]) -> str:
+def _report_comments(comments: list[_T], display_func: Callable[[_T], str]) -> str:
     if not comments:
         return 'There are no individual comments.'
     return f'And here {"is" if len(comments) == 1 else "are"} the individual ' \
@@ -42,10 +42,10 @@ def _report_comments(comments: List[_T], display_func: Callable[[_T], str]) -> s
 
 
 def _compute_nps_report(users: Iterable[user_pb2.User], from_date: str, to_date: str) -> str:
-    score_distribution: Dict[int, int] = collections.defaultdict(int)
+    score_distribution: dict[int, int] = collections.defaultdict(int)
     nps_total = 0
     num_users = 0
-    responses_with_comment: List[Tuple[str, user_pb2.NPSSurveyResponse]] = []
+    responses_with_comment: list[Tuple[str, user_pb2.NPSSurveyResponse]] = []
     for user in users:
         num_users += 1
         response = user.net_promoter_score_survey_response
@@ -59,8 +59,10 @@ def _compute_nps_report(users: Iterable[user_pb2.User], from_date: str, to_date:
         if response.general_feedback_comment:
             responses_with_comment.append((user.user_id, response))
 
+    user_db = mongo.get_connections_from_env().user_db
+
     # Total number of users that we asked for NPS during that time.
-    total_num_users = _USER_DB.user.count_documents({
+    total_num_users = user_db.user.count_documents({
         'featuresEnabled.excludeFromAnalytics': {'$ne': True},
         'emailsSent': {'$elemMatch': {
             'campaignId': 'nps',
@@ -94,7 +96,7 @@ def _compute_nps_report(users: Iterable[user_pb2.User], from_date: str, to_date:
 
 
 def _compute_stars_report(users: Iterable[user_pb2.User], from_date: str, to_date: str) -> str:
-    score_distribution: Dict[int, int] = collections.defaultdict(int)
+    score_distribution: dict[int, int] = collections.defaultdict(int)
     stars_total = 0
     num_projects = 0
     responses_with_comment = []
@@ -109,8 +111,10 @@ def _compute_stars_report(users: Iterable[user_pb2.User], from_date: str, to_dat
             if feedback.text:
                 responses_with_comment.append(feedback)
 
+    user_db = mongo.get_connections_from_env().user_db
+
     # Total number of finished projects during that time.
-    total_num_projects = _USER_DB.user.count_documents({
+    total_num_projects = user_db.user.count_documents({
         'featuresEnabled.excludeFromAnalytics': {'$ne': True},
         'projects.diagnostic': {'$exists': True},
         'projects.createdAt': {
@@ -139,7 +143,7 @@ def _compute_stars_report(users: Iterable[user_pb2.User], from_date: str, to_dat
 
 
 def _compute_agreement_report(users: Iterable[user_pb2.User], from_date: str, to_date: str) -> str:
-    score_distribution: Dict[int, int] = collections.defaultdict(int)
+    score_distribution: dict[int, int] = collections.defaultdict(int)
     agreement_total = 0
     num_projects = 0
     for user in users:
@@ -151,8 +155,10 @@ def _compute_agreement_report(users: Iterable[user_pb2.User], from_date: str, to
             agreement_total += feedback.challenge_agreement_score - 1
             score_distribution[feedback.challenge_agreement_score - 1] += 1
 
+    user_db = mongo.get_connections_from_env().user_db
+
     # Total number of finished projects during that time.
-    total_num_projects = _USER_DB.user.count_documents({
+    total_num_projects = user_db.user.count_documents({
         'featuresEnabled.excludeFromAnalytics': {'$ne': True},
         'projects.diagnostic': {'$exists': True},
         'projects.createdAt': {
@@ -176,9 +182,9 @@ def _compute_agreement_report(users: Iterable[user_pb2.User], from_date: str, to
 
 
 def _compute_rer_report(users: Iterable[user_pb2.User], from_date: str, to_date: str) -> str:
-    seeking_distribution: Dict['user_pb2.SeekingStatus.V', int] = collections.defaultdict(int)
-    bob_has_helped: Dict['user_pb2.SeekingStatus.V', int] = collections.defaultdict(int)
-    answered_bob_helped: Dict['user_pb2.SeekingStatus.V', int] = collections.defaultdict(int)
+    seeking_distribution: dict['user_pb2.SeekingStatus.V', int] = collections.defaultdict(int)
+    bob_has_helped: dict['user_pb2.SeekingStatus.V', int] = collections.defaultdict(int)
+    answered_bob_helped: dict['user_pb2.SeekingStatus.V', int] = collections.defaultdict(int)
     num_users = 0
     for user in users:
         # Find the first status that is in the date range.
@@ -282,10 +288,8 @@ _REPORTS = {
     ),
 }
 
-_, _USER_DB, _ = mongo.get_connections_from_env()
 
-
-def _create_user_proto_with_user_id(user_dict: Dict[str, Any]) -> user_pb2.User:
+def _create_user_proto_with_user_id(user_dict: dict[str, Any]) -> user_pb2.User:
     user_proto = proto.create_from_mongo(user_dict, user_pb2.User, 'user_id')
     assert user_proto
     return user_proto
@@ -297,14 +301,16 @@ def _compute_and_send_report(
         to_date = datetime.datetime.now().strftime('%Y-%m-%dT%H-%M')
     report = _REPORTS[report_id]
 
-    selected_users = _USER_DB.user.find(dict(report.mongo_filters, **{
+    user_db = mongo.get_connections_from_env().user_db
+
+    selected_users = user_db.user.find(report.mongo_filters | {
         'featuresEnabled.excludeFromAnalytics': {'$ne': True},
         'registeredAt': {'$lt': to_date},
         report.timestamp_field: {
             '$gt': from_date,
             '$lt': to_date,
         }
-    }), {field: 1 for field in report.required_fields})
+    }, {field: 1 for field in report.required_fields})
     report_text = report.compute_report(
         (_create_user_proto_with_user_id(user) for user in selected_users),
         from_date=from_date, to_date=to_date)
@@ -320,7 +326,7 @@ def _compute_and_send_report(
         }]})
 
 
-def main(string_args: Optional[List[str]] = None, out: TextIO = sys.stdout) -> None:
+def main(string_args: Optional[list[str]] = None, out: TextIO = sys.stdout) -> None:
     """Parse command line arguments, computes a report and send it."""
 
     parser = argparse.ArgumentParser(

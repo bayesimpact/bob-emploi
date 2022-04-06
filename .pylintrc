@@ -1,5 +1,6 @@
 [MASTER]
 load-plugins=pylint_quotes,pylint_doc_spacing,pylint_import_modules
+ignore-patterns=.*_pb2\.py
 
 # TODO(pascal): Find a way to enforce import order of module before specific classes.
 # TODO(cyrille): Find a way to enforce constants naming convention,
@@ -7,8 +8,7 @@ load-plugins=pylint_quotes,pylint_doc_spacing,pylint_import_modules
 
 [REPORTS]
 output=colorized
-# TODO(pascal): Enable no-member when
-# https://github.com/PyCQA/pylint/issues/1276 is solved.
+# no-member is not needed as we check for types statically.
 disable=I,R,no-member
 reports=no
 enable=useless-suppression,useless-object-inheritance,no-else-return,no-else-raise
@@ -21,7 +21,7 @@ ignore-long-lines=https?://\S{50}
 notes=FIXME,XXX
 string-quote=single-avoid-escape
 allowed-direct-imports=typing.{
-    AbstractSet,Any,Callable,Dict,Final,Generator,ItemsView,Iterable,Iterator,KeysView,List,Literal,
+    AbstractSet,Any,Callable,Final,Generator,IO,ItemsView,Iterable,Iterator,KeysView,Literal,
     Mapping,MutableMapping,NoReturn,Optional,Pattern,Sequence,Set,TextIO,Tuple,Type,TypedDict,Union},
     typing_extensions.Literal
 

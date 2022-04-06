@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package bayes.mailjet;
+
+message TemplateDetailContents {
+    repeated TemplateDetailContent data = 1 [json_name = "Data"];
+}
+
+message TemplateDetailContent {
+    TemplateDetailHeaders headers = 6 [json_name = "Headers"];
+    string text_part = 8 [json_name = "Text-part"];
+    string html_part = 9 [json_name = "Html-part"];
+}
+
+message TemplateDetailHeaders {
+    string full_sender = 1 [json_name = "From"];
+    string subject = 2 [json_name = "Subject"];
+    string reply_to = 3 [json_name = "Reply-to"];
+}
+
+message Parse {
+    string sender = 1 [json_name = "Sender"];
+    string recipient = 2 [json_name = "Recipient"];
+    string date = 3 [json_name = "Date"];
+    // 'from' is a reserved word in Python.
+    string full_sender = 4 [json_name = "From"];
+    string subject = 5 [json_name = "Subject"];
+    string headers = 6 [json_name = "Headers"];
+    repeated ParsePart parts = 7 [json_name = "Parts"];
+    string text_part = 8 [json_name = "Text-part"];
+    string html_part = 9 [json_name = "Html-part"];
+    string spam_assassin_score = 10 [json_name = "SpamAssassinScore"];
+    string attachment1 = 11 [json_name = "Attachment1"];
+    string attachment2 = 12 [json_name = "Attachment2"];
+    string attachment3 = 13 [json_name = "Attachment3"];
+}
+
+message ParsePart {
+    // Contains a JSON-name field for a Parse.
+    string content_ref = 1 [json_name = "ContentRef"];
+    ParseHeaders headers = 2 [json_name = "Headers"];
+}
+
+message ParseHeaders {
+    repeated string content_type = 1 [json_name = "Content-Type"];
+    repeated string content_transfer_encoding = 2 [json_name = "Content-Transfer-Encoding"];
+    repeated string content_disposition = 3 [json_name = "Content-Disposition"];
+}
+
+message SentCampaigns {
+    repeated SentCampaign data = 1 [json_name = "Data"];
+}
+
+message SentCampaign {
+    uint64 campaign_id = 1 [json_name = "ID"];
+    string custom_value = 2 [json_name = "CustomValue"];
+}

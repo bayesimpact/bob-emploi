@@ -1,0 +1,9 @@
+{
+  "buttonBackgroundColor": "#58bbfb",
+  "buttonTextColor": "#ffffff",
+  "ffsFormUrl": "https://www.bob-emploi.fr/api/first-followup-survey?redirect=foo",
+  "firstName": "Angèle",
+  "gender": "FEMININE",
+  "productLogoUrl": "https://t.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
+  "productName": "Bob"
+}

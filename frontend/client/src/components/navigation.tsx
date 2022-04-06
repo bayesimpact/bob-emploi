@@ -1,33 +1,44 @@
+import type {LocationDescriptor} from 'history'
+import _uniqueId from 'lodash/uniqueId'
 import ChevronLeftIcon from 'mdi-react/ChevronLeftIcon'
 import CloseIcon from 'mdi-react/CloseIcon'
 import MenuIcon from 'mdi-react/MenuIcon'
-import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useSelector} from 'react-redux'
-import {useLocation} from 'react-router'
+import {generatePath, useLocation} from 'react-router'
+import type {LinkProps} from 'react-router-dom'
 import {Link} from 'react-router-dom'
-import VisibilitySensor from 'react-visibility-sensor'
 
 import useFastForward from 'hooks/fast_forward'
-import useKeyListener from 'hooks/key_listener'
-import {RootState, logoutAction, modifyProject, noOp, useDispatch} from 'store/actions'
+import {useOnGroupBlur} from 'hooks/focus'
+import useOnScreen from 'hooks/on_screen'
+import {useHasScrolledOnceAtBottom} from 'hooks/scroll'
+import {useIsTabNavigationUsed} from 'hooks/tab_navigation'
+import type {RootState} from 'store/actions'
+import {clickExploreActions, logout, modifyProject, useDispatch} from 'store/actions'
 import {getLanguage} from 'store/i18n'
 import {onboardingComplete} from 'store/main_selectors'
+import {useProject} from 'store/project'
+import {useActionPlan, useEmailsInProfile} from 'store/user'
 
+import deploymentNavbarStyle from 'deployment/navigation'
 import logoProductWhiteImage from 'deployment/bob-logo.svg?fill=%23fff'
-import logoProductBlueImage from 'deployment/bob-logo.svg?fill=%231888ff' // colors.BOB_BLUE
+import logoProductImage from 'deployment/bob-logo.svg'
+import SecondaryLogo from 'deployment/secondary_logo'
 
 import AccountDeletionModal from 'components/account_deletion_modal'
 import Button from 'components/button'
 import DebugModal from 'components/debug_modal'
 import HelpDeskLink, {useHelpDeskLinkProps} from 'components/help_desk_link'
 import Trans from 'components/i18n_trans'
+import LinkButton from 'components/link_button'
 import {LoginButton, LoginLink, useLoginLink} from 'components/login'
 import isMobileVersion from 'store/mobile'
-import {Modal, ModalConfig, useModal} from 'components/modal'
-import OutsideClickHandler from 'components/outside_click_handler'
+import type {ModalConfig} from 'components/modal'
+import {Modal} from 'components/modal'
 import {SmartLink, useRadium} from 'components/radium'
+import SkipToContent from 'components/skip_to_content'
 import {MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING, SmoothTransitions} from 'components/theme'
 import UpDownIcon from 'components/up_down_icon'
 import ZendeskChatButton from 'components/zendesk_chat_button'
@@ -35,11 +46,30 @@ import ZendeskChatButton from 'components/zendesk_chat_button'
 import {getPageDescription} from '../../release/lambdas/opengraph_redirect'
 
 import {CookieMessage} from './cookie_message'
-import BetaMessage from './beta_message'
 import {Routes} from './url'
 
 export const NAVIGATION_BAR_HEIGHT = 56
+const notImplemented = () => window.alert('Bientôt disponible…')
 
+const outlineLinkStyle: RadiumCSSProperties = {
+  ':focus': {
+    outline: `solid 2px ${colors.DARK_TWO}`,
+  },
+  'borderRadius': 3,
+}
+
+const LandingPageLinkBase = ({children}: {children: React.ReactNode}): React.ReactElement => {
+  const isTabNavigationUsed = useIsTabNavigationUsed()
+  const {t} = useTranslation('components')
+  return <SmartLink
+    to={config.externalLandingPageUrl ? undefined : Routes.ROOT}
+    href={config.externalLandingPageUrl}
+    style={isTabNavigationUsed ? outlineLinkStyle : undefined}
+    title={`${config.productName} - ${t('Accueil')}`}>
+    {children}
+  </SmartLink>
+}
+const LandingPageLink = React.memo(LandingPageLinkBase)
 
 const MENU_LINK_HEIGHT = 50
 
@@ -51,6 +81,7 @@ const menuLinkStyle: React.CSSProperties = {
   height: MENU_LINK_HEIGHT,
   paddingLeft: 25,
   textAlign: 'left',
+  width: '100%',
 }
 const menuLinkHoverStyle = {
   backgroundColor: colors.BOB_BLUE,
@@ -73,12 +104,6 @@ const MenuLinkBase: React.FC<React.ComponentProps<typeof SmartLink>> =
   // eslint-disable-next-line jsx-a11y/anchor-has-content
   return <SmartLink {...extraProps} style={containerStyle} />
 }
-MenuLinkBase.propTypes = {
-  children: PropTypes.node,
-  href: PropTypes.string,
-  style: PropTypes.object,
-  to: PropTypes.string,
-}
 const MenuLink = React.memo(MenuLinkBase)
 
 
@@ -86,16 +111,16 @@ const loginButtonStyle: React.CSSProperties = {
   fontWeight: 'bold',
 }
 
-interface LoggedOutNavBarProps
-  extends Pick<React.HTMLProps<HTMLDivElement>, 'aria-hidden' | 'style'> {
+interface LoggedOutNavBarProps {
+  isHidden?: true
   isSignUp?: true
+  style?: React.CSSProperties
   visualElement?: string
 }
 
 const LoggedOutNavBarBase = (props: LoggedOutNavBarProps) => {
-  const {t} = useTranslation()
-  const {'aria-hidden': ariaHidden, isSignUp, style, visualElement} = props
-  const isHidden = ariaHidden && ariaHidden !== 'false'
+  const {t} = useTranslation('components')
+  const {isHidden, isSignUp, style, visualElement} = props
   const containerStyle: React.CSSProperties = {
     backgroundColor: '#fff',
     color: colors.DARK,
@@ -114,14 +139,14 @@ const LoggedOutNavBarBase = (props: LoggedOutNavBarProps) => {
     margin: '0 auto',
     maxWidth: MAX_CONTENT_WIDTH,
   }
-  return <div style={containerStyle} aria-hidden={ariaHidden}>
+  return <div style={containerStyle} aria-hidden={isHidden}>
     <div style={contentStyle}>
-      <img src={logoProductBlueImage} height={30} alt={config.productName} />
+      <img src={logoProductImage} height={30} alt={config.productName} />
       <span style={{flex: 1}} />
 
       <LoginButton
         isSignUp={isSignUp} visualElement={visualElement || 'nav-bar'} type="outline" isRound={true}
-        tabIndex={isHidden ? -1 : 1} style={loginButtonStyle}>
+        tabIndex={isHidden ? -1 : undefined} style={loginButtonStyle}>
         {isSignUp ? t('Commencer') : t('Se connecter')}
       </LoginButton>
     </div>
@@ -145,22 +170,19 @@ const WithScrollNavBarBase = ({children}: {children: React.ReactNode}) => {
     // When first loading the page, isTopShown is false because the div has no height yet.
     setIsScrollNavBarShown(!isTopShown && !!topSpaceRef.current?.clientHeight)
   }, [])
+  useOnScreen(topSpaceRef, {onChange: handleTopVisibilityChange})
 
   return <React.Fragment>
-    <VisibilitySensor
-      onChange={handleTopVisibilityChange}
-      intervalDelay={250} partialVisibility={true}>
-      <div style={{height: 70, position: 'absolute', width: '100%'}} ref={topSpaceRef} />
-    </VisibilitySensor>
+    <div style={{height: 70, position: 'absolute', width: '100%'}} ref={topSpaceRef} />
     {children}
     <LoggedOutNavBar
-      visualElement="scrolling-nav-bar" isSignUp={true}
-      style={navbarStyle} aria-hidden={!isScrollNavBarShown} />
+      visualElement="scrolling-nav-bar" isSignUp={true} style={navbarStyle} isHidden={true} />
   </React.Fragment>
 }
 const WithScrollNavBar = React.memo(WithScrollNavBarBase)
 
 interface NavBarConnectedProps {
+  hasActionPlanPage: boolean
   hasBlueBackground: boolean
   isGuest: boolean
   isLoggedIn: boolean
@@ -170,10 +192,13 @@ interface NavBarConnectedProps {
 }
 
 interface NavBarProps {
+  // Allow only one child: it will be part of a flex flow so it can use
+  // alignSelf to change its own layout.
   children?: string | React.ReactElement<{style?: React.CSSProperties}>
   isLogoShown?: boolean
   isTransparent?: boolean
-  onBackClick?: string | (() => void)
+  // A string is handled as a relative URL to route back to.
+  onBackClick?: LinkProps['to'] | (() => void)
   // TODO(cyrille): Use template string type.
   page?: string
   style?: React.CSSProperties
@@ -192,18 +217,23 @@ const backIconStyle: React.CSSProperties = {
   width: 50,
 }
 
+const isCallback = (onBackClick: NavBarProps['onBackClick']): onBackClick is (() => void) =>
+  typeof onBackClick === 'function'
+
 const MobileBackChevronBase: React.FC<Pick<NavBarProps, 'onBackClick'>> =
 ({onBackClick}): React.ReactElement|null => {
+  const {t} = useTranslation('components')
   if (!onBackClick) {
     return null
   }
-  if (typeof onBackClick === 'string') {
-    return <Link to={onBackClick}><ChevronLeftIcon style={backIconStyle} /></Link>
+  if (isCallback(onBackClick)) {
+    return <button onClick={onBackClick} style={backIconStyle} aria-label={t('Précédent')}>
+      <ChevronLeftIcon aria-hidden={true} focusable={false} />
+    </button>
   }
-  return <ChevronLeftIcon style={backIconStyle} onClick={onBackClick} />
-}
-MobileBackChevronBase.propTypes = {
-  onBackClick: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
+  return <Link to={onBackClick} aria-label={t('Précédent')} >
+    <ChevronLeftIcon style={backIconStyle} aria-hidden={true} focusable={false} />
+  </Link>
 }
 const MobileBackChevron = React.memo(MobileBackChevronBase)
 
@@ -278,14 +308,22 @@ interface ModalHooks {
   toggleMenu: () => void
 }
 
-const useNavigationStore = (): NavBarConnectedProps => useSelector(({user}: RootState) => ({
-  hasBlueBackground: !!(user.profile && user.profile.name),
-  isGuest: !user.hasAccount,
-  isLoggedIn: !!(user.profile && user.profile.name),
-  isOnboardingComplete: onboardingComplete(user),
-  project: user.projects && user.projects[0],
-  userName: user.profile && user.profile.name,
-}))
+const useNavigationStore = (): NavBarConnectedProps => {
+  const isOnboardingComplete = useSelector(({user}: RootState) => onboardingComplete(user))
+  const hasAccount = useSelector(({user: {hasAccount}}: RootState) => hasAccount)
+  const project = useProject()
+  const userName = useSelector(({user: {profile: {name = ''} = {}}}: RootState) => name)
+  const isLoggedIn = !!userName
+  return {
+    hasActionPlanPage: useActionPlan() && !!project?.actionPlanStartedAt,
+    hasBlueBackground: !config.isSimpleOnboardingEnabled && isLoggedIn,
+    isGuest: !hasAccount,
+    isLoggedIn,
+    isOnboardingComplete,
+    project,
+    userName,
+  }
+}
 
 const useNavigationActions = (): ModalHooks => {
   const dispatch = useDispatch()
@@ -321,7 +359,7 @@ const useNavigationActions = (): ModalHooks => {
     closeMenu()
     setIsAccountDeletionModalShown(true)
   }, [closeMenu])
-  const logOut = useCallback((): unknown => dispatch(logoutAction), [dispatch])
+  const logOut = useCallback((): unknown => dispatch(logout()), [dispatch])
   return {
     closeMenu,
     deleteGuest,
@@ -338,7 +376,8 @@ const useNavigationActions = (): ModalHooks => {
 
 const MobileNavigationBarBase: React.FC<NavBarProps> = (props): React.ReactElement => {
   const {children, isLogoShown, onBackClick, page} = props
-  const {hasBlueBackground, isGuest, isLoggedIn, project} = useNavigationStore()
+  const {hasActionPlanPage, hasBlueBackground, isGuest, isLoggedIn, project,
+    project: {isIncomplete, projectId = ''} = {}} = useNavigationStore()
   const {
     closeMenu,
     deleteGuest,
@@ -365,18 +404,27 @@ const MobileNavigationBarBase: React.FC<NavBarProps> = (props): React.ReactEleme
     position: 'absolute',
     top: 10,
   }
-  const {t} = useTranslation()
+  const {t} = useTranslation('components')
+  const dispatch = useDispatch()
   const linkStyle = (otherPage: string): React.CSSProperties =>
     otherPage === page ? currentPageLinkStyle : otherPageLinkStyle
-  const isProjectModifiable = project && project.projectId && !project.isIncomplete
+  const isProjectModifiable = !!projectId && !isIncomplete
   const finalMenuButtonStyle: React.CSSProperties = useMemo(() => ({
     ...menuButtonStyle,
     ...!hasBlueBackground ? {color: colors.COOL_GREY} : {},
   }), [hasBlueBackground])
+  const onClickExploreActions = useCallback(() => {
+    notImplemented()
+    if (!project) {
+      return
+    }
+    dispatch(clickExploreActions(project))
+  }, [dispatch, project])
+  const closeOnGroupBlurHandlers = useOnGroupBlur(closeMenu)
   if (page === 'landing') {
     return <LoggedOutNavBar style={{position: 'relative'}} />
   }
-  return <nav style={style}>
+  return <header role="banner" style={style}>
     <AccountDeletionModal
       isShown={isAccountDeletionModalShown}
       onClose={hideAccountDeletionModal} />
@@ -385,20 +433,34 @@ const MobileNavigationBarBase: React.FC<NavBarProps> = (props): React.ReactEleme
       onClose={hideModifyProjectModal}
       project={project} /> : null}
     <MobileBackChevron onBackClick={onBackClick} />
-    {isMenuShown ?
-      <React.Fragment>
-        <div style={mobileBackgroundStyle} />
-        <OutsideClickHandler onOutsideClick={closeMenu}>
+    <nav role="navigation" {...closeOnGroupBlurHandlers}>
+      {isMenuShown ?
+        <React.Fragment>
+          {/* Closing the menu is already handled by multiple keyboard events. */}
+          {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions,jsx-a11y/click-events-have-key-events */}
+          <div style={mobileBackgroundStyle} onClick={closeMenu} />
           <div style={mobileMenuStyle}>
-            <button onClick={toggleMenu} style={menuCloseButtonStyle}>
+            <button onClick={toggleMenu} style={menuCloseButtonStyle} type="button">
               <CloseIcon aria-label={t('Fermer')} />
             </button>
             {isGuest ? <LoginLink visualElement="menu" style={linkStyle('login')} isSignUp={true}>
               {t('Créer mon compte')}
             </LoginLink> : null}
+            {hasActionPlanPage ? <React.Fragment>
+              <Link
+                to={generatePath(Routes.ACTION_PLAN_PLAN_PAGE, {projectId})}
+                style={linkStyle('action-plan-plan')}>
+                {t("Mon plan d'action")}
+              </Link>
+              <button
+                style={otherPageLinkStyle} onClick={onClickExploreActions} tabIndex={0}
+                type="button">
+                {t('Explorer des actions')}
+              </button>
+            </React.Fragment> : null}
             {isProjectModifiable ? <button
-              style={otherPageLinkStyle}
-              onClick={openModifyProjectModal} tabIndex={0}>
+              style={otherPageLinkStyle} onClick={openModifyProjectModal} tabIndex={0}
+              type="button">
               {t('Modifier mon projet')}
             </button> : null}
             <Link
@@ -416,37 +478,25 @@ const MobileNavigationBarBase: React.FC<NavBarProps> = (props): React.ReactEleme
                 {t('Déconnexion')}
               </Link>}
           </div>
-        </OutsideClickHandler>
-      </React.Fragment> : isLoggedIn ?
-        <button style={finalMenuButtonStyle} onClick={toggleMenu}>
-          <MenuIcon aria-label={t('menu')} />
-        </button> : null
-    }
-    {/* TODO(cyrille): Make sure text is centered vertically here. */}
-    {children || (isLogoShown ? <Link to={Routes.ROOT}>
-      <img
-        src={hasBlueBackground ? logoProductWhiteImage : logoProductBlueImage}
-        alt={config.productName} style={hasBlueBackground ? {height: 22} : leftLogoStyle} />
-    </Link> : null)}
-  </nav>
-}
-MobileNavigationBarBase.propTypes = {
-  // Allow only one child: it will be part of a flex flow so it can use
-  // alignSelf to change its own layout.
-  children: PropTypes.oneOfType([
-    PropTypes.element,
-    PropTypes.string,
-  ]),
-  isLogoShown: PropTypes.bool,
-  // A string is handled as a relative URL to route back to.
-  onBackClick: PropTypes.oneOfType([PropTypes.func, PropTypes.string]),
-  page: PropTypes.string,
+        </React.Fragment> : isLoggedIn ?
+          <button style={finalMenuButtonStyle} onClick={toggleMenu} type="button">
+            <MenuIcon aria-label={t('menu')} />
+          </button> : null
+      }
+    </nav>
+    {children ? <NavigationBarChildren>{children}</NavigationBarChildren> :
+      isLogoShown ? <LandingPageLink>
+        <img
+          src={hasBlueBackground ? logoProductWhiteImage : logoProductImage}
+          alt={config.productName} style={hasBlueBackground ? {height: 22} : leftLogoStyle} />
+      </LandingPageLink> : null}
+  </header>
 }
 
-const logo = <img src={logoProductWhiteImage} style={{height: 30}} alt={config.productName} />
-const logoBlue = <img src={logoProductBlueImage} style={{height: 30}} alt={config.productName} />
+const logoWhite = <img src={logoProductWhiteImage} style={{height: 30}} alt={config.productName} />
+const logo = <img src={logoProductImage} style={{height: 30}} alt={config.productName} />
 
-type AnonymousNavBarProps = Pick<NavBarProps, 'isLogoShown'|'style'|'children'>
+type AnonymousNavBarProps = Pick<NavBarProps, 'isLogoShown'|'style'|'children'|'page'>
 
 const reducedNavBarStyle: React.CSSProperties = {
   alignItems: 'center',
@@ -476,18 +526,24 @@ const connectContainerStyle: React.CSSProperties = {
   top: 0,
 }
 
+const secondaryLogoStyle = {
+  height: 50,
+  marginLeft: 20,
+}
 const AnonymousNavigationBarBase: React.FC<AnonymousNavBarProps> = (props): React.ReactElement => {
-  const {children, isLogoShown, style} = props
+  const {children, isLogoShown, page, style} = props
   const reducedContainerStyle = useMemo((): React.CSSProperties => ({
     ...style,
     display: 'block',
     padding: `0 ${MIN_CONTENT_PADDING}px`,
+    ...deploymentNavbarStyle,
   }), [style])
-  const {t} = useTranslation()
-  return <nav style={reducedContainerStyle}>
+  const {t} = useTranslation('components')
+  return <header role="banner" style={reducedContainerStyle}>
     <div style={reducedNavBarStyle}>
       <div style={logoContainerStyle}>
-        <Link to={Routes.ROOT}>{isLogoShown ? logoBlue : null}</Link>
+        {isLogoShown ? <LandingPageLink>{logo}</LandingPageLink> : null}
+        {page === 'landing' ? <SecondaryLogo style={secondaryLogoStyle} /> : null}
       </div>
 
       {children}
@@ -502,24 +558,16 @@ const AnonymousNavigationBarBase: React.FC<AnonymousNavBarProps> = (props): Reac
         </LoginButton>
       </div>
     </div>
-  </nav>
-}
-AnonymousNavigationBarBase.propTypes = {
-  children: PropTypes.oneOfType([
-    PropTypes.element,
-    PropTypes.string,
-  ]),
-  isLogoShown: PropTypes.bool,
-  style: PropTypes.object,
+  </header>
 }
 const AnonymousNavigationBar = React.memo(AnonymousNavigationBarBase)
 
-const childStyle: React.CSSProperties = {flex: 1, textAlign: 'center'}
+const childStyle: React.CSSProperties = {flex: 1, margin: 0, textAlign: 'center'}
 
 const NavigationBarChildren: React.FC<Pick<NavBarProps, 'children'>> =
 ({children}: Pick<NavBarProps, 'children'>): React.ReactElement => {
   if (!children || typeof children === 'string') {
-    return <span style={childStyle}>{children}</span>
+    return <p style={childStyle}>{children}</p>
   }
   return React.cloneElement(children, {
     style: {
@@ -534,6 +582,7 @@ const NavigationBarChildren: React.FC<Pick<NavBarProps, 'children'>> =
 const RadiumButtonBase = (props: React.ButtonHTMLAttributes<HTMLButtonElement>):
 React.ReactElement =>
   <button
+    type="button"
     {...useRadium<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(props)[0]} />
 const RadiumButton = React.memo(RadiumButtonBase)
 
@@ -568,6 +617,11 @@ const desktopMenuIconStyle: React.CSSProperties = {
   paddingRight: 1,
   width: 26,
 }
+const noListItemStyle: React.CSSProperties = {
+  listStyleType: 'none',
+  margin: 0,
+  padding: 0,
+}
 
 const onboardingLeftSpaceStyle = {
   flex: `1 1 ${menuStyle.minWidth}px`,
@@ -575,8 +629,8 @@ const onboardingLeftSpaceStyle = {
 
 const NavigationBarBase: React.FC<NavBarProps> = (props): React.ReactElement => {
   const {children, isLogoShown, isTransparent, page, style} = props
-  const {hasBlueBackground, isGuest, isLoggedIn, isOnboardingComplete, project, userName} =
-    useNavigationStore()
+  const {hasActionPlanPage, hasBlueBackground, isGuest, isLoggedIn, isOnboardingComplete, project,
+    project: {isIncomplete, projectId = ''} = {}, userName} = useNavigationStore()
   const helpDeskLinkProps = useHelpDeskLinkProps()
   const {closeMenu,
     deleteGuest,
@@ -589,7 +643,6 @@ const NavigationBarBase: React.FC<NavBarProps> = (props): React.ReactElement => 
     openModifyProjectModal,
     toggleMenu,
   } = useNavigationActions()
-  const isAlpha = useSelector(({user: {featuresEnabled: {alpha} = {}}}: RootState) => !!alpha)
   const containerStyle = useMemo((): React.CSSProperties => ({
     alignItems: 'center',
     backgroundColor: isTransparent ? 'initial' : hasBlueBackground ? colors.BOB_BLUE : '#fff',
@@ -633,6 +686,8 @@ const NavigationBarBase: React.FC<NavBarProps> = (props): React.ReactElement => 
     height: isMenuShown ? 'initial' : 0,
     justifyContent: 'center',
     left: 0,
+    listStyleType: 'none',
+    margin: 0,
     overflow: 'hidden',
     padding: 0,
     position: 'absolute',
@@ -641,18 +696,29 @@ const NavigationBarBase: React.FC<NavBarProps> = (props): React.ReactElement => 
     transition: 'height 100ms',
     zIndex: 2,
   }), [dropDownButtonStyle.backgroundColor, isMenuShown])
-  const {t} = useTranslation()
+  const {t} = useTranslation('components')
+  const dispatch = useDispatch()
+  const canSeeEmails = useEmailsInProfile()
   const {onClick: clickToLogin, to: toLogin} = useLoginLink(undefined, true, 'menu')
-  if (!isLoggedIn) {
-    return <AnonymousNavigationBar style={containerStyle} isLogoShown={isLogoShown}>
+  const onClickExploreActions = useCallback(() => {
+    notImplemented()
+    if (!project) {
+      return
+    }
+    dispatch(clickExploreActions(project))
+  }, [dispatch, project])
+  const menuId = useMemo(_uniqueId, [])
+  const closeOnGroupBlurHandlers = useOnGroupBlur(closeMenu)
+  if (config.isSimpleOnboardingEnabled || !isLoggedIn) {
+    return <AnonymousNavigationBar page={page} style={containerStyle} isLogoShown={isLogoShown}>
       {children}
     </AnonymousNavigationBar>
   }
   const isDuringOnboarding =
     (page === 'profile' || page === 'new_project') && !isOnboardingComplete
-  const isProjectModifiable = project && project.projectId && !project.isIncomplete
+  const isProjectModifiable = projectId && !isIncomplete
   // TODO(cyrille): Unify behavior for menu between Mobile and Desktop.
-  return <nav style={containerStyle}>
+  return <header role="banner" style={containerStyle}>
     <AccountDeletionModal
       isShown={isAccountDeletionModalShown}
       onClose={hideAccountDeletionModal} />
@@ -662,50 +728,84 @@ const NavigationBarBase: React.FC<NavBarProps> = (props): React.ReactElement => 
       project={project} /> : null}
     {isDuringOnboarding ? <React.Fragment>
       <span style={onboardingLeftSpaceStyle}></span>
-      {isLogoShown ? logo : null}
+      {isLogoShown ? logoWhite : null}
     </React.Fragment> :
       <div style={logoOnLeftStyle}>
-        <Link to={Routes.ROOT}>
-          {isLogoShown ? logo : null}
-        </Link>
+        {isLogoShown ? <LandingPageLink>{logoWhite}</LandingPageLink> : null}
       </div>}
 
     <NavigationBarChildren>{children}</NavigationBarChildren>
 
-    <OutsideClickHandler onOutsideClick={isMenuShown ? closeMenu : noOp} style={menuStyle}>
-      <div>
-        <RadiumButton style={dropDownButtonStyle} onClick={toggleMenu}>
-          {userName}&nbsp;<div style={{flex: 1}} /><UpDownIcon
-            icon="menu"
-            isUp={isMenuShown}
-            style={desktopMenuIconStyle} />
-        </RadiumButton>
-        <div style={dropDownStyle} aria-hidden={!isMenuShown}>
-          {isGuest ?
+    <nav role="navigation" {...closeOnGroupBlurHandlers} style={menuStyle}>
+      <RadiumButton
+        style={dropDownButtonStyle} onClick={toggleMenu}
+        aria-controls={menuId}>
+        {userName}&nbsp;<span style={{flex: 1}} /><UpDownIcon
+          icon="menu"
+          isUp={isMenuShown}
+          style={desktopMenuIconStyle}
+          focusable={false}
+          role="img"
+          aria-label={isMenuShown ? t('Fermer le menu') : t('Ouvrir le menu')} />
+      </RadiumButton>
+      <ul style={dropDownStyle} aria-hidden={!isMenuShown} id={menuId}>
+        {isGuest && config.isLoginEnabled ?
+          <li style={noListItemStyle}>
             <MenuLink
               style={{fontWeight: 'bold', width: '100%'}} to={toLogin || undefined}
               onClick={clickToLogin} tabIndex={isMenuShown ? 0 : -1}>
               {t('Créer mon compte')}
-            </MenuLink> : null}
+            </MenuLink>
+          </li> : null}
+        {hasActionPlanPage ? <React.Fragment>
+          <li style={noListItemStyle}>
+            <MenuLink to={generatePath(Routes.ACTION_PLAN_PLAN_PAGE, {projectId})}
+              tabIndex={isMenuShown ? 0 : -1}>
+              {t("Mon plan d'action")}
+            </MenuLink>
+          </li>
+          <li style={noListItemStyle}>
+            <MenuLink onClick={onClickExploreActions} tabIndex={isMenuShown ? 0 : -1}>
+              {t('Explorer des actions')}
+            </MenuLink>
+          </li>
+        </React.Fragment> : null}
+        <li style={noListItemStyle}>
           <MenuLink to={Routes.PROFILE_PAGE} tabIndex={isMenuShown ? 0 : -1}>
             {t('Mes informations')}
           </MenuLink>
-          {isAlpha ? <MenuLink to={Routes.EMAILS_PAGE}>{t('Mes emails')}</MenuLink> : null}
-          {isProjectModifiable ?
+        </li>
+        {canSeeEmails ? <li style={noListItemStyle}>
+          <MenuLink to={Routes.EMAILS_PAGE} tabIndex={isMenuShown ? 0 : -1}>
+            {t('Mes emails')}
+          </MenuLink>
+        </li> : null}
+        {isProjectModifiable ?
+          <li style={noListItemStyle}>
             <MenuLink onClick={openModifyProjectModal} tabIndex={isMenuShown ? 0 : -1}>
               {t('Modifier mon projet')}
-            </MenuLink> : null}
+            </MenuLink>
+          </li> : null}
+        <li style={noListItemStyle}>
           <MenuLink to={Routes.CONTRIBUTION_PAGE} tabIndex={isMenuShown ? 0 : -1}>
             {t('Contribuer')}
           </MenuLink>
-          <MenuLink
-            {...helpDeskLinkProps} href="https://aide.bob-emploi.fr/hc/fr"
-            tabIndex={isMenuShown ? 0 : -1}>
-            {t('Aide')}
-          </MenuLink>
+        </li>
+        {
+          // TODO(cyrille): Consider dropping this entirely, or revamping it.
+          config.countryId === 'fr' ? <li style={noListItemStyle}>
+            <MenuLink
+              {...helpDeskLinkProps} href="https://aide.bob-emploi.fr/hc/fr"
+              tabIndex={isMenuShown ? 0 : -1}>
+              {t('Aide')}
+            </MenuLink>
+          </li> : null}
+        <li style={noListItemStyle}>
           <MenuLink {...helpDeskLinkProps} tabIndex={isMenuShown ? 0 : -1}>
             {t('Nous contacter')}
           </MenuLink>
+        </li>
+        <li style={noListItemStyle}>
           {isGuest ? <MenuLink
             onClick={deleteGuest} tabIndex={isMenuShown ? 0 : -1}
             style={{':hover': {color: '#fff'}, 'color': colors.COOL_GREY}}>
@@ -715,22 +815,10 @@ const NavigationBarBase: React.FC<NavBarProps> = (props): React.ReactElement => 
             style={{':hover': {color: '#fff'}, 'color': colors.COOL_GREY}}>
             {t('Déconnexion')}
           </MenuLink>}
-        </div>
-      </div>
-    </OutsideClickHandler>
-  </nav>
-}
-NavigationBarBase.propTypes = {
-  // Allow only one child: it will be part of a flex flow so it can use
-  // alignSelf to change its own layout.
-  children: PropTypes.oneOfType([
-    PropTypes.element,
-    PropTypes.string,
-  ]),
-  isLogoShown: PropTypes.bool,
-  isTransparent: PropTypes.bool,
-  page: PropTypes.string,
-  style: PropTypes.object,
+        </li>
+      </ul>
+    </nav>
+  </header>
 }
 const NavigationBar = React.memo(isMobileVersion ? MobileNavigationBarBase : NavigationBarBase)
 
@@ -785,19 +873,18 @@ export interface Scrollable {
 interface ContentProps {
   children?: React.ReactNode|null
   isContentScrollable?: boolean
+  isMain?: boolean
   onScroll?: () => void
   style?: React.CSSProperties
 }
 
-export interface PageWithNavigationBarProps extends ContentProps {
+export interface PageWithNavigationBarProps extends
+  ContentProps, Pick<NavBarProps, 'onBackClick' | 'page'> {
   isChatButtonShown?: boolean
   isCookieDisclaimerShown?: boolean
   isLogoShown?: false
   isNavBarTransparent?: boolean
   navBarContent?: string | JSX.Element
-  // A string is handled as a URL to route back to.
-  onBackClick?: string | (() => void)
-  page?: string
 }
 
 const outerContainerStyle: React.CSSProperties = {
@@ -824,9 +911,8 @@ React.CSSProperties => isContentScrollable ? {
 
 const PageContentBase: React.RefForwardingComponent<Scrollable, ContentProps> =
 (props: ContentProps, ref: React.Ref<Scrollable>): React.ReactElement => {
-  const {children, isContentScrollable, onScroll, style, ...extraProps} = props
-  const scrollableDom =
-    useRef<HTMLDivElement|HTMLBodyElement>(window.document.body as HTMLBodyElement)
+  const {children, isContentScrollable, isMain = true, onScroll, style, ...extraProps} = props
+  const scrollableDom = useRef<HTMLElement|HTMLBodyElement>(window.document.body as HTMLBodyElement)
   useEffect((): (() => void) => {
     if (!isContentScrollable && onScroll) {
       window.addEventListener('scroll', onScroll)
@@ -861,24 +947,32 @@ const PageContentBase: React.RefForwardingComponent<Scrollable, ContentProps> =
     [isContentScrollable, style])
   if (isContentScrollable) {
     return <div style={outerContainerStyle}>
-      <div
-        style={containerStyle} onScroll={onScroll}
-        ref={scrollableDom as React.Ref<HTMLDivElement>} {...extraProps}>
-        {children}
-      </div>
+      {React.createElement(
+        isMain ? 'main' : 'div',
+        {
+          id: isMain ? 'main' : undefined,
+          onScroll,
+          ref: scrollableDom as React.Ref<HTMLElement>,
+          role: isMain ? 'main' : undefined,
+          style: containerStyle,
+          tabIndex: isMain ? -1 : undefined,
+          ...extraProps,
+        },
+        children)}
     </div>
   }
-  return <div style={containerStyle} {...extraProps}>
-    {children}
-  </div>
+  return React.createElement(
+    isMain ? 'main' : 'div',
+    {
+      id: isMain ? 'main' : undefined,
+      role: isMain ? 'main' : undefined,
+      style: containerStyle,
+      tabIndex: isMain ? -1 : undefined,
+      ...extraProps,
+    },
+    children)
 }
 const PageContent = React.forwardRef(PageContentBase)
-PageContent.propTypes = {
-  children: PropTypes.node,
-  isContentScrollable: PropTypes.bool,
-  onScroll: PropTypes.func,
-  style: PropTypes.object,
-}
 
 const pageStyle: React.CSSProperties = {
   display: 'flex',
@@ -903,14 +997,12 @@ const PageWithNavigationBarBase:
 React.RefForwardingComponent<Scrollable, PageWithNavigationBarProps> =
 (props: PageWithNavigationBarProps, ref: React.Ref<Scrollable>): React.ReactElement => {
   const {isChatButtonShown, isContentScrollable,
-    isCookieDisclaimerShown, isLogoShown = true, isNavBarTransparent, navBarContent, onBackClick,
-    page, ...extraProps} = props
+    isCookieDisclaimerShown = true, isLogoShown = true, isNavBarTransparent, navBarContent,
+    onBackClick, page, ...extraProps} = props
   useTitleUpdate()
-  const [isDebugModalShown, showDebugModal, hideDebugModal] = useModal()
-  useKeyListener('KeyE', showDebugModal, {ctrl: true, shift: true})
   return <div style={isContentScrollable ? contentScrollablePageStyle : pageStyle}>
+    <SkipToContent />
     {isCookieDisclaimerShown ? <CookieMessage style={{flexShrink: 0}} /> : null}
-    <BetaMessage style={{flexShrink: 0}} />
     <div style={pageWrapperStyle}>
       <NavigationBar
         page={page} onBackClick={onBackClick} isTransparent={isNavBarTransparent}
@@ -921,34 +1013,13 @@ React.RefForwardingComponent<Scrollable, PageWithNavigationBarProps> =
         isShown={isChatButtonShown && !isMobileVersion}
         domain={config.zendeskDomain} />
 
-      <DebugModal
-        onClose={hideDebugModal}
-        isShown={isDebugModalShown} />
+      <DebugModal />
 
       <PageContent isContentScrollable={isContentScrollable} ref={ref} {...extraProps} />
     </div>
   </div>
 }
 const PageWithNavigationBar = React.forwardRef(PageWithNavigationBarBase)
-PageWithNavigationBar.propTypes = {
-  children: PropTypes.node,
-  isChatButtonShown: PropTypes.bool,
-  isContentScrollable: PropTypes.bool,
-  isCookieDisclaimerShown: PropTypes.bool,
-  isLogoShown: PropTypes.bool,
-  isNavBarTransparent: PropTypes.bool,
-  navBarContent: PropTypes.oneOfType([
-    PropTypes.element,
-    PropTypes.string,
-  ]),
-  onBackClick: PropTypes.oneOfType([PropTypes.func, PropTypes.string]),
-  onScroll: PropTypes.func,
-  page: PropTypes.string,
-  style: PropTypes.object,
-}
-PageWithNavigationBar.defaultProps = {
-  isCookieDisclaimerShown: true,
-}
 
 
 interface ModifyProjectModalProps extends Omit<ModalConfig, 'children'> {
@@ -981,22 +1052,26 @@ const topBottomStyle: React.CSSProperties = {
 
 
 const ModifyProjectModalBase = (props: ModifyProjectModalProps): React.ReactElement => {
-  const {onClose, project, ...extraProps} = props
-  const {t} = useTranslation()
+  const {isShown, onClose, project, ...extraProps} = props
+  const {t} = useTranslation('components')
   const dispatch = useDispatch()
 
-  const handleConfirm = useCallback((): void => {
+  const handleConfirm = useCallback((): boolean|void => {
+    if (!isShown) {
+      return true
+    }
     dispatch(modifyProject(project))
-  }, [dispatch, project])
+  }, [dispatch, isShown, project])
   useFastForward(handleConfirm)
 
   return <Modal
-    style={modalStyle} title={t('Modifier mes informations')} onClose={onClose} {...extraProps}>
-    <Trans style={noticeStyle}>
-      En modifiant votre projet vous perdrez certains éléments de votre diagnostic actuel.
-    </Trans>
-    <Trans style={buttonsContainerStyle}>
-      <Button type="back" onClick={onClose} isRound={true} style={topBottomStyle}>
+    style={modalStyle} title={t('Modifier mes informations')}
+    {...{isShown, onClose}} {...extraProps}>
+    <div style={noticeStyle}>
+      {t('En modifiant votre projet vous perdrez certains éléments de votre diagnostic actuel.')}
+    </div>
+    <Trans style={buttonsContainerStyle} ns="components">
+      <Button type="discreet" onClick={onClose} isRound={true} style={topBottomStyle}>
         Annuler
       </Button>
       <Button onClick={handleConfirm} isRound={true} style={buttonStyle}>
@@ -1004,12 +1079,6 @@ const ModifyProjectModalBase = (props: ModifyProjectModalProps): React.ReactElem
       </Button>
     </Trans>
   </Modal>
-}
-ModifyProjectModalBase.propTypes = {
-  onClose: PropTypes.func.isRequired,
-  project: PropTypes.shape({
-    projectId: PropTypes.string.isRequired,
-  }),
 }
 const ModifyProjectModal = React.memo(ModifyProjectModalBase)
 
@@ -1033,50 +1102,67 @@ const navigationBaseStyle: React.CSSProperties = {
   },
 }
 const roundedButtonStyle: React.CSSProperties = {
-  ...isMobileVersion ? {borderRadius: 13, fontWeight: 'bold'} : {},
+  ...isMobileVersion && {borderRadius: 13, fontWeight: 'bold'},
   flex: 1,
   margin: '0 auto',
   minWidth: 130,
   padding: '13px 16px',
+  ...isMobileVersion && {width: '100%'},
 }
 
-interface FixedNavigationProps {
+interface FixedNavigationProps extends React.ComponentProps<typeof Button> {
   children: React.ReactNode
-  disabled?: boolean
+  // TODO(émilie): separate the FixedNavigation compnent from the Button to avoid this.
+  isChildrenButton?: boolean
+  isShownOnlyWhenScrolledToBottom?: boolean
   navigationPadding?: number
-  placeHolderExtraHeight?: number
   onClick?: () => void
+  placeHolderExtraHeight?: number
   style?: React.CSSProperties
+  // TODO(cyrille): Use `to` wherever relevant.
+  to?: LocationDescriptor
   width?: number
 }
 const FixedButtonNavigationBase = (props: FixedNavigationProps): React.ReactElement => {
-  const {navigationPadding = 30, placeHolderExtraHeight = 0, style, width, ...otherProps} = props
+  const {navigationPadding = 30, placeHolderExtraHeight = 0, isChildrenButton = false,
+    isShownOnlyWhenScrolledToBottom = false, style, to, width, onClick, ...otherProps} = props
+  const hasScrolledOnceAtBottom = useHasScrolledOnceAtBottom(isShownOnlyWhenScrolledToBottom)
+
   const navigationStyle: React.CSSProperties = useMemo((): React.CSSProperties => ({
     padding: navigationPadding,
     ...navigationBaseStyle,
     ...width ? {width} : {},
     ...style,
-  }), [navigationPadding, style, width])
+    ...(!isShownOnlyWhenScrolledToBottom || hasScrolledOnceAtBottom) ? {} : {display: 'none'},
+  }), [hasScrolledOnceAtBottom, navigationPadding, isShownOnlyWhenScrolledToBottom, style, width])
   const navigationPlaceholderStyle: React.CSSProperties = useMemo((): React.CSSProperties => ({
     height: 120 + placeHolderExtraHeight,
   }), [placeHolderExtraHeight])
+  if (to) {
+    return <React.Fragment>
+      <div style={navigationStyle}>
+        <LinkButton
+          isRound={!isMobileVersion} to={to} onClick={onClick} style={roundedButtonStyle}
+          {...otherProps} />
+      </div>
+      <div style={navigationPlaceholderStyle} />
+    </React.Fragment>
+  }
+  if (isChildrenButton && otherProps.children) {
+    return <React.Fragment>
+      <div style={navigationStyle}>
+        {otherProps.children}
+      </div>
+      <div style={navigationPlaceholderStyle} />
+    </React.Fragment>
+  }
   return <React.Fragment>
     <div style={navigationStyle}>
-      <Button isRound={!isMobileVersion} {...otherProps} style={roundedButtonStyle} />
+      <Button
+        onClick={onClick} isRound={!isMobileVersion} {...otherProps} style={roundedButtonStyle} />
     </div>
     <div style={navigationPlaceholderStyle} />
   </React.Fragment>
-}
-
-FixedButtonNavigationBase.propTypes = {
-  children: PropTypes.node,
-  // eslint-disable-next-line react/boolean-prop-naming
-  disabled: PropTypes.bool,
-  navigationPadding: PropTypes.number,
-  onClick: PropTypes.func,
-  placeHolderExtraHeight: PropTypes.number,
-  style: PropTypes.object,
-  width: PropTypes.number,
 }
 const FixedButtonNavigation = React.memo(FixedButtonNavigationBase)
 

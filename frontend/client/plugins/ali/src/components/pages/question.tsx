@@ -11,7 +11,8 @@ import yesClearlyImage from '../../images/yes-clearly.png'
 
 import Button from '../button'
 import GenericPage from '../page'
-import allPossibleAnswers, {AnswerType, QuestionType} from '../answers'
+import type {AnswerType, QuestionType} from '../answers'
+import allPossibleAnswers from '../answers'
 import {Routes} from '../../store'
 
 
@@ -115,7 +116,7 @@ const AnswerCardBase = (props: AnswerCardProps, ref: React.Ref<Focusable>): Reac
   }))
   return <button
     {...handlers} style={cardStyle} onClick={handleClick} aria-checked={isSelected} role="radio"
-    ref={buttonRef} tabIndex={tabIndex}>
+    ref={buttonRef} tabIndex={tabIndex} type="button">
     <div style={borderStyle} />
     {answer}
     <div style={outerCircleStyle}>

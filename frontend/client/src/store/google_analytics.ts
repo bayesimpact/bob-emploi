@@ -1,7 +1,7 @@
 import Storage from 'local-storage-fallback'
-import {AnyAction, Middleware, MiddlewareAPI} from 'redux'
+import type {AnyAction, Middleware, MiddlewareAPI} from 'redux'
 
-import {DispatchAllActions, PageIsLoadedAction, RootState} from './actions'
+import type {DispatchAllActions, PageIsLoadedAction, RootState} from './actions'
 
 /* eslint-disable unicorn/no-abusive-eslint-disable */
 // Code from https://developers.google.com/analytics/devguides/collection/analyticsjs/

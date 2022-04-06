@@ -9,3 +9,4 @@
 # W505 = doc line too long
 ignore = E501,W504,W505
 max-line-length = 100
+exclude = *_pb2.py

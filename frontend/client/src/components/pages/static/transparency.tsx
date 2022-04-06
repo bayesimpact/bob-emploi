@@ -1,9 +1,9 @@
-import React, {useMemo, useState} from 'react'
-import PropTypes from 'prop-types'
-import VisibilitySensor from 'react-visibility-sensor'
+import React, {useMemo, useRef} from 'react'
 
 import {toLocaleString} from 'store/i18n'
 import isMobileVersion from 'store/mobile'
+
+import useOnScreen from 'hooks/on_screen'
 
 import budgetImage from 'images/budget.png'
 import demographyImage from 'images/demography.png'
@@ -356,7 +356,7 @@ const LoveSectionBase = (): React.ReactElement => <div style={loveContainerStyle
     <div>
       Nous recevons régulièrement des retours d'utilisateurs qui nous
       touchent. C'est ce qui nous motive pour avancer
-      {' '}<span role="img" aria-label="content">😊</span>.<br /><br />
+      {' '}<span aria-hidden={true}>😊</span>.<br /><br />
 
       Celui-ci en particulier nous est allé droit au cœur, car il
       représente l'impact fondamentalement humain pour lequel nous nous
@@ -375,8 +375,8 @@ const LoveSectionBase = (): React.ReactElement => <div style={loveContainerStyle
         en contact avec vous car tout le monde avant vous me disait ; “vous
         savez, je n'ai pas de baguette magique”.<br />
         Vous, vous avez une baguette magique ; le mérite de me redonner foi
-        en ma recherche d'emploi et des billes <span role="img"
-          style={{fontStyle: 'normal'}} aria-label="sourire">😬</span><br />
+        en ma recherche d'emploi et des billes <span aria-hidden={true}
+          style={{fontStyle: 'normal'}}>😬</span><br />
         Le message est bien passé et dans une bonne oreille !<br />
         Vous me redonner confiance, là où d'autres ont échoué, et vous suis
         très reconnaissante.<br />
@@ -466,10 +466,10 @@ const RoadmapBase = (): React.ReactElement => <div style={textSectionStyle}>
     {config.productName} est en développement actif. Le code est open source et&nbsp;
     <BlueLink href="https://github.com/bayesimpact/bob-emploi">disponible sur Github</BlueLink>.
     Vous pouvez également consulter l'<BlueLink
-      href="https://github.com/bayesimpact/bob-emploi/blob/master/HISTORY.md">
+      href="https://github.com/bayesimpact/bob-emploi/blob/HEAD/HISTORY.md">
       historique général du projet
     </BlueLink> ainsi
-    que <BlueLink href="https://github.com/bayesimpact/bob-emploi/blob/master/CHANGELOG.md">
+    que <BlueLink href="https://github.com/bayesimpact/bob-emploi/blob/HEAD/CHANGELOG.md">
       le changelog complet
     </BlueLink>.
   </div>
@@ -765,14 +765,6 @@ const FundingTableBase = (props: FundingTableProps): React.ReactElement => {
     </tbody>
   </table>
 }
-FundingTableBase.propTypes = {
-  items: PropTypes.arrayOf(PropTypes.shape({
-    amount: PropTypes.number.isRequired,
-    distributionYears: PropTypes.number,
-    name: PropTypes.string.isRequired,
-  }).isRequired).isRequired,
-  style: PropTypes.object,
-}
 const FundingTable = React.memo(FundingTableBase)
 
 
@@ -806,7 +798,8 @@ const scalesContainerStyle: React.CSSProperties = {
 
 const PercentBarChartBase = (props: PercentBarChartProps): React.ReactElement => {
   const {style, values} = props
-  const [hasAppeared, setHasAppeared] = useState(false)
+  const domRef = useRef<HTMLDivElement>(null)
+  const hasAppeared = useOnScreen(domRef, {isForAppearing: true})
 
   const bars = useMemo((): React.ReactNode => {
     const containerStyle: React.CSSProperties = {
@@ -817,6 +810,8 @@ const PercentBarChartBase = (props: PercentBarChartProps): React.ReactElement =>
       width: 50,
     }
     const barStyle = (color: string|undefined, value: number): React.CSSProperties => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ['WebkitPrintColorAdjust' as any]: 'exact',
       backgroundColor: color || colors.RED_PINK,
       height: (hasAppeared ? value * 100 : 0) + '%',
       ...SmoothTransitions,
@@ -879,21 +874,9 @@ const PercentBarChartBase = (props: PercentBarChartProps): React.ReactElement =>
     <div style={scalesContainerStyle}>
       {horizontalScales}
     </div>
-    <VisibilitySensor
-      partialVisibility={true} intervalDelay={250}
-      onChange={setHasAppeared}>
-      <div style={barContainerStyle}>
-        {bars}
-      </div>
-    </VisibilitySensor>
+    <div style={barContainerStyle} ref={domRef}>
+      {bars}
+    </div>
   </div>
-}
-PercentBarChartBase.propTypes = {
-  style: PropTypes.object,
-  values: PropTypes.arrayOf(PropTypes.shape({
-    color: PropTypes.string,
-    name: PropTypes.string.isRequired,
-    value: PropTypes.number.isRequired,
-  }).isRequired).isRequired,
 }
 const PercentBarChart = React.memo(PercentBarChartBase)

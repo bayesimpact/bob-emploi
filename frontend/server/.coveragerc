@@ -14,7 +14,12 @@ exclude_lines =
   if __name__ == '__main__':
   # Protocols are for typing only.
   \(typing_extensions\.Protocol\):
+skip_empty = True
+include = bob_emploi/frontend/server/*.*
 [run]
+command_line = -m unittest discover -p *_test.py -s bob_emploi/frontend/server
 omit =
   bob_emploi/frontend/api/*
   *_test.py
+[html]
+directory = cover

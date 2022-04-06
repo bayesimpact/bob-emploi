@@ -1,0 +1,23 @@
+<mjml owa="desktop" version="4.6.3">
+  <mj-body background-color="#ffffff" font-family="Arial, sans-serif">
+    <mj-section>
+      <mj-column>
+        <mj-text font-size="14px" line-height="22px">Bonjour,</mj-text>
+        <mj-text font-size="14px" line-height="22px">
+          <p>Je m'appelle {{var:senderFirstName}} et je suis votre coach gratuit de {{var:productName}}. Mon but : vous aider à trouver un métier qui correspond à la vie professionnelle que vous aimeriez avoir.</p>
+          <p>Vous avez dit souhaiter avoir du coaching pour les métiers que vous avez choisis, c'est bien noté ✅</p>
+          <p>Vous allez recevoir votre premier email de coaching très prochainement.</p>
+        </mj-text>
+        <mj-text font-size="14px" line-height="22px">
+          <p>D'ici-là, portez-vous bien 😊</p>
+          <p>{{var:senderName}}</p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column>
+        <mj-text color="#55575d" font-size="11px" line-height="22px">Vous recevez cet email car vous avez demandé du coaching sur <a style="color:inherit;" target="_blank" href="{{var:productUrl}}">{{var:productName}}</a>. <a style="color:inherit;" target="_blank" href="{{var:unsubscribeLink}}">Cliquez ici</a> si vous ne souhaitez plus recevoir d'email de notre part.</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

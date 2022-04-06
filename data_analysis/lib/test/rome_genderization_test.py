@@ -1,6 +1,6 @@
 """Tests for the bob_emploi.lib.rome_genderization module."""
 
-from typing import List, Tuple
+from typing import Tuple
 import unittest
 
 import pandas
@@ -11,7 +11,7 @@ from bob_emploi.data_analysis.lib import rome_genderization
 class _GenderizeTestCase(unittest.TestCase):
     """Base for unit tests for the genderize function."""
 
-    def _genderize_lists(self, names: List[str]) -> Tuple[List[str], List[str]]:
+    def _genderize_lists(self, names: list[str]) -> Tuple[list[str], list[str]]:
         """Helper function to call genderize using lists instead of Series."""
 
         masculine, feminine = rome_genderization.genderize(pandas.Series(names))

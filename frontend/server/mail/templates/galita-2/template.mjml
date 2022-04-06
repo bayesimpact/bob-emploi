@@ -1,512 +1,94 @@
-{
-  "attributes": {
-    "owa": "desktop",
-    "passport": {
-      "id": "AYv59FASzWd",
-      "revertLostLink": true
-    },
-    "version": "4.6.3"
-  },
-  "children": [
-    {
-      "attributes": {
-        "background-color": "#ffffff",
-        "color": "#55575d",
-        "font-family": "Arial, sans-serif",
-        "passport": {
-          "id": "qf7IfTqq9"
-        }
-      },
-      "children": [
-        {
-          "attributes": {
-            "background-repeat": "repeat",
-            "background-size": "auto",
-            "padding": "20px 0px 20px 0px",
-            "passport": {
-              "header": true,
-              "hidden": true,
-              "id": "HlsqkzLq6qgFD"
-            },
-            "text-align": "center",
-            "vertical-align": "top"
-          },
-          "children": [
-            {
-              "attributes": {
-                "passport": {
-                  "hidden": true,
-                  "id": "LfhXFW1h8ZlRN"
-                }
-              },
-              "children": [
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#55575d",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "11px",
-                    "letter-spacing": "normal",
-                    "line-height": "22px",
-                    "padding": "0px 0px 0px 25px",
-                    "padding-bottom": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "hidden": true,
-                      "id": "n1519TvaBbCEe"
-                    }
-                  },
-                  "content": "<p style=\"margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\">Donnez un résumé de cet email à vos destinataires</p>",
-                  "id": "ZuZG1RcN8jrKf",
-                  "tagName": "mj-text"
-                }
-              ],
-              "id": "osxl14FK1qUqb",
-              "tagName": "mj-column"
-            }
-          ],
-          "id": "sCLlzDa_1ITSM",
-          "tagName": "mj-section"
-        },
-        {
-          "attributes": {
-            "background-color": "transparent",
-            "background-repeat": "repeat",
-            "full-width": "full-width",
-            "padding": "20px 0px 20px 0px",
-            "padding-bottom": "0px",
-            "padding-top": "12px",
-            "passport": {
-              "id": "YT077ohZT6"
-            },
-            "text-align": "center",
-            "vertical-align": "top"
-          },
-          "children": [
-            {
-              "attributes": {
-                "passport": {
-                  "id": "lJz6oqjF12"
-                }
-              },
-              "children": [
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#55575d",
-                    "font-size": "13px",
-                    "letter-spacing": "normal",
-                    "line-height": "22px",
-                    "padding": "0px 25px 0px 25px",
-                    "padding-bottom": "0px",
-                    "padding-left": "0px",
-                    "padding-right": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "C3kSbD9XmF"
-                    }
-                  },
-                  "content": "<p class=\"text-build-content\" data-testid=\"C3kSbD9XmF\" style=\"margin: 10px 0;; margin-top: 10px; color:#000000;font-family:Arial;font-size:14px;line-height:24px;\">Bonjour {{var:firstName:\"Marie\"}},</p><p class=\"text-build-content\" data-testid=\"C3kSbD9XmF\" style=\"margin: 10px 0; color:#000000;font-size:14px;line-height:24px;\">J'ai lu un article hier et j'avais envie de vous le partager.</p><p class=\"text-build-content\" data-testid=\"C3kSbD9XmF\" style=\"margin: 10px 0;; margin-bottom: 10px; color:#000000;font-size:14px;line-height:24px;\">Je sais que vous cherchez ce poste pour la première fois, et souvent c'est un moment où la question <b>\"que veux-tu faire ?\"</b> prend beaucoup de place. Nicolas Galita du blog <a class=\"link-build-content\" target=\"_blank\" href=\"http://dessinetoiunemploi.com/ne-vous-demandez-plus-ce-que-vous-voulez-faire/\">Dessine-moi un emploi</a> propose une alternative à cette question pour voir plus loin et construire son parcours : <b>“qui veux-tu être ?”</b></p>",
-                  "id": "LP2cg34OLg94O",
-                  "tagName": "mj-text"
-                },
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#55575d",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "13px",
-                    "letter-spacing": "normal",
-                    "line-height": "22px",
-                    "padding": "10px 25px",
-                    "padding-bottom": "0px",
-                    "padding-left": "0px",
-                    "padding-right": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "HLmVue24wM"
-                    }
-                  },
-                  "content": "<p style=\"line-height: 19px; margin: 10px 0; margin-top: 10px;\"><span style=\"color:#000000\"><span style=\"font-size:14px\"><span style=\"font-family:Arial,sans-serif\">J'espère que cet article vous inspirera ✨</span></span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\"><span style=\"font-family:Arial,sans-serif\">À très vite,</span></span></span></p><p style=\"line-height: 1.38; margin: 10px 0; margin-bottom: 10px;\"><span style=\"color:#6b6b68\"><span style=\"font-size:14.6667px\">Joanna et l'équipe de Bob</span></span></p>",
-                  "id": "KWAe6prlaryzB",
-                  "tagName": "mj-text"
-                }
-              ],
-              "id": "k8rBz47c0DLkQ",
-              "tagName": "mj-column"
-            }
-          ],
-          "id": "gevC1H-gI1D4P",
-          "tagName": "mj-section"
-        },
-        {
-          "attributes": {
-            "background-repeat": "repeat",
-            "padding": "20px 0",
-            "padding-bottom": "0px",
-            "padding-top": "0px",
-            "passport": {
-              "id": "xstp14LgUiMgcR"
-            },
-            "text-align": "center",
-            "vertical-align": "top"
-          },
-          "children": [
-            {
-              "attributes": {
-                "passport": {
-                  "id": "Ics_2OgaOu"
-                }
-              },
-              "children": [
-                {
-                  "attributes": {
-                    "align": "left",
-                    "alt": "",
-                    "border": "none",
-                    "height": "auto",
-                    "href": "",
-                    "padding": "10px 25px",
-                    "padding-left": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "GUTl9ljIQ_4WQU",
-                      "image-id": 6036334
-                    },
-                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
-                    "target": "_blank",
-                    "title": "",
-                    "width": "102px"
-                  },
-                  "id": "-YE8RP3R_juz9",
-                  "tagName": "mj-image"
-                }
-              ],
-              "id": "ulXH3IVQxLDjK",
-              "tagName": "mj-column"
-            }
-          ],
-          "id": "T9HP9cpxvCB3N",
-          "tagName": "mj-section"
-        },
-        {
-          "attributes": {
-            "background-repeat": "repeat",
-            "padding": "20px 0",
-            "passport": {
-              "id": "xR5l9PNeHTakwq"
-            },
-            "text-align": "center",
-            "vertical-align": "top"
-          },
-          "children": [
-            {
-              "attributes": {
-                "passport": {
-                  "id": "Z2qiKfN4k-"
-                }
-              },
-              "children": [
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#55575d",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "13px",
-                    "letter-spacing": "normal",
-                    "line-height": "24px",
-                    "padding": "10px 25px",
-                    "padding-bottom": "0px",
-                    "padding-left": "0px",
-                    "padding-right": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "H8zLuJRxRh"
-                    }
-                  },
-                  "content": "<p style=\"line-height: 19px; margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"color:#000000\"><span style=\"font-family:Arial,sans-serif\"><span style=\"font-size:14px\">Ps : </span></span><span style=\"font-size:14px\">Je vous ai surligné quelques passages que je trouve intéressants 🖍</span></span></p>",
-                  "id": "DdrrpRcwJrmGI",
-                  "tagName": "mj-text"
-                }
-              ],
-              "id": "n4jkMWLFmOLui",
-              "tagName": "mj-column"
-            }
-          ],
-          "id": "OYlR6SPHIhRQy",
-          "tagName": "mj-section"
-        },
-        {
-          "attributes": {
-            "background-repeat": "repeat",
-            "padding": "20px 0",
-            "padding-bottom": "0px",
-            "padding-top": "0px",
-            "passport": {
-              "id": "LMcDMxvFrRmg",
-              "version": "3.3.5"
-            },
-            "text-align": "center",
-            "vertical-align": "top"
-          },
-          "children": [
-            {
-              "attributes": {
-                "passport": {
-                  "id": "w-1uDdybdJXQ"
-                }
-              },
-              "children": [
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#000000",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "13px",
-                    "letter-spacing": "normal",
-                    "padding": "10px 25px",
-                    "padding-bottom": "0px",
-                    "padding-left": "0px",
-                    "padding-right": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "4v95xpy_F6Dw",
-                      "oldContentEditor": "<p style=\"margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"font-size:11px\">Vous recevez cet email car vous êtes inscrit{% if var:gender:\"\" == \"FEMININE\" %}e{% endif %}</span><span style=\"font-size:11px\"> sur <a target=\"_blank\" href=\"https://www.bob-emploi.fr?utm_source=bob-emploi&amp;utm_medium=email\">Bob</a> et avez demandé des emails de coaching. <a target=\"_blank\" href=\"{{var:changeEmailSettingsUrl}}\"><u>Cliquez ici</u></a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte Bob en veille ? <a target=\"_blank\" href=\"{{var:statusUpdateUrl}}\">cliquez ici</a>.</span></p>",
-                      "oldMjAttributes": "{\"line-height\":\"22px\",\"padding-right\":\"0px\",\"font-family\":\"Arial, sans-serif\",\"padding-left\":\"0px\",\"color\":\"#55575d\",\"align\":\"left\",\"padding-bottom\":\"0px\",\"padding\":\"10px 25px\",\"padding-top\":\"0px\",\"font-size\":\"13px\"}"
-                    }
-                  },
-                  "content": "<p class=\"text-build-content\" data-testid=\"GB8_UQEcWz\" style=\"margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\"><span style=\"color:#55575d;font-family:Arial;font-size:11px;line-height:22px;\">Vous recevez cet email car vous êtes inscrit{%if var:gender:\"\"==\"FEMININE\"%}e{%else%}{%if var:gender:\"\"==\"MASCULINE\"%}{%else%}·e{%endif%}{% endif %} sur </span><a class=\"link-build-content\" style=\"color:inherit;\" target=\"_blank\" href=\"https://www.bob-emploi.fr?utm_source=bob-emploi&amp;utm_medium=email\"><span style=\"color:#0000EE;font-family:Arial;font-size:11px;line-height:22px;\"><u>Bob</u></span></a><span style=\"color:#55575d;font-family:Arial;font-size:11px;line-height:22px;\"> et avez demandé des emails de coaching. </span><a class=\"link-build-content\" style=\"color:inherit;\" target=\"_blank\" href=\"{{var:changeEmailSettingsUrl}}\"><span style=\"color:#0000EE;font-family:Arial;font-size:11px;line-height:22px;\"><u>Cliquez ici</u></span></a><span style=\"color:#55575d;font-family:Arial;font-size:11px;line-height:22px;\"> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte Bob en veille ? </span><a class=\"link-build-content\" style=\"color:inherit;\" target=\"_blank\" href=\"{{var:statusUpdateUrl}}\"><span style=\"color:#0000EE;font-family:Arial;font-size:11px;line-height:22px;\"><u>cliquez ici</u></span></a><span style=\"color:#55575d;font-family:Arial;font-size:11px;line-height:22px;\">.</span></p>",
-                  "id": "geD7LMW96lyY4",
-                  "tagName": "mj-text"
-                }
-              ],
-              "id": "Z2Fm1seJacS-W",
-              "tagName": "mj-column"
-            }
-          ],
-          "id": "8x6uLWVUavrqs",
-          "tagName": "mj-section"
-        },
-        {
-          "attributes": {
-            "background-color": "#ffffff",
-            "background-repeat": "repeat",
-            "background-size": "auto",
-            "full-width": "full-width",
-            "padding": "20px 0",
-            "padding-bottom": "0px",
-            "passport": {
-              "id": "JrRVGQwuZ2G"
-            },
-            "text-align": "center",
-            "vertical-align": "top"
-          },
-          "children": [
-            {
-              "attributes": {
-                "passport": {
-                  "id": "fMpISIrBd-w"
-                }
-              },
-              "children": [
-                {
-                  "attributes": {
-                    "border-color": "#000000",
-                    "border-style": "solid",
-                    "border-width": "2px",
-                    "padding": "10px 25px",
-                    "passport": {
-                      "id": "K5P9EeWm3DZ"
-                    },
-                    "width": "100%"
-                  },
-                  "id": "sU-ELUpztNEtF",
-                  "tagName": "mj-divider"
-                },
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#55575d",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "13px",
-                    "letter-spacing": "normal",
-                    "line-height": "22px",
-                    "padding": "10px 25px",
-                    "padding-bottom": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "hQxI89GnD2Q"
-                    }
-                  },
-                  "content": "<p style=\"margin: 10px 0; margin-top: 10px;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:18px\"><b>Arrêtez de vous demander ce que vous voulez faire</b></span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\"><span style=\"color:#5e5d5d\">S'il y a une question angoissante c'est bien : « qu'est ce que tu veux faire ?</span></span></span>»<span style=\"color:#000000\"><span style=\"font-size:14px\"><span style=\"color:#5e5d5d\"> Je vous avais d'ailleurs donné </span><a target=\"_blank\" style=\"color:#5e5d5d\" href=\"http://dessinetoiunemploi.com/comment-trouver-sa-voie-professionnelle-en-trois-questions/\"><span style=\"color:#5e5d5d\">une manière de la résoudre en 3 questions dans cet article.</span></a></span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">Et si au lieu de se demander ce que l'on veut faire, on se demandait ce que l'on veut être ?</span></span></p><p style=\"margin: 10px 0;\"> </p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:18px\"><b>D'habitude on se demande ce que l'on a fait</b></span></span></p><p style=\"margin: 10px 0; margin-bottom: 10px;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">La plupart du temps, quand on cherche à s'orienter professionnellement, on a le réflexe de regarder <b>ce que l'on a fait avant.</b> Soit durant ses études, soit durant son parcours professionnel. Le CV est d'ailleurs un témoin de cette manière de penser. En effet, le curriculum vitae c'est en latin le chemin de vie.</span></span></p>",
-                  "id": "It5y32jY7Tggk",
-                  "tagName": "mj-text"
-                },
-                {
-                  "attributes": {
-                    "align": "center",
-                    "alt": "http://dessinetoiunemploi.com/ne-vous-demandez-plus-ce-que-vous-voulez-faire/",
-                    "border": "none",
-                    "height": "auto",
-                    "href": "",
-                    "padding": "10px 25px",
-                    "passport": {
-                      "id": "PPwGm4v5J",
-                      "image-id": 6093054,
-                      "mode": "image"
-                    },
-                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/jlim/2tixq.jpeg",
-                    "target": "_blank",
-                    "title": "",
-                    "width": "640px"
-                  },
-                  "id": "bkwrfyT0J6vAV",
-                  "tagName": "mj-image"
-                },
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#55575d",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "13px",
-                    "letter-spacing": "normal",
-                    "line-height": "24px",
-                    "padding": "10px 25px",
-                    "padding-bottom": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "sqqVwzvmz"
-                    }
-                  },
-                  "content": "<p style=\"margin: 10px 0; margin-top: 10px;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">Le CV est donc là pour résumer un chemin qui a <b>déjà</b> été parcouru. Et, à part éventuellement dans son titre, on n'y dit pas le chemin que l'on <b>aimerait</b> parcourir. <span style=\"background-color:#fff025\">On se focalise donc sur ce que l'on a fait ces dernières années plutôt que sur ce que l'on compte faire les prochaines années.</span></span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">Le problème c'est que c'est structurellement une dynamique linéaire et figée. <b>Le passé prend l'avenir en otage.</b> D'ailleurs, c'est ce que l'on retrouve dans </span></span><a target=\"_blank\" style=\"color:#5e5d5d; font-size:14px\" href=\"http://dessinetoiunemploi.com/sept-bonnes-raisons-de-ne-pas-repondre-aux-offres-demploi/\"><span style=\"color:#5e5d5d\">les offres d'emploi</span></a><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">. Les employeurs précisent régulièrement vouloir des gens qui ont par exemple 4 ans d'expérience dans tel ou tel secteur. Avec évidemment un paradoxe : il faut bien un moment où on n'a pas d'expérience. Vous savez, c'est un peu le syndrome de la boîte de nuit. <b>On ne vous laisse pas rentrer car vous n'êtes pas un habitué mais comment devenir un habitué si l'on ne vous laisse jamais rentrer ?</b></span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">Et ça a des conséquences très concrètes et très violentes. D'une part, il est extrêmement compliqué de rentrer sur le marché du travail pour son premier emploi. D'autre part, il est tout aussi compliqué de se reconvertir. Imaginez que vous avez été <span style=\"font-family:Arial; text-decoration:none\">commercial{%if var:gender:\"\"==\"FEMININE\"%}e{%endif%}</span> pendant vos 3 premières années. Et que vous avez envie de vous reconvertir dans la finance. Vous allez vous retrouver devant des recruteurs qui vont vous faire parler de vos expériences passées. Si bien que vous n'aurez pas forcément l'occasion d'expliquer pourquoi vous voulez changer de voie.</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:18px\"><b>Faut-il plutôt se demander ce qu'on VA faire ?</b></span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">On l'a compris : se fonder sur ce que l'on a fait pour s'orienter est la meilleure manière de s'enfermer malgré soi dans une voie figée. La solution serait-elle donc alors de se demander plutôt ce que l'on VA faire ?</span></span></p><p style=\"margin: 10px 0; margin-bottom: 10px;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">C'est déjà mieux, effectivement. Du coup, on part d'un rêve, d'une envie ou de la voie que les autres nous ont présenté comme raisonnable pour s'orienter. Pourtant, c'est généralement un exercice très compliqué. <b>Tellement compliqué que beaucoup de gens sont pris d'angoisse rien que d'y penser.</b> Tellement compliqué que beaucoup de gens suivent la voie que d'autres ont tracé pour eux, sans jamais la remettre en question.</span></span></p>",
-                  "id": "LdT_MAMmgE-Go",
-                  "tagName": "mj-text"
-                },
-                {
-                  "attributes": {
-                    "align": "center",
-                    "alt": "http://dessinetoiunemploi.com/ne-vous-demandez-plus-ce-que-vous-voulez-faire/",
-                    "border": "none",
-                    "height": "auto",
-                    "href": "",
-                    "padding": "10px 25px",
-                    "passport": {
-                      "id": "MOnb1_gUN",
-                      "image-id": 6093056,
-                      "mode": "image"
-                    },
-                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/jlim/2tix7.jpeg",
-                    "target": "_blank",
-                    "title": "",
-                    "width": "640px"
-                  },
-                  "id": "CPXT-1K3d-_DH",
-                  "tagName": "mj-image"
-                },
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#55575d",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "13px",
-                    "letter-spacing": "normal",
-                    "line-height": "24px",
-                    "padding": "10px 25px",
-                    "padding-bottom": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "hS7JWgwer"
-                    }
-                  },
-                  "content": "<p style=\"margin: 10px 0; margin-top: 10px;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">C'est ce que j'appelle le syndrome du consultant : tous ces gens autour de moi qui ont été happés par une voie tracée. À la fin de leur terminale on les a envoyé en S car ils étaient bons en mathématiques. Puis on les a envoyé en classe préparatoire après le bac. Puis ils se sont retrouvés en école de commerce ou d'ingénieur. Et enfin, consultant ou auditeur. Ce ne serait pas un problème s'ils aimaient ça. Mais je n'ai jamais rencontré quelqu'un qui aimait sincèrement et fondamentalement (sans se mentir à soi-même) être consultant ou auditeur. Probablement que ces gens existent, mais ils n'ont jamais croisé ma route.</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">D'étapes en étapes, ils finissent piégés dans un métier qu'ils n'aiment pas alors qu'ils ont toutes les capacités pour faire à peu près ce qu'ils veulent. Mais pour ça il faut à un moment se poser la question de son chemin professionnel.</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\"><b>Pourquoi est-ce si compliqué de se demander ce qu'on veut faire ? Parce que c'est une très mauvaise question.</b> Il existe trop de métiers, trop de choses que l'on peut faire. Et personne n'a jamais vibré pour ce qu'il fait. C'est trop terre-à-terre. En vérité, <span style=\"background-color:#fff025\">on vibre à des niveaux plus conceptuels. On vibre pour ce que l'on veut être.</span></span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"></span></p><p style=\"margin: 10px 0;\"><span style=\"font-size:18px\"><span style=\"color:#5e5d5d\"><b>Se demander ce que l'on veut ÊTRE</b></span></span></p><p style=\"line-height: 24px; margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">Au moment où je vous écris je suis formateur et blogueur en recrutement et blogueur. Or, si je suis la logique précédente de se demander ce qu'on veut faire, je serais tenté de répondre :</span></span></p><ul><li style=\"line-height:19px\"><span style=\"color:#5e5d5d\"><i><span style=\"font-size:14px\">Je veux continuer à écrire des articles</span></i>. <span style=\"font-size:14px\">Et à désirer des voies où je peux le faire : le journalisme par exemple.</span></span></li><li style=\"line-height:19px\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">De la même manière, je serais tenté tenté de me dire : J<i>e veux continuer à donner des cours</i></span><i>.</i> <span style=\"font-size:14px\">Et à viser des métiers où c'est le cas : professeur par exemple.</span></span></li></ul><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\"><b>Pourtant, la vraie question c'est ce que je suis/deviens en faisant ce que je fais. </b>C'est d'ailleurs ce qui lie mes deux activités. Qu'est-ce que je fais ? Deux choses différentes : de la formation et de l'écriture d'article. Qu'est-ce que je suis ? Une seule chose : <b>je suis quelqu'un qui cherche à transmettre de la connaissance et de l'enthousiasme à des adultes.</b></span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">Si jamais je raisonnais en termes de ce que je fais et veux faire, on pourrait croire que le métier de professeur des lycées est une suite logique au métier de formateur. Davantage que blogueur. De la même manière, on pourrait croire que le métier de journaliste dans un quotidien régional est une suite logique au métier de blogueur. Davantage que formateur.</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">Mais si on raisonne en termes de ce que je suis et de ce que je deviens en le faisant, on comprend pourquoi je ne veux pas être professeur des lycées : j'aime enseigner à des adultes. On comprend également pourquoi je ne veux pas être journaliste dans un quotidien : ce que j'aime transmettre c'est la connaissance et l'enthousiasme et non pas l'actualité.</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\"><b>Et la question « que voulez-vous être ? » est bien plus profonde. </b>Elle est plus compliquée que « que voulez-vous faire ? » car elle demande d'aller chercher la réponse au fond de soi et de s'émanciper des parasites (comme le regard des autres). Mais elle est aussi moins compliquée car justement la réponse est en vous et indépendante des contraintes extérieures.</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\"><span style=\"background-color:#fff025\">Il est plus simple de partir de soi et ensuite de voir comment cela se traduit dans le monde extérieur.</span> Plutôt que de partir du monde extérieur pour voir comment cela se traduit en soi.</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">Imaginez quelqu'un qui, enfant, veut devenir chanteur. S'il se focalise sur ce qu'il veut faire (de la chanson) et qu'il échoue, il est probable qu'il soit complètement désoeuvré. Imaginons maintenant qu'il se pose la question de ce qu'il veut être en chantant.</span></span></p><p style=\"margin: 10px 0;\"><i><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">Je veux être celui qui provoque de l'émerveillement avec du beau dans la vie des gens</span></span></i></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">Et bien, il existe plusieurs métiers qui lui permettront de l'être, sans forcément chanter. Designer ou architecte par exemple. Mais un même enfant qui veut faire chanteur pourra avoir une raison d'être radicalement différente :</span></span></p><p style=\"margin: 10px 0;\"><i><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">Je veux être celui qui est au centre de l'attention d'un public</span></span></i></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">Dans ce cas, il pourrait le retrouver dans des métiers comme enseignant, formateur, conférencier, etc.</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"></span></p><p style=\"margin: 10px 0;\"><span style=\"font-size:18px\"><span style=\"color:#5e5d5d\"><b>Posez-vous la question</b></span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">Le plus simple pour savoir ce que l'on veut être c'est d'essayer de se rappeler de tous les moments de sa vie où on s'est senti bien en faisant ce qu'on faisait.</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">Puis de se demander <b>pourquoi on a aimé ce que l'on faisait.</b> Par exemple, j'ai toujours adoré faire des présentations orales et faire des rapports de stage (ce que mes camarades détestaient). Pourquoi ? Parce que c'était aligné avec ce que j'aimais être : quelqu'un qui transmet de la connaissance.</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">Vous aimez écrire ? Pourquoi ? Parce que vous aimez être celui ou celle qui transmet des histoires qui font voyager l'imaginaire ? Ou parce que vous aimez être celui ou celle qui partage son expertise ? Dans les deux cas vous faîtes la même chose : écrire, mais vous n'êtes pas la même chose.</span></span></p><p style=\"margin: 10px 0;\"> </p><p style=\"margin: 10px 0;\"><span style=\"font-size:18px\"><span style=\"color:#5e5d5d\"><b>Et vous, vous aimez être quoi ?</b></span></span></p><p style=\"margin: 10px 0; margin-bottom: 10px;\"><span style=\"color:#5e5d5d\"><span style=\"font-size:14px\">J'ai eu l'inspiration de cet article en regardant <a target=\"_blank\" rel=\"noFollow \" href=\"https://www.youtube.com/watch?v=wfNX1cHk-fE\">cette vidéo</a>. Je vous invite à la regarder vous aussi 😊</span></span></p>",
-                  "id": "noWoJgYGlYknx",
-                  "tagName": "mj-text"
-                }
-              ],
-              "id": "RDNkG30c8goR3",
-              "tagName": "mj-column"
-            }
-          ],
-          "id": "7zldoDDd3C0an",
-          "tagName": "mj-section"
-        },
-        {
-          "attributes": {
-            "background-repeat": "repeat",
-            "padding": "20px 0",
-            "passport": {
-              "id": "vUn2hf087"
-            },
-            "text-align": "center",
-            "vertical-align": "top"
-          },
-          "children": [
-            {
-              "attributes": {
-                "passport": {
-                  "id": "zWASYNuuGl"
-                }
-              },
-              "children": [
-                {
-                  "attributes": {
-                    "align": "center",
-                    "alt": "Trouvez le travail de vos rêves sans regarder votre CV",
-                    "border": "none",
-                    "height": "auto",
-                    "href": "https://www.youtube.com/watch?v=wfNX1cHk-fE",
-                    "padding": "10px 25px",
-                    "passport": {
-                      "id": "mbBkYIPiF",
-                      "mode": "video",
-                      "play-type": 0,
-                      "pure-display-img": "http://r.bob-emploi.fr/tplimg/6u2u/b/jlim/2tv83.png",
-                      "size": {
-                        "height": 616,
-                        "width": 1200
-                      },
-                      "video-src": "https://www.youtube.com/watch?v=wfNX1cHk-fE"
-                    },
-                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/jlim/2tv84.png",
-                    "target": "_blank",
-                    "title": "",
-                    "width": "1200px"
-                  },
-                  "id": "hRFRq4LmcbXeB",
-                  "tagName": "mj-image"
-                },
-                {
-                  "attributes": {
-                    "align": "left",
-                    "color": "#55575d",
-                    "font-family": "Arial, sans-serif",
-                    "font-size": "13px",
-                    "letter-spacing": "normal",
-                    "line-height": "24px",
-                    "padding": "10px 25px",
-                    "padding-bottom": "0px",
-                    "padding-top": "0px",
-                    "passport": {
-                      "id": "_Z4cfxmDc"
-                    }
-                  },
-                  "content": "<p style=\"margin: 10px 0; margin-top: 10px; margin-bottom: 10px;\">Astuce 🇫🇷 Si les sous-titres en français ne sont pas activés sur la vidéo, cliquez sur l'icône <b>réglages</b> en bas de la vidéo, puis sur <b>subtitles</b> et choisissez <b>français ☕️</b></p>",
-                  "id": "vkjbI6AXJxO63",
-                  "tagName": "mj-text"
-                }
-              ],
-              "id": "RXBhR5UQ8BtYn",
-              "tagName": "mj-column"
-            }
-          ],
-          "id": "gWEEncqF11eLg",
-          "tagName": "mj-section"
-        }
-      ],
-      "id": "KZhILpA6q8ncc",
-      "tagName": "mj-body"
-    }
-  ],
-  "id": "wUDblFqYt6GDi",
-  "tagName": "mjml"
-}
+<mjml owa="desktop" version="4.6.3">
+  <mj-body background-color="#ffffff" color="#000000">
+    <mj-section>
+      <mj-column>
+        <mj-text font-size="14px" line-height="1.8">
+          <p>Bonjour {{var:firstName:"Marie"}},</p>
+          <p>J'ai lu un article hier et j'avais envie de vous le partager.</p>
+          <p>Je sais que vous cherchez ce poste pour la première fois, et souvent c'est un moment où la question <b>"que veux-tu faire ?"</b> prend beaucoup de place. Nicolas Galita du blog <a target="_blank" href="http://dessinetoiunemploi.com/ne-vous-demandez-plus-ce-que-vous-voulez-faire/">Dessine-moi un emploi</a> propose une alternative à cette question pour voir plus loin et construire son parcours : <b>“qui veux-tu être ?”</b></p>
+        </mj-text>
+        <mj-text font-size="14px" line-height="1.8">
+          <p>J'espère que cet article vous inspirera ✨</p>
+          <p>À très vite,</p>
+          <p>{{var:senderName}}</p>
+        </mj-text>
+        <mj-image align="left" alt="" border="none" height="auto" src="{{var:productLogoUrl}}" target="_blank" width="102px"/>
+        <mj-text>
+          PS : Je vous ai surligné quelques passages que je trouve intéressants 🖍
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-text font-size="11px" color="#55575d" line-height="2">Vous recevez cet email car vous êtes inscrit{%if var:gender:""=="FEMININE"%}e{%elseif var:gender:""=="MASCULINE"%}{%else%}·e{%endif%} sur <a href="{{var:baseUrl}}?utm_source=bob-emploi&amp;utm_medium=email" target="_blank">{{var:productName}}</a> et avez demandé des emails de coaching. <a href="{{var:changeEmailSettingsUrl}}" target="_blank">Cliquez ici</a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte {{var:productName}} en veille ? <a href="{{var:statusUpdateUrl}}" target="_blank">cliquez ici</a>.</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column>
+        <mj-divider border-color="#000000" border-style="solid" border-width="2px" padding="10px 25px" width="100%"></mj-divider>
+        <mj-text color="#5e5d5d" font-size="14px" line-height="22px">
+          <p style="font-size:18px;font-weight:bold">Arrêtez de vous demander ce que vous voulez faire</p>
+          <p>S'il y a une question angoissante c'est bien : « qu'est ce que tu veux faire ? » Je vous avais d'ailleurs donné <a target="_blank" style="color:inherit" href="http://dessinetoiunemploi.com/comment-trouver-sa-voie-professionnelle-en-trois-questions/">une manière de la résoudre en 3 questions dans cet article.</a></p>
+          <p>Et si au lieu de se demander ce que l'on veut faire, on se demandait ce que l'on veut être ?</p>
+        </mj-text>
+        <mj-text color="#5e5d5d" font-size="14px" line-height="22px">
+          <p style="font-size:18px;font-weight:bold">D'habitude on se demande ce que l'on a fait</p>
+          <p>La plupart du temps, quand on cherche à s'orienter professionnellement, on a le réflexe de regarder <b>ce que l'on a fait avant.</b> Soit durant ses études, soit durant son parcours professionnel. Le CV est d'ailleurs un témoin de cette manière de penser. En effet, le curriculum vitae c'est en latin le chemin de vie.</p>
+        </mj-text>
+        <mj-image align="center" alt="http://dessinetoiunemploi.com/ne-vous-demandez-plus-ce-que-vous-voulez-faire/" border="none" height="auto" href="" padding="10px 25px" src="https://t.bob-emploi.fr/tplimg/6u2u/b/jlim/2tixq.jpeg" target="_blank" title="" width="640px"></mj-image>
+        <mj-text color="#5e5d5d" font-size="14px" line-height="22px">
+          <p>Le CV est donc là pour résumer un chemin qui a <b>déjà</b> été parcouru. Et, à part éventuellement dans son titre, on n'y dit pas le chemin que l'on <b>aimerait</b> parcourir. <span style="background-color:#fff025">On se focalise donc sur ce que l'on a fait ces dernières années plutôt que sur ce que l'on compte faire les prochaines années</span></p>.
+          <p>Le problème c'est que c'est structurellement une dynamique linéaire et figée. <b>Le passé prend l'avenir en otage.</b> D'ailleurs, c'est ce que l'on retrouve dans <a target="_blank" style="color:inherit; font-size:14px" href="http://dessinetoiunemploi.com/sept-bonnes-raisons-de-ne-pas-repondre-aux-offres-demploi/">les offres d'emploi</a>. Les employeurs précisent régulièrement vouloir des gens qui ont par exemple 4 ans d'expérience dans tel ou tel secteur. Avec évidemment un paradoxe : il faut bien un moment où on n'a pas d'expérience. Vous savez, c'est un peu le syndrome de la boîte de nuit. <b>On ne vous laisse pas rentrer car vous n'êtes pas un habitué mais comment devenir un habitué si l'on ne vous laisse jamais rentrer ?</b></p>
+          <p>Et ça a des conséquences très concrètes et très violentes. D'une part, il est extrêmement compliqué de rentrer sur le marché du travail pour son premier emploi. D'autre part, il est tout aussi compliqué de se reconvertir. Imaginez que vous avez été commercial{%if var:gender:""=="FEMININE"%}e{%endif%} pendant vos 3 premières années. Et que vous avez envie de vous reconvertir dans la finance. Vous allez vous retrouver devant des recruteurs qui vont vous faire parler de vos expériences passées. Si bien que vous n'aurez pas forcément l'occasion d'expliquer pourquoi vous voulez changer de voie.</p>
+        </mj-text>
+        <mj-text color="#5e5d5d" font-size="14px" line-height="22px">
+          <p style="font-size:18px;font-weight:bold">Faut-il plutôt se demander ce qu'on VA faire ?</p>
+          <p>On l'a compris : se fonder sur ce que l'on a fait pour s'orienter est la meilleure manière de s'enfermer malgré soi dans une voie figée. La solution serait-elle donc alors de se demander plutôt ce que l'on VA faire ?</p>
+          <p>C'est déjà mieux, effectivement. Du coup, on part d'un rêve, d'une envie ou de la voie que les autres nous ont présenté comme raisonnable pour s'orienter. Pourtant, c'est généralement un exercice très compliqué. <b>Tellement compliqué que beaucoup de gens sont pris d'angoisse rien que d'y penser.</b> Tellement compliqué que beaucoup de gens suivent la voie que d'autres ont tracé pour eux, sans jamais la remettre en question.</p>
+        </mj-text>
+        <mj-image align="center" alt="http://dessinetoiunemploi.com/ne-vous-demandez-plus-ce-que-vous-voulez-faire/" border="none" height="auto" href="" padding="10px 25px" src="https://t.bob-emploi.fr/tplimg/6u2u/b/jlim/2tix7.jpeg" target="_blank" title="" width="640px"></mj-image>
+        <mj-text color="#5e5d5d" font-size="14px" line-height="22px">
+          <p>C'est ce que j'appelle le syndrome du consultant : tous ces gens autour de moi qui ont été happés par une voie tracée. À la fin de leur terminale on les a envoyé en S car ils étaient bons en mathématiques. Puis on les a envoyé en classe préparatoire après le bac. Puis ils se sont retrouvés en école de commerce ou d'ingénieur. Et enfin, consultant ou auditeur. Ce ne serait pas un problème s'ils aimaient ça. Mais je n'ai jamais rencontré quelqu'un qui aimait sincèrement et fondamentalement (sans se mentir à soi-même) être consultant ou auditeur. Probablement que ces gens existent, mais ils n'ont jamais croisé ma route.</p>
+          <p>D'étapes en étapes, ils finissent piégés dans un métier qu'ils n'aiment pas alors qu'ils ont toutes les capacités pour faire à peu près ce qu'ils veulent. Mais pour ça il faut à un moment se poser la question de son chemin professionnel.</p>
+          <p><b>Pourquoi est-ce si compliqué de se demander ce qu'on veut faire ? Parce que c'est une très mauvaise question.</b> Il existe trop de métiers, trop de choses que l'on peut faire. Et personne n'a jamais vibré pour ce qu'il fait. C'est trop terre-à-terre. En vérité, <span style="background-color:#fff025">on vibre à des niveaux plus conceptuels. On vibre pour ce que l'on veut être.</span></p>
+        </mj-text>
+        <mj-text color="#5e5d5d" font-size="14px" line-height="22px">
+          <p style="font-size:18px;font-weight:bold">Se demander ce que l'on veut ÊTRE</p>
+          <p>Au moment où je vous écris je suis formateur et blogueur en recrutement et blogueur. Or, si je suis la logique précédente de se demander ce qu'on veut faire, je serais tenté de répondre :</p>
+          <ul>
+            <li><i>Je veux continuer à écrire des articles</i>. Et à désirer des voies où je peux le faire : le journalisme par exemple.</li>
+            <li>De la même manière, je serais tenté tenté de me dire : <i>Je veux continuer à donner des cours</i>. Et à viser des métiers où c'est le cas : professeur par exemple.</li>
+          </ul>
+          <p><b>Pourtant, la vraie question c'est ce que je suis/deviens en faisant ce que je fais.</b> C'est d'ailleurs ce qui lie mes deux activités. Qu'est-ce que je fais ? Deux choses différentes : de la formation et de l'écriture d'article. Qu'est-ce que je suis ? Une seule chose : <b>je suis quelqu'un qui cherche à transmettre de la connaissance et de l'enthousiasme à des adultes.</b></p>
+          <p>Si jamais je raisonnais en termes de ce que je fais et veux faire, on pourrait croire que le métier de professeur des lycées est une suite logique au métier de formateur. Davantage que blogueur. De la même manière, on pourrait croire que le métier de journaliste dans un quotidien régional est une suite logique au métier de blogueur. Davantage que formateur.</p>
+          <p>Mais si on raisonne en termes de ce que je suis et de ce que je deviens en le faisant, on comprend pourquoi je ne veux pas être professeur des lycées : j'aime enseigner à des adultes. On comprend également pourquoi je ne veux pas être journaliste dans un quotidien : ce que j'aime transmettre c'est la connaissance et l'enthousiasme et non pas l'actualité.</p>
+          <p><b>Et la question « que voulez-vous être ? » est bien plus profonde. </b>Elle est plus compliquée que « que voulez-vous faire ? » car elle demande d'aller chercher la réponse au fond de soi et de s'émanciper des parasites (comme le regard des autres). Mais elle est aussi moins compliquée car justement la réponse est en vous et indépendante des contraintes extérieures.</p>
+          <p><span style="background-color:#fff025">Il est plus simple de partir de soi et ensuite de voir comment cela se traduit dans le monde extérieur.</span> Plutôt que de partir du monde extérieur pour voir comment cela se traduit en soi.</p>
+          <p>Imaginez quelqu'un qui, enfant, veut devenir chanteur. S'il se focalise sur ce qu'il veut faire (de la chanson) et qu'il échoue, il est probable qu'il soit complètement désoeuvré. Imaginons maintenant qu'il se pose la question de ce qu'il veut être en chantant.</p>
+          <p style="font-style: italic">Je veux être celui qui provoque de l'émerveillement avec du beau dans la vie des gens</p>
+          <p>Et bien, il existe plusieurs métiers qui lui permettront de l'être, sans forcément chanter. Designer ou architecte par exemple. Mais un même enfant qui veut faire chanteur pourra avoir une raison d'être radicalement différente :</p>
+          <p style="font-style: italic">Je veux être celui qui est au centre de l'attention d'un public</p>
+          <p>Dans ce cas, il pourrait le retrouver dans des métiers comme enseignant, formateur, conférencier, etc.</p>
+        </mj-text>
+        <mj-text color="#5e5d5d" font-size="14px" line-height="22px">
+          <p style="font-size:18px;font-weight:bold">Posez-vous la question</p>
+          <p>Le plus simple pour savoir ce que l'on veut être c'est d'essayer de se rappeler de tous les moments de sa vie où on s'est senti bien en faisant ce qu'on faisait.</p>
+          <p>Puis de se demander <b>pourquoi on a aimé ce que l'on faisait.</b> Par exemple, j'ai toujours adoré faire des présentations orales et faire des rapports de stage (ce que mes camarades détestaient). Pourquoi ? Parce que c'était aligné avec ce que j'aimais être : quelqu'un qui transmet de la connaissance.</p>
+          <p>Vous aimez écrire ? Pourquoi ? Parce que vous aimez être celui ou celle qui transmet des histoires qui font voyager l'imaginaire ? Ou parce que vous aimez être celui ou celle qui partage son expertise ? Dans les deux cas vous faites la même chose : écrire, mais vous n'êtes pas la même chose.</p>
+        </mj-text>
+        <mj-text color="#5e5d5d" font-size="14px" line-height="22px">
+          <p style="font-size:18px;font-weight:bold">Et vous, vous aimez être quoi ?</p>
+          <p>J'ai eu l'inspiration de cet article en regardant <a target="_blank" rel="noFollow " href="https://www.youtube.com/watch?v=wfNX1cHk-fE">cette vidéo</a>. Je vous invite à la regarder vous aussi 😊</p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column>
+        <mj-image align="center" alt="Trouvez le travail de vos rêves sans regarder votre CV" border="none" height="auto" href="https://www.youtube.com/watch?v=wfNX1cHk-fE" padding="10px 25px" src="https://t.bob-emploi.fr/tplimg/6u2u/b/jlim/2tv84.png" target="_blank" title="" width="1200px"></mj-image>
+        <mj-text align="left" color="#55575d" font-family="Arial, sans-serif" font-size="13px" letter-spacing="normal" line-height="24px" padding-bottom="0px" padding-top="0px" padding="10px 25px">
+          <p>Astuce 🇫🇷 Si les sous-titres en français ne sont pas activés sur la vidéo, cliquez sur l'icône <b>réglages</b> en bas de la vidéo, puis sur <b>subtitles</b> et choisissez <b>français ☕️</b></p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

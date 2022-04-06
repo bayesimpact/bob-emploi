@@ -1,6 +1,5 @@
 # Create a docker container with Mongo and a pre-populated database.
-# TODO(cyrille): When using latest, the gosu command times-out. Fix and uncap.
-FROM mongo:4.2
+FROM mongo:latest
 
 # Create the DB in /data/localdb, as usual path (/data/db is handled as a
 # volume and therefore is not persisted in the container).

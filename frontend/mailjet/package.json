@@ -10,15 +10,21 @@
   "module": "ESNext",
   "type": "module",
   "author": "Bayes Impact",
+  "funding": "https://www.helloasso.com/associations/bayes-impact-france/formulaires/5",
   "license": "ISC",
   "dependencies": {
+    "@types/js-beautify": "^1.x.x",
+    "@types/json-stable-stringify": "^1.x.x",
     "@types/mjml": "^4.x.x",
-    "@types/node": "^13.x.x",
-    "@types/node-mailjet": "3.3.4",
+    "@types/node": "^17.x.x",
+    "@types/node-mailjet": "3.3.8",
     "esm": "^3.2.25",
-    "mjml": "^4.8.1",
-    "node-mailjet": "3.3.1",
-    "ts-node": "^9.1.1",
+    "js-beautify": "^1.x.x",
+    "json2mjml": "^1.x.x",
+    "json-stable-stringify": "^1.x.x",
+    "mjml": "4.11.0",
+    "node-mailjet": "3.3.7",
+    "ts-node": "10.7.0",
     "typescript": "^4.1.5"
   }
 }

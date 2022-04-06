@@ -4,10 +4,9 @@ import datetime
 import unittest
 from unittest import mock
 
-import mongomock
-
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.asynchronous import clean_users
+from bob_emploi.frontend.server.asynchronous.test import asynchronous_test_case
 
 
 def _zulu_time_to_datetime(date: str) -> datetime.datetime:
@@ -15,15 +14,12 @@ def _zulu_time_to_datetime(date: str) -> datetime.datetime:
 
 
 @mock.patch('logging.info')
-class CleanUsersTestCase(unittest.TestCase):
+class CleanUsersTestCase(asynchronous_test_case.TestCase):
     """Unit tests for the module."""
 
     def setUp(self) -> None:
         super().setUp()
-        self._db = mongomock.MongoClient().test
-        patcher = mock.patch(clean_users.__name__ + '._DB', new=self._db)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        self._db = self._user_db
 
     def test_guest_user(self, mock_info: mock.MagicMock) -> None:
         """A guest user gets deleted."""

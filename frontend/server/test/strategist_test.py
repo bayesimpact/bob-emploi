@@ -1,7 +1,7 @@
 """Unit tests for the strategist module."""
 
 import json
-from typing import Any, Dict
+from typing import Any
 import unittest
 from unittest import mock
 
@@ -33,6 +33,7 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
                 'triggerScoringModel': 'constant(3)',
                 'title': 'Un titre',
                 'headerTemplate': 'Un template %inCity',
+                'actionIds': ['action-1', 'action-2'],
             },
             {
                 'categoryIds': ['stuck-market'],
@@ -48,7 +49,7 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
             },
             {
                 'adviceId': 'commute',
-                'headerTemplate': 'Vous devriez utiliser un commutateur',
+                'whyTemplate': 'Vous devriez utiliser un commutateur',
                 'strategyId': 'other-leads',
                 'teaserTemplate': 'Apprends à commuter',
             },
@@ -61,7 +62,7 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
                 'strategyId': 'application-method',
             },
         ])
-        self._db.translations.insert_many([
+        self.add_translations([
             {
                 'string': 'Vous devriez utiliser un commutateur',
                 'fr@tu': 'Tu devrais utiliser un commutateur',
@@ -70,11 +71,15 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
                 'string': 'strategyModules:application-method:description_template',
                 'fr': 'Vous êtes fait%eFeminine pour cette stratégie',
                 'fr@tu': 'Tu es fait%eFeminine pour cette stratégie',
-            }
+            },
+            {
+                'string': 'strategyModules:application-method:description_speech',
+                'fr': 'This is an\n\nimportant strategy',
+            },
         ])
         self.user_id, self.auth_token = self.authenticate_new_user_token(email='foo@bar.com')
         # Modify this user if you don't want them to get a strategy.
-        self.project: Dict[str, Any] = {
+        self.project: dict[str, Any] = {
             'advices': [{'adviceId': 'commute', 'numStars': 2}],
             'city': {'name': 'Toulouse'},
             'diagnostic': {
@@ -82,7 +87,7 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
                 'categories': [{'categoryId': 'stuck-market', 'relevance': 1}],
             },
         }
-        self.user_data: Dict[str, Any] = {
+        self.user_data: dict[str, Any] = {
             'userId': self.user_id,
             'profile': {
                 'email': 'foo@bar.com',
@@ -129,10 +134,11 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
         self.assertEqual(
             [{
                 'adviceId': 'commute',
-                'header': 'Tu devrais utiliser un commutateur',
+                'why': 'Tu devrais utiliser un commutateur',
                 'teaser': 'Apprends à commuter',
             }],
             strategy.get('piecesOfAdvice'))
+        self.assertEqual(['action-1', 'action-2'], strategy.get('actionIds'))
         self.assertFalse(user_info['featuresEnabled'].get('stratOne'))
 
     def test_get_strategy_in_other_category(self) -> None:
@@ -201,6 +207,7 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
             [s.get('piecesOfAdvice', [])[0].get('adviceId') for s in strategies])
         self.assertEqual(
             'Tu es faite pour cette stratégie', strategies[2].get('description'))
+        self.assertEqual('This is an\n\nimportant strategy', strategies[2].get('descriptionSpeech'))
         self.assertTrue(strategies[0].get('isPrincipal'))
         self.assertNotIn(True, [s.get('isPrincipal') for s in strategies[1:]])
 
@@ -217,7 +224,7 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
 
         user_id, auth_token = self.authenticate_new_user_token(email='foo@example.com')
         # Modify this user if you don't want them to get a strategy.
-        user_data: Dict[str, Any] = {
+        user_data: dict[str, Any] = {
             'userId': user_id,
             'profile': {
                 'email': 'foo@example.com',
@@ -251,10 +258,10 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
             'goal': 'planter des choux dans votre jardin',
             'strategyIds': ['other-leads']
         })
-        self._db.translations.insert_one({
+        self.add_translations([{
             'string': 'planter des choux dans votre jardin',
             'fr@tu': 'planter des choux dans ton jardin',
-        })
+        }])
         self.project['targetJob'] = {'jobGroup': {'romeId': 'A1234'}}
         self.project['advices'] = [
             {'adviceId': 'other-work-env'},

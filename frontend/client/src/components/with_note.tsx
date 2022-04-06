@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 import React from 'react'
 
 interface Props {
@@ -21,6 +20,17 @@ const noteStyleWithComment: React.CSSProperties = {
 }
 
 
+interface NoteProps {
+  children: React.ReactNode
+  id?: string
+}
+const NoteBase = ({children, id}: NoteProps): React.ReactElement => <div
+  style={noteStyleWithoutComment} id={id}>
+  {children}
+</div>
+export const Note = React.memo(NoteBase)
+
+
 const WithNote = (props: Props): React.ReactElement => {
   const {children, hasComment, note} = props
   const noteStyle = hasComment ? noteStyleWithComment : noteStyleWithoutComment
@@ -31,9 +41,5 @@ const WithNote = (props: Props): React.ReactElement => {
     </div>
   </div>
 }
-WithNote.propTypes = {
-  children: PropTypes.node,
-  hasComment: PropTypes.bool,
-  note: PropTypes.node.isRequired,
-}
 export default React.memo(WithNote)
+

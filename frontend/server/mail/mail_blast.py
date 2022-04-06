@@ -9,15 +9,16 @@ import datetime
 import hashlib
 import logging
 import re
-from typing import Iterable, List, Optional
+from typing import Iterable, Optional
 
 import requests
 
 from bob_emploi.common.python import now
-from bob_emploi.frontend.server import auth
+from bob_emploi.frontend.api import email_pb2
+from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.server import auth_token
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import proto
-from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server.asynchronous import report
 from bob_emploi.frontend.server.mail import mail_send
 from bob_emploi.frontend.server.mail import campaign
@@ -68,12 +69,12 @@ class EmailPolicy:
 
     def can_send(
             self, campaign_id: mailjet_templates.Id,
-            emails_sent: Iterable[user_pb2.EmailSent]) -> bool:
+            emails_sent: Iterable[email_pb2.EmailSent]) -> bool:
         """Check whether we can send this campaign to a user having the given sent emails."""
 
         for email in emails_sent:
             # If any sent mail have a status EMAIL_SENT_BOUNCE, do not send mails anymore.
-            if email.status in (user_pb2.EMAIL_SENT_BOUNCE, user_pb2.EMAIL_SENT_HARDBOUNCED):
+            if email.status in (email_pb2.EMAIL_SENT_BOUNCE, email_pb2.EMAIL_SENT_HARDBOUNCED):
                 return False
             # Do not send any new mail if we already sent recently.
             if email.sent_at.ToDatetime() > self.last_email_datetime:
@@ -120,14 +121,16 @@ def _hash_user_id(user_id: str) -> str:
 def blast_campaign(
         campaign_id: mailjet_templates.Id, action: 'campaign.Action',
         registered_from: str, registered_to: str,
-        dry_run_email: str, user_hash: str, user_id_start: str, email_policy: EmailPolicy) -> int:
+        dry_run_email: str, user_hash: str, user_id_start: str,
+        collection_prefix: str, email_policy: EmailPolicy, log_reason_on_error: bool) -> int:
     """Send a campaign of personalized emails."""
 
-    if action == 'send' and auth.SECRET_SALT == auth.FAKE_SECRET_SALT:
+    if action == 'send' and auth_token.SECRET_SALT == auth_token.FAKE_SECRET_SALT:
         raise ValueError('Set the prod SECRET_SALT env var before continuing.')
-    database, user_database, unused_ = mongo.get_connections_from_env()
+    database, user_database, eval_database = mongo.get_connections_from_env()
+    user_database = user_database.with_prefix(collection_prefix)
     this_campaign = campaign.get_campaign(campaign_id)
-    mongo_filters = dict(this_campaign.mongo_filters)
+    mongo_filters = dict(this_campaign.mongo_filters or {})
     mongo_filters['profile.email'] = {
         '$not': re.compile(r'@example.com$'),
         '$regex': re.compile(r'[^ ]+@[^ ]+\.[^ ]+'),
@@ -170,8 +173,10 @@ def blast_campaign(
 
         try:
             if not this_campaign.send_mail(
-                    user, database=database, users_database=user_database,
-                    action=action, dry_run_email=dry_run_email, now=now.get()):
+                    user,
+                    database=database, users_database=user_database, eval_database=eval_database,
+                    action=action, dry_run_email=dry_run_email, now=now.get(),
+                    should_log_errors=log_reason_on_error):
                 no_template_vars_count += 1
                 continue
         except requests.exceptions.HTTPError as error:
@@ -197,9 +202,15 @@ def blast_campaign(
     logging.info('%d users ignored because of emailing policy.', email_policy_rejections)
     logging.info('%d users ignored because of no template vars.', no_template_vars_count)
     if action == 'send':
+        campaign_url = this_campaign.get_sent_campaign_url()
+        if campaign_url:
+            campaign_url_message = \
+                f' You can check opening and click stats on <{campaign_url}|Mailjet>'
+        else:
+            campaign_url_message = ''
         report.notify_slack(
             f"Report for {campaign_id} blast: I've sent {email_count:d} emails (and got "
-            f'{email_errors:d} errors).')
+            f'{email_errors:d} errors).{campaign_url_message}')
     return email_count
 
 
@@ -210,7 +221,7 @@ def _date_from_today(absolute_date: str, num_days_ago: Optional[int]) -> str:
     return (now.get() - datetime.timedelta(days=num_days_ago)).strftime('%Y-%m-%d')
 
 
-def main(string_args: Optional[List[str]] = None) -> None:
+def main(string_args: Optional[list[str]] = None) -> None:
     """Parse command line arguments and send mails."""
 
     parser = argparse.ArgumentParser(
@@ -233,6 +244,9 @@ def main(string_args: Optional[List[str]] = None) -> None:
     parser.add_argument(
         '--user-id-start', help='Only send to users whose ID starts with this given hash. WARNING: \
         hash distribution is not uniform for old users, do not use this to get a sample.')
+    parser.add_argument(
+        '--user-collection-prefix', default='',
+        help='Send to users in the collection whose name is "{prefix}user"')
 
     registered_from_group = parser.add_mutually_exclusive_group()
     registered_from_group.add_argument(
@@ -265,6 +279,9 @@ def main(string_args: Optional[List[str]] = None) -> None:
         help="Must be smaller than --days-since-same-campaign. Users who received an email between \
         --days-since-same-campaign and --days-since-same-campaign-unread will only be sent a new \
         one if they haven't read it.")
+    parser.add_argument(
+        '--log-reason-on-error', action='store_true',
+        help='Show the reason why users are rejected from the blast')
     report.add_report_arguments(parser, setup_dry_run=False)
     args = parser.parse_args(string_args)
 
@@ -286,7 +303,9 @@ def main(string_args: Optional[List[str]] = None) -> None:
     logging.info('%d emails sent.', blast_campaign(
         args.campaign, args.action, registered_from, registered_to,
         dry_run_email=args.dry_run_email, user_id_start=args.user_id_start,
-        user_hash=args.user_hash, email_policy=policy))
+        user_hash=args.user_hash, email_policy=policy,
+        collection_prefix=args.user_collection_prefix,
+        log_reason_on_error=args.log_reason_on_error))
 
 
 if __name__ == '__main__':

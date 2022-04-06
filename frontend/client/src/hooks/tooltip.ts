@@ -1,13 +1,12 @@
 import _uniqueId from 'lodash/uniqueId'
-import React, {useCallback, useState} from 'react'
+import {useCallback, useEffect, useMemo, useState} from 'react'
 
-import {HoverAndFocusProps, useHoverAndFocus} from 'components/radium'
+import type {HoverAndFocusProps} from 'components/radium'
+import {useHoverAndFocus} from 'components/radium'
 
 
 interface TooltipProps<T> {
-  containerProps: HoverAndFocusProps<T> & {
-    onKeyDown: (event: React.KeyboardEvent<T>) => void
-  }
+  containerProps: HoverAndFocusProps<T>
   isShown: boolean
   tooltipProps: {
     'aria-hidden': boolean
@@ -17,27 +16,53 @@ interface TooltipProps<T> {
   triggerProps: {
     'aria-describedby': string
     'tabIndex': 0
+    'onClick': () => void
   }
 }
 
+interface Config {
+  'aria-describedby'?: string
+  isTriggeredByClick?: boolean
+}
 
-function useTooltip<T extends Element>(): TooltipProps<T> {
-  const [tooltipId] = useState(_uniqueId)
+function useTooltip<T extends Element>(config: Config = {}): TooltipProps<T> {
+  const {'aria-describedby': ariaDescribedby, isTriggeredByClick = false} = config
+  const tooltipId = useMemo(_uniqueId, [])
   const {isFocused, isHovered, ...handlers} = useHoverAndFocus()
 
-  // Hide the tooltip when pressing the Escape key.
-  const blurOnEscape = useCallback((event: React.KeyboardEvent<T>): void => {
-    if (isFocused && event.code === 'Escape') {
-      (event.target as HTMLElement)?.blur()
-    }
-  }, [isFocused])
+  const [isForcedShown, setIsForcedShown] = useState(false)
 
-  const isShown = isFocused || isHovered
+  // Hide the tooltip when pressing the Escape key.
+  useEffect(() => {
+    if (!(isForcedShown && isTriggeredByClick) && !isFocused) {
+      return () => void 0
+    }
+    const listener = (event: KeyboardEvent): void => {
+      if (event.code !== 'Escape') {
+        return
+      }
+      if (isForcedShown && isTriggeredByClick) {
+        setIsForcedShown(false)
+        return
+      }
+      if (isFocused) {
+        (event.target as HTMLElement)?.blur()
+      }
+    }
+    document.addEventListener('keydown', listener)
+    return () => document.removeEventListener('keydown', listener)
+  }, [isFocused, isForcedShown, isTriggeredByClick])
+
+  const handleClick = useCallback(() => {
+    if (!isTriggeredByClick) {
+      return
+    }
+    setIsForcedShown((wasForcedShown) => !wasForcedShown)
+  }, [isTriggeredByClick])
+
+  const isShown = (isTriggeredByClick ? isForcedShown : isFocused) || isHovered
   return {
-    containerProps: {
-      ...handlers,
-      onKeyDown: blurOnEscape,
-    },
+    containerProps: handlers,
     isShown,
     tooltipProps: {
       'aria-hidden': !isShown,
@@ -45,7 +70,8 @@ function useTooltip<T extends Element>(): TooltipProps<T> {
       'role': 'tooltip',
     },
     triggerProps: {
-      'aria-describedby': tooltipId,
+      'aria-describedby': ariaDescribedby ? `${ariaDescribedby} ${tooltipId}` : tooltipId,
+      'onClick': handleClick,
       'tabIndex': 0,
     },
   }

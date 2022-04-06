@@ -1,0 +1,18 @@
+{
+  "resolve": {
+    "alias": {
+      "components": "/usr/app/src/components",
+      "images": "/usr/app/src/images",
+      "pages": "/usr/app/src/pages",
+      "store": "/usr/app/src/store",
+      "styles": "/usr/app/src/styles"
+    },
+    "extensions": [
+      ".js",
+      ".jsx",
+      ".ts",
+      ".tsx",
+      "_pb.ts"
+    ]
+  }
+}

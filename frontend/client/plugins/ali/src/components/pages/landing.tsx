@@ -4,16 +4,17 @@ import {useDispatch, useSelector} from 'react-redux'
 import useFastForward from 'hooks/fast_forward'
 
 import ExternalLink from 'components/external_link'
-import FieldSet from 'components/field_set'
+import {OneField} from 'components/field_set'
 import Input from 'components/input'
 import LabeledToggle from 'components/labeled_toggle'
-import {CitySuggest} from 'components/suggestions'
+import CityInput from 'components/city_input'
 import {Styles} from 'components/theme'
 import aliLogo from '../../images/logo-ali.svg'
 
 import Button from '../button'
 import GenericPage from '../page'
-import {DispatchActions, MiniRootState, OrgInfo, Routes} from '../../store'
+import type {DispatchActions, MiloCity, MiniRootState, OrgInfo} from '../../store'
+import {Routes} from '../../store'
 
 
 const fullPageStyle: React.CSSProperties = {
@@ -69,11 +70,11 @@ const linkStyle: React.CSSProperties = {
   cursor: 'pointer',
 }
 
-const aliGuideURL = 'https://www.unml.info/assets/files/espace-docu-ml/A-Li/unml_a-li_guide_a4_def.pdf'
+const aliGuideURL = 'https://www.unml.info/assets/files/espace-docu-ml/A-Li/unml_a-li_guide_a4_def.pdf' // checkURL
 
 const LandingPage = (): React.ReactElement => {
   const {orgInfo, isUserSupervised: wasUserSupervised} = useSelector(({app}: MiniRootState) => app)
-  const {advisor, city, email, milo} = orgInfo
+  const {advisor, email, milo} = orgInfo
   const dispatch = useDispatch<DispatchActions>()
   const [isUserSupervised, setIsUserSupervised] = useState(wasUserSupervised)
   const changeSupervision = useCallback(
@@ -89,14 +90,12 @@ const LandingPage = (): React.ReactElement => {
         type: 'MINI_UPDATE_ORG_INFO',
       })
     }, [dispatch])
-  const onCityChange = useCallback((city: bayes.bob.FrenchCity|null): void => {
-    if (!city) {
+  const onMiloChange = useCallback((milo?: MiloCity): void => {
+    if (!milo) {
       return
     }
     dispatch({
-      orgInfo: {
-        ['city']: city,
-      },
+      orgInfo: {milo},
       type: 'MINI_UPDATE_ORG_INFO',
     })
   }, [dispatch])
@@ -108,22 +107,21 @@ const LandingPage = (): React.ReactElement => {
       onChange('email')('pascal@example.com')
     }
     if (!milo) {
-      onChange('milo')('Lyon Part-Dieu')
+      onMiloChange({departementId: '69', name: 'Lyon Part-Dieu'})
     }
-    if (!city) {
-      onCityChange({cityId: '69123', departementId: '69', name: 'Lyon'})
-    }
-  }, [advisor, city, email, milo, onChange, onCityChange])
+  }, [advisor, email, milo, onChange, onMiloChange])
   const skipLanding = useCallback(
     (): void => void dispatch(
       {isUserSupervised: !!isUserSupervised, type: 'MINI_ONBOARDING_FINISH_LANDING'}),
     [dispatch, isUserSupervised])
-  const isFormFull = advisor && milo && city && email
+  const isFormFull = advisor && milo && email
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useFastForward(isFormFull ? skipLanding : fillForm, [], isFormFull ? Routes.HUB_PAGE : undefined)
-  return <GenericPage bottomButton={
+  // TODO(sil): Restrict milo search to a relevant subset.
+  return <GenericPage hasLargeDecoration={true} bottomButton={
     <Button
-      to={isUserSupervised ? Routes.HUB_PAGE : Routes.USER_LANDING_PAGE} onClick={skipLanding}>
+      to={isUserSupervised ? Routes.HUB_PAGE : Routes.USER_LANDING_PAGE} onClick={skipLanding}
+      disabled={!milo}>
       Commencez A-Li
     </Button>}>
     <div style={fullPageStyle}>
@@ -144,21 +142,23 @@ const LandingPage = (): React.ReactElement => {
           </ExternalLink>
         </p>
         <p style={descriptionStyle}>Pour vous identifier&nbsp;:</p>
-        <FieldSet label="Nom du conseiller" style={questionStyle}>
-          <Input style={questionFontSize} value={advisor} onChange={onChange('advisor')} />
-        </FieldSet>
-        <FieldSet label="Adresse email du conseiller" style={questionStyle}>
-          <Input style={questionFontSize} value={email} onChange={onChange('email')} />
-        </FieldSet>
-        <FieldSet label="Nom de la Mission Locale" style={questionStyle}>
-          <Input style={questionFontSize} value={milo} onChange={onChange('milo')} />
-        </FieldSet>
-        <FieldSet label="Nom de la ville" style={questionStyle}>
-          <CitySuggest
-            onChange={onCityChange}
+        <OneField label="Nom du conseiller" style={questionStyle}>
+          <Input
+            style={questionFontSize} value={advisor} onChange={onChange('advisor')}
+            name="name" autoComplete="name" />
+        </OneField>
+        <OneField label="Adresse email du conseiller" style={questionStyle}>
+          <Input
+            style={questionFontSize} value={email} onChange={onChange('email')}
+            name="email" autoComplete="email" />
+        </OneField>
+        <OneField label="Nom de la Mission Locale" style={questionStyle} isValid={!!milo}>
+          <CityInput
+            algoliaIndex="milo"
+            onChange={onMiloChange}
             style={{padding: 1, ...Styles.INPUT}}
-            value={city} />
-        </FieldSet>
+            value={milo} />
+        </OneField>
         <LabeledToggle
           type="checkbox" isSelected={isUserSupervised} onClick={changeSupervision}
           style={additionalQuestiontyle}

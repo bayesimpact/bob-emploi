@@ -1,0 +1,26 @@
+<mjml owa="desktop" version="4.6.3">
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-text line-height="1.38">Hello !</mj-text>
+        <mj-text line-height="1.38">
+          <p>Il y a une semaine je vous ai demandé votre avis sur <b>Jobflix</b>. Je vous envoie ce petit rappel : si vous n'avez toujours pas répondu — vous avez une chance de gagner un bon d'achat de 50 € pour le magasin de votre choix (tirage au sort parmi tous les répondants) en répondant à ce petit sondage (en deux petites minutes) !</p>
+          <p>Mais vous n'avez qu'une semaine de plus pour répondre - <b>on ferme le sondage {{var:closingDate:"mercredi 23 mars"}}</b> du coup c'est le moment !</p>
+        </mj-text>
+        <mj-button align="center" background-color="#58BBFB" border-radius="100px" border="none" color="#ffffff" container-background-color="transparent" font-family="Ubuntu, Helvetica, Arial, sans-serif" font-size="13px" font-weight="normal" href="https://www.surveymonkey.com/r/TKWMJWB" inner-padding="10px 25px" padding-bottom="20px" padding-left="25px" padding-right="25px" padding-top="20px" padding="10px 25px" text-decoration="none" text-transform="none" vertical-align="middle">Donner mon avis</mj-button>
+        <mj-text line-height="1.38">
+          <p>À bientôt</p>
+          <p>{{var:senderName}}</p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column>
+        <mj-divider border-color="#E9EBF0" border-style="solid" border-width="1px" container-background-color="transparent" width="100%"/>
+        <mj-text color="#9596a0" font-size="13px" line-height="22px">
+          <i>Ce message vous a été envoyé à la suite du recueil de vos données sur {{var:productName}}. La fréquence des envois est limitée, mais peut être plus importante en fonction de l'action de l'association. Vous avez la possibilité d'exercer vos droits d'accès, de rectification et de suppression en écrivant à l'adresse suivante : donnees@bob-emploi.fr.</i>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

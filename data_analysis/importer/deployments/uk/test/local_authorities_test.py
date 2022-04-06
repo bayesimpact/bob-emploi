@@ -19,7 +19,7 @@ class LocalAuthoritiesTestCase(unittest.TestCase):
         found_las = dict(mongo.collection_to_proto_mapping(
             local_authorities.csv2dicts(self.testdata_wards), geo_pb2.Departement))
 
-        self.assertEqual(5, len(found_las), msg=found_las.keys())
+        self.assertEqual(6, len(found_las), msg=found_las.keys())
         # Point check.
         barking = found_las['E09000002']
         self.assertEqual('Barking and Dagenham', barking.name, msg=barking)

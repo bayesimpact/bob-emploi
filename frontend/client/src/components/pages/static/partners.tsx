@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 import React from 'react'
 import {useTranslation} from 'react-i18next'
 
@@ -23,62 +22,62 @@ const partners = [
   {
     image: sncImage,
     name: 'SNC',
-    url: 'https://snc.asso.fr/',
+    url: 'https://snc.asso.fr/', // checkURL
   },
   {
     image: waltImage,
     name: 'Walt',
-    url: 'https://walt.community/home-alternant',
+    url: 'https://walt.community/home-alternant', // checkURL
   },
   {
     image: tousBenevolesImage,
     name: 'Tous bénévoles',
-    url: 'https://www.tousbenevoles.org/',
+    url: 'https://www.tousbenevoles.org/', // checkURL
   },
   {
     image: viensVoirMonTafImage,
     name: 'Viens voir mon taf',
-    url: 'https://www.viensvoirmontaf.fr/',
+    url: 'https://www.viensvoirmontaf.fr/', // checkURL
   },
   {
     image: hanploiImage,
     name: 'Hanploi',
-    url: 'https://www.hanploi.com/',
+    url: 'https://www.hanploi.com/', // checkURL
   },
   {
     image: laBonneBoiteImage,
     name: 'La Bonne Boîte',
-    url: 'https://labonneboite.pole-emploi.fr/',
+    url: 'https://labonneboite.pole-emploi.fr/', // checkURL
   },
   {
     image: laBonneAlternanceImage,
     name: 'La Bonne Alternance',
-    url: 'https://labonnealternance.pole-emploi.fr/',
+    url: 'https://labonnealternance.pole-emploi.fr/', // checkURL
   },
   {
     image: avrilImage,
     name: 'Avril la VAE facile',
-    url: 'https://avril.pole-emploi.fr/',
+    url: 'https://avril.pole-emploi.fr/', // checkURL
   },
   {
     image: adieImage,
     name: "l'ADIE",
-    url: 'https://www.adie.org/',
+    url: 'https://www.adie.org/', // checkURL
   },
   {
     image: missionLocaleEpinaySurSeineImage,
     name: 'Mission locale Épinay-sur-Seine',
-    url: 'http://www.miij.fr/',
+    url: 'http://www.miij.fr/', // checkURL
   },
   {
     image: joobleImage,
     name: 'Jooble',
-    url: 'https://fr.jooble.org',
+    url: 'https://fr.jooble.org', // checkURL
   },
   {
     image: parcoursHandicapImage,
     name: 'Mon parcours handicap',
-    url: 'https://www.monparcourshandicap.gouv.fr',
+    url: 'https://www.monparcourshandicap.gouv.fr', // checkURL
   },
 ]
 
@@ -109,10 +108,6 @@ const PartnerCardBase = ({image, name, url}: PartnerProps): React.ReactElement =
   <ExternalLink style={partnerCardContainerStyle} href={url}>
     <img src={image} alt={name} title={name} style={parnerCardImgStyle} />
   </ExternalLink>
-PartnerCardBase.propTypes = {
-  image: PropTypes.string.isRequired,
-  name: PropTypes.string.isRequired,
-}
 const PartnerCard = React.memo(PartnerCardBase)
 
 

@@ -1,0 +1,472 @@
+{
+  "alternance": {
+    "goal": "alternance:goal",
+    "resourceTheme": "training-skills",
+    "shortTitle": "alternance:short_title",
+    "staticExplanations": "alternance:static_explanations",
+    "title": "alternance:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "alternance:user_gain_details"
+  },
+  "association-help": {
+    "goal": "association-help:goal",
+    "resourceTheme": "job-search",
+    "shortTitle": "association-help:short_title",
+    "staticExplanations": "association-help:static_explanations",
+    "title": "association-help:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "association-help:user_gain_details"
+  },
+  "better-job-in-group": {
+    "goal": "better-job-in-group:goal",
+    "resourceTheme": "job-search",
+    "shortTitle": "better-job-in-group:short_title",
+    "staticExplanations": "better-job-in-group:static_explanations",
+    "title": "better-job-in-group:title",
+    "titleXStars": {
+      "1": "better-job-in-group:title_1_star",
+      "2": "better-job-in-group:title_2_stars",
+      "3": "better-job-in-group:title_3_stars"
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "better-job-in-group:user_gain_details"
+  },
+  "body-language": {
+    "goal": "body-language:goal",
+    "resourceTheme": "training-skills",
+    "shortTitle": "body-language:short_title",
+    "staticExplanations": "body-language:static_explanations",
+    "title": "body-language:title",
+    "titleXStars": {
+      "1": "body-language:title_1_star",
+      "2": "body-language:title_2_stars",
+      "3": "body-language:title_3_stars"
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "body-language:user_gain_details"
+  },
+  "civic-service": {
+    "goal": "civic-service:goal",
+    "resourceTheme": "choosing-a-job",
+    "shortTitle": "civic-service:short_title",
+    "staticExplanations": "civic-service:static_explanations",
+    "title": "civic-service:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "civic-service:user_gain_details"
+  },
+  "commute": {
+    "goal": "commute:goal",
+    "resourceTheme": "job-search",
+    "shortTitle": "commute:short_title",
+    "staticExplanations": "commute:static_explanations",
+    "title": "commute:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "+15%",
+    "userGainDetails": "commute:user_gain_details"
+  },
+  "create-your-company": {
+    "goal": "create-your-company:goal",
+    "resourceTheme": "job-search",
+    "shortTitle": "create-your-company:short_title",
+    "staticExplanations": "create-your-company:static_explanations",
+    "title": "create-your-company:title",
+    "titleXStars": {
+    },
+    "userGainDetails": "create-your-company:user_gain_details"
+  },
+  "driving-license-euro": {
+    "goal": "driving-license-euro:goal",
+    "resourceTheme": "training-skills",
+    "shortTitle": "driving-license-euro:short_title",
+    "staticExplanations": "driving-license-euro:static_explanations",
+    "title": "driving-license-euro:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "driving-license-euro:user_gain_details"
+  },
+  "driving-license-low-income": {
+    "goal": "driving-license-low-income:goal",
+    "resourceTheme": "training-skills",
+    "shortTitle": "driving-license-low-income:short_title",
+    "staticExplanations": "driving-license-low-income:static_explanations",
+    "title": "driving-license-low-income:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "driving-license-low-income:user_gain_details"
+  },
+  "driving-license-written": {
+    "goal": "driving-license-written:goal",
+    "resourceTheme": "training-skills",
+    "shortTitle": "driving-license-written:short_title",
+    "staticExplanations": "driving-license-written:static_explanations",
+    "title": "driving-license-written:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "driving-license-written:user_gain_details"
+  },
+  "events": {
+    "goal": "events:goal",
+    "resourceTheme": "job-search",
+    "shortTitle": "events:short_title",
+    "staticExplanations": "events:static_explanations",
+    "title": "events:title",
+    "titleXStars": {
+      "1": "events:title_1_star",
+      "2": "events:title_2_stars",
+      "3": "events:title_3_stars"
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "events:user_gain_details"
+  },
+  "explore-other-jobs": {
+    "goal": "explore-other-jobs:goal",
+    "resourceTheme": "choosing-a-job",
+    "shortTitle": "explore-other-jobs:short_title",
+    "title": "explore-other-jobs:title",
+    "titleXStars": {
+    }
+  },
+  "explore-safe-jobs": {
+    "goal": "explore-safe-jobs:goal",
+    "shortTitle": "explore-safe-jobs:short_title",
+    "staticExplanations": "explore-safe-jobs:static_explanations",
+    "title": "explore-safe-jobs:title",
+    "titleXStars": {
+    }
+  },
+  "find-a-jobboard": {
+    "goal": "find-a-jobboard:goal",
+    "resourceTheme": "job-search",
+    "shortTitle": "find-a-jobboard:short_title",
+    "staticExplanations": "find-a-jobboard:static_explanations",
+    "title": "find-a-jobboard:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "30 min",
+    "userGainDetails": "find-a-jobboard:user_gain_details"
+  },
+  "follow-up": {
+    "goal": "follow-up:goal",
+    "resourceTheme": "job-application",
+    "shortTitle": "follow-up:short_title",
+    "staticExplanations": "follow-up:static_explanations",
+    "title": "follow-up:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "follow-up:user_gain_details"
+  },
+  "fresh-resume": {
+    "goal": "fresh-resume:goal",
+    "resourceTheme": "job-application",
+    "shortTitle": "fresh-resume:short_title",
+    "staticExplanations": "fresh-resume:static_explanations",
+    "title": "fresh-resume:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "fresh-resume:user_gain_details"
+  },
+  "immersion": {
+    "goal": "immersion:goal",
+    "resourceTheme": "choosing-a-job",
+    "shortTitle": "immersion:short_title",
+    "staticExplanations": "immersion:static_explanations",
+    "title": "immersion:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "+15%",
+    "userGainDetails": "immersion:user_gain_details"
+  },
+  "immersion-milo": {
+    "goal": "immersion-milo:goal",
+    "resourceTheme": "choosing-a-job",
+    "shortTitle": "immersion-milo:short_title",
+    "staticExplanations": "immersion-milo:static_explanations",
+    "title": "immersion-milo:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "+15%",
+    "userGainDetails": "immersion-milo:user_gain_details"
+  },
+  "improve-interview": {
+    "goal": "improve-interview:goal",
+    "resourceTheme": "job-application",
+    "shortTitle": "improve-interview:short_title",
+    "staticExplanations": "improve-interview:static_explanations",
+    "title": "improve-interview:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "4x",
+    "userGainDetails": "improve-interview:user_gain_details"
+  },
+  "improve-resume": {
+    "goal": "improve-resume:goal",
+    "resourceTheme": "job-application",
+    "shortTitle": "improve-resume:short_title",
+    "staticExplanations": "improve-resume:static_explanations",
+    "title": "improve-resume:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "improve-resume:user_gain_details"
+  },
+  "jobflix": {
+    "goal": "jobflix:goal",
+    "shortTitle": "jobflix:short_title",
+    "title": "jobflix:title",
+    "titleXStars": {
+    }
+  },
+  "less-applications": {
+    "goal": "less-applications:goal",
+    "resourceTheme": "job-application",
+    "shortTitle": "less-applications:short_title",
+    "staticExplanations": "less-applications:static_explanations",
+    "title": "less-applications:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "-80%",
+    "userGainDetails": "less-applications:user_gain_details"
+  },
+  "life-balance": {
+    "goal": "life-balance:goal",
+    "resourceTheme": "job-search",
+    "shortTitle": "life-balance:short_title",
+    "staticExplanations": "life-balance:static_explanations",
+    "title": "life-balance:title",
+    "titleXStars": {
+      "1": "life-balance:title_1_star",
+      "2": "life-balance:title_2_stars",
+      "3": "life-balance:title_3_stars"
+    },
+    "userGainCallout": "🤗🤗🤗",
+    "userGainDetails": "life-balance:user_gain_details"
+  },
+  "long-term-mom": {
+    "goal": "long-term-mom:goal",
+    "resourceTheme": "diversity-inclusion",
+    "shortTitle": "long-term-mom:short_title",
+    "title": "long-term-mom:title",
+    "titleXStars": {
+    }
+  },
+  "motivation-email": {
+    "goal": "motivation-email:goal",
+    "resourceTheme": "job-application",
+    "shortTitle": "motivation-email:short_title",
+    "staticExplanations": "motivation-email:static_explanations",
+    "title": "motivation-email:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "motivation-email:user_gain_details"
+  },
+  "needs-for-handicap": {
+    "goal": "needs-for-handicap:goal",
+    "resourceTheme": "diversity-inclusion",
+    "shortTitle": "needs-for-handicap:short_title",
+    "title": "needs-for-handicap:title",
+    "titleXStars": {
+    },
+    "userGainDetails": "needs-for-handicap:user_gain_details"
+  },
+  "network-application": {
+    "goal": "network-application:goal",
+    "resourceTheme": "job-search",
+    "shortTitle": "network-application:short_title",
+    "staticExplanations": "network-application:static_explanations",
+    "title": "network-application:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "network-application:user_gain_details"
+  },
+  "network-application-good": {
+    "goal": "network-application-good:goal",
+    "resourceTheme": "job-search",
+    "shortTitle": "network-application-good:short_title",
+    "staticExplanations": "network-application-good:static_explanations",
+    "title": "network-application-good:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "network-application-good:user_gain_details"
+  },
+  "network-application-medium": {
+    "goal": "network-application-medium:goal",
+    "resourceTheme": "job-search",
+    "shortTitle": "network-application-medium:short_title",
+    "staticExplanations": "network-application-medium:static_explanations",
+    "title": "network-application-medium:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "network-application-medium:user_gain_details"
+  },
+  "online-salons": {
+    "goal": "online-salons:goal",
+    "resourceTheme": "job-search",
+    "shortTitle": "online-salons:short_title",
+    "staticExplanations": "online-salons:static_explanations",
+    "title": "online-salons:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "4x",
+    "userGainDetails": "online-salons:user_gain_details"
+  },
+  "other-work-env": {
+    "goal": "other-work-env:goal",
+    "resourceTheme": "job-search",
+    "shortTitle": "other-work-env:short_title",
+    "staticExplanations": "other-work-env:static_explanations",
+    "title": "other-work-env:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "other-work-env:user_gain_details"
+  },
+  "personality-test": {
+    "goal": "personality-test:goal",
+    "resourceTheme": "choosing-a-job",
+    "shortTitle": "personality-test:short_title",
+    "title": "personality-test:title",
+    "titleXStars": {
+    }
+  },
+  "relocate": {
+    "goal": "relocate:goal",
+    "resourceTheme": "job-search",
+    "shortTitle": "relocate:short_title",
+    "staticExplanations": "relocate:static_explanations",
+    "title": "relocate:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "+32%",
+    "userGainDetails": "relocate:user_gain_details"
+  },
+  "reorient-jobbing": {
+    "goal": "reorient-jobbing:goal",
+    "resourceTheme": "job-search",
+    "shortTitle": "reorient-jobbing:short_title",
+    "staticExplanations": "reorient-jobbing:static_explanations",
+    "title": "reorient-jobbing:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "1 mois",
+    "userGainDetails": "reorient-jobbing:user_gain_details"
+  },
+  "reorient-to-close-job": {
+    "goal": "reorient-to-close-job:goal",
+    "resourceTheme": "job-search",
+    "shortTitle": "reorient-to-close-job:short_title",
+    "staticExplanations": "reorient-to-close-job:static_explanations",
+    "title": "reorient-to-close-job:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "reorient-to-close-job:user_gain_details"
+  },
+  "seasonal-relocate": {
+    "goal": "seasonal-relocate:goal",
+    "resourceTheme": "job-search",
+    "shortTitle": "seasonal-relocate:short_title",
+    "staticExplanations": "seasonal-relocate:static_explanations",
+    "title": "seasonal-relocate:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "5x",
+    "userGainDetails": "seasonal-relocate:user_gain_details"
+  },
+  "senior": {
+    "goal": "senior:goal",
+    "resourceTheme": "diversity-inclusion",
+    "shortTitle": "senior:short_title",
+    "staticExplanations": "senior:static_explanations",
+    "title": "senior:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "+15%",
+    "userGainDetails": "senior:user_gain_details"
+  },
+  "skill-for-future": {
+    "goal": "skill-for-future:goal",
+    "resourceTheme": "training-skills",
+    "shortTitle": "skill-for-future:short_title",
+    "title": "skill-for-future:title",
+    "titleXStars": {
+      "3": "skill-for-future:title_3_stars"
+    }
+  },
+  "specific-to-job": {
+    "goal": "specific-to-job:goal",
+    "resourceTheme": "job-search",
+    "shortTitle": "specific-to-job:short_title",
+    "staticExplanations": "specific-to-job:static_explanations",
+    "title": "specific-to-job:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "specific-to-job:user_gain_details"
+  },
+  "spontaneous-application": {
+    "goal": "spontaneous-application:goal",
+    "resourceTheme": "job-search",
+    "shortTitle": "spontaneous-application:short_title",
+    "staticExplanations": "spontaneous-application:static_explanations",
+    "title": "spontaneous-application:title",
+    "titleXStars": {
+      "1": "spontaneous-application:title_1_star",
+      "2": "spontaneous-application:title_2_stars",
+      "3": "spontaneous-application:title_3_stars"
+    },
+    "userGainCallout": "5x",
+    "userGainDetails": "spontaneous-application:user_gain_details"
+  },
+  "training": {
+    "goal": "training:goal",
+    "resourceTheme": "training-skills",
+    "shortTitle": "training:short_title",
+    "staticExplanations": "training:static_explanations",
+    "title": "training:title",
+    "titleXStars": {
+      "1": "training:title_1_star",
+      "2": "training:title_2_stars",
+      "3": "training:title_3_stars"
+    },
+    "userGainCallout": "2,3x",
+    "userGainDetails": "training:user_gain_details"
+  },
+  "vae": {
+    "goal": "vae:goal",
+    "resourceTheme": "training-skills",
+    "shortTitle": "vae:short_title",
+    "staticExplanations": "vae:static_explanations",
+    "title": "vae:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "vae:user_gain_details"
+  },
+  "volunteer": {
+    "goal": "volunteer:goal",
+    "resourceTheme": "choosing-a-job",
+    "shortTitle": "volunteer:short_title",
+    "staticExplanations": "volunteer:static_explanations",
+    "title": "volunteer:title",
+    "titleXStars": {
+    },
+    "userGainCallout": "🤗🤗🤗",
+    "userGainDetails": "volunteer:user_gain_details"
+  }
+}

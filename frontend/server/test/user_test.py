@@ -5,7 +5,7 @@ import json
 import os
 import time
 import typing
-from typing import Any, Callable, Dict
+from typing import Any, Callable
 import unittest
 from unittest import mock
 
@@ -13,8 +13,10 @@ from bson import objectid
 import mongomock
 import requests_mock
 
-from bob_emploi.common.python import now
+from bob_emploi.common.python.test import nowmock
+from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import server
+from bob_emploi.frontend.server import auth_token
 from bob_emploi.frontend.server.test import base_test
 
 _TIME = time.time
@@ -24,12 +26,12 @@ _TIME = time.time
 # pylint: disable=too-many-lines
 
 
-def _clean_up_variable_flags(features_enabled: Dict[str, Any]) -> None:
+def _clean_up_variable_flags(features_enabled: dict[str, Any]) -> None:
     del_features = []
     for feature in features_enabled:
         for prefix in (
                 'actionFeedbackModal', 'advisor', 'hideDiscoveryNav',
-                'lbbIntegration', 'stickyActions', 'alpha',
+                'lbbIntegration', 'stickyActions', 'alpha', 'actionPlan',
                 'poleEmploi', 'assessment', 'excludeFromAnalytics'):
             if feature.startswith(prefix):
                 del_features.append(feature)
@@ -40,13 +42,13 @@ def _clean_up_variable_flags(features_enabled: Dict[str, Any]) -> None:
 class UserEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the user endpoint to save the profile."""
 
-    @mock.patch(now.__name__ + '.get')
+    @nowmock.patch()
     def test_app_use_endpoint(self, mock_now: mock.MagicMock) -> None:
         """Test the app/use endpoint."""
 
         mock_now.side_effect = datetime.datetime.now
         before = datetime.datetime.now()
-        user_id, auth_token = self.create_user_with_token()
+        user_id, token = self.create_user_with_token()
 
         mock_now.side_effect = None
         later = before + datetime.timedelta(hours=25)
@@ -54,7 +56,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
 
         response = self.app.post(
             f'/api/app/use/{user_id}',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         user_info = self.json_from_response(response)
 
         self.assertGreaterEqual(user_info['requestedByUserAtDate'], before.isoformat())
@@ -69,10 +71,10 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'emailsSent': [{'mailjetMessageId': 1234}],
             'supportTickets': [{'ticketId': 'support-ticket'}],
         }
-        user_id, auth_token = self.create_user_with_token(data=user_info, email='foo@bar.fr')
+        user_id, token = self.create_user_with_token(data=user_info, email='foo@bar.fr')
         tokens = self.json_from_response(self.app.get(
             f'/api/user/{user_id}/generate-auth-tokens',
-            headers={'Authorization': 'Bearer ' + auth_token}))
+            headers={'Authorization': 'Bearer ' + token}))
         unsubscribe_token = tokens['unsubscribe']
         response = self.app.delete(
             '/api/user',
@@ -106,19 +108,19 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'profile': {'city': {'name': 'foobar'}, 'name': 'Albert', 'year_of_birth': 1973},
             'projects': [{}]}
         user_id = self.create_user(data=user_info, email='foo@bar.fr')
-        token = server.auth.create_token('foo@bar.fr', role='unsubscribe')
+        unsub_token = auth_token.create_token('foo@bar.fr', role='unsubscribe')
         response = self.app.delete(
             '/api/user',
             data='{"profile": {"email": "foo@bar.fr"}}',
-            headers={'Authorization': f'Bearer {token}'})
+            headers={'Authorization': f'Bearer {unsub_token}'})
         self.assertEqual(403, response.status_code)
         self.assertIn('seulement pour le super-admin', response.get_data(as_text=True))
         user_data = self._user_db.user.find_one({'_id': mongomock.ObjectId(user_id)})
         assert user_data
         self.assertEqual('foo@bar.fr', user_data['profile']['email'])
 
-    @mock.patch(server.auth.__name__ + '._ADMIN_AUTH_TOKEN', new='custom-auth-token')
-    def test_delete_user_with_admin_auth_token(self) -> None:
+    @mock.patch(auth_token.__name__ + '._ADMIN_AUTH_TOKEN', new='custom-auth-token')
+    def test_delete_user_with_admin_token(self) -> None:
         """Delete a user with an admin auth token."""
 
         user_info = {
@@ -137,10 +139,10 @@ class UserEndpointTestCase(base_test.ServerTestCase):
     def test_try_login_in_after_deletion(self) -> None:
         """Test accessing data of a deleted user."""
 
-        user_id, auth_token = self.create_user_with_token()
+        user_id, token = self.create_user_with_token()
         tokens = self.json_from_response(self.app.get(
             f'/api/user/{user_id}/generate-auth-tokens',
-            headers={'Authorization': 'Bearer ' + auth_token}))
+            headers={'Authorization': 'Bearer ' + token}))
         unsubscribe_token = tokens['unsubscribe']
         self.app.delete(
             '/api/user',
@@ -149,7 +151,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
 
         response = self.app.post(
             f'/api/app/use/{user_id}',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         self.assertEqual(404, response.status_code)
 
         auth_response = self.app.post(
@@ -157,14 +159,43 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             data=f'{{"authToken": "{tokens["auth"]}", "userId": "{user_id}"}}')
         self.assertEqual(404, auth_response.status_code)
 
+    def test_try_delete_other_user(self) -> None:
+        """Test deleting another user using their User ID."""
+
+        user_id, token = self.create_user_with_token(email='me@bar.fr')
+        tokens = self.json_from_response(self.app.get(
+            f'/api/user/{user_id}/generate-auth-tokens',
+            headers={'Authorization': 'Bearer ' + token}))
+        unsubscribe_token = tokens['unsubscribe']
+
+        other_user_id, other_auth_token = self.create_user_with_token(email='other@bar.fr')
+
+        response = self.app.delete(
+            '/api/user',
+            data=f'{{"userId": "{other_user_id}"}}',
+            headers={'Authorization': 'Bearer ' + unsubscribe_token})
+        self.assertEqual(403, response.status_code, msg='Cannot delete another user')
+
+        # Check that other user can still log in.
+        auth_response = self.app.post(
+            f'/api/app/use/{other_user_id}',
+            headers={'Authorization': 'Bearer ' + other_auth_token})
+        self.assertEqual(200, auth_response.status_code)
+
+        # Check that the first user can still log in.
+        auth_response = self.app.post(
+            f'/api/app/use/{user_id}',
+            headers={'Authorization': 'Bearer ' + token})
+        self.assertEqual(200, auth_response.status_code)
+
     def test_get_user(self) -> None:
         """Basic Usage of retrieving a user from DB."""
 
         user_info = {'profile': {'gender': 'FEMININE'}, 'projects': [{}]}
-        user_id, auth_token = self.create_user_with_token(data=user_info)
+        user_id, token = self.create_user_with_token(data=user_info)
         user_info['userId'] = user_id
 
-        user_info2 = self.get_user_info(typing.cast(str, user_info['userId']), auth_token)
+        user_info2 = self.get_user_info(typing.cast(str, user_info['userId']), token)
         self.assertIn('profile', user_info2)
         self.assertIn('email', user_info2['profile'])
         user_info2['profile'].pop('email')
@@ -188,7 +219,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         """When calling get user with unauthorized_token, endpoint should return error."""
 
         user_info = {'profile': {'gender': 'FEMININE'}, 'projects': [{}]}
-        user_id, auth_token = self.create_user_with_token(data=user_info)
+        user_id, token = self.create_user_with_token(data=user_info)
         unauthorized_token = 'Bearer 1509481.11027aabc4833f0177a06a7948ec78f220a00c78'
         response = self.app.get(
             '/api/user/' + user_id,
@@ -198,27 +229,14 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_id2 = self.create_user(data=user_info, email='foo@bar.fr')
         response2 = self.app.get(
             '/api/user/' + user_id2,
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         self.assertEqual(403, response2.status_code)
-
-    @mock.patch.dict(os.environ, {'BOB_DEPLOYMENT': 'uk'})
-    def test_create_uk_disable_job_unknown(self) -> None:
-        """Creating a user within UK deployment disables job unknown."""
-
-        user_id, auth_token = self.create_user_with_token(email='foo@bar.fr')
-
-        response = self.app.get(
-            f'/api/user/{user_id}',
-            content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
-        user_info = self.json_from_response(response)
-        self.assertTrue(user_info.get('featuresEnabled', {}).get('jobUnknownDisabled'))
 
     def test_user(self) -> None:
         """Basic usage."""
 
         time_before = datetime.datetime.now() - datetime.timedelta(seconds=1)
-        user_id, auth_token = self.authenticate_new_user_token(email='foo@bar.fr')
+        user_id, token = self.authenticate_new_user_token(email='foo@bar.fr')
 
         response = self.app.post(
             '/api/user',
@@ -226,7 +244,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             '"profile": {"city": {"name": "fobar"}, "email": "foo@bar.fr"}, '
             '"projects": [{"title": "Yay title"}]}',
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         user_info = self.json_from_response(response)
 
         # Pop or delete variable fields.
@@ -297,8 +315,8 @@ class UserEndpointTestCase(base_test.ServerTestCase):
                 'jobOffersChange': 10,
             },
         ])
-        user_id, auth_token = self.authenticate_new_user_token(email='foo@bar.fr')
-        user_info = self.get_user_info(user_id, auth_token)
+        user_id, token = self.authenticate_new_user_token(email='foo@bar.fr')
+        user_info = self.get_user_info(user_id, token)
         user_info['projects'] = [{
             'city': {'departementId': '69'},
             'targetJob': {'jobGroup': {'romeId': 'A1234'}},
@@ -307,7 +325,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             '/api/user',
             data=json.dumps(user_info),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         user_info = self.json_from_response(response)
         lyon_local_stats = user_info['projects'][0].get('localStats')
         self.assertTrue(lyon_local_stats)
@@ -317,7 +335,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             '/api/user',
             data=json.dumps(user_info),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         user_info = self.json_from_response(response)
         toulouse_local_stats = user_info['projects'][0].get('localStats')
         self.assertTrue(toulouse_local_stats)
@@ -382,12 +400,12 @@ class UserEndpointTestCase(base_test.ServerTestCase):
     def test_user_feature_flags_from_clients(self) -> None:
         """Client trying to change feature flags."""
 
-        user_id, auth_token = self.create_user_with_token(email='foo@bar.fr')
+        user_id, token = self.create_user_with_token(email='foo@bar.fr')
         response = self.app.post(
             '/api/user',
-            data='{"userId": "%s", "profile": {"city": {"name": "fobar"}, "email": "foo@bar.fr"}, '
-            '"featuresEnabled": {"bobPoints": "NOT_IN_EXPERIMENT"}}' % user_id,
-            headers={'Authorization': 'Bearer ' + auth_token},
+            data=f'{{"userId": "{user_id}", "profile": {{"city": {{"name": "fobar"}}, '
+            '"email": "foo@bar.fr"}, "featuresEnabled": {"bobPoints": "NOT_IN_EXPERIMENT"}}',
+            headers={'Authorization': 'Bearer ' + token},
             content_type='application/json')
         user_info = self.json_from_response(response)
         self.assertEqual({'name': 'fobar'}, user_info.get('profile', {}).get('city'))
@@ -395,10 +413,27 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertFalse(
             self.user_info_from_db(user_id).get('featuresEnabled', {}).get('bobPoints'))
 
+    def test_guest_alpha_user_changing_feature_flags(self) -> None:
+        """Client trying to change feature flags as guest but alpha user."""
+
+        user_id, token = self.create_guest_user(auth_data={'isAlpha': True})
+        response = self.app.post(
+            '/api/user',
+            data=f'{{"userId": "{user_id}", "profile": {{"city": {{"name": "fobar"}}}}, '
+            '"featuresEnabled": {"actionPlan": "ACTIVE", "alpha": true}}',
+            headers={'Authorization': 'Bearer ' + token},
+            content_type='application/json')
+        user_info = self.json_from_response(response)
+        self.assertEqual({'name': 'fobar'}, user_info.get('profile', {}).get('city'))
+        self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('actionPlan'))
+        self.assertEqual(
+            'ACTIVE',
+            self.user_info_from_db(user_id).get('featuresEnabled', {}).get('actionPlan'))
+
     def test_update_project(self) -> None:
         """User project is updated by a diff."""
 
-        user_id, auth_token = self.authenticate_new_user_token(email='foo@bar.fr')
+        user_id, token = self.authenticate_new_user_token(email='foo@bar.fr')
         # Populate user.
         self.app.post(
             '/api/user',
@@ -409,35 +444,34 @@ class UserEndpointTestCase(base_test.ServerTestCase):
                     'isIncomplete': True,
                     'projectId': '0',
                     'title': 'Awesome Title',
-                    'upskillingSelectedJobs': [{'shownMetric': 'old metric'}]
+                    'workloads': ['PART_TIME'],
                 }],
             }),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         response = self.app.post(
             f'/api/user/{user_id}/project/0',
             data=json.dumps({
                 'projectId': '0',
                 'totalInterviewCount': 5,
-                'upskillingSelectedJobs': [{'shownMetric': 'new metric'}]
+                'workloads': ['FULL_TIME'],
             }),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         project_info = self.json_from_response(response)
         self.assertTrue(project_info.get('projectId'))
         self.assertTrue(project_info.get('isIncomplete'))
         self.assertEqual(5, project_info.get('totalInterviewCount'))
-        self.assertEqual(
-            [{'shownMetric': 'new metric'}], project_info.get('upskillingSelectedJobs'))
+        self.assertEqual(['FULL_TIME'], project_info.get('workloads'))
 
-        user_info = self.get_user_info(user_id, auth_token)
+        user_info = self.get_user_info(user_id, token)
         self.assertEqual(1, len(user_info.get('projects', [])))
         self.assertEqual(project_info, user_info['projects'].pop())
 
     def test_delete_project_repeated_field(self) -> None:
         """User project is updated by clearing a repeated replaceable field."""
 
-        user_id, auth_token = self.authenticate_new_user_token(email='foo@bar.fr')
+        user_id, token = self.authenticate_new_user_token(email='foo@bar.fr')
         # Populate user.
         self.app.post(
             '/api/user',
@@ -448,27 +482,27 @@ class UserEndpointTestCase(base_test.ServerTestCase):
                     'isIncomplete': True,
                     'projectId': '0',
                     'title': 'Awesome Title',
-                    'upskillingSelectedJobs': [{'shownMetric': 'old metric'}]
+                    'workloads': ['PART_TIME'],
                 }],
             }),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         response = self.app.post(
             f'/api/user/{user_id}/project/0',
             data=json.dumps({
                 'projectId': '0',
                 'totalInterviewCount': 5,
-                'upskillingSelectedJobs': [{}]
+                'workloads': ['UNKNOWN_PROJECT_WORKLOAD']
             }),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         project_info = self.json_from_response(response)
-        self.assertFalse(project_info.get('upskillingSelectedJobs'))
+        self.assertFalse(project_info.get('workloads'))
 
     def test_update_advice_module(self) -> None:
         """User advice_module is updated."""
 
-        user_id, auth_token = self.authenticate_new_user_token(email='foo@bar.fr')
+        user_id, token = self.authenticate_new_user_token(email='foo@bar.fr')
         # Populate user.
         self.app.post(
             '/api/user',
@@ -486,17 +520,17 @@ class UserEndpointTestCase(base_test.ServerTestCase):
                 }],
             }),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         response = self.app.post(
             f'/api/user/{user_id}/project/0/advice/commute',
             data=json.dumps({'status': 'ADVICE_READ'}),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         advice_info = self.json_from_response(response)
         self.assertEqual('commute', advice_info.get('adviceId'))
         self.assertEqual(3, advice_info.get('numStars'))
 
-        user_info = self.get_user_info(user_id, auth_token)
+        user_info = self.get_user_info(user_id, token)
         self.assertEqual(1, len(user_info.get('projects', [])))
         self.assertEqual(1, len(user_info['projects'][0].get('advices', [])))
         self.assertEqual(advice_info, user_info['projects'][0]['advices'].pop())
@@ -504,7 +538,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
     def test_update_advice_module_missing(self) -> None:
         """User advice_module is updated but advice does not exist."""
 
-        user_id, auth_token = self.authenticate_new_user_token(email='foo@bar.fr')
+        user_id, token = self.authenticate_new_user_token(email='foo@bar.fr')
         # Populate user.
         self.app.post(
             '/api/user',
@@ -522,12 +556,77 @@ class UserEndpointTestCase(base_test.ServerTestCase):
                 }],
             }),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         response = self.app.post(
             f'/api/user/{user_id}/project/0/advice/unknown',
             data=json.dumps({'status': 'ADVICE_READ'}),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
+        self.assertEqual(404, response.status_code)
+
+    def test_update_action(self) -> None:
+        """User action is updated."""
+
+        user_id, token = self.authenticate_new_user_token(email='foo@bar.fr')
+        # Populate user.
+        self.app.post(
+            '/api/user',
+            data=json.dumps({
+                'userId': user_id,
+                'profile': {'email': 'foo@bar.fr'},
+                'projects': [{
+                    'projectId': '0',
+                    'title': 'Awesome Title',
+                    'actions': [{
+                        'actionId': 'commute',
+                        'status': 'ACTION_UNREAD',
+                        'tags': ['video'],
+                    }],
+                }],
+            }),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + token})
+        response = self.app.post(
+            f'/api/user/{user_id}/project/0/action/commute',
+            data=json.dumps({'status': 'ACTION_CURRENT'}),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + token})
+        action_info = self.json_from_response(response)
+        self.assertEqual('commute', action_info.get('actionId'))
+        self.assertEqual('ACTION_CURRENT', action_info.get('status'))
+        self.assertEqual(['video'], action_info.get('tags'))
+
+        user_info = self.get_user_info(user_id, token)
+        self.assertEqual(1, len(user_info.get('projects', [])))
+        self.assertEqual(1, len(user_info['projects'][0].get('actions', [])))
+        self.assertEqual(action_info, user_info['projects'][0]['actions'].pop())
+
+    def test_update_action_missing(self) -> None:
+        """User action is updated but action does not exist."""
+
+        user_id, token = self.authenticate_new_user_token(email='foo@bar.fr')
+        # Populate user.
+        self.app.post(
+            '/api/user',
+            data=json.dumps({
+                'userId': user_id,
+                'profile': {'email': 'foo@bar.fr'},
+                'projects': [{
+                    'projectId': '0',
+                    'title': 'Awesome Title',
+                    'actions': [{
+                        'actionId': 'commute',
+                        'status': 'ACTION_UNREAD',
+                    }],
+                }],
+            }),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + token})
+        response = self.app.post(
+            f'/api/user/{user_id}/project/0/action/unknown',
+            data=json.dumps({'status': 'ACTION_CURRENT'}),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + token})
         self.assertEqual(404, response.status_code)
 
     def test_project_diagnosis_added(self) -> None:
@@ -538,13 +637,13 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'minSalary': 1000,
             'targetJob': {'jobGroup': {'romeId': 'M1403'}},
         }
-        user_id, auth_token = self.authenticate_new_user_token(email='foo@bar.fr')
+        user_id, token = self.authenticate_new_user_token(email='foo@bar.fr')
         response = self.app.post(
             '/api/user',
             data=f'{{"userId": "{user_id}", "profile": {{"email":"foo@bar.fr"}}, '
             f'"projects": [{json.dumps(project)}]}}',
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         user_info = self.json_from_response(response)
         projects = user_info.pop('projects')
         self.assertEqual(1, len(projects))
@@ -561,7 +660,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'minSalary': 1000,
             'targetJob': {'jobGroup': {'romeId': 'M1403'}},
         }
-        user_id, auth_token = self.authenticate_new_user_token(email='foo@bayes.org')
+        user_id, token = self.authenticate_new_user_token(email='foo@bayes.org')
         self._db.diagnostic_main_challenges.insert_many([
             {
                 'categoryId': 'bravo',
@@ -594,14 +693,14 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             '"featuresEnabled": {"advisor": "ACTIVE"}, '
             f'"projects": [{json.dumps(project)}]}}',
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         user_info = self.json_from_response(response)
         project = user_info['projects'][0]
         self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisor'))
 
         self.assertEqual(
             {'categories', 'categoryId', 'overallScore', 'overallSentence', 'text'},
-            set(typing.cast(Dict[str, Any], project.get('diagnostic', {}))))
+            set(typing.cast(dict[str, Any], project.get('diagnostic', {}))))
 
         all_advices = [
             {
@@ -620,20 +719,20 @@ class UserEndpointTestCase(base_test.ServerTestCase):
     def test_post_user_with_no_id(self) -> None:
         """Called with no ID the endpoint should return an error."""
 
-        user_id, auth_token = self.create_user_with_token()
+        user_id, token = self.create_user_with_token()
 
         response2 = self.app.post(
             '/api/user',
             data='{"profile": {"city": {"name": "very different"}}}',
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         self.assertEqual(403, response2.status_code)
         self.assertEqual([user_id], list(str(u['_id']) for u in self._user_db.user.find()))
 
     def test_post_user_with_unknown_id(self) -> None:
         """Called with an unknown user ID the endpoint should return an error."""
 
-        user_id, auth_token = self.create_user_with_token()
+        user_id, token = self.create_user_with_token()
         # Change the last digit.
         fake_user_id = user_id[:-1] + ('1' if user_id[-1:] != '1' else '0')
 
@@ -642,7 +741,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             data=f'{{"userId": "{fake_user_id}", "profile": '
             '{"city": {"name": "very different"}}}',
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         self.assertEqual(403, response2.status_code)
         self.assertEqual([user_id], list(str(u['_id']) for u in self._user_db.user.find()))
 
@@ -670,13 +769,13 @@ class UserEndpointTestCase(base_test.ServerTestCase):
     def test_post_user_changing_email(self) -> None:
         """It should not be possible to change the email as it is used for auth."""
 
-        user_id, auth_token = self.authenticate_new_user_token(email='foo@bar.fr')
+        user_id, token = self.authenticate_new_user_token(email='foo@bar.fr')
 
         response2 = self.app.post(
             '/api/user',
             data=f'{{"userId": "{user_id}", "profile": {{"email": "very-different@bar.fr"}}}}',
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         self.assertEqual(403, response2.status_code)
         self.assertEqual([user_id], list(str(u['_id']) for u in self._user_db.user.find()))
 
@@ -689,13 +788,13 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'minSalary': 1000,
             'targetJob': {'jobGroup': {'romeId': 'M1403'}},
         }
-        user_id, auth_token = self.authenticate_new_user_token(email='foo@bar.fr')
+        user_id, token = self.authenticate_new_user_token(email='foo@bar.fr')
         response = self.app.post(
             '/api/user',
             data=f'{{"userId": "{user_id}", "profile": {{"email":"foo@bar.fr"}}, '
             f'"projects": [{json.dumps(project)}]}}',
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         # This is mostly a regression test: we used to trigger a 500 with this
         # scenario.
         self.assertEqual(200, response.status_code, response.get_data(as_text=True))
@@ -703,14 +802,14 @@ class UserEndpointTestCase(base_test.ServerTestCase):
     def test_update(self) -> None:
         """Called with a user that has an ID should update it."""
 
-        user_id, auth_token = self.create_user_with_token(email='foo@bar.fr')
+        user_id, token = self.create_user_with_token(email='foo@bar.fr')
 
         response2 = self.app.post(
             '/api/user',
             data='{"profile": {"name": "very different", '
             f'"email": "foo@bar.fr"}}, "revision": 2, "userId": "{user_id}"}}',
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         user_info2 = self.json_from_response(response2)
         user_id2 = user_info2.pop('userId')
         user_info2.pop('registeredAt')
@@ -723,21 +822,21 @@ class UserEndpointTestCase(base_test.ServerTestCase):
     def test_update_revision(self) -> None:
         """Updating a user to an old revision does not work and return the new version."""
 
-        user_id, auth_token = self.create_user_with_token(email='foo@bar.fr')
+        user_id, token = self.create_user_with_token(email='foo@bar.fr')
 
         self.app.post(
             '/api/user',
             data='{"profile": {"name": "new name", '
             f'"email": "foo@bar.fr"}}, "revision": 15, "userId": "{user_id}"}}',
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
 
         response = self.app.post(
             '/api/user',
             data='{"profile": {"name": "old name", '
             f'"email": "foo@bar.fr"}}, "revision": 10, "userId": "{user_id}"}}',
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
 
         user_info = self.json_from_response(response)
         self.assertEqual('new name', user_info['profile'].get('name'))
@@ -746,7 +845,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
     def test_create_project(self) -> None:
         """An ID and the timestamp should be added to a new project."""
 
-        user_id, auth_token = self.create_user_with_token(data={}, email='foo@bar.fr')
+        user_id, token = self.create_user_with_token(data={}, email='foo@bar.fr')
         self._db.local_diagnosis.insert_one({
             '_id': '69:A1234',
             'bmo': {
@@ -768,7 +867,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             '{"romeId": "A1234"}}, "city":{"departementId": "69"}}],'
             f'"profile":{{"email":"foo@bar.fr"}},"userId": "{user_id}"}}',
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         user_info2 = self.json_from_response(response)
         self.assertEqual(1, len(user_info2['projects']))
         project = user_info2['projects'].pop()
@@ -784,14 +883,14 @@ class UserEndpointTestCase(base_test.ServerTestCase):
     def test_create_project_no_data(self) -> None:
         """A project with no backend data still gets some basic values."""
 
-        user_id, auth_token = self.create_user_with_token(data={}, email='foo@bar.fr')
+        user_id, token = self.create_user_with_token(data={}, email='foo@bar.fr')
 
         response = self.app.post(
             '/api/user', data='{"projects": [{"targetJob": {"jobGroup": '
             '{"romeId": "no-data"}}}], "profile":{"email":"foo@bar.fr"},'
             f'"userId": "{user_id}"}}',
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         user_info2 = self.json_from_response(response)
         self.assertEqual(1, len(user_info2['projects']))
         project = user_info2['projects'].pop()
@@ -805,10 +904,10 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'profile': {'city': {'name': 'foobar'}, 'name': 'Albert', 'yearOfBirth': 1973},
             'projects': [{}],
         }
-        user_id, auth_token = self.create_user_with_token(data=user_info)
+        user_id, token = self.create_user_with_token(data=user_info)
         tokens = self.json_from_response(self.app.get(
             f'/api/user/{user_id}/generate-auth-tokens',
-            headers={'Authorization': 'Bearer ' + auth_token}))
+            headers={'Authorization': 'Bearer ' + token}))
         settings_token = tokens['settings']
 
         response = self.app.post(
@@ -818,7 +917,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             headers={'Authorization': 'Bearer ' + settings_token})
         self.assertEqual(200, response.status_code, msg=response.get_data(as_text=True))
 
-        updated_user = self.get_user_info(user_id, auth_token)
+        updated_user = self.get_user_info(user_id, token)
         self.assertEqual('Albert', updated_user.get('profile', {}).get('name'), msg=updated_user)
         self.assertEqual(
             'EMAIL_ONCE_A_MONTH', updated_user['profile'].get('coachingEmailFrequency'))
@@ -829,10 +928,10 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_info = {
             'profile': {'coachingEmailFrequency': 'EMAIL_ONCE_A_MONTH'},
         }
-        user_id, auth_token = self.create_user_with_token(data=user_info)
+        user_id, token = self.create_user_with_token(data=user_info)
         tokens = self.json_from_response(self.app.get(
             f'/api/user/{user_id}/generate-auth-tokens',
-            headers={'Authorization': 'Bearer ' + auth_token}))
+            headers={'Authorization': 'Bearer ' + token}))
         settings_token = tokens['settings']
 
         # Fake sending a coaching email and updating the user.
@@ -840,7 +939,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'sendCoachingEmailAfter': '2018-01-15T15:24:34Z',
         }})
 
-        updated_user = self.get_user_info(user_id, auth_token)
+        updated_user = self.get_user_info(user_id, token)
         self.assertTrue(updated_user.get('sendCoachingEmailAfter'))
 
         self.app.post(
@@ -849,7 +948,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + settings_token})
 
-        updated_user = self.get_user_info(user_id, auth_token)
+        updated_user = self.get_user_info(user_id, token)
         self.assertFalse(updated_user.get('sendCoachingEmailAfter'))
 
     def test_update_email_frequency_invalidate(self) -> None:
@@ -858,14 +957,14 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_info = {
             'profile': {'coachingEmailFrequency': 'EMAIL_ONCE_A_MONTH'},
         }
-        user_id, auth_token = self.create_user_with_token(data=user_info)
+        user_id, token = self.create_user_with_token(data=user_info)
 
         # Fake sending a coaching email and updating the user.
         self._user_db.user.update_one({'_id': objectid.ObjectId(user_id)}, {'$set': {
             'sendCoachingEmailAfter': '2018-01-15T15:24:34Z',
         }})
 
-        updated_user = self.get_user_info(user_id, auth_token)
+        updated_user = self.get_user_info(user_id, token)
         self.assertTrue(updated_user.get('sendCoachingEmailAfter'))
 
         updated_user['profile']['coachingEmailFrequency'] = 'EMAIL_MAXIMUM'
@@ -873,9 +972,9 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             '/api/user',
             data=json.dumps(updated_user),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
 
-        updated_user = self.get_user_info(user_id, auth_token)
+        updated_user = self.get_user_info(user_id, token)
         self.assertFalse(updated_user.get('sendCoachingEmailAfter'))
 
     def test_update_profile_with_quick_diagnostic(self) -> None:
@@ -884,16 +983,16 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_info = {'profile': {
             'name': 'Albert', 'lastName': 'Einstein',
             'yearOfBirth': 1973, 'frustrations': ['NO_OFFERS']}}
-        user_id, auth_token = self.create_user_with_token(data=user_info)
+        user_id, token = self.create_user_with_token(data=user_info)
 
         response = self.app.post(
             f'/api/user/{user_id}/update-and-quick-diagnostic',
             data=json.dumps({'user': {'profile': {'name': 'Alfred'}}}),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         self.assertEqual(200, response.status_code, msg=response.get_data(as_text=True))
 
-        updated_user = self.get_user_info(user_id, auth_token)
+        updated_user = self.get_user_info(user_id, token)
         self.assertEqual('Alfred', updated_user.get('profile', {}).get('name'))
         self.assertEqual('Einstein', updated_user.get('profile', {}).get('lastName', ''))
         self.assertEqual(1973, updated_user.get('profile', {}).get('yearOfBirth'))
@@ -905,7 +1004,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_info = {'profile': {
             'name': 'Albert', 'lastName': 'Einstein', 'yearOfBirth': 1973,
             'frustrations': ['NO_OFFERS']}}
-        user_id, auth_token = self.create_user_with_token(data=user_info)
+        user_id, token = self.create_user_with_token(data=user_info)
 
         response = self.app.post(
             f'/api/user/{user_id}/update-and-quick-diagnostic',
@@ -914,10 +1013,10 @@ class UserEndpointTestCase(base_test.ServerTestCase):
                 'fieldMask': 'profile.name,profile.lastName',
             }),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         self.assertEqual(200, response.status_code, msg=response.get_data(as_text=True))
 
-        updated_user = self.get_user_info(user_id, auth_token)
+        updated_user = self.get_user_info(user_id, token)
         self.assertEqual('Alfred', updated_user.get('profile', {}).get('name', ''))
         self.assertEqual('', updated_user.get('profile', {}).get('lastName', ''))
         self.assertEqual(1973, updated_user.get('profile', {}).get('yearOfBirth'))
@@ -927,16 +1026,16 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         """Create a project but with the quick diagnostic route."""
 
         user_info = {'profile': {'name': 'Albert'}}
-        user_id, auth_token = self.create_user_with_token(data=user_info)
+        user_id, token = self.create_user_with_token(data=user_info)
 
         response = self.app.post(
             f'/api/user/{user_id}/update-and-quick-diagnostic',
             data=json.dumps({'user': {'projects': [{'targetJob': {'name': 'Fou'}}]}}),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         self.assertEqual(200, response.status_code, msg=response.get_data(as_text=True))
 
-        updated_user = self.get_user_info(user_id, auth_token)
+        updated_user = self.get_user_info(user_id, token)
         self.assertEqual('Albert', updated_user.get('profile', {}).get('name'))
         self.assertEqual('Fou', updated_user['projects'][0]['targetJob']['name'])
 
@@ -945,7 +1044,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
 
         user_info = {'projects': [
             {'projectId': '0', 'employmentTypes': ['CDI']}], 'profile': {'name': 'Albert'}}
-        user_id, auth_token = self.create_user_with_token(data=user_info)
+        user_id, token = self.create_user_with_token(data=user_info)
 
         response = self.app.post(
             f'/api/user/{user_id}/update-and-quick-diagnostic/0',
@@ -953,10 +1052,10 @@ class UserEndpointTestCase(base_test.ServerTestCase):
                 'targetJob': {'name': 'Fou'},
                 'employmentTypes': ['CDD_OVER_3_MONTHS']}]}}),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         self.assertEqual(200, response.status_code, msg=response.get_data(as_text=True))
 
-        updated_user = self.get_user_info(user_id, auth_token)
+        updated_user = self.get_user_info(user_id, token)
         self.assertEqual('Albert', updated_user.get('profile', {}).get('name'))
         self.assertEqual('Fou', updated_user['projects'][0]['targetJob']['name'])
         self.assertEqual(['CDD_OVER_3_MONTHS'], updated_user['projects'][0]['employmentTypes'])
@@ -965,30 +1064,30 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         """Update the custom frustrations with the quick diagnostic route."""
 
         user_info = {'profile': {'customFrustrations': ['Pascal']}}
-        user_id, auth_token = self.create_user_with_token(data=user_info)
+        user_id, token = self.create_user_with_token(data=user_info)
 
         response = self.app.post(
             f'/api/user/{user_id}/update-and-quick-diagnostic',
             data=json.dumps({'user': {'profile': {'customFrustrations': ['Bad jokes']}}}),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         self.assertEqual(200, response.status_code, msg=response.get_data(as_text=True))
-        updated_user = self.get_user_info(user_id, auth_token)
+        updated_user = self.get_user_info(user_id, token)
         self.assertEqual(['Bad jokes'], updated_user.get('profile', {}).get('customFrustrations'))
 
     def test_update_frustrations_with_empty_field_with_quick_diagnostic(self) -> None:
         """Update the custom frustrations with the quick diagnostic route."""
 
         user_info = {'profile': {'frustrations': ['NO_OFFERS']}}
-        user_id, auth_token = self.create_user_with_token(data=user_info)
+        user_id, token = self.create_user_with_token(data=user_info)
 
         response = self.app.post(
             f'/api/user/{user_id}/update-and-quick-diagnostic',
             data=json.dumps({'user': {'profile': {'frustrations': [0]}}}),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         self.assertEqual(200, response.status_code, msg=response.get_data(as_text=True))
-        updated_user = self.get_user_info(user_id, auth_token)
+        updated_user = self.get_user_info(user_id, token)
         self.assertFalse(updated_user.get('profile', {}).get('frustrations'))
 
     def test_update_project_employment_type_with_quick_diagnostic(self) -> None:
@@ -996,7 +1095,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
 
         user_info = {'projects': [
             {'projectId': '0', 'employmentTypes': ['CDI']}], 'profile': {'name': 'Albert'}}
-        user_id, auth_token = self.create_user_with_token(data=user_info)
+        user_id, token = self.create_user_with_token(data=user_info)
 
         response = self.app.post(
             f'/api/user/{user_id}/update-and-quick-diagnostic/0',
@@ -1004,21 +1103,21 @@ class UserEndpointTestCase(base_test.ServerTestCase):
                 'targetJob': {'name': 'Fou'},
                 'employmentTypes': [0]}]}}),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         self.assertEqual(200, response.status_code, msg=response.get_data(as_text=True))
 
-        updated_user = self.get_user_info(user_id, auth_token)
+        updated_user = self.get_user_info(user_id, token)
         self.assertEqual('Albert', updated_user.get('profile', {}).get('name'))
         self.assertEqual('Fou', updated_user['projects'][0]['targetJob']['name'])
         self.assertFalse(updated_user['projects'][0].get('employmentTypes'))
 
-    @mock.patch(server.__name__ + '.now')
+    @nowmock.patch()
     def test_update_strategy(self, mock_now: mock.MagicMock) -> None:
         """Set parameters for an opened strategy in a project."""
 
-        mock_now.get.return_value = datetime.datetime(2019, 4, 15)
+        mock_now.return_value = datetime.datetime(2019, 4, 15)
         user_info = {'projects': [{'projectId': '0'}]}
-        user_id, auth_token = self.create_user_with_token(data=user_info)
+        user_id, token = self.create_user_with_token(data=user_info)
 
         response = self.app.post(
             f'/api/user/{user_id}/project/0/strategy/other-leads',
@@ -1027,7 +1126,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
                 'strategyId': 'other-leads',
             }),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         updated_strategy = self.json_from_response(response)
         self.assertEqual('other-leads', updated_strategy.get('strategyId'))
         self.assertTrue(updated_strategy.get('reachedGoals', {}).get('goal-1'))
@@ -1039,7 +1138,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             f'/api/user/{user_id}/project/0/strategy/other-leads',
             data=json.dumps(updated_strategy),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         updated_strategy = self.json_from_response(response)
         self.assertEqual('other-leads', updated_strategy.get('strategyId'))
         self.assertFalse(updated_strategy.get('reachedGoals', {}).get('goal-1'))
@@ -1050,7 +1149,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         """Stop an opened strategy in a project."""
 
         user_info = {'projects': [{'projectId': '0'}]}
-        user_id, auth_token = self.create_user_with_token(data=user_info)
+        user_id, token = self.create_user_with_token(data=user_info)
 
         self.app.post(
             f'/api/user/{user_id}/project/0/strategy/other-leads',
@@ -1059,37 +1158,37 @@ class UserEndpointTestCase(base_test.ServerTestCase):
                 'strategyId': 'other-leads',
             }),
             content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
 
-        updated_user = self.get_user_info(user_id, auth_token)
+        updated_user = self.get_user_info(user_id, token)
         self.assertTrue(updated_user['projects'][0].get('openedStrategies'))
 
         response = self.app.delete(
             f'/api/user/{user_id}/project/0/strategy/other-leads',
-            headers={'Authorization': 'Bearer ' + auth_token})
+            headers={'Authorization': 'Bearer ' + token})
         self.assertEqual(200, response.status_code)
 
-        updated_user = self.get_user_info(user_id, auth_token)
+        updated_user = self.get_user_info(user_id, token)
         self.assertFalse(updated_user['projects'][0].get('openedStrategies'))
 
     def test_create_ma_voie_user(self) -> None:
         """Ma Voie information is saved."""
 
         ma_voie_info = {'maVoieId': 'some-random-id', 'stepId': 'interview'}
-        user_id, auth_token = self.create_guest_user(auth_data={'maVoie': ma_voie_info})
-        saved_user = self.get_user_info(user_id, auth_token)
+        user_id, token = self.create_guest_user(auth_data={'maVoie': ma_voie_info})
+        saved_user = self.get_user_info(user_id, token)
         self.assertEqual(ma_voie_info, saved_user.get('maVoie'))
 
     def test_update_ma_voie_user(self) -> None:
         """Ma Voie information cannot be updated."""
 
         ma_voie_info = {'maVoieId': 'some-random-id', 'stepId': 'interview'}
-        user_id, auth_token = self.create_guest_user(auth_data={'maVoie': ma_voie_info})
-        user = self.get_user_info(user_id, auth_token)
+        user_id, token = self.create_guest_user(auth_data={'maVoie': ma_voie_info})
+        user = self.get_user_info(user_id, token)
         user['maVoie'] = {'maVoieId': 'other-random-id', 'stepId': 'definition'}
         response = self.app.post(
             '/api/user', data=json.dumps(user),
-            headers={'Authorization': f'Bearer {auth_token}'})
+            headers={'Authorization': f'Bearer {token}'})
         updated_user = self.json_from_response(response)
         self.assertEqual(ma_voie_info, updated_user.get('maVoie'))
 
@@ -1097,12 +1196,12 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         """Ma Voie information cannot be deleted."""
 
         ma_voie_info = {'maVoieId': 'some-random-id', 'stepId': 'interview'}
-        user_id, auth_token = self.create_guest_user(auth_data={'maVoie': ma_voie_info})
-        user = self.get_user_info(user_id, auth_token)
+        user_id, token = self.create_guest_user(auth_data={'maVoie': ma_voie_info})
+        user = self.get_user_info(user_id, token)
         del user['maVoie']
         response = self.app.post(
             '/api/user', data=json.dumps(user),
-            headers={'Authorization': f'Bearer {auth_token}'})
+            headers={'Authorization': f'Bearer {token}'})
         updated_user = self.json_from_response(response)
         self.assertEqual(ma_voie_info, updated_user.get('maVoie'))
 
@@ -1123,15 +1222,15 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.create_guest_user(auth_data={'maVoie': {'maVoieId': 'myID', 'stepId': 'interview'}})
         self.assertTrue(mock_requests.called)
 
-    @mock.patch(server.user.__name__ + '._SLACK_WEBHOOK_URL', 'slack://bob-bots')
+    @mock.patch(server.user.__name__ + '._SLACK_FEEDBACK_WEBHOOK_URL', 'slack://bob-bots')
     @requests_mock.mock()
     def test_send_user_agreement_feedback(self, mock_requests: requests_mock.Mocker) -> None:
         """Test sending user agreement score and feedback."""
 
-        user_id, auth_token = self.create_guest_user(
+        user_id, token = self.create_guest_user(
             auth_data={'maVoie': {'maVoieId': 'myID', 'stepId': 'interview'}},
             modifiers=[base_test.add_project])
-        user = self.get_user_info(user_id, auth_token)
+        user = self.get_user_info(user_id, token)
         project = user['projects'][0]
         project['originalSelfDiagnostic'] = {
             'categoryId': 'bravo',
@@ -1141,7 +1240,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         project['feedback'] = {'challengeAgreementScore': 2}
         response = self.app.post(
             f'/api/user/{user_id}/project/{project["projectId"]}', data=json.dumps(project),
-            headers={'Authorization': f'Bearer {auth_token}'})
+            headers={'Authorization': f'Bearer {token}'})
         project = self.json_from_response(response)
 
         mock_requests.post('slack://bob-bots')
@@ -1149,7 +1248,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         project['feedback']['text'] = 'Actually I agree'
         response = self.app.post(
             f'/api/user/{user_id}/project/{project["projectId"]}', data=json.dumps(project),
-            headers={'Authorization': f'Bearer {auth_token}'})
+            headers={'Authorization': f'Bearer {token}'})
         self.json_from_response(response)
 
         self.assertEqual(1, mock_requests.call_count)
@@ -1159,15 +1258,15 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertIn('bravo', json_sent['text'])
         self.assertIn('Actually I agree', json_sent['text'])
 
-    @mock.patch(server.user.__name__ + '._SLACK_WEBHOOK_URL', 'slack://bob-bots')
+    @mock.patch(server.user.__name__ + '._SLACK_FEEDBACK_WEBHOOK_URL', 'slack://bob-bots')
     @requests_mock.mock()
     def test_send_user_agreement_feedback_other(self, mock_requests: requests_mock.Mocker) -> None:
         """Test sending user agreement score and feedback when the user self diagnosed to other."""
 
-        user_id, auth_token = self.create_guest_user(
+        user_id, token = self.create_guest_user(
             auth_data={'maVoie': {'maVoieId': 'myID', 'stepId': 'interview'}},
             modifiers=[base_test.add_project])
-        user = self.get_user_info(user_id, auth_token)
+        user = self.get_user_info(user_id, token)
         project = user['projects'][0]
         project['originalSelfDiagnostic'] = {
             'categoryDetails': "I just don't want to get a job",
@@ -1177,7 +1276,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         project['feedback'] = {'challengeAgreementScore': 2}
         response = self.app.post(
             f'/api/user/{user_id}/project/{project["projectId"]}', data=json.dumps(project),
-            headers={'Authorization': f'Bearer {auth_token}'})
+            headers={'Authorization': f'Bearer {token}'})
         project = self.json_from_response(response)
 
         mock_requests.post('slack://bob-bots')
@@ -1185,7 +1284,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         project['feedback']['text'] = 'Actually I agree'
         response = self.app.post(
             f'/api/user/{user_id}/project/{project["projectId"]}', data=json.dumps(project),
-            headers={'Authorization': f'Bearer {auth_token}'})
+            headers={'Authorization': f'Bearer {token}'})
         self.json_from_response(response)
 
         self.assertEqual(1, mock_requests.call_count)
@@ -1194,6 +1293,147 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertIn('Agree with stuck-market: 1/4', json_sent['text'])
         self.assertIn("I just don't want to get a job", json_sent['text'])
         self.assertIn('Actually I agree', json_sent['text'])
+
+    @mock.patch.dict(os.environ, {
+        'EXPERIMENTS_ROLLOUTS': '{"late_self_diagnostic": {"newUsersInActive": 100}}'})
+    def test_create_user_in_experiment(self) -> None:
+        """Create a guest user that directly goes to an experiment thanks to the config."""
+
+        user_id, token = self.create_guest_user()
+        saved_user = self.get_user_info(user_id, token)
+        self.assertEqual('ACTIVE', saved_user.get('featuresEnabled', {}).get('lateSelfDiagnostic'))
+
+
+def _add_action(user: dict[str, Any]) -> None:
+    user['projects'][0]['actions'] = [{
+        'actionId': 'my-action',
+        'adviceId': 'my-advice',
+        'status': 'ACTION_UNREAD',
+    }]
+
+
+class ActionSaveTestCase(base_test.ServerTestCase):
+    """Test the action saving route."""
+
+    def test_simple_merge(self) -> None:
+        """Simple merge of actions works properly."""
+
+        user_id, token = self.create_user_with_token(
+            modifiers=[base_test.add_project_modifier, _add_action])
+        response = self.app.post(f'/api/user/{user_id}/project/0/action/my-action', headers={
+            'Authorization': f'Bearer {token}',
+        }, data='''{
+            "acceptedFromStrategyId": "my-strategy",
+            "actionId": "my-action",
+            "status": "ACTION_CURRENT"
+        }''')
+        saved_action = self.json_from_response(response)
+        self.assertEqual({
+            'acceptedFromStrategyId': 'my-strategy',
+            'actionId': 'my-action',
+            'adviceId': 'my-advice',
+            'status': 'ACTION_CURRENT',
+        }, saved_action)
+
+    def test_unselect(self) -> None:
+        """Unselecting an action drops its strategy ID."""
+
+        user_id, token = self.create_user_with_token(
+            modifiers=[base_test.add_project_modifier, _add_action])
+        response = self.app.post(f'/api/user/{user_id}/project/0/action/my-action', headers={
+            'Authorization': f'Bearer {token}',
+        }, data='''{
+            "acceptedFromStrategyId": "my-strategy",
+            "actionId": "my-action",
+            "status": "ACTION_CURRENT"
+        }''')
+        response = self.app.post(f'/api/user/{user_id}/project/0/action/my-action', headers={
+            'Authorization': f'Bearer {token}',
+        }, data='''{
+            "actionId": "my-action",
+            "status": "ACTION_UNREAD"
+        }''')
+        saved_action = self.json_from_response(response)
+        self.assertEqual({
+            'actionId': 'my-action',
+            'adviceId': 'my-advice',
+            'status': 'ACTION_UNREAD',
+        }, saved_action)
+
+    def test_undone(self) -> None:
+        """Marking an action as undone drops its stopped date."""
+
+        user_id, token = self.create_user_with_token(
+            modifiers=[base_test.add_project_modifier, _add_action])
+        response = self.app.post(f'/api/user/{user_id}/project/0/action/my-action', headers={
+            'Authorization': f'Bearer {token}',
+        }, data='''{
+            "acceptedFromStrategyId": "my-strategy",
+            "actionId": "my-action",
+            "expectedCompletionAt": "2021-11-16T12:00:00Z",
+            "status": "ACTION_DONE",
+            "stoppedAt": "2021-11-15T12:00:00Z"
+        }''')
+        saved_action = self.json_from_response(response)
+        self.assertEqual({
+            'acceptedFromStrategyId': 'my-strategy',
+            'actionId': 'my-action',
+            'adviceId': 'my-advice',
+            'expectedCompletionAt': '2021-11-16T12:00:00Z',
+            'status': 'ACTION_DONE',
+            'stoppedAt': '2021-11-15T12:00:00Z',
+        }, saved_action)
+        response = self.app.post(f'/api/user/{user_id}/project/0/action/my-action', headers={
+            'Authorization': f'Bearer {token}',
+        }, data='''{
+            "actionId": "my-action",
+            "status": "ACTION_CURRENT"
+        }''')
+        saved_action = self.json_from_response(response)
+        self.assertEqual({
+            'acceptedFromStrategyId': 'my-strategy',
+            'actionId': 'my-action',
+            'adviceId': 'my-advice',
+            'expectedCompletionAt': '2021-11-16T12:00:00Z',
+            'status': 'ACTION_CURRENT',
+        }, saved_action)
+
+
+def _add_action_plan(user: dict[str, Any]) -> None:
+    user['projects'][0]['actionPlanStartedAt'] = proto.datetime_to_json_string(
+        datetime.datetime(2021, 11, 10))
+
+
+# TODO(cyrille): Drop patch once the email is implemented.
+@mock.patch.dict(server.campaign._CAMPAIGNS, {'action-plan': ''})  # pylint: disable=protected-access
+class ActionPlanEmailTestCase(base_test.ServerTestCase):
+    """Test the send-action-plan route."""
+
+    def test_no_plan(self) -> None:
+        """Cannot send the plan without an action plan."""
+
+        user_id, token = self.create_user_with_token(
+            modifiers=[base_test.add_project_modifier])
+        user = self.get_user_info(user_id, token)
+        response = self.app.post(
+            f'/api/user/{user_id}/project/{user["projects"][0]["projectId"]}/send-action-plan',
+            headers={'Authorization': f'Bearer {token}'})
+        self.assertEqual(400, response.status_code)
+        self.assertIn('text/html', response.headers.get('Content-type', ''))
+        self.assertIn('plan d&#x27;action', response.get_data(as_text=True))
+
+    def test_guest(self) -> None:
+        """Cannot send the plan without an email."""
+
+        user_id, token = self.create_guest_user(modifiers=[
+            base_test.add_project_modifier,
+            _add_action_plan])
+        user = self.get_user_info(user_id, token)
+        response = self.app.post(
+            f'/api/user/{user_id}/project/{user["projects"][0]["projectId"]}/send-action-plan',
+            headers={'Authorization': f'Bearer {token}'})
+        self.assertEqual(422, response.status_code)
+        self.assertIn('email', response.get_data(as_text=True))
 
 
 if __name__ == '__main__':

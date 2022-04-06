@@ -1,12 +1,12 @@
 """Module to advise the user on specific jobboard they might not be aware of."""
 
 import random
-from typing import Iterator, List
+from typing import Iterator
 
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import jobboard_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 
 _JOBBOARDS: proto.MongoCachedCollection[jobboard_pb2.JobBoard] = \
     proto.MongoCachedCollection(jobboard_pb2.JobBoard, 'jobboards')
@@ -28,9 +28,9 @@ class _AdviceJobBoards(scoring_base.LowPriorityAdvice):
     """A scoring model to trigger the "Find job boards" advice."""
 
     def __init__(self) -> None:
-        super().__init__(user_pb2.NO_OFFERS)
+        super().__init__(user_profile_pb2.NO_OFFERS)
 
-    def _explain(self, project: scoring_base.ScoringProject) -> List[str]:
+    def _explain(self, project: scoring_base.ScoringProject) -> list[str]:
         """Compute a score for the given ScoringProject, and with why it's received this score."""
 
         if self._main_frustration in project.user_profile.frustrations:
@@ -40,7 +40,7 @@ class _AdviceJobBoards(scoring_base.LowPriorityAdvice):
 
     @scoring_base.ScoringProject.cached('jobboards')
     def list_jobboards(self, project: scoring_base.ScoringProject) \
-            -> List[jobboard_pb2.JobBoard]:
+            -> list[jobboard_pb2.JobBoard]:
         """List all job boards for this project."""
 
         return list(list_jobboards(project))

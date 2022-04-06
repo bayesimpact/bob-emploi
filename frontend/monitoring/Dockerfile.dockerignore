@@ -1,0 +1,6 @@
+*
+!.eslintrc.json
+!.eslintignore
+!common/vendor/*
+!frontend/api/monitoring.proto
+!frontend/monitoring/*

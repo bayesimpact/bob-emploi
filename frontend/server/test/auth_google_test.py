@@ -21,7 +21,7 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(401, response.status_code)
         self.assertIn(
-            "Mauvais jeton d'authentification\xa0: foo bar",
+            'Mauvais jeton d&#x27;authentification\xa0: foo bar',
             response.get_data(as_text=True))
 
     def test_new_user(self, mock_verify_oauth2_token: mock.MagicMock) -> None:

@@ -29,7 +29,7 @@ class SampleRomeJobsTestCase(unittest.TestCase):
             path.join(self.testdata_dir, 'sample_rome_jobs_appellation.csv'),
             self.tmpfile_name)
 
-        with open(self.tmpfile_name) as output_file:
+        with open(self.tmpfile_name, encoding='utf-8') as output_file:
             output = output_file.read()
 
         self.assertEqual(

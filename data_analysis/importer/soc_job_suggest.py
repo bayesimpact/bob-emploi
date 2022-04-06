@@ -10,12 +10,12 @@ docker-compose run --rm -e ALGOLIA_API_KEY=<the key> \
 
 import hashlib
 import json
+import logging
 import os
 from os import path
-import sys
 import time
 import typing
-from typing import Any, Dict, List, TextIO
+from typing import Any
 
 from algoliasearch import exceptions
 from algoliasearch import search_client
@@ -24,7 +24,7 @@ import pandas
 from bob_emploi.data_analysis.lib import usa_cleaned_data
 
 
-def prepare_job_titles(data_folder: str = 'data') -> List[Dict[str, Any]]:
+def prepare_job_titles(data_folder: str = 'data') -> list[dict[str, Any]]:
     """Prepare jobs for upload to Algolia.
 
     Args:
@@ -61,10 +61,10 @@ def prepare_job_titles(data_folder: str = 'data') -> List[Dict[str, Any]]:
 
     useful_columns = ['jobGroupId', 'jobGroupName', 'name', 'numEmployed', 'objectID']
     return typing.cast(
-        List[Dict[str, Any]], job_titles[useful_columns].to_dict(orient='records'))
+        list[dict[str, Any]], job_titles[useful_columns].to_dict(orient='records'))
 
 
-def upload(batch_size: int = 5000, data_folder: str = 'data', out: TextIO = sys.stdout) -> None:
+def upload(batch_size: int = 5000, data_folder: str = 'data') -> None:
     """Upload French city suggestions to Algolia index."""
 
     suggestions = prepare_job_titles(data_folder)
@@ -84,9 +84,11 @@ def upload(batch_size: int = 5000, data_folder: str = 'data', out: TextIO = sys.
 
         # OK we're ready finally replace the index.
         client.move_index(tmp_index_name, index_name)
-    except exceptions.AlgoliaException:
+    except exceptions.AlgoliaException as error:
         tmp_jobs_index.delete()
-        out.write(json.dumps(suggestions[:10], indent=2))
+        logging.error(
+            'An error occurred while saving to Algolia:\n%s',
+            json.dumps(suggestions[:10], indent=2), exc_info=error)
         raise
 
 

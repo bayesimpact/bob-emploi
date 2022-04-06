@@ -2,15 +2,15 @@
 
 import os
 import typing
-from typing import Any, Dict, List, Mapping, Optional, Sequence
+from typing import Any, Mapping, Optional, Sequence
 import unittest
 from unittest import mock
 
 from airtable import airtable
 import airtablemock
 
+from bob_emploi.common.python.i18n import translation
 from bob_emploi.data_analysis.importer import airtable_to_protos
-from bob_emploi.data_analysis.i18n import translation
 from bob_emploi.frontend.api import network_pb2
 
 # TODO(cyrille): Split in several files and drop the following rule disabling.
@@ -21,7 +21,7 @@ class BrokenConverter(airtable_to_protos.ProtoAirtableConverter):
     """A converter with broken function, for testing purposes."""
 
     def _record2dict(
-            self, unused_airtable_record: airtable.Record[Mapping[str, Any]]) -> Dict[str, Any]:
+            self, unused_airtable_record: airtable.Record[Mapping[str, Any]]) -> dict[str, Any]:
         return {'_id': '', 'missing_field': ''}
 
 
@@ -51,7 +51,7 @@ class _ConverterTestCase(airtablemock.TestCase):
             mock_translate.return_value = {}
             self.addCleanup(patcher.stop)
 
-    def add_record(self, record: Dict[str, Any]) -> str:
+    def add_record(self, record: dict[str, Any]) -> str:
         """Adds a record in the table to be imported.
 
         Returns its created ID.
@@ -59,7 +59,7 @@ class _ConverterTestCase(airtablemock.TestCase):
 
         return typing.cast(str, self._base.create(self._table, record)['id'])
 
-    def add_translation(self, string: str, translations: Dict[str, str]) -> None:
+    def add_translation(self, string: str, translations: dict[str, str]) -> None:
         """Adds a translation to the translations table. """
 
         self.assertTrue(
@@ -73,7 +73,7 @@ class _ConverterTestCase(airtablemock.TestCase):
     def airtable2dicts(
             self, *, should_drop_id_and_order: bool = True,
             table: Optional[str] = None, alt_table: Optional[str] = None,
-            collection_name: str = 'my_collection') -> List[Dict[str, Any]]:
+            collection_name: str = 'my_collection') -> list[dict[str, Any]]:
         """Converts records from the table to dicts."""
 
         raw = airtable_to_protos.airtable2dicts(
@@ -187,10 +187,10 @@ class AdviceModuleConverterTestCase(_ConverterTestCase):
         self.assertEqual([0, 1], [m['_order'] for m in protos])
 
 
-class ActionTemplateConverterTestCase(_ConverterTestCase):
-    """Tests for the Action Template converter."""
+class TipTemplateConverterTestCase(_ConverterTestCase):
+    """Tests for the Tip Template converter."""
 
-    converter_id = 'ActionTemplate'
+    converter_id = 'TipTemplate'
 
     def test_curly_quote(self) -> None:
         """Test that we forbid curly quotes."""
@@ -232,7 +232,7 @@ class ActionTemplateConverterTestCase(_ConverterTestCase):
     def test_double_newline_allowed(self) -> None:
         """Test that we allow strings with double newlines."""
 
-        self.add_record({'title': "It's makes it easier\n\nto create paragraphs."})
+        self.add_record({'short_description': "It's makes it easier\n\nto create paragraphs."})
         self.assertTrue(self.airtable2dicts())
 
     def test_breakable_space(self) -> None:
@@ -339,6 +339,26 @@ class ActionTemplateConverterTestCase(_ConverterTestCase):
         self.add_record({'filters': ['Don’t do that']})
         with self.assertRaises(ValueError):
             self.airtable2dicts()
+
+    @mock.patch('logging.error')
+    def test_many_bad_quotes(self, mock_logging: mock.MagicMock) -> None:
+        """Test that we notify of multiple quotes errors in one error."""
+
+        self.add_record({'title': 'Don’t do that "" here'})
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+        self.assertTrue(
+            any(
+                'double double' in (call[0][0] % call[0][1:]).lower()
+                for call in mock_logging.call_args_list
+            ),
+            msg=mock_logging.call_args_list)
+        self.assertTrue(
+            any(
+                'curly' in (call[0][0] % call[0][1:]).lower()
+                for call in mock_logging.call_args_list
+            ),
+            msg=mock_logging.call_args_list)
 
     def test_trimmable_space_in_list_field(self) -> None:
         """Test that we forbid spaces at start or end of strings in lists."""
@@ -540,7 +560,7 @@ class ContactLeadConverterTestCase(_ConverterTestCase):
         self.add_record({
             'name': 'Le maire %ofCity',
             'filters': ['for-experienced(6)'],
-            'email_template': "I've been searching for %jobSearchLengthMonthsAtCreation months",
+            'email_template': "I've been searching for %jobSearchLengthAtCreation months",
             'card_content': 'Look at this advice!',
         })
         with self.assertRaises(ValueError):
@@ -628,14 +648,16 @@ class DynamicAdviceConverterTestCase(_ConverterTestCase):
         with self.assertRaises(ValueError):
             self.airtable2dicts()
 
-    def test_dynamic_advice_goal_sentence_enforce_format_two(self) -> None:
+    @mock.patch('logging.error')
+    def test_dynamic_advice_goal_sentence_enforce_format_two(
+            self, mock_logging: mock.MagicMock) -> None:
         """Convert a dynamic advice config with goal sentence with wrong format two."""
 
         self.add_record({
             'id': 'baker',
             'title': 'Présentez-vous au chef boulanger',
             'short_title': 'Astuces de boulangers',
-            'goal': 'Manger du pain',
+            'goal': 'Manger du pain.',
             'diagnostic_topics': ['MARKET_DIAGNOSTIC'],
             'fr:for-job-group': 'D1102',
             'filters': ['not-for-job(12006)'],
@@ -645,6 +667,8 @@ class DynamicAdviceConverterTestCase(_ConverterTestCase):
         })
         with self.assertRaises(ValueError):
             self.airtable2dicts()
+        self.assertIn(
+            '**M**anger du pain**.**', mock_logging.call_args[0][0] % mock_logging.call_args[0][1:])
 
     @mock.patch('logging.error')
     def test_dynamic_advice_several_errors(self, mock_logging: mock.MagicMock) -> None:
@@ -736,15 +760,16 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
     def test_correct_record(self) -> None:
         """A diagnostic overall is correctly converted."""
 
-        self.add_record({
+        record_id = self.add_record({
             'category_id': ['bravo'],
             'order': 0,
             'sentence_template': 'Hello world',
             'score': 50,
             'text_template': 'This is **why** you got this score.',
         })
-
-        self.assertEqual(1, len(self.airtable2dicts()))
+        all_records_in_mongo = self.airtable2dicts()
+        self.assertEqual(1, len(all_records_in_mongo))
+        self.assertEqual(record_id, all_records_in_mongo[0].get('id'), all_records_in_mongo)
 
     def test_missing_score(self) -> None:
         """A diagnostic overall needs a score."""
@@ -1046,6 +1071,23 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
         self.assertIn('line break', error_message)
         self.assertIn('you got this score.\nAnd you should ', error_message)
 
+    def test_list_formatting(self) -> None:
+        """A diagnostic supports list items."""
+
+        self.add_record({
+            'category_id': ['bravo'],
+            'order': 0,
+            'sentence_template': 'Hello world',
+            'score': 50,
+            'text_template': '''\
+This is a list:
+* item 1
+* item 2
+* item 3
+
+All good!'''})
+        self.assertTrue(self.airtable2dicts())
+
     @mock.patch('logging.error')
     def test_blank_error_message(self, mock_logging: mock.MagicMock) -> None:
         """A diagnostic overall with a trailing blank at the end of an internal line."""
@@ -1268,12 +1310,12 @@ class StrategyAdviceTemplateConverterTestCase(_ConverterTestCase):
 
         self.add_record({
             'advice_id': ['commute'],
-            'header_template': 'Voici comment commuter.',
+            'why_template': 'Voici comment commuter.',
             'strategy_id': ['rec0123456789'],
         })
         self.assertEqual([{
             'adviceId': 'commute',
-            'headerTemplate': 'Voici comment commuter.',
+            'whyTemplate': 'Voici comment commuter.',
             'strategyId': 'rec0123456789',
         }], self.airtable2dicts())
 
@@ -1283,12 +1325,12 @@ class StrategyAdviceTemplateConverterTestCase(_ConverterTestCase):
 
         self.add_record({
             'advice_id': ['commute'],
-            'header_template': 'Voici comment commuter.',
+            'why_template': 'Voici comment commuter.',
             'strategy_id': ['rec0123456789'],
         })
         self.add_record({
             'advice_id': ['commute'],
-            'header_template': 'Voici comment commuter différement.',
+            'why_template': 'Voici comment commuter différement.',
             'strategy_id': ['rec0123456789'],
         })
         with self.assertRaises(ValueError):

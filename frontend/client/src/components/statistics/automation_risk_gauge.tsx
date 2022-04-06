@@ -2,7 +2,8 @@ import React, {useMemo} from 'react'
 import {useTranslation} from 'react-i18next'
 
 import {ofJobName} from 'store/french'
-import {LocalizableString, prepareT} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {prepareT} from 'store/i18n'
 
 import {changeColorLightness} from 'components/colors'
 import DataSource from 'components/data_source'

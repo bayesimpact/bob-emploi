@@ -7,7 +7,7 @@ import importlib
 import pkgutil
 import os
 import typing
-from typing import Dict, Iterable
+from typing import Iterable
 
 from bob_emploi.data_analysis.importer import importers
 
@@ -17,7 +17,7 @@ _DEPLOYMENTS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 class DeploymentModule:
     """The interface the plugins should expose."""
 
-    IMPORTERS: Dict[str, importers.Importer]
+    IMPORTERS: dict[str, importers.Importer]
 
 
 def list_all_deployments() -> Iterable[str]:
@@ -29,7 +29,7 @@ def list_all_deployments() -> Iterable[str]:
         yield package.name
 
 
-def get_importers(deployment_name: str) -> Dict[str, importers.Importer]:
+def get_importers(deployment_name: str) -> dict[str, importers.Importer]:
     """Get the importers for a given deployment."""
 
     if deployment_name == 'fr':

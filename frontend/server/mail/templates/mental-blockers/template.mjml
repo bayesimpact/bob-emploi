@@ -1,0 +1,25 @@
+<mjml owa="desktop" version="4.6.3">
+  <mj-body background-color="#ffffff">
+    <mj-section >
+      <mj-column>
+        <mj-text font-size="14px" line-height="22px">Salut {{var:firstName:"Patrick"}} !</mj-text>
+        <mj-text font-size="14px" line-height="22px">J'ai trouvé un article sur la motivation et je veux le partager avec vous. Il me semble que vous nous aviez dit avoir du mal à rester motivé{%if var:gender:""=="FEMININE"%}e{%else%}{%if var:gender:""=="MASCULINE"%}{%else%}·e{%endif%}{%endif%} dans votre recherche d'emploi. L'article donne de bonnes pistes pour s'écouter, creuser et trouver les raisons éventuelles qui nous bloquent.</mj-text>
+        <mj-text font-size="14px" line-height="22px"><a href="{{var:advicePageUrl}}">Cet article</a> explique que lorsqu'on n'arrive pas à prendre des initiatives, y compris en cherchant un nouveau travail, <b>la manière dont on se parle peut renforcer cette inaction</b>. En fait, parfois on est bloqué par deux petits mots en particulier.</mj-text>
+        <mj-text font-size="14px" line-height="22px">Ces mots sont "Oui, mais". Lorsqu'on se dit "Oui, mais...", on justifie et on s'excuse pour l'inaction. On reconnaît qu'il y a un résultat qu'on cherche, mais on se bloque le chemin pour y aller avant même d'avoir commencé.</mj-text>
+        <mj-text font-size="14px" line-height="22px">La recherche d'emploi peut également susciter la peur, notamment la peur de l'inconnu. En plus, des sentiments de complaisance surviennent lorsque nous nous sommes habitués à ce que nous faisons. La recherche d'emploi demande des efforts et du temps, et il est plus confortable de maintenir le statu quo.</mj-text>
+        <mj-text font-size="14px" line-height="22px">Mais si nous nous demandions si nous serions plus heureux avec une nouvelle opportunité, nous devrions défier cette complaisance. Comme Nicolas Galita dit dans l'article, rappelez-vous que "<i>si vous voulez avoir ce que vous n'avez jamais eu, il faut faire ce que vous n'avez jamais fait</i>".</mj-text>
+        <mj-text font-size="14px" line-height="22px">C'est important de vaincre ces obstacles pour qu'on puisse découvrir les opportunités qui nous passionnent et qui nous épanouiront professionnellement.</mj-text>
+        <mj-text font-size="14px" line-height="22px">J'espère que cet article vous aidera et vous inspirera pour vaincre vos barrières mentales pendant votre recherche d'emploi. On est sûrs qu'il existe un boulot qui vous passionnera et vous inspirera, et on souhaite vraiment que vous le trouviez très bientôt.</mj-text>
+        <mj-text font-size="14px" line-height="22px">
+          <p>À plus,</p>
+          <p>{{var:senderName}}</p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-text font-size="11px" color="#55575d" line-height="2">Vous recevez cet email car vous êtes inscrit{%if var:gender:""=="FEMININE"%}e{%elseif var:gender:""=="MASCULINE"%}{%else%}·e{%endif%} sur <a href="{{var:baseUrl}}?utm_source=bob-emploi&amp;utm_medium=email" target="_blank">{{var:productName}}</a> et avez demandé des emails de coaching. <a href="{{var:changeEmailSettingsUrl}}" target="_blank">Cliquez ici</a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte {{var:productName}} en veille ? <a href="{{var:statusUpdateUrl}}" target="_blank">cliquez ici</a>.</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

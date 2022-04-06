@@ -6,42 +6,47 @@ See design doc at http://go/bob:scoring-advices.
 import logging
 import re
 import typing
-from typing import Callable, List, Iterable, Optional, Set
+from typing import Callable, Iterable, Optional, Set
 
 from bob_emploi.frontend.api import boolean_pb2
 from bob_emploi.frontend.api import diagnostic_pb2
+from bob_emploi.frontend.api import features_pb2
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import training_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server import companies
 from bob_emploi.frontend.server import modules
+from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
-# pylint: disable=unused-import,import-only-modules
-from bob_emploi.frontend.server import template
+# pylint: disable=unused-import,useless-import-alias,import-only-modules
 # Re-export some base elements from here.
-from bob_emploi.frontend.server.scoring_base import ConstantScoreModel
-from bob_emploi.frontend.server.scoring_base import ExplainedScore
-from bob_emploi.frontend.server.scoring_base import filter_using_score
-from bob_emploi.frontend.server.scoring_base import get_scoring_model
-from bob_emploi.frontend.server.scoring_base import get_user_locale
-from bob_emploi.frontend.server.scoring_base import LowPriorityAdvice
-from bob_emploi.frontend.server.scoring_base import ModelBase
-from bob_emploi.frontend.server.scoring_base import NotEnoughDataException
-from bob_emploi.frontend.server.scoring_base import NULL_EXPLAINED_SCORE
-from bob_emploi.frontend.server.scoring_base import ScoringProject
-from bob_emploi.frontend.server.scoring_base import SCORING_MODEL_REGEXPS
-from bob_emploi.frontend.server.scoring_base import SCORING_MODELS
-from bob_emploi.frontend.server.scoring_base import TEMPLATE_VAR_PATTERN
-from bob_emploi.frontend.server.template import APPLICATION_MODES
-# pylint: enable=unused-import,import-only-modules
+from bob_emploi.frontend.server.scoring_base import (
+    ConstantScoreModel as ConstantScoreModel,
+    ExplainedScore as ExplainedScore,
+    filter_using_score as filter_using_score,
+    get_scoring_model as get_scoring_model,
+    LowPriorityAdvice as LowPriorityAdvice,
+    ModelBase as ModelBase,
+    NotEnoughDataException as NotEnoughDataException,
+    NULL_EXPLAINED_SCORE as NULL_EXPLAINED_SCORE,
+    ScoringProject as ScoringProject,
+    SCORING_MODEL_REGEXPS as SCORING_MODEL_REGEXPS,
+    SCORING_MODELS as SCORING_MODELS,
+    TEMPLATE_VAR_PATTERN as TEMPLATE_VAR_PATTERN,
+)
+from bob_emploi.frontend.server.template import APPLICATION_MODES as APPLICATION_MODES
+# pylint: enable=unused-import,useless-import-alias,import-only-modules
 
 # TODO(cyrille): Move strategy scorers to its own module and re-enable rule below.
 # pylint: disable=too-many-lines
 _Type = typing.TypeVar('_Type')
 
 modules.import_all_modules()
+
+_VOCATIONAL_REHABILITATION_AGENCIES: proto.MongoCachedCollection[training_pb2.TrainingAgency] = \
+    proto.MongoCachedCollection(training_pb2.TrainingAgency, 'vocational_rehabilitation_agencies')
 
 
 class _AdviceTrainingScoringModel(scoring_base.ModelBase):
@@ -50,7 +55,14 @@ class _AdviceTrainingScoringModel(scoring_base.ModelBase):
     def get_expanded_card_data(self, project: ScoringProject) -> training_pb2.Trainings:
         """Compute extra data for this module to render a card in the client."""
 
-        return training_pb2.Trainings(trainings=project.get_trainings())
+        result = training_pb2.Trainings(trainings=project.get_trainings())
+        if project.user_profile.has_handicap and project.details.city.region_id:
+            agencies = _VOCATIONAL_REHABILITATION_AGENCIES.get_collection(project.database)
+            for agency in agencies:
+                if agency.region_id == project.details.city.region_id:
+                    result.vocational_rehabilitation_agency.CopyFrom(agency)
+                    break
+        return result
 
     def score_and_explain(self, project: ScoringProject) -> ExplainedScore:
         """Compute the score of given project and why it's scored."""
@@ -60,9 +72,6 @@ class _AdviceTrainingScoringModel(scoring_base.ModelBase):
 
         # TODO(guillaume): Get the score for each project from lbf.
         all_trainings = project.get_trainings()
-
-        if not all_trainings:
-            return NULL_EXPLAINED_SCORE
 
         search_length = round(project.get_search_length_at_creation())
         if len(all_trainings) >= 2:
@@ -88,12 +97,12 @@ class _AdviceBodyLanguage(scoring_base.ModelBase):
         """Compute a score for the given ScoringProject."""
 
         _related_frustrations = {
-            user_pb2.INTERVIEW: project.translate_static_string(
+            user_profile_pb2.INTERVIEW: project.translate_static_string(
                 'vous nous avez dit que les entretiens sont un challenge pour vous'),
-            user_pb2.SELF_CONFIDENCE: project.translate_static_string(
+            user_profile_pb2.SELF_CONFIDENCE: project.translate_static_string(
                 'vous nous avez dit parfois manquer de confiance en vous'
             ),
-            user_pb2.ATYPIC_PROFILE: project.translate_static_string(
+            user_profile_pb2.ATYPIC_PROFILE: project.translate_static_string(
                 'vous nous avez dit ne pas rentrer dans les cases des recruteurs'
             ),
         }
@@ -131,7 +140,7 @@ class _AdviceSpecificToJob(scoring_base.ModelBase):
             return None
 
         # TODO(pascal): Use keyed translation with context and drop those.
-        is_feminine = project.user_profile.gender == user_pb2.FEMININE
+        is_feminine = project.user_profile.gender == user_profile_pb2.FEMININE
         if is_feminine and config.expanded_card_items_feminine:
             expanded_card_items = config.expanded_card_items_feminine
         else:
@@ -169,7 +178,7 @@ class _UserProfileFilter(scoring_base.BaseFilter):
         _UserProfileFilter(lambda user: user.has_access_to_computer)
     """
 
-    def __init__(self, filter_func: Callable[[user_pb2.UserProfile], bool]) -> None:
+    def __init__(self, filter_func: Callable[[user_profile_pb2.UserProfile], bool]) -> None:
         super().__init__(lambda project: filter_func(project.user_profile))
 
 
@@ -188,7 +197,7 @@ class _ProjectFilter(scoring_base.BaseFilter):
     def __init__(
             self,
             filter_func: Callable[[project_pb2.Project], bool],
-            reasons: Optional[List[str]] = None) -> None:
+            reasons: Optional[list[str]] = None) -> None:
         super().__init__(
             lambda project: filter_func(project.details), reasons=reasons)
 
@@ -229,6 +238,17 @@ class _DepartementFilter(_ProjectFilter):
         return project.city.departement_id in self._departements
 
 
+class _RegionFilter(_ProjectFilter):
+    """A scoring model to filter on the region (state in the USA)."""
+
+    def __init__(self, regions: str) -> None:
+        super().__init__(self._filter)
+        self._regions = set(r.strip() for r in regions.split(','))
+
+    def _filter(self, project: project_pb2.Project) -> bool:
+        return project.city.region_id in self._regions
+
+
 class _OldUserFilter(scoring_base.BaseFilter):
     """A scoring model to filter on the age."""
 
@@ -245,7 +265,7 @@ class _FrustratedOldUserFilter(_OldUserFilter):
 
     def _filter(self, project: ScoringProject) -> bool:
         return super()._filter(project) and \
-            user_pb2.AGE_DISCRIMINATION in project.user_profile.frustrations
+            user_profile_pb2.AGE_DISCRIMINATION in project.user_profile.frustrations
 
 
 class _FrustrationFilter(_UserProfileFilter):
@@ -253,9 +273,9 @@ class _FrustrationFilter(_UserProfileFilter):
 
     def __init__(self, frustration: str) -> None:
         super().__init__(self._filter)
-        self.frustration = user_pb2.Frustration.Value(frustration)
+        self.frustration = user_profile_pb2.Frustration.Value(frustration)
 
-    def _filter(self, user: user_pb2.UserProfile) -> bool:
+    def _filter(self, user: user_profile_pb2.UserProfile) -> bool:
         return self.frustration in user.frustrations
 
 
@@ -298,11 +318,11 @@ class _ActiveExperimentFilter(scoring_base.BaseFilter):
     """A scoring model to filter on a feature enabled."""
 
     _features: Set[str] = {
-        f.name for f in user_pb2.Features.DESCRIPTOR.fields
-        if f.enum_type == user_pb2.BinaryExperiment.DESCRIPTOR
+        f.name for f in features_pb2.Features.DESCRIPTOR.fields
+        if f.enum_type == features_pb2.BinaryExperiment.DESCRIPTOR
     }
 
-    def __init__(self, feature: str, reasons: Optional[List[str]] = None) -> None:
+    def __init__(self, feature: str, reasons: Optional[list[str]] = None) -> None:
         super().__init__(self._filter, reasons=reasons)
         if feature not in self._features:
             raise ValueError(f'"{feature}" is not a valid feature:\n{self._features}')
@@ -310,9 +330,10 @@ class _ActiveExperimentFilter(scoring_base.BaseFilter):
 
     def _filter(self, project: ScoringProject) -> bool:
 
-        return user_pb2.ACTIVE == \
+        return features_pb2.ACTIVE == \
             typing.cast(
-                'user_pb2.BinaryExperiment.V', getattr(project.features_enabled, self._feature))
+                'features_pb2.BinaryExperiment.ValueType',
+                getattr(project.features_enabled, self._feature))
 
 
 class _JobGroupWithoutJobFilter(_ProjectFilter):
@@ -322,7 +343,7 @@ class _JobGroupWithoutJobFilter(_ProjectFilter):
             self,
             job_groups: Iterable[str],
             exclude_jobs: Optional[Iterable[str]] = None,
-            reasons: Optional[List[str]] = None) -> None:
+            reasons: Optional[list[str]] = None) -> None:
         super().__init__(self._filter, reasons=reasons)
         self._job_groups = set(job_groups)
         self._exclude_jobs = set(exclude_jobs) if exclude_jobs else set()
@@ -340,8 +361,8 @@ class _ApplicationComplexityFilter(scoring_base.BaseFilter):
 
     def __init__(
             self,
-            application_complexity: 'job_pb2.ApplicationProcessComplexity.V',
-            reasons: Optional[List[str]] = None) -> None:
+            application_complexity: 'job_pb2.ApplicationProcessComplexity.ValueType',
+            reasons: Optional[list[str]] = None) -> None:
         super().__init__(self._filter, reasons=reasons)
         self._application_complexity = application_complexity
 
@@ -442,7 +463,7 @@ class _AdviceVae(scoring_base.ModelBase):
     def score_and_explain(self, project: ScoringProject) -> ExplainedScore:
         """Compute a score for the given ScoringProject."""
 
-        is_frustrated_by_trainings = user_pb2.TRAINING in project.user_profile.frustrations
+        is_frustrated_by_trainings = user_profile_pb2.TRAINING in project.user_profile.frustrations
         has_experience = project.details.seniority in set([project_pb2.SENIOR, project_pb2.EXPERT])
         thinks_xp_covers_diplomas = \
             project.details.training_fulfillment_estimate == project_pb2.ENOUGH_EXPERIENCE
@@ -456,7 +477,7 @@ class _AdviceVae(scoring_base.ModelBase):
         if project.details.training_fulfillment_estimate == project_pb2.ENOUGH_DIPLOMAS:
             return NULL_EXPLAINED_SCORE
 
-        reasons: List[str] = []
+        reasons: list[str] = []
         if has_experience:
             reasons.append(project.translate_static_string(
                 "vous nous avez dit avoir de l'expérience"))
@@ -490,7 +511,7 @@ class _AdviceSenior(scoring_base.ModelBase):
 
         age = project.get_user_age()
         reasons = []
-        if (user_pb2.AGE_DISCRIMINATION in project.user_profile.frustrations and age > 40):
+        if (user_profile_pb2.AGE_DISCRIMINATION in project.user_profile.frustrations and age > 40):
             reasons.append(project.translate_static_string(
                 'vous nous avez dit que votre age pouvait parfois être un obstacle'))
         # TODO(cyrille): Add a reason for age >= 45.
@@ -518,8 +539,8 @@ class _ApplicationMediumFilter(scoring_base.BaseFilter):
 
     def __init__(
             self,
-            medium: 'job_pb2.ApplicationMedium.V',
-            reasons: Optional[List[str]] = None) -> None:
+            medium: 'job_pb2.ApplicationMedium.ValueType',
+            reasons: Optional[list[str]] = None) -> None:
         super().__init__(self._filter, reasons=reasons)
         self._medium = medium
 
@@ -531,7 +552,7 @@ class _ApplicationMediumFilter(scoring_base.BaseFilter):
 class _LBBProjectFilter(scoring_base.BaseFilter):
     """A scoring model that filters in users searching for jobs in a sector that recruits."""
 
-    def __init__(self, reasons: Optional[List[str]] = None) -> None:
+    def __init__(self, reasons: Optional[list[str]] = None) -> None:
         super().__init__(self._filter, reasons)
 
     def _filter(self, project: ScoringProject) -> bool:
@@ -557,8 +578,9 @@ class _LBBProjectFilter(scoring_base.BaseFilter):
 class _TrainingFullfilmentFilter(_ProjectFilter):
 
     def __init__(
-            self,
-            training_fulfillment_estimate: 'project_pb2.TrainingFulfillmentEstimate.V') -> None:
+        self,
+        training_fulfillment_estimate: 'project_pb2.TrainingFulfillmentEstimate.ValueType',
+    ) -> None:
         super().__init__(self._filter)
         self.training_fulfillment_estimate = training_fulfillment_estimate
 
@@ -570,7 +592,7 @@ class _ContractTypeFilter(scoring_base.BaseFilter):
 
     def __init__(
             self,
-            selected_contracts: List['job_pb2.EmploymentType.V'],
+            selected_contracts: list['job_pb2.EmploymentType.V'],
             min_percentage: int) -> None:
         super().__init__(self._filter)
         self._selected_contracts = selected_contracts
@@ -631,7 +653,7 @@ class _AdviceFollowupEmail(scoring_base.ModelBase):
 
         if project.job_group_info().preferred_application_medium == job_pb2.APPLY_IN_PERSON:
             return NULL_EXPLAINED_SCORE
-        if user_pb2.NO_OFFER_ANSWERS in project.user_profile.frustrations:
+        if user_profile_pb2.NO_OFFER_ANSWERS in project.user_profile.frustrations:
             return ExplainedScore(2, [project.translate_static_string(
                 'vous nous avez dit ne pas avoir assez de réponses des recruteurs'
             )])
@@ -687,13 +709,19 @@ class _FindWhatYouLikeFilter(scoring_base.BaseFilter):
         super().__init__(self._filter)
 
     def _filter(self, project: scoring_base.ScoringProject) -> bool:
+        # User does not know what to do.
+        if (
+            project.details.has_clear_project == boolean_pb2.FALSE and
+            not project.details.target_job.job_group.rome_id
+        ):
+            return True
         has_never_done_job = project.details.previous_job_similarity == project_pb2.NEVER_DONE
         if project.details.passionate_level > project_pb2.LIKEABLE_JOB:
             # User is already passionate enough about that job.
             return False
         # User should not be motivated to create a company to change job.
         if project.details.kind == project_pb2.CREATE_OR_TAKE_OVER_COMPANY:
-            return user_pb2.MOTIVATION in project.user_profile.frustrations
+            return user_profile_pb2.MOTIVATION in project.user_profile.frustrations
         market_stress = project.market_stress()
         if market_stress and market_stress < 10 / 7:
             # Easy market, they might as well do that.
@@ -704,7 +732,7 @@ class _FindWhatYouLikeFilter(scoring_base.BaseFilter):
             return project.details.seniority < project_pb2.SENIOR
         # User hasn't started search yet and is not motivated.
         if project.details.job_search_has_not_started and has_never_done_job:
-            return user_pb2.MOTIVATION in project.user_profile.frustrations
+            return user_profile_pb2.MOTIVATION in project.user_profile.frustrations
         if _CumulativeSearchFilter(2, 6).score(project):
             # User has been searching for some time, don't tell them to switch project.
             return False
@@ -729,7 +757,10 @@ class _MissingDiplomaFilter(scoring_base.BaseFilter):
                 'Need a job group to determine if the user has enough diplomas',
                 # TODO(pascal): Use project_id instead of 0.
                 {'projects.0.targetJob.jobGroup.romeId'})
-        if all(diploma.percent_required == 0 for diploma in project.requirements().diplomas):
+        if all(
+            diploma.percent_required == 0 or diploma.diploma.level == job_pb2.NO_DEGREE
+            for diploma in project.requirements().diplomas
+        ):
             # No diploma is actually required for the job.
             return False
         if project.details.training_fulfillment_estimate in {
@@ -826,7 +857,7 @@ class _StrategyForFrustrated(scoring_base.ModelHundredBase):
 
     def __init__(self, frustrations: str) -> None:
         self._important_frustrations = set(
-            user_pb2.Frustration.Value(f.strip()) for f in frustrations.split(','))
+            user_profile_pb2.Frustration.Value(f.strip()) for f in frustrations.split(','))
         super().__init__()
 
     def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:
@@ -948,7 +979,8 @@ class _CompanyCreatorScoringModel(_ProjectFilter):
         return project.kind == project_pb2.CREATE_OR_TAKE_OVER_COMPANY
 
 
-def unoptional(maybe_bool: 'boolean_pb2.OptionalBool.V', field: Optional[str] = None) -> bool:
+def unoptional(
+        maybe_bool: 'boolean_pb2.OptionalBool.ValueType', field: Optional[str] = None) -> bool:
     """Returns a boolean value from an optional one, or raise if the value is missing."""
 
     if maybe_bool == boolean_pb2.UNKNOWN_BOOL:
@@ -957,11 +989,12 @@ def unoptional(maybe_bool: 'boolean_pb2.OptionalBool.V', field: Optional[str] = 
     return maybe_bool == boolean_pb2.TRUE
 
 
-def _is_long_term_mom(user: user_pb2.UserProfile) -> bool:
-    return user.gender == user_pb2.FEMININE and user_pb2.STAY_AT_HOME_PARENT in user.frustrations
+def _is_long_term_mom(user: user_profile_pb2.UserProfile) -> bool:
+    return user.gender == user_profile_pb2.FEMININE and \
+        user_profile_pb2.STAY_AT_HOME_PARENT in user.frustrations
 
 
-_MIGRANT_FRUSTRATIONS = {user_pb2.LANGUAGE, user_pb2.FOREIGN_QUALIFICATIONS}
+_MIGRANT_FRUSTRATIONS = {user_profile_pb2.LANGUAGE, user_profile_pb2.FOREIGN_QUALIFICATIONS}
 
 # Matches strings like "for-job-group(M16)" or "for-job-group(A12, A13)".
 scoring_base.register_regexp(
@@ -972,6 +1005,9 @@ scoring_base.register_regexp(
 # Matches strings like "for-departement(31)" or "for-departement(31, 75)".
 scoring_base.register_regexp(
     re.compile(r'^for-departement\((.*)\)$'), _DepartementFilter, 'for-departement(31)')
+# Matches strings like "for-region(PA)" or "for-region(PA, CA)".
+scoring_base.register_regexp(
+    re.compile(r'^for-region\((.*)\)$'), _RegionFilter, 'for-region(CA)')
 # Matches strings like "not-for-young" or "not-for-active-experiment".
 scoring_base.register_regexp(
     re.compile(r'^not-(.*)$'), _NegateFilter, 'not-for-job(12006)')
@@ -1049,7 +1085,7 @@ scoring_base.register_model(
 scoring_base.register_model(
     'advice-life-balance', _AdviceLifeBalanceScoringModel())
 scoring_base.register_model(
-    'advice-more-offer-answers', LowPriorityAdvice(user_pb2.NO_OFFER_ANSWERS))
+    'advice-more-offer-answers', LowPriorityAdvice(user_profile_pb2.NO_OFFER_ANSWERS))
 scoring_base.register_model(
     'advice-other-work-env', _AdviceOtherWorkEnv())
 scoring_base.register_model(
@@ -1073,6 +1109,8 @@ scoring_base.register_model(
     'for-application(2)', _ProjectFilter(
         lambda project: project.weekly_applications_estimate >= project_pb2.SOME))
 scoring_base.register_model(
+    'for-army-veteran', _UserProfileFilter(lambda user: user.is_army_veteran))
+scoring_base.register_model(
     'for-autonomous', _UserProfileFilter(
         lambda profile: unoptional(profile.is_autonomous, 'profile.isAutonomous')))
 scoring_base.register_model(
@@ -1090,7 +1128,8 @@ scoring_base.register_model(
         bool(user.driving_licenses)))
 scoring_base.register_model(
     'for-employed', scoring_base.BaseFilter(
-        lambda scoring_project: scoring_project.user_profile.situation == user_pb2.EMPLOYED or
+        lambda scoring_project:
+        scoring_project.user_profile.situation == user_profile_pb2.EMPLOYED or
         scoring_project.details.kind == project_pb2.FIND_ANOTHER_JOB))
 scoring_base.register_model(
     'for-evolution-of-offers(+10%)', scoring_base.BaseFilter(
@@ -1123,13 +1162,13 @@ scoring_base.register_model(
 scoring_base.register_model(
     'for-few-job-creation', scoring_base.BaseFilter(
         # Average growth is 6.9%, see
-        # https://github.com/bayesimpact/bob-emploi-internal/blob/master/data_analysis/notebooks/datasets/france_strategie_rapport_metiers_2022.ipynb
+        # https://github.com/bayesimpact/bob-emploi-internal/blob/HEAD/data_analysis/notebooks/datasets/france_strategie_rapport_metiers_2022.ipynb
         lambda scoring_project: scoring_project.job_group_info().growth_2012_2022 < 0.069))
 scoring_base.register_model(
     'for-more-job-offers-locally(5)', scoring_base.BaseFilter(
         # 15.12 annual offers in PE is equivalent to 5 job offers currently
         # opened in the département.
-        # https://github.com/bayesimpact/bob-emploi-internal/blob/master/data_analysis/notebooks/datasets/job_offers/rare_job_offers.ipynb
+        # https://github.com/bayesimpact/bob-emploi-internal/blob/HEAD/data_analysis/notebooks/datasets/job_offers/rare_job_offers.ipynb
         lambda scoring_project: scoring_project.local_diagnosis().num_job_offers_last_year > 15.12))
 scoring_base.register_model(
     'for-first-job-search', _ProjectFilter(
@@ -1140,15 +1179,14 @@ scoring_base.register_model(
 scoring_base.register_model(
     'for-frustrated-young(25)', scoring_base.BaseFilter(
         lambda scoring_project:
-        user_pb2.AGE_DISCRIMINATION in scoring_project.user_profile.frustrations and
+        user_profile_pb2.AGE_DISCRIMINATION in scoring_project.user_profile.frustrations and
         scoring_project.get_user_age() < 25))
 scoring_base.register_model(
     'for-good-overall-score(50)', _ProjectFilter(
         lambda project: project.diagnostic.overall_score > 50))
-# TODO(cyrille): Replace by more relevant field once it's been added in the onboarding.
 scoring_base.register_model(
     'for-handicaped', _UserProfileFilter(
-        lambda user: user_pb2.HANDICAPED in user.frustrations or user.has_handicap))
+        lambda user: user_profile_pb2.HANDICAPED in user.frustrations or user.has_handicap))
 scoring_base.register_model(
     'for-high-mobility(country)', _ProjectFilter(
         lambda project: project.area_type >= geo_pb2.COUNTRY))
@@ -1191,7 +1229,7 @@ scoring_base.register_model(
         not d.percent_required for d in project.job_group_info().requirements.diplomas)))
 scoring_base.register_model(
     'for-not-employed-anymore', _UserProfileFilter(
-        lambda user: user.situation == user_pb2.LOST_QUIT))
+        lambda user: user.situation == user_profile_pb2.LOST_QUIT))
 scoring_base.register_model(
     'for-potential-freelancer',
     scoring_base.BaseFilter(lambda project: project.job_group_info().has_freelancers))
@@ -1230,8 +1268,8 @@ scoring_base.register_model(
     'for-simple-application', _ApplicationComplexityFilter(job_pb2.SIMPLE_APPLICATION_PROCESS))
 scoring_base.register_model(
     'for-single-parent', _UserProfileFilter(
-        lambda user: user_pb2.SINGLE_PARENT in user.frustrations or
-        user.family_situation == user_pb2.SINGLE_PARENT_SITUATION))
+        lambda user: user_profile_pb2.SINGLE_PARENT in user.frustrations or
+        user.family_situation == user_profile_pb2.SINGLE_PARENT_SITUATION))
 scoring_base.register_model(
     'for-small-city-inhabitant(20000)', _ProjectFilter(
         lambda project: project.city.population > 0 and project.city.population <= 20000))
@@ -1241,7 +1279,7 @@ scoring_base.register_model(
     'for-training-fulfilled', _TrainingFullfilmentFilter(project_pb2.ENOUGH_DIPLOMAS))
 scoring_base.register_model(
     'for-unemployed', _UserProfileFilter(
-        lambda user: bool(user.situation) and user.situation != user_pb2.EMPLOYED))
+        lambda user: bool(user.situation) and user.situation != user_profile_pb2.EMPLOYED))
 scoring_base.register_model(
     'for-unqualified(bac)', _UserProfileFilter(
         lambda user: user.highest_degree <= job_pb2.BAC_BACPRO))
@@ -1261,7 +1299,7 @@ scoring_base.register_model(
 scoring_base.register_model(
     'for-with-resume', _ResumeScoringModel())
 scoring_base.register_model(
-    'for-women', _UserProfileFilter(lambda user: user.gender == user_pb2.FEMININE))
+    'for-women', _UserProfileFilter(lambda user: user.gender == user_profile_pb2.FEMININE))
 scoring_base.register_model(
     'relevance-enhance-methods', _EnhanceMethodsRelevance())
 scoring_base.register_model(
@@ -1279,7 +1317,7 @@ scoring_base.register_model(
 
 
 # TODO(cyrille): Add documentation on each scoring model.
-def document_scoring_models() -> List[str]:
+def document_scoring_models() -> list[str]:
     """Prepare the lines for a documentation file with the list of all scoring models."""
 
     base_models = [

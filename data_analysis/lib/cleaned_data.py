@@ -20,12 +20,12 @@ import codecs
 import collections
 from os import path
 import re
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Optional, Set, Union
 
 import pandas
 from scrapy import selector
 
-_ROME_VERSION = 'v346'
+_ROME_VERSION = 'v347'
 
 # Denominator to compute Market Score because the number of yearly average
 # offers are given for 10 candidates.
@@ -68,7 +68,7 @@ def job_offers(
     filename_colnames = path.join(
         data_folder, filename_colnames or 'job_offers/column_names.txt')
 
-    with open(filename_colnames) as lines:
+    with open(filename_colnames, encoding='utf-8') as lines:
         column_names = [line.strip() for line in lines.readlines()]
     dtypes = {}
     dtypes[column_names.index('city_code')] = str
@@ -305,7 +305,7 @@ def rome_fap_mapping(data_folder: str = 'data', filename: Optional[str] = None) 
     if not filename:
         filename = path.join(data_folder, 'crosswalks/passage_fap2009_romev3.txt')
     with codecs.open(filename, 'r', 'latin-1') as fap_file:
-        mapping: Dict[str, Set[str]] = collections.defaultdict(set)
+        mapping: dict[str, Set[str]] = collections.defaultdict(set)
         for line in fap_file:
             matches = re.search(r'"(.*?)"+\s+=\s+"(.*?)"', line)
             if not matches:
@@ -531,7 +531,7 @@ def transport_scores(data_folder: str = 'data', filename: Optional[str] = None) 
 
     if not filename:
         filename = path.join(data_folder, 'geo/ville-ideale-transports.html')
-    with open(filename, 'rt') as transport_file:
+    with open(filename, 'rt', encoding='utf-8') as transport_file:
         page_text = transport_file.read()
     page_selector = selector.Selector(text=page_text)
 
@@ -570,8 +570,8 @@ def maybe_add_accents(title: str) -> str:
 
 
 def _merge_hard_skills(
-        skill_ids: Union[float, List[str]],
-        activitie_ids: Union[float, List[str]]) -> List[str]:
+        skill_ids: Union[float, list[str]],
+        activitie_ids: Union[float, list[str]]) -> list[str]:
     """Merging skill and activity ids."""
 
     skill_ids = skill_ids if isinstance(skill_ids, list) else []
@@ -716,7 +716,7 @@ def jobs_without_qualifications(data_folder: str = 'data', filename: Optional[st
     """
 
     # The strategy for filtering jobs without qualification is described here:
-    # https://github.com/bayesimpact/bob-emploi-internal/blob/master/data_analysis/notebooks/research/jobbing/jobs_without_qualifications.ipynb
+    # https://github.com/bayesimpact/bob-emploi-internal/blob/HEAD/data_analysis/notebooks/research/jobbing/jobs_without_qualifications.ipynb
 
     if not filename:
         filename = path.join(
@@ -742,7 +742,7 @@ _APPLICATION_MODE_PROTO_FIELDS = {
 }
 
 
-def _get_app_modes_perc(fap_modes: pandas.DataFrame) -> Dict[str, Any]:
+def _get_app_modes_perc(fap_modes: pandas.DataFrame) -> dict[str, Any]:
     return {
         'modes': [
             {'mode': _APPLICATION_MODE_PROTO_FIELDS[row.APPLICATION_TYPE_CODE],

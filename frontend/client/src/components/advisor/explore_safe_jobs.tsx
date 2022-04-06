@@ -1,6 +1,5 @@
 import ChevronDownIcon from 'mdi-react/ChevronDownIcon'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
-import PropTypes from 'prop-types'
 import React, {useCallback, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 
@@ -12,7 +11,8 @@ import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
 import Picto from 'images/advices/picto-explore-other-jobs.svg'
 
-import {CardProps, MethodSuggestionList, useAdviceData} from './base'
+import type {CardProps} from './base'
+import {MethodSuggestionList, useAdviceData} from './base'
 
 
 const emptyArray = [] as const
@@ -60,6 +60,10 @@ const seeMoreButtonStyle: React.CSSProperties = {
   width: '100%',
 } as const
 
+const notALinkStyle: React.CSSProperties = {
+  color: 'inherit',
+  textDecoration: 'none',
+}
 
 const ExploreSafeJobs = (props: CardProps): React.ReactElement => {
   const {data: adviceData, loading} = useAdviceData<bayes.bob.SafeJobGroups>(props)
@@ -94,7 +98,7 @@ const ExploreSafeJobs = (props: CardProps): React.ReactElement => {
     handleExplore('more job groups')()
   }, [handleExplore])
   const footer = (areAllItemsShown || jobGroups.length <= MAX_SHOWN_JOB_GROUPS) ? null :
-    <button onClick={moreItemsClickHandler} style={seeMoreButtonStyle}>
+    <button onClick={moreItemsClickHandler} style={seeMoreButtonStyle} type="button">
       <span style={{flex: 1}}>{t('Voir plus')}</span>
       <ChevronDownIcon style={chevronStyle} />
     </button>
@@ -106,12 +110,8 @@ const ExploreSafeJobs = (props: CardProps): React.ReactElement => {
   return <MethodSuggestionList
     title={title} footer={footer} maxNumChildren={areAllItemsShown ? 0 : MAX_SHOWN_JOB_GROUPS}>
     {jobGroups.map((jobGroup, index): React.ReactElement<SuggestionProps> => <JobGroupSuggestion
-      key={index} onClick={onExplore} jobGroup={jobGroup} />)}
+      key={index} onClick={onExplore} jobGroup={jobGroup} style={notALinkStyle} />)}
   </MethodSuggestionList>
-}
-ExploreSafeJobs.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(ExploreSafeJobs)
 
