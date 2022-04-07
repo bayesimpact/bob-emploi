@@ -11,7 +11,8 @@ jobs:
       - run:
           name: Figure out which Docker services we should run CI for
           command: |
-            ./should_run_ci.sh "$CIRCLE_BRANCH" "$CIRCLE_TAG"
+            python should_run_ci.py "$CIRCLE_SHA1" "$CIRCLE_BRANCH" "$CIRCLE_TAG" \
+              --repo "$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
             ./should_run_slow_tests.sh
             echo "DOCKER_TAG=build-$CIRCLE_BUILD_NUM" > .env
             echo "GIT_SHA1=$CIRCLE_SHA1" >> .env
