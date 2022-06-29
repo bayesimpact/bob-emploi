@@ -1,5 +1,7 @@
 {
   "From": "Pascal de Bob <pascal@bob-emploi.fr>",
   "Reply-To": "",
+  "SenderEmail": "pascal@bob-emploi.fr",
+  "SenderName": "Pascal de Bob",
   "Subject": "J'ai regardé pour vous les chiffres du marché {{var:ofJobName}} {{var:inCity}}"
 }

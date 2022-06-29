@@ -1,5 +1,6 @@
 import {Server, config} from 'karma'
-import {getAllConfigs, NamedConfigOptions} from './karma.conf'
+import type {NamedConfigOptions} from './karma.conf'
+import {getAllConfigs} from './karma.conf'
 
 // TODO(pascal): Fix the watch mode.
 const onlyPlugin: Set<string>|undefined = process.argv.slice(2).length ?
@@ -16,6 +17,7 @@ const startKarmaServer = async (options: NamedConfigOptions): Promise<number> =>
   })
 }
 
+// TODO(cyrille): Use `actOnPlugins` here.
 const testAllConfigs = async (): Promise<number> => {
   const allConfigs = await getAllConfigs()
   const errorCode = await allConfigs.

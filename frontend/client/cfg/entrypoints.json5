@@ -2,19 +2,21 @@
   'app': {
     entry: './src/entry',
     htmlFilename: 'index.html',
-    usesHotLoader: true,
   },
   'bootstrap': {
     entry: './src/bootstrap_entry',
     htmlFilename: 'bootstrap.html',
     prefixes: ['/conseiller'],
-    usesHotLoader: true,
   },
   'design-system': {
     entry: './src/design_system_entry',
     htmlFilename: 'design_system.html',
     prefixes: ['/design-system'],
-    usesHotLoader: true,
+  },
+  'first-followup-survey': {
+    entry: './src/components/pages/first_followup_survey',
+    htmlFilename: 'first-followup-survey.html',
+    prefixes: ['/first-followup-survey'],
   },
   'nps': {
     entry: './src/components/pages/nps',

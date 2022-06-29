@@ -7,7 +7,7 @@ import numbers
 from os import path
 import random
 import typing
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Type, Union
+from typing import Any, Iterable, Iterator, Optional, Set, Type, Union
 import unittest
 from unittest import mock
 
@@ -17,18 +17,19 @@ import pyjson5
 import rstr
 
 from bob_emploi.frontend.api import advisor_pb2
+from bob_emploi.frontend.api import features_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import training_pb2
 from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server import advisor
 from bob_emploi.frontend.server import cache
 from bob_emploi.frontend.server import carif
 from bob_emploi.frontend.server import companies
 from bob_emploi.frontend.server import mongo
-from bob_emploi.frontend.server import scoring
-from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.server import proto
+from bob_emploi.frontend.server import scoring
 
 _TESTDATA_FOLDER = path.join(path.dirname(__file__), 'testdata')
 
@@ -39,7 +40,7 @@ _TESTDATA_FOLDER = path.join(path.dirname(__file__), 'testdata')
 def _load_json_to_mongo(database: mongo.NoPiiMongoDatabase, collection: str) -> None:
     """Load a MongoDB collection from a JSON file."""
 
-    with open(path.join(_TESTDATA_FOLDER, collection + '.json')) as json_file:
+    with open(path.join(_TESTDATA_FOLDER, collection + '.json'), encoding='utf-8') as json_file:
         json_blob = pyjson5.load(json_file)
     database[collection].insert_many(json_blob)
 
@@ -53,7 +54,7 @@ class ScoringProjectTestCase(unittest.TestCase):
         """A scoring project can be represented as a meaningful string."""
 
         user = user_pb2.User()
-        user.profile.gender = user_pb2.MASCULINE
+        user.profile.gender = user_profile_pb2.MASCULINE
         user.features_enabled.alpha = True
         project = project_pb2.Project(title='Developpeur web a Lyon')
         project_str = str(scoring.ScoringProject(project, user, self._db))
@@ -126,7 +127,7 @@ class _Persona:
         return self._user
 
     @property
-    def user_profile(self) -> user_pb2.UserProfile:  # pylint: disable=missing-function-docstring
+    def user_profile(self) -> user_profile_pb2.UserProfile:  # pylint: disable=missing-function-docstring
         return self._user.profile
 
     @property
@@ -134,16 +135,16 @@ class _Persona:
         return self.user.projects[0]
 
     @property
-    def features_enabled(self) -> user_pb2.Features:  # pylint: disable=missing-function-docstring
+    def features_enabled(self) -> features_pb2.Features:  # pylint: disable=missing-function-docstring
         return self.user.features_enabled
 
     @classmethod
-    def load_set(cls, filename: str) -> Dict[str, '_Persona']:
+    def load_set(cls, filename: str) -> dict[str, '_Persona']:
         """Load a set of personas from a JSON file."""
 
-        with open(filename) as personas_file:
+        with open(filename, encoding='utf-8') as personas_file:
             personas_json = pyjson5.load(personas_file)
-        personas: Dict[str, _Persona] = {}
+        personas: dict[str, '_Persona'] = {}
         for name, blob in personas_json.items():
             user = user_pb2.User()
             assert proto.parse_from_mongo(blob['user'], user.profile)
@@ -223,7 +224,7 @@ class PersonaTestBase(unittest.TestCase):
             self,
             model: Union[str, scoring.ModelBase, None] = None,
             persona: Optional[_Persona] = None,
-            name: Optional[str] = None) -> List[str]:
+            name: Optional[str] = None) -> list[str]:
         if isinstance(model, str):
             model = scoring.get_scoring_model(model)
         if model is None:  # pragma: no-cover
@@ -476,7 +477,7 @@ class TrainingAdviceScoringModelTestCase(AdviceScoringModelTestBase):
         """There are no trainings for this combination."""
 
         mock_carif_get_trainings.return_value = []
-        self.assertEqual(0, self._score_persona(self.persona))
+        self.assertGreater(self._score_persona(self.persona), 0)
 
     def test_expanded_card_data(self, mock_carif_get_trainings: mock.MagicMock) -> None:
         """Test we get interesting asynchronous data for this advice."""
@@ -491,7 +492,7 @@ class TrainingAdviceScoringModelTestCase(AdviceScoringModelTestBase):
             self, unused_mock_carif_get_trainings: mock.MagicMock) -> None:
         """Test the uk training values"""
 
-        patcher = mock.patch(scoring_base.__name__ + '._BOB_DEPLOYMENT', new='uk')
+        patcher = mock.patch(scoring.scoring_base.__name__ + '._BOB_DEPLOYMENT', new='uk')
         patcher.start()
 
         self.database.trainings.insert_one({
@@ -504,6 +505,29 @@ class TrainingAdviceScoringModelTestCase(AdviceScoringModelTestBase):
         training = extra_data.trainings[0]
         self.assertEqual('UK Training', training.name)
         self.assertEqual('http://aspirationtraining.com', training.url)
+
+    def test_expanded_card_data_handicap(self, mock_carif_get_trainings: mock.MagicMock) -> None:
+        """Asynchronous data includes vocational rehabilitation agency URL."""
+
+        self.database.vocational_rehabilitation_agencies.insert_many([
+            {
+                'regionId': 'FL',
+                'url': 'https://dvr.florida.gov',
+            },
+            {
+                'regionId': 'CA',
+                'url': 'https://dvr.ca.gov',
+            },
+        ])
+
+        mock_carif_get_trainings.return_value = self._many_trainings
+        self.persona.user_profile.has_handicap = True
+        self.persona.project.kind = project_pb2.REORIENTATION
+        self.persona.project.city.region_id = 'CA'
+        extra_data = typing.cast(
+            training_pb2.Trainings, self._compute_expanded_card_data(self.persona))
+        self.assertEqual(3, len(extra_data.trainings))
+        self.assertEqual('https://dvr.ca.gov', extra_data.vocational_rehabilitation_agency.url)
 
 
 class ConstantScoreModelTestCase(ScoringModelTestBase):
@@ -520,7 +544,7 @@ class ConstantScoreModelTestCase(ScoringModelTestBase):
 
 
 def persona_lbb_call_mock(project: project_pb2.Project, **unused_kwargs: Any) \
-        -> Iterator[Dict[str, str]]:
+        -> Iterator[dict[str, str]]:
     """Mocking lbb call to return a specific iterator for a specific job group."""
 
     if project.target_job.job_group.rome_id == 'M1604':
@@ -553,11 +577,10 @@ class PersonasTestCase(unittest.TestCase):
         _load_json_to_mongo(database, 'reorient_jobbing')
         _load_json_to_mongo(database, 'reorient_to_close')
         _load_json_to_mongo(database, 'seasonal_jobbing')
-        _load_json_to_mongo(database, 'skills_for_future')
         _load_json_to_mongo(database, 'specific_to_job_advice')
         _load_json_to_mongo(database, 'volunteering_missions')
 
-        scores: Dict[str, Dict[str, float]] = \
+        scores: dict[str, dict[str, float]] = \
             collections.defaultdict(lambda: collections.defaultdict(float))
         # Mock the "now" date so that scoring models that are based on time
         # (like "Right timing") are deterministic.
@@ -592,7 +615,7 @@ class PersonasTestCase(unittest.TestCase):
                 1, len(set(persona_scores)),
                 msg=f'Persona "{name}" has the same score across all models.')
 
-        model_scores_hashes: Dict[str, Set[str]] = collections.defaultdict(set)
+        model_scores_hashes: dict[str, Set[str]] = collections.defaultdict(set)
         # A mapping of renamings in progress.
         renamings = {
             'for-exact-experienced(internship)': 'for-exact-experienced(intern)',
@@ -704,7 +727,7 @@ class AdviceVaeTestCase(ScoringModelTestBase):
         """The user is frustrated by training and is senior."""
 
         persona = self._random_persona().clone()
-        persona.user_profile.frustrations.append(user_pb2.TRAINING)
+        persona.user_profile.frustrations.append(user_profile_pb2.TRAINING)
         persona.project.seniority = project_pb2.SENIOR
         # Make sure the user does not have enough diplomas otherwise all the
         # rest is irrelevant.
@@ -726,7 +749,7 @@ class AdviceVaeTestCase(ScoringModelTestBase):
         """The user is frustrated by trainings, has no experience and his diploma is unsure."""
 
         persona = self._random_persona().clone()
-        persona.user_profile.frustrations.append(user_pb2.TRAINING)
+        persona.user_profile.frustrations.append(user_profile_pb2.TRAINING)
         persona.project.seniority = project_pb2.JUNIOR
         persona.project.training_fulfillment_estimate = project_pb2.TRAINING_FULFILLMENT_NOT_SURE
         score = self._score_persona(persona)
@@ -736,7 +759,7 @@ class AdviceVaeTestCase(ScoringModelTestBase):
         """The user is frustrated by trainings but is expert and has enough diplomas."""
 
         persona = self._random_persona().clone()
-        persona.user_profile.frustrations.append(user_pb2.TRAINING)
+        persona.user_profile.frustrations.append(user_profile_pb2.TRAINING)
         persona.project.seniority = project_pb2.EXPERT
         persona.project.training_fulfillment_estimate = project_pb2.ENOUGH_DIPLOMAS
         score = self._score_persona(persona)
@@ -754,7 +777,7 @@ class AdviceSeniorTestCase(ScoringModelTestBase):
         persona = self._random_persona().clone()
         if persona.user_profile.year_of_birth > datetime.date.today().year - 41:
             persona.user_profile.year_of_birth = datetime.date.today().year - 41
-        persona.user_profile.frustrations.append(user_pb2.AGE_DISCRIMINATION)
+        persona.user_profile.frustrations.append(user_profile_pb2.AGE_DISCRIMINATION)
         score = self._score_persona(persona)
         self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')
 
@@ -812,7 +835,7 @@ class AdviceJobBoardsTestCase(ScoringModelTestBase):
         """Frustrated by not enough offers."""
 
         persona = self._random_persona().clone()
-        persona.user_profile.frustrations.append(user_pb2.NO_OFFERS)
+        persona.user_profile.frustrations.append(user_profile_pb2.NO_OFFERS)
 
         score = self._score_persona(persona)
 
@@ -941,7 +964,7 @@ class AdviceBodyLanguageTestCase(ScoringModelTestBase):
         """User is frustrated by their performance in interviews."""
 
         persona = self._random_persona().clone()
-        persona.user_profile.frustrations.append(user_pb2.INTERVIEW)
+        persona.user_profile.frustrations.append(user_profile_pb2.INTERVIEW)
 
         score = self._score_persona(persona)
         self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')
@@ -987,7 +1010,7 @@ class AdviceFollowUpEmailTestCase(ScoringModelTestBase):
         """User is frustrated by the lack of answers."""
 
         persona = self._random_persona().clone()
-        persona.user_profile.frustrations.append(user_pb2.NO_OFFER_ANSWERS)
+        persona.user_profile.frustrations.append(user_profile_pb2.NO_OFFER_ANSWERS)
 
         score = self._score_persona(persona)
         self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')
@@ -1144,7 +1167,7 @@ class StrategyForFrustratedTestCase(HundredScoringModelTestBase):
         """User is frustrated by something that matters."""
 
         persona = self._random_persona().clone()
-        persona.user_profile.frustrations.append(user_pb2.TRAINING)
+        persona.user_profile.frustrations.append(user_profile_pb2.TRAINING)
 
         score = self._score_persona(persona)
         self.assert_good_score(score, limit=15, msg=f'Failed for "{persona.name}"')
@@ -1153,8 +1176,8 @@ class StrategyForFrustratedTestCase(HundredScoringModelTestBase):
         """User is not frustrated byn something that matters."""
 
         persona = self._random_persona().clone()
-        if user_pb2.TRAINING in persona.user_profile.frustrations or\
-                user_pb2.MOTIVATION in persona.user_profile.frustrations:
+        if user_profile_pb2.TRAINING in persona.user_profile.frustrations or\
+                user_profile_pb2.MOTIVATION in persona.user_profile.frustrations:
             del persona.user_profile.frustrations[:]
 
         score = self._score_persona(persona)

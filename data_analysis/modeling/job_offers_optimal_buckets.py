@@ -17,7 +17,7 @@ even if there is no offer under 12 months of experience. It's a choice.
 """
 
 import typing
-from typing import Callable, Iterable, List, Sequence
+from typing import Callable, Iterable, Sequence
 
 import pandas as pd
 
@@ -91,7 +91,7 @@ def _apply_optimal_buckets(
 
 
 def _count_num_offers_in_bin(table_offers: pd.DataFrame, optimal_buckets: Sequence[int]) \
-        -> List[int]:
+        -> list[int]:
     """Get the number of offers available considering an experience
     interval.
 
@@ -111,13 +111,13 @@ def _count_num_offers_in_bin(table_offers: pd.DataFrame, optimal_buckets: Sequen
     counts = out.value_counts()
     counts = counts.reindex(out.cat.categories)
 
-    return typing.cast(List[int], counts.values.tolist())
+    return typing.cast(list[int], counts.values.tolist())
 
 
 def _merge_buckets_too_small(
         table_offers: pd.DataFrame,
         optimal_buckets: Sequence[int],
-        min_per_bin: int = _MIN_PER_BIN) -> List[int]:
+        min_per_bin: int = _MIN_PER_BIN) -> list[int]:
     """Decide which bucket we need to merge together.
 
     Args:
@@ -133,7 +133,7 @@ def _merge_buckets_too_small(
 
     n_bins = len(optimal_buckets)
     current_group = 0
-    group_indexes: List[int] = []
+    group_indexes: list[int] = []
     current_number_of_offers = 0
     num_offers_in_bins = _count_num_offers_in_bin(table_offers, optimal_buckets)
     for num_offer_in_bin in num_offers_in_bins:

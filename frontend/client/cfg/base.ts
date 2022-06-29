@@ -4,30 +4,57 @@ import imageMinJpg from 'imagemin-mozjpeg'
 import imageMinPng from 'imagemin-optipng'
 import imageMinSvg from 'imagemin-svgo'
 import {parse} from 'json5'
-import path from 'path'
 import {fileURLToPath} from 'url'
+import type {RuleSetRule} from 'webpack'
 
-const srcPath = fileURLToPath(new URL('../src', import.meta.url))
+import type {Colors, Config} from './plugins'
+import simpleConfig from './simple.json'
 
-// Match either plugins/$pluginName/src/images/favicon.ico or images/favicon.ico
-// First matched group is undefined or '$pluginName'.
-const FAVICON_REGEX = /(?:plugins\/(.*)\/src\/)?images\/favicon\.ico$/
+// Create a value to log missing keys in a DefinePlugin "object".
+export const makeDefinitionFallback = (
+  config: Config|Colors,
+  configName: 'colors'|'config',
+  envName: string,
+): string => `new Proxy(${JSON.stringify(config)}, {
+  get: (target, property) => {
+    const result = target[property]
+    if (typeof result === "undefined") {
+      throw new Error('${configName}.' + property + ' is not defined in ${envName}.')
+    }
+    return result
+  }
+})`
+// Create a rule to handle CSS imports.
+//
+// Add this rule as parat of a webpack rule set.
+//
+// It takes a color map so that color names are available as Sass variables (e.g.
+// $colors-MAIN_COLOR) in the CSS files.
+export const createCSSRule = (colors: Colors): RuleSetRule => ({
+  test: /\.css$/,
+  use: [
+    {
+      loader: 'style-loader',
+      options: {esModule: false},
+    },
+    {
+      loader: 'css-loader',
+    },
+    {
+      loader: 'sass-loader',
+      options: {
+        additionalData: Object.entries(colors).
+          map(([name, value]) => `$colors-${name}: ${value}`).
+          join(';') + ';',
+      },
+    },
+  ],
+})
 
 export default {
+  ...simpleConfig,
   module: {
     rules: [
-      {
-        test: /\.css$/,
-        use: [
-          {
-            loader: 'style-loader',
-            options: {esModule: false},
-          },
-          {
-            loader: 'css-loader',
-          },
-        ],
-      },
       {
         test: /\.(pdf|eot|ttf|woff2?)(\?[\d&.=a-z]+)?$/,
         type: 'asset',
@@ -49,8 +76,6 @@ export default {
               options: {
                 enabled: process.env.REACT_WEBPACK_ENV === 'dist',
                 plugins: [
-                  imageMinPng({}),
-                  imageMinJpg({}),
                   imageMinSvg(),
                 ],
               },
@@ -58,26 +83,14 @@ export default {
           ],
         },
       ]},
-      {
+      ...process.env.REACT_WEBPACK_ENV === 'dist' ? [] : [{
         generator: {
-          filename: process.env.REACT_WEBPACK_ENV === 'dist' ?
-            ({filename, url}: {filename?: string; url: string}) => {
-              if (!filename) {
-                throw new Error(`Failed to load file "${url}"`)
-              }
-              const [, plugin] = filename.match(FAVICON_REGEX) || []
-              if (plugin) {
-                // output favicon.ico in subpath, to allow a specific directive on servers
-                // (nginx or Cloudfront).
-                return path.join('..', plugin, 'favicon.ico')
-              }
-              return '../favicon.ico'
-            } : 'favicon.ico',
+          filename: 'favicon.ico',
           publicPath: '/',
         },
         test: /favicon\.ico$/,
         type: 'asset/resource',
-      },
+      }],
       {
         test: /\.(png|jpg|gif)(\?[\d&.=a-z]+)?$/,
         type: 'asset',
@@ -86,6 +99,10 @@ export default {
             loader: 'img-loader',
             options: {
               enabled: process.env.REACT_WEBPACK_ENV === 'dist',
+              plugins: [
+                imageMinPng({}),
+                imageMinJpg({}),
+              ],
             },
           },
         ],
@@ -96,7 +113,7 @@ export default {
       },
       {
         parser: {parse},
-        test: /\.json$/,
+        test: /\.json5?$/,
         type: 'json',
       },
       {
@@ -115,14 +132,11 @@ export default {
     ],
   },
   resolve: {
+    ...simpleConfig.resolve,
     alias: {
-      api: fileURLToPath(new URL('../bob_emploi/frontend/api', import.meta.url)),
-      deployment: fileURLToPath(new URL('../src/deployments/fr', import.meta.url)),
-      translations: fileURLToPath(new URL('../i18n/translations', import.meta.url)),
-      // TODO(cyrille): Consider adding plugin paths in alias, once webpack5 is out.
-      ...Object.fromEntries(['components', 'hooks', 'images', 'store', 'styles'].
-        map(name => [name, path.join(srcPath, name)])),
+      ...simpleConfig.resolve.alias,
+      // TODO(cyrille): Drop this once https://github.com/microsoft/TypeScript/issues/32063 is resolved.
+      config: false as const,
     },
-    extensions: ['.js', '.jsx', '_pb.js', '.ts', '.tsx'],
   },
 }

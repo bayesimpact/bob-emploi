@@ -1,7 +1,6 @@
 """Module to advise the user to go to events."""
 
 import random
-from typing import List
 
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
@@ -21,8 +20,7 @@ class _AdviceEventScoringModel(scoring_base.ModelBase):
             -> scoring_base.ExplainedScore:
         """Compute a score for the given ScoringProject."""
 
-        application_modes = project.job_group_info().application_modes.values()
-        first_modes = set(fap_modes.modes[0].mode for fap_modes in application_modes)
+        first_modes = project.get_fap_modes()
         first_modes.discard(job_pb2.UNDEFINED_APPLICATION_MODE)
         if first_modes == {job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS}:
             return scoring_base.ExplainedScore(2, [project.translate_static_string(
@@ -33,7 +31,7 @@ class _AdviceEventScoringModel(scoring_base.ModelBase):
             "c'est un bon moyen d'étendre votre réseau")])
 
     @scoring_base.ScoringProject.cached('events')
-    def list_events(self, project: scoring_base.ScoringProject) -> List[event_pb2.Event]:
+    def list_events(self, project: scoring_base.ScoringProject) -> list[event_pb2.Event]:
         """List all events close to the project's target."""
 
         today = project.now.strftime('%Y-%m-%d')

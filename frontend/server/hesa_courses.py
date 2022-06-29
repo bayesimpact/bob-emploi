@@ -2,14 +2,14 @@
 
 import json
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 
 from bob_emploi.frontend.api import training_pb2
 
 
-NO_TRAININGS: List[training_pb2.Training] = []
+NO_TRAININGS: list[training_pb2.Training] = []
 
 
 def _get_courses_api(soc_code: str) -> requests.Response:
@@ -18,7 +18,7 @@ def _get_courses_api(soc_code: str) -> requests.Response:
         headers={'Accept': 'application/json'})
 
 
-def _sort_filter_courses(courses: List[Dict[str, Any]]) -> List[training_pb2.Training]:
+def _sort_filter_courses(courses: list[dict[str, Any]]) -> list[training_pb2.Training]:
     # We only consider courses that at least 10% of the workers mentioned.
     sorted_trainings = sorted(
         courses, key=lambda course: course.get('percentage', 0), reverse=True)
@@ -32,7 +32,7 @@ def _sort_filter_courses(courses: List[Dict[str, Any]]) -> List[training_pb2.Tra
     return filtered_trainings
 
 
-def get_trainings(soc_code: str) -> List[training_pb2.Training]:
+def get_trainings(soc_code: str) -> list[training_pb2.Training]:
     """Get Hesa trainings for a SOC code from Lmi For All API."""
 
     # We only consider answers from the latest year.

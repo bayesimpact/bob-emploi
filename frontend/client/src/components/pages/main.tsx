@@ -1,13 +1,14 @@
 import {ConnectedRouter, connectRouter, routerMiddleware} from 'connected-react-router'
 import i18n from 'i18next'
-import {History, createBrowserHistory} from 'history'
+import type {History} from 'history'
+import {createBrowserHistory} from 'history'
 import {parse} from 'query-string'
 import React, {Suspense, useEffect, useLayoutEffect, useRef, useState} from 'react'
-import {hot} from 'react-hot-loader/root'
 import {connect, Provider, useDispatch, useSelector} from 'react-redux'
 import {useLocation} from 'react-router'
 import {Redirect, Route, Switch} from 'react-router-dom'
-import {Store, createStore, applyMiddleware, combineReducers} from 'redux'
+import type {Store} from 'redux'
+import {createStore, applyMiddleware, combineReducers} from 'redux'
 import {composeWithDevTools} from 'redux-devtools-extension'
 import thunk from 'redux-thunk'
 import {polyfill} from 'smoothscroll-polyfill'
@@ -15,22 +16,26 @@ import {polyfill} from 'smoothscroll-polyfill'
 import 'normalize.css'
 import 'styles/App.css'
 
-import useMobileViewport from 'hooks/mobile'
-import {actionTypesToLog, fetchUser, migrateUserToAdvisor, hideToasterMessageAction, AllActions,
-  trackInitialUtm, activateDemoInFuture, activateDemo, pageIsLoaded, isActionRegister, RootState,
-  DispatchAllActions, removeAuthDataAction} from 'store/actions'
+import TabNavigationProvider from 'hooks/tab_navigation'
+import useTrackUtms from 'hooks/track_utms'
+import type {AllActions, RootState, DispatchAllActions} from 'store/actions'
+import {actionTypesToLog, fetchUser, migrateUserToAdvisor, hideToasterMessageAction,
+  activateExperimentInFuture, activateExperiments, pageIsLoaded, isActionRegister,
+  removeAuthDataAction, askForAdsCookieUsageAction} from 'store/actions'
 import createAmplitudeMiddleware from 'store/amplitude'
 import {app, asyncState} from 'store/app_reducer'
 import createFacebookAnalyticsMiddleWare from 'store/facebook_analytics'
 import createGoogleAnalyticsMiddleWare from 'store/google_analytics'
+import createGoogleTagManagerMiddleWare from 'store/google_tag_manager'
 import {init as i18nInit} from 'store/i18n'
 import {Logger} from 'store/logging'
 import {onboardingComplete} from 'store/main_selectors'
 import {parseQueryString, removeAmpersandDoubleEncoding} from 'store/parse'
 import {useAsynceffect} from 'store/promise'
-import createSentryMiddleware from 'store/sentry'
+import createSentryEnhancer from 'store/sentry'
 import userReducer from 'store/user_reducer'
 import {getUserLocale, isAdvisorUser} from 'store/user'
+import {initialUtm} from 'store/utm'
 
 import {LoginModal} from 'components/login'
 import isMobileVersion from 'store/mobile'
@@ -71,7 +76,7 @@ const PAGES_WITH_STORED_SCROLL = [Routes.PROJECT_PAGE]
 const UserCheckedPagesBase = (): React.ReactElement => {
   const dispatch = useDispatch<DispatchAllActions>()
   const user = useSelector(({user}: RootState): bayes.bob.User => user)
-  const demo = useSelector(({app: {demo}}: RootState): keyof bayes.bob.Features|undefined => demo)
+  const experiments = useSelector(({app: {experiments}}: RootState) => experiments)
   const hasLoginModal = useSelector(({app: {loginModal}}: RootState): boolean => !!loginModal)
   const isFetchingUser = useSelector(
     ({asyncState: {isFetching}}: RootState): boolean => !!isFetching['GET_USER_DATA'],
@@ -79,22 +84,23 @@ const UserCheckedPagesBase = (): React.ReactElement => {
   const {hash, search} = useLocation()
 
   const {featuresEnabled, hasAccount, profile, userId, registeredAt} = user
+  const hasUser = !!registeredAt
 
   useAsynceffect(async (checkIfCanceled) => {
-    if (!userId || await dispatch(fetchUser(userId, true)) || checkIfCanceled()) {
+    if (!userId || hasUser || await dispatch(fetchUser(userId, true)) || checkIfCanceled()) {
       return
     }
     dispatch(removeAuthDataAction)
-  }, [dispatch, userId])
+  }, [dispatch, hasUser, userId])
 
   useEffect((): void => {
-    if (!userId) {
+    if (!hasUser) {
       return
     }
-    if (demo && (!featuresEnabled || featuresEnabled[demo] !== 'ACTIVE')) {
-      dispatch(activateDemo(demo))
+    if (experiments?.length) {
+      dispatch(activateExperiments(experiments))
     }
-  }, [demo, dispatch, featuresEnabled, userId])
+  }, [experiments, dispatch, featuresEnabled, hasUser])
 
   useEffect((): void => {
     if (!isAdvisorUser(user)) {
@@ -110,7 +116,6 @@ const UserCheckedPagesBase = (): React.ReactElement => {
   }, [newLocale])
 
   const {authToken, resetToken, state, userId: locationUserId} = parseQueryString(search)
-  const hasUser = !!registeredAt
   const hasRegisteredUser = hasUser && hasAccount
   const hasUrlLoginIncentive =
     resetToken ||
@@ -145,12 +150,12 @@ const UserCheckedPagesBase = (): React.ReactElement => {
         <Route path={Routes.PROFILE_ONBOARDING_PAGES} component={LoadableProfilePage} />
         <Route path={Routes.NEW_PROJECT_ONBOARDING_PAGES} component={LoadableNewProjectPage} />
 
-        {onboardingComplete(user) ? null : <Redirect to={Routes.PROFILE_PAGE} />}
+        {onboardingComplete(user) ? null : <Route><Redirect to={Routes.PROFILE_PAGE} /></Route>}
 
         {/* Pages for logged-in user that have completed their onboarding. */}
         <Route path={Routes.PROJECT_PATH} component={LoadableProjectPage} />
         <Route path={Routes.PROJECT_PAGE} component={LoadableProjectPage} />
-        <Redirect to={Routes.PROJECT_PAGE + search + hash} />
+        <Route><Redirect to={Routes.PROJECT_PAGE + search + hash} /></Route>
 
       </Switch>
       {hasLoginModal && !isMobileVersion && (hasUrlLoginIncentive || !hasRegisteredUser) ?
@@ -182,26 +187,16 @@ const PageHolderBase = (): React.ReactElement => {
   const location = useLocation()
   const {hash, pathname, search} = location
 
-  useMobileViewport()
-
+  useTrackUtms()
   useEffect((): void => {
-    const {
-      utm_campaign: campaign,
-      utm_content: content,
-      utm_medium: medium,
-      utm_source: source,
-    } = parseQueryString(search)
     const {activate} = parse(search)
-    if (campaign || content || medium || source) {
-      dispatch(trackInitialUtm({campaign, content, medium, source}))
-    }
     if (activate) {
       if (typeof activate === 'object') {
-        for (const demo of activate) {
-          dispatch(activateDemoInFuture(demo as keyof bayes.bob.Features))
+        for (const experiment of activate) {
+          dispatch(activateExperimentInFuture(experiment as keyof bayes.bob.Features))
         }
       } else {
-        dispatch(activateDemoInFuture(activate as keyof bayes.bob.Features))
+        dispatch(activateExperimentInFuture(activate as keyof bayes.bob.Features))
       }
     }
   }, [dispatch, search])
@@ -256,29 +251,34 @@ interface AppState {
 function createHistoryAndStore(): AppState {
   const history = createBrowserHistory()
 
-  const sentryMiddleware = createSentryMiddleware()
+  const {medium: utmMedium, source: utmSource} = initialUtm || {}
+  const isUserComingFromGoogleAds = utmSource === 'googleads'
+  const isUserComingFromFacebookAds = utmSource === 'facebook' && utmMedium === 'ad'
+
+  const sentryEnhancer = createSentryEnhancer()
   const amplitudeMiddleware = createAmplitudeMiddleware(new Logger(actionTypesToLog))
-  const googleAnalyticsMiddleware = createGoogleAnalyticsMiddleWare(config.googleUAID, {
-    PAGE_IS_LOADED: 'pageview',
-  })
-  const facebookAnalyticsMiddleware = createFacebookAnalyticsMiddleWare(config.facebookPixelID, {
-    AUTHENTICATE_USER: {
-      // eslint-disable-next-line camelcase
-      params: {content_name: config.productName},
-      predicate: isActionRegister,
-      type: 'CompleteRegistration',
-    },
-  })
+  const googleAnalyticsMiddleware = isUserComingFromGoogleAds ? [createGoogleAnalyticsMiddleWare(
+    config.googleUAID, {PAGE_IS_LOADED: 'pageview'})] : []
+  const googleTagManagerMiddleware = isUserComingFromGoogleAds ?
+    [createGoogleTagManagerMiddleWare()] : []
+  const facebookAnalyticsMiddleware = isUserComingFromFacebookAds ?
+    [createFacebookAnalyticsMiddleWare(config.facebookPixelID, {
+      AUTHENTICATE_USER: {
+        // eslint-disable-next-line camelcase
+        params: {content_name: config.productName},
+        predicate: isActionRegister,
+        type: 'CompleteRegistration',
+      },
+    })] : []
   // Enable devTools middleware.
   const finalCreateStore = composeWithDevTools(applyMiddleware(
-    // sentryMiddleware needs to be first to correctly catch exception down the line.
-    sentryMiddleware,
     thunk,
     amplitudeMiddleware,
-    googleAnalyticsMiddleware,
-    facebookAnalyticsMiddleware,
+    ...googleAnalyticsMiddleware,
+    ...googleTagManagerMiddleware,
+    ...facebookAnalyticsMiddleware,
     routerMiddleware(history),
-  ))(createStore)
+  ), sentryEnhancer)(createStore)
 
   // Create the store that will be provided to connected components via Context.
   const store = finalCreateStore(
@@ -289,7 +289,12 @@ function createHistoryAndStore(): AppState {
       user: userReducer,
     }),
   )
+  if (isUserComingFromGoogleAds || isUserComingFromFacebookAds) {
+    store.dispatch(askForAdsCookieUsageAction)
+  }
+  // eslint-disable-next-line unicorn/prefer-module
   if (module.hot) {
+    // eslint-disable-next-line unicorn/prefer-module
     module.hot.accept(['store/user_reducer', 'store/app_reducer'], async (): Promise<void> => {
       const nextAppReducerModule = await import('store/app_reducer')
       const nextUserReducerModule = await import('store/user_reducer')
@@ -304,17 +309,18 @@ function createHistoryAndStore(): AppState {
   return {history, store}
 }
 
-
 const App = (): React.ReactElement => {
   const [{history, store}] = useState(createHistoryAndStore)
   // The Provider puts the store on a `Context`, so we can connect other
   // components to it.
   return <Provider store={store}>
-    <ConnectedRouter history={history}>
-      <Route path="/" component={PageHolder} />
-    </ConnectedRouter>
+    <TabNavigationProvider>
+      <ConnectedRouter history={history}>
+        <Route path="/" component={PageHolder} />
+      </ConnectedRouter>
+    </TabNavigationProvider>
   </Provider>
 }
 
 
-export default hot(React.memo(App))
+export default React.memo(App)

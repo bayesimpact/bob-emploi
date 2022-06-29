@@ -1,7 +1,5 @@
 """Module to advise the user to consider to reorient to a job with low qualification."""
 
-from typing import List
-
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import reorient_jobbing_pb2
@@ -31,7 +29,8 @@ class _AdviceReorientJobbing(scoring_base.ModelBase):
         if departement_id in top_unqualified_jobs:
             for job in top_unqualified_jobs[departement_id].departement_job_stats.jobs:
                 if current_job_market_score:
-                    if job.market_score / current_job_market_score < 1:
+                    if job.market_score / current_job_market_score < 1 and \
+                            not project.features_enabled.all_modules:
                         break
                     offers_gain = (job.market_score / current_job_market_score - 1) * 100
                 else:
@@ -60,7 +59,7 @@ class _AdviceReorientJobbing(scoring_base.ModelBase):
         if len(local_jobbing.reorient_jobbing_jobs) < 2:
             return scoring_base.NULL_EXPLAINED_SCORE
         score_modifier = 0
-        reasons: List[str] = []
+        reasons: list[str] = []
 
         if project.details.passionate_level == project_pb2.LIFE_GOAL_JOB:
             score_modifier = -2

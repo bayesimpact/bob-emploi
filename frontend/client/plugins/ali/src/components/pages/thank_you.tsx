@@ -7,7 +7,8 @@ import likeImage from '../../images/like.svg'
 
 import Button from '../button'
 import GenericPage from '../page'
-import {MiniRootState, DispatchActions, Routes, makeUrlUser} from '../../store'
+import type {MiniRootState, DispatchActions} from '../../store'
+import {Routes, makeUrlUser} from '../../store'
 
 
 const pageStyle: React.CSSProperties = {

@@ -1,0 +1,130 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Resources": {
+    "WebsiteBucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "WebsiteConfiguration": {
+          "IndexDocument": "index.html",
+          "RoutingRules": [
+            {
+              "RoutingRuleCondition": {
+                "KeyPrefixEquals": "orientation"
+              },
+              "RedirectRule": {
+                "HostName": {
+                  "Ref": "TargetDomainName"
+                },
+                "ReplaceKeyWith": {
+                  "Fn::Sub": "orientation/utm_source=${UtmSource}"
+                }
+              }
+            },
+            {
+              "RedirectRule": {
+                "HostName": {
+                  "Ref": "TargetDomainName"
+                },
+                "ReplaceKeyWith": {
+                  "Fn::Sub": "utm_source=${UtmSource}"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "CloudfrontDistribution": {
+      "Type": "AWS::CloudFront::Distribution",
+      "DeletionPolicy": "Retain",
+      "DependsOn": [
+        "WebsiteBucket"
+      ],
+      "Properties": {
+        "DistributionConfig": {
+          "Aliases": [
+            {
+              "Ref": "OriginDomainName"
+            }
+          ],
+          "Comment": "",
+          "DefaultCacheBehavior": {
+            "CachedMethods": [
+              "HEAD",
+              "GET"
+            ],
+            "AllowedMethods": [
+              "HEAD",
+              "GET"
+            ],
+            "CachePolicyId": "8ce898f3-e013-42bb-b7ae-5239de8a1ecb",
+            "Compress": false,
+            "FieldLevelEncryptionId": "",
+            "FunctionAssociations": [],
+            "LambdaFunctionAssociations": [],
+            "SmoothStreaming": false,
+            "TargetOriginId": "S3-Bucket",
+            "ViewerProtocolPolicy": "redirect-to-https"
+          },
+          "DefaultRootObject": "index.html",
+          "Enabled": true,
+          "HttpVersion": "http2",
+          "IPV6Enabled": true,
+          "Origins": [
+            {
+              "ConnectionAttempts": 3,
+              "ConnectionTimeout": 10,
+              "CustomOriginConfig": {
+                "HTTPPort": 80,
+                "HTTPSPort": 443,
+                "OriginKeepaliveTimeout": 5,
+                "OriginProtocolPolicy": "http-only",
+                "OriginReadTimeout": 30,
+                "OriginSSLProtocols": [
+                  "TLSv1.2"
+                ]
+              },
+              "DomainName": {
+                "Fn::Sub": "${WebsiteBucket}.s3-website.${AWS::Region}.amazonaws.com"
+              },
+              "Id": "S3-Bucket",
+              "OriginPath": "",
+              "OriginShield": {
+                "Enabled": false
+              }
+            }
+          ],
+          "PriceClass": "PriceClass_All",
+          "ViewerCertificate": {
+            "AcmCertificateArn": {
+              "Ref": "OriginDomainCertificate"
+            },
+            "MinimumProtocolVersion": "TLSv1",
+            "SslSupportMethod": "sni-only"
+          },
+          "WebACLId": ""
+        }
+      }
+    }
+  },
+  "Parameters": {
+    "OriginDomainName": {
+      "Type": "String",
+      "Description": "Hostname from where we want to redirect"
+    },
+    "OriginDomainCertificate": {
+      "Type": "String",
+      "Description": "The ARN of a us-east-1 ACM certificate for the OriginDomainName."
+    },
+    "TargetDomainName": {
+      "Type": "String",
+      "Description": "Hostname to redirect to"
+    },
+    "UtmSource": {
+      "Type": "String",
+      "Default": "",
+      "Description": "The utm_source query parameter to add to the request."
+    }
+  }
+}

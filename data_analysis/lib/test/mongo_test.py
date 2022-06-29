@@ -7,7 +7,7 @@ import json
 from os import path
 import tempfile
 import typing
-from typing import Any, Dict, List
+from typing import Any
 import unittest
 from unittest import mock
 
@@ -16,8 +16,9 @@ import pymongo
 from pymongo import errors as pymongo_errors
 import requests_mock
 
+from bob_emploi.common.python.test import nowmock
 from bob_emploi.data_analysis.lib import mongo
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.data_analysis.lib.test.testdata import test_pb2
 
 _AType = typing.TypeVar('_AType')
 
@@ -30,7 +31,7 @@ class _Devnull:
 _DEV_NULL = _Devnull()
 
 
-def _my_importer_func(arg1: Any) -> List[Dict[str, Any]]:
+def _my_importer_func(arg1: Any) -> list[dict[str, Any]]:
     """A basic importer.
 
     Args:
@@ -79,7 +80,7 @@ class ImporterMainTestCase(unittest.TestCase):
     def test_importer_filter_ids(self) -> None:
         """Test of the filter_ids flag."""
 
-        def richer_importer_func() -> List[Dict[str, Any]]:
+        def richer_importer_func() -> list[dict[str, Any]]:
             """An importer with many outputs."""
 
             return list({'_id': f'foo-{i:02d}', 'value': i} for i in range(20))
@@ -96,7 +97,7 @@ class ImporterMainTestCase(unittest.TestCase):
     def test_importer_main_no_args(self) -> None:
         """Test the importer_main without args."""
 
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(argparse.ArgumentError):
             mongo.importer_main(
                 _my_importer_func, 'my-collection',
                 ['foo'],
@@ -105,7 +106,7 @@ class ImporterMainTestCase(unittest.TestCase):
     def test_importer_main_no_args_but_default(self) -> None:
         """Test the importer_main without args but with default value."""
 
-        def import_func(arg1: str = 'default value') -> List[Dict[str, Any]]:
+        def import_func(arg1: str = 'default value') -> list[dict[str, Any]]:
             """Foo."""
 
             return [{'dummy': 2, 'arg1': arg1}]
@@ -123,7 +124,7 @@ class ImporterMainTestCase(unittest.TestCase):
     def test_importer_main_with_input_file(self) -> None:
         """Test that the import_func doesn't get called with an input file."""
 
-        def importer_func() -> List[Dict[str, Any]]:  # pragma: no-cover
+        def importer_func() -> list[dict[str, Any]]:  # pragma: no-cover
             """Foo."""
 
             self.fail('Should not be called')
@@ -146,7 +147,7 @@ class ImporterMainTestCase(unittest.TestCase):
             ['--to_json', out_path, '--arg1', 'arg1 test value'],
             out=self.output)
 
-        with open(out_path) as json_file:
+        with open(out_path, encoding='utf-8') as json_file:
             json_content = json_file.read()
             self.assertEqual(
                 [{'arg1': 'arg1 test value', 'dummy': 2}],
@@ -158,7 +159,7 @@ class ImporterMainTestCase(unittest.TestCase):
     def test_importer_collection_name(self) -> None:
         """Test the importer_main getting the collection name."""
 
-        def import_func(collection_name: str) -> List[Dict[str, Any]]:
+        def import_func(collection_name: str) -> list[dict[str, Any]]:
             """Foo."""
 
             return [{'dummy': 2, 'collection_name': collection_name}]
@@ -181,7 +182,7 @@ class ImporterMainTestCase(unittest.TestCase):
 
         result = [{'dummy': 3, '_id': 'only-one'}]
 
-        def import_func() -> List[Dict[str, Any]]:
+        def import_func() -> list[dict[str, Any]]:
             """Foo."""
 
             return result
@@ -191,6 +192,7 @@ class ImporterMainTestCase(unittest.TestCase):
         mongo.importer_main(import_func, 'my-collection', [], out=self.output)
 
         self.assertEqual(1, mock_requests.call_count)
+        mock_requests.reset_mock()  # type: ignore
 
         result[0]['dummy'] = 4
 
@@ -200,10 +202,10 @@ class ImporterMainTestCase(unittest.TestCase):
                 ['--fail_on_diff'],
                 out=self.output)
 
-        self.assertEqual(2, mock_requests.call_count)
+        self.assertEqual(1, mock_requests.call_count)
         self.assertIn(
             'There are some diffs to import.',
-            mock_requests.request_history[1].json()['attachments'][0]['text'])
+            mock_requests.request_history[0].json()['attachments'][0]['text'])
 
         self.assertEqual(1, self.db_client.test['my-collection'].count_documents({}))
         value = self.db_client.test['my-collection'].find_one()
@@ -219,7 +221,7 @@ class ImporterMainTestCase(unittest.TestCase):
 
         result = [{'dummy': 3, '_id': 'only-one'}]
 
-        def import_func() -> List[Dict[str, Any]]:
+        def import_func() -> list[dict[str, Any]]:
             """Foo."""
 
             return result
@@ -366,6 +368,7 @@ class ImporterTestCase(unittest.TestCase):
         flag_values.always_accept_diff = False
         flag_values.report_to_slack = False
         flag_values.fail_on_diff = False
+        flag_values.run_every = '7 days'
         self.output = io.StringIO()
         self.importer = mongo.Importer(flag_values, out=self.output)
         patcher = mongomock.patch(('my-db_client-url',))
@@ -388,6 +391,7 @@ class ImporterTestCase(unittest.TestCase):
         assert meta
         self.assertLessEqual(before - datetime.timedelta(seconds=1), meta['updated_at'])
         self.assertLessEqual(meta['updated_at'], after + datetime.timedelta(seconds=1))
+        self.assertEqual('7 days', meta['run_every'])
 
     def test_import_in_collection_with_previous_conflicting_data(self) -> None:
         """Test usage with data already there that conflicts."""
@@ -407,9 +411,7 @@ class ImporterTestCase(unittest.TestCase):
         assert meta
         self.assertGreater(meta['updated_at'], old_times)
 
-    @mock.patch(
-        mongo.__name__ + '._GET_NOW',
-        new=mock.MagicMock(return_value=datetime.datetime(2018, 9, 28)))
+    @nowmock.patch(new=mock.MagicMock(return_value=datetime.datetime(2018, 9, 28)))
     def test_import_in_collection_with_previous_data(self) -> None:
         """Test usage with data already there."""
 
@@ -516,7 +518,7 @@ class ImporterTestCase(unittest.TestCase):
                 'attachments': [{
                     'mrkdwn_in': ['text'],
                     'title': 'Automatic import of my_collec',
-                    'text': 'Inserting all 2 objects at once.\n'
+                    'text': 'Inserting all 2 objects at once.'
                 }],
             },
             mock_requests.request_history[0].json(),
@@ -524,7 +526,36 @@ class ImporterTestCase(unittest.TestCase):
         output = self.output.getvalue()
         self.assertEqual('Inserting all 2 objects at once.', output.strip())
 
-    @mock.patch(mongo.__name__ + '._GET_NOW')
+    @mock.patch(
+        mongo.__name__ + '._SLACK_IMPORT_URL', 'https://slack.example.com/webhook')
+    @requests_mock.mock()
+    def test_import_and_several_reports(self, mock_requests: 'requests_mock._RequestObjectProxy') \
+            -> None:
+        """Only one report is sent when several things are reported on import."""
+
+        mock_requests.post('https://slack.example.com/webhook')
+        collection_name = 'my_collec'
+        self.importer.flag_values.mongo_collection = collection_name
+        self.importer.flag_values.report_to_slack = True
+        self.importer.import_in_collection([{'field': 'Foo'}], collection_name)
+        mock_requests.reset_mock()
+        self.importer.import_in_collection(
+            [{'field': 'Foo'} for _ in range(1100)], collection_name)
+
+        self.assertEqual(1, mock_requests.call_count)
+        self.assertEqual(
+            {
+                'attachments': [{
+                    'mrkdwn_in': ['text'],
+                    'title': 'Automatic import of my_collec',
+                    'text': 'Too many entries to diff (1100).\n'
+                    'Inserting all 1100 objects at once.',
+                }],
+            },
+            mock_requests.request_history[0].json(),
+        )
+
+    @nowmock.patch()
     def test_import_in_collection_archives(self, mock_now: mock.MagicMock) -> None:
         """Test archives management."""
 
@@ -579,7 +610,7 @@ class ImporterTestCase(unittest.TestCase):
                 'Data for 2018-09-30 2nd attempt',
             ],
             [
-                typing.cast(Dict[str, Any], self.db_client.test[name].find_one())['_id']
+                typing.cast(dict[str, Any], self.db_client.test[name].find_one())['_id']
                 for name in archive_names
             ])
 
@@ -643,7 +674,7 @@ class ProtoTestCase(unittest.TestCase):
         protos = dict(mongo.collection_to_proto_mapping([
             {'_id': '75056', 'userId': 'Pascal'},
             {'_id': '69123', 'userId': 'Stephan'},
-        ], user_pb2.User))
+        ], test_pb2.User))
 
         self.assertEqual(['69123', '75056'], sorted(protos.keys()))
         self.assertEqual('Pascal', protos['75056'].user_id)
@@ -655,7 +686,7 @@ class ProtoTestCase(unittest.TestCase):
         iterator = mongo.collection_to_proto_mapping([
             {'_id': '75056', 'userId': 'Pascal'},
             {'_id': '75056', 'userId': 'Pascal'},
-        ], user_pb2.User)
+        ], test_pb2.User)
 
         next(iterator)
         self.assertRaises(KeyError, next, iterator)
@@ -665,7 +696,7 @@ class ProtoTestCase(unittest.TestCase):
 
         iterator = mongo.collection_to_proto_mapping([
             {'_id': '75056', 'unkownField': 'Pascal'},
-        ], user_pb2.User)
+        ], test_pb2.User)
         self.assertRaises(mongo.json_format.ParseError, next, iterator)
 
     def test_collection_to_proto_mapping_hidden_field(self) -> None:
@@ -673,7 +704,7 @@ class ProtoTestCase(unittest.TestCase):
 
         iterator = mongo.collection_to_proto_mapping([
             {'_id': '75056', '_hiddenField': 'Pascal'},
-        ], user_pb2.User)
+        ], test_pb2.User)
         user_id, unused_user = next(iterator)
         self.assertEqual('75056', user_id)
 

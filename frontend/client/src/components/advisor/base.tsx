@@ -1,15 +1,17 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
+import _uniqueId from 'lodash/uniqueId'
 import ChevronDownIcon from 'mdi-react/ChevronDownIcon'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
-import PropTypes from 'prop-types'
 import React, {useCallback, useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 
 import useCachedData from 'hooks/cached_data'
 import useMedia from 'hooks/media'
 import useTooltip from 'hooks/tooltip'
-import {DispatchAllActions, RootState, getExpandedCardContent} from 'store/actions'
-import {LocalizableString, prepareT, toLocaleString} from 'store/i18n'
+import type {DispatchAllActions, RootState} from 'store/actions'
+import {getExpandedCardContent} from 'store/actions'
+import type {LocalizableString} from 'store/i18n'
+import {prepareT, toLocaleString} from 'store/i18n'
 import {getJobSearchURL} from 'store/job'
 import isMobileVersion from 'store/mobile'
 import {assetProps} from 'store/skills'
@@ -21,7 +23,7 @@ import DataSource from 'components/data_source'
 import ExternalLink from 'components/external_link'
 import Trans from 'components/i18n_trans'
 import Markdown from 'components/markdown'
-import {RadiumDiv} from 'components/radium'
+import {RadiumExternalLink, SmartLink, useHoverAndFocus} from 'components/radium'
 import Tag from 'components/tag'
 import {SmoothTransitions} from 'components/theme'
 import UpDownIcon from 'components/up_down_icon'
@@ -56,7 +58,7 @@ interface ExpandableActionProps {
   contentName?: string
   isForYou?: boolean
   onContentShown?: () => void
-  style?: React.CSSProperties
+  style?: RadiumCSSProperties
   tag?: TagProps
   title: React.ReactNode
   type?: 'apply-to-offer' | 'spontaneous-application'
@@ -84,7 +86,7 @@ const ExpandableActionType = React.memo(ExpandableActionTypeBase)
 const ExpandableActionBase: React.FC<ExpandableActionProps> =
 (props: ExpandableActionProps): React.ReactElement => {
   const {t} = useTranslation('advisor')
-  const {children, children: {props: {onClick = undefined} = {}} = {}, contentName = t('plus'),
+  const {children, contentName = t('plus'),
     isForYou, onContentShown, style, title, tag, type} = props
   const isForPrint = useMedia() === 'print'
   const [isContentShown, setIsContentShown] = useState(isForPrint)
@@ -94,28 +96,17 @@ const ExpandableActionBase: React.FC<ExpandableActionProps> =
       onContentShown?.()
     }
   }, [isContentShown, onContentShown, setIsContentShown])
-  const preventParentClick = useMemo(() => (event?: MouseEvent): void => {
-    if (event) {
-      event.stopPropagation()
-    }
-    onClick?.(event)
-  }, [onClick])
-  const containerStyle: RadiumCSSProperties = {
-    ...style,
-    ':hover': {
-      backgroundColor: isContentShown ? '#fff' : colors.LIGHT_GREY,
-    },
-    'backgroundColor': '#fff',
-    'cursor': 'pointer',
-    'display': 'block',
-  }
+  const {isHovered, isFocused, ...radiumHandlers} = useHoverAndFocus<HTMLDivElement>()
+  const isActive = isHovered || isFocused
   const headerStyle: React.CSSProperties = {
+    ...style,
     alignItems: 'center',
     color: colors.CHARCOAL_GREY,
     cursor: 'pointer',
     display: 'flex',
     fontSize: 13,
     height: 50,
+    ...isActive && style?.[':hover'],
   }
   const iconStyle: React.CSSProperties = {
     height: 20,
@@ -133,9 +124,11 @@ const ExpandableActionBase: React.FC<ExpandableActionProps> =
     paddingTop: 0,
   }
   const childStyle = (childProps: {style?: React.CSSProperties}): React.CSSProperties => ({
-    cursor: 'initial',
-    fontWeight: 'normal',
-    ...childProps.style || {},
+    ...childProps.style,
+    paddingBottom: 15,
+    paddingLeft: 20,
+    paddingRight: 20,
+    paddingTop: 15,
     ...isContentShown ? {} : hiddenContentStyle,
     ...SmoothTransitions,
   })
@@ -145,10 +138,19 @@ const ExpandableActionBase: React.FC<ExpandableActionProps> =
     fontWeight: 'normal',
     textAlign: 'right',
   }
+  const expandSectionButtonStyle: React.CSSProperties = {
+    alignItems: 'center',
+    display: 'flex',
+    outline: 0,
+  }
+  const titleId = useMemo(_uniqueId, [])
   // TODO(guillaume): Print reason when the user mouseovers the tag.
-  return <RadiumDiv style={containerStyle} onClick={handleClick}>
-    <header style={headerStyle}>
-      <strong>
+  // Clicking on the header is equivalent to clicking on the linked title, it is a convenience added
+  // for users that have a cursor.
+  return <React.Fragment>
+    {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions,jsx-a11y/click-events-have-key-events */}
+    <div {...radiumHandlers} style={headerStyle} onClick={handleClick}>
+      <strong id={titleId} style={(isForYou || tag || type) ? undefined : {flex: 1}}>
         {title}
       </strong>
       {isForYou ? <Tag style={tagStyle(colors.BOB_BLUE)}>
@@ -158,17 +160,22 @@ const ExpandableActionBase: React.FC<ExpandableActionProps> =
         {tag.value}
       </Tag> : null}
       <ExpandableActionType type={type} />
-      <span style={{flex: 1}} />
-      {isMobileVersion || isForPrint ? null : <span style={seeContentStyle}>
-        {isContentShown ? t('Voir moins') : t('Voir {{contentName}}', {contentName})}{' '}
-      </span>}
-      {isForPrint ? null : <UpDownIcon icon="chevron" isUp={isContentShown} style={iconStyle} />}
-    </header>
-    {React.cloneElement(children, {
-      onClick: preventParentClick,
-      style: childStyle(children.props),
-    })}
-  </RadiumDiv>
+      {(isForYou || tag || type) ? <span style={{flex: 1}} /> : undefined}
+      <SmartLink onClick={handleClick} aria-describedby={titleId} style={expandSectionButtonStyle}>
+        {isMobileVersion || isForPrint ? null : <span style={seeContentStyle}>
+          {isContentShown ? t('Voir moins') : t('Voir {{contentName}}', {contentName})}{' '}
+        </span>}
+        {isForPrint ? null : <UpDownIcon
+          icon="chevron" isUp={isContentShown} style={iconStyle}
+          aria-hidden={true} focusable={false} />}
+      </SmartLink>
+    </div>
+    <div aria-hidden={!isContentShown} style={{cursor: 'auto', fontWeight: 'normal'}}>
+      {React.cloneElement(children, {
+        style: childStyle(children.props),
+      })}
+    </div>
+  </React.Fragment>
 }
 const ExpandableAction: React.ComponentType<ExpandableActionProps> =
   React.memo(ExpandableActionBase)
@@ -210,14 +217,6 @@ const EmailTemplateBase: React.FC<EmailTemplateProps> =
     </div>
   </ExpandableAction>
 }
-EmailTemplateBase.propTypes = {
-  content: PropTypes.string.isRequired,
-  contentName: PropTypes.string,
-  style: PropTypes.object,
-  tip: PropTypes.string,
-  title: PropTypes.node.isRequired,
-  whyForYou: PropTypes.string,
-}
 const EmailTemplate = React.memo(EmailTemplateBase)
 
 
@@ -234,18 +233,16 @@ interface ToolCardProps {
 
 const ToolCardBase: React.FC<ToolCardProps> = (props: ToolCardProps): React.ReactElement => {
   const {children, hasBorder, href, imageSrc, onClick, style} = props
-  const handleClick = useCallback((): void => {
-    window.open(href, '_blank')
-    onClick?.()
-  }, [href, onClick])
   const cardStyle: RadiumCSSProperties = {
     ':hover': {
       backgroundColor: colors.LIGHT_GREY,
     },
     'alignItems': 'center',
     'backgroundColor': '#fff',
+    'color': 'inherit',
     'cursor': 'pointer',
     'display': 'flex',
+    'textDecoration': 'none',
     ...(hasBorder && {
       border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
       borderRadius: 4,
@@ -261,22 +258,15 @@ const ToolCardBase: React.FC<ToolCardProps> = (props: ToolCardProps): React.Reac
     fontSize: 14,
     fontWeight: 'bold',
   }
-  return <RadiumDiv style={cardStyle} onClick={handleClick}>
-    <div style={titleStyle}>
+  return <RadiumExternalLink style={cardStyle} onClick={onClick} href={href}>
+    <span style={titleStyle}>
       <img src={imageSrc}
         style={{height: 55, width: 55}} alt="" />
-      <div style={{paddingLeft: 20}}>{children}</div>
-    </div>
-    <ChevronRightIcon style={{fill: colors.CHARCOAL_GREY, width: 20}} />
-  </RadiumDiv>
-}
-ToolCardBase.propTypes = {
-  children: PropTypes.node,
-  hasBorder: PropTypes.bool,
-  href: PropTypes.string.isRequired,
-  imageSrc: PropTypes.string.isRequired,
-  onClick: PropTypes.func,
-  style: PropTypes.object,
+      <span style={{paddingLeft: 20}}>{children}</span>
+    </span>
+    <ChevronRightIcon
+      aria-hidden={true} focusable={false} style={{fill: colors.CHARCOAL_GREY, width: 20}} />
+  </RadiumExternalLink>
 }
 const ToolCard = React.memo(ToolCardBase)
 
@@ -360,7 +350,7 @@ const TipsSectionBase: React.FC<TipsSectionProps> =
     handleExplore(`more tips ${id}`)()
   }, [id, handleExplore, setAreAllItemsShown])
   const footer = (areAllItemsShown || tips.length <= MAX_SHOWN_TIPS) ? null :
-    <button onClick={moreItemsClickHandler} style={seeMoreButtonStyle}>
+    <button onClick={moreItemsClickHandler} style={seeMoreButtonStyle} type="button">
       <span style={{flex: 1}}>{t('Voir plus')}</span>
       <ChevronDownIcon style={{fill: colors.CHARCOAL_GREY, height: 20, width: 20}} />
     </button>
@@ -378,19 +368,6 @@ const TipsSectionBase: React.FC<TipsSectionProps> =
         <Tag style={tagStyle}>{t('Pour votre métier')}</Tag> : null}
     </div>)}
   </MethodSuggestionList>
-}
-TipsSectionBase.propTypes = {
-  gender: PropTypes.oneOf(['FEMININE', 'MASCULINE']),
-  handleExplore: PropTypes.func.isRequired,
-  id: PropTypes.string,
-  style: PropTypes.object,
-  t: PropTypes.func.isRequired,
-  tips: PropTypes.arrayOf(PropTypes.shape({
-    content: PropTypes.string.isRequired,
-    contentMasculine: PropTypes.string,
-    filters: PropTypes.arrayOf(PropTypes.string.isRequired),
-  })).isRequired,
-  title: PropTypes.string,
 }
 const TipsSection = React.memo(TipsSectionBase)
 
@@ -433,14 +410,6 @@ const ImproveApplicationTipsBase: React.FC<ImproveApplicationTipsProps> =
     })}
   </div>
 }
-ImproveApplicationTipsBase.propTypes = {
-  profile: PropTypes.shape({
-    gender: PropTypes.string,
-  }).isRequired,
-  sections: PropTypes.arrayOf(PropTypes.shape({
-    data: PropTypes.string,
-  }).isRequired).isRequired,
-}
 const ImproveApplicationTips = React.memo(ImproveApplicationTipsBase)
 
 
@@ -472,7 +441,7 @@ const PercentageBoxes: React.FC<{percentage: number}> =
   const boxes: readonly BoxProps[] = nbBoxes >= maxBoxes ? [
     {percentage: .5},
     ...Array.from({length: maxBoxes / 2 - 1}).map(() => ({percentage: 1})),
-    {component: <div style={dotsStyle} key="dots">…</div>},
+    {component: <span style={dotsStyle} key="dots" aria-hidden={true}>…</span>},
     {isTarget: true, percentage: 1},
   ] : [
     {percentage: percentage - nbBoxes},
@@ -480,11 +449,11 @@ const PercentageBoxes: React.FC<{percentage: number}> =
     {isTarget: true, percentage: 1},
   ]
 
-  return <div style={{display: 'flex', height: 22}}>
+  return <span style={{display: 'flex', height: 22}}>
     {boxes.map((box: BoxProps, index): React.ReactElement => hasComponent(box) ?
       box.component :
-      <div style={percentageBoxStyle(box.percentage, box.isTarget)} key={`box-${index}`} />)}
-  </div>
+      <span style={percentageBoxStyle(box.percentage, box.isTarget)} key={`box-${index}`} />)}
+  </span>
 }
 
 
@@ -499,6 +468,7 @@ const MethodSuggestionBase: React.FC<MethodSuggestionProps> =
 (props: MethodSuggestionProps): React.ReactElement => {
   const {children, isNotClickable, isTopLimitVisible, style} = props
   const insideStyle: RadiumCSSProperties = {
+    'display': 'flex',
     ...children.props.style,
     ...style,
     ':hover': {
@@ -508,7 +478,6 @@ const MethodSuggestionBase: React.FC<MethodSuggestionProps> =
     },
     'alignItems': 'center',
     'backgroundColor': '#fff',
-    'display': 'flex',
     'fontSize': 13,
     'fontWeight': 'bold',
     'minHeight': 50,
@@ -517,7 +486,7 @@ const MethodSuggestionBase: React.FC<MethodSuggestionProps> =
     'paddingRight': methodPadding,
     'paddingTop': 15,
   }
-  if (!isNotClickable) {
+  if (!isNotClickable && !insideStyle.cursor) {
     insideStyle.cursor = 'pointer'
   }
   const topLimitStyle = {
@@ -531,12 +500,6 @@ const MethodSuggestionBase: React.FC<MethodSuggestionProps> =
     {React.cloneElement(children, {style: insideStyle})}
   </React.Fragment>
 }
-MethodSuggestionBase.propTypes = {
-  children: PropTypes.element.isRequired,
-  isNotClickable: PropTypes.bool,
-  isTopLimitVisible: PropTypes.bool,
-  style: PropTypes.object,
-}
 const MethodSuggestion = React.memo(MethodSuggestionBase)
 
 
@@ -544,7 +507,7 @@ interface MethodSectionProps {
   footer?: React.ReactNode
   headerContent?: React.ReactNode
   style?: React.CSSProperties
-  subtitle?: string
+  subtitle?: React.ReactNode
   title?: React.ReactNode
 }
 
@@ -576,6 +539,7 @@ const MethodSectionBase: React.FC<MethodSectionProps & {children: React.ReactNod
     color: colors.WARM_GREY,
     fontSize: 13,
     fontStyle: 'italic',
+    margin: 0,
   }
   const footerStyle: React.CSSProperties = {
     borderTop: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
@@ -586,20 +550,12 @@ const MethodSectionBase: React.FC<MethodSectionProps & {children: React.ReactNod
   return <section style={sectionStyle}>
     {title ? <header style={headerStyle}>
       <h4 style={titleStyle}>{title}</h4>
-      {subtitle ? <span style={subtitleStyle}>{subtitle}</span> : null}
+      {subtitle ? <p style={subtitleStyle}>{subtitle}</p> : null}
       {headerContent}
     </header> : null}
     {children}
     {footer ? <footer style={footerStyle}>{footer}</footer> : null}
   </section>
-}
-MethodSectionBase.propTypes = {
-  children: PropTypes.node,
-  footer: PropTypes.node,
-  headerContent: PropTypes.node,
-  style: PropTypes.object,
-  subtitle: PropTypes.string,
-  title: PropTypes.node,
 }
 const MethodSection = React.memo(MethodSectionBase)
 
@@ -647,27 +603,6 @@ const MethodSuggestionListBase: React.FC<MethodSuggestionListProps> =
 const MethodSuggestionList = React.memo(MethodSuggestionListBase)
 
 
-interface TipProps {
-  style?: React.CSSProperties
-  tip: string
-}
-
-
-const TipBase: React.FC<TipProps> = ({style, tip}: TipProps): React.ReactElement => {
-  const tipStyle = {
-    fontStyle: 'italic',
-    marginRight: 10,
-    ...style,
-  }
-  return <RadiumDiv style={tipStyle}>{tip}</RadiumDiv>
-}
-TipBase.propTypes = {
-  style: PropTypes.object,
-  tip: PropTypes.string.isRequired,
-}
-const Tip = React.memo(TipBase)
-
-
 interface JobSuggestionJobProps {
   gender?: bayes.bob.Gender
   job?: bayes.bob.ReorientJob
@@ -683,27 +618,34 @@ const JobSuggestionCaption: React.FC<{style?: React.CSSProperties}> =
 ({style}: {style?: React.CSSProperties}): React.ReactElement => {
   const captionStyle: React.CSSProperties = {
     fontStyle: 'normal',
-    marginRight: 10,
+    margin: '0 10px 0 0',
   }
-  return <RadiumDiv style={style}>
+  const {t} = useTranslation('advisor')
+  return <p style={style}>
     <span style={captionStyle}>
-      Offres par candidat par rapport à votre métier&nbsp;:
+      {t('Offres par candidat par rapport à votre métier\u00A0:')}
     </span>
-  </RadiumDiv>
+  </p>
 }
 
 const JobSuggestionJob: React.FC<JobSuggestionJobProps> =
 ({gender, job, onClick, style}: JobSuggestionJobProps): React.ReactElement|null => {
   const {t} = useTranslation('advisor')
-  const handleClick = useCallback((): void => {
-    window.open(getJobSearchURL(t, job, gender), '_blank')
-    onClick?.()
-  }, [t, gender, job, onClick])
+  const searchURL = useMemo(() => getJobSearchURL(t, job, gender), [t, gender, job])
+  const linkStyle = useMemo((): RadiumCSSProperties => ({
+    color: 'inherit',
+    textDecoration: 'none',
+    ...style,
+  }), [style])
   const multiplierStyle: React.CSSProperties = {
     color: colors.LIME_GREEN,
     flex: 1,
     fontWeight: 'bold',
     marginRight: 0,
+  }
+  const badMultiplierStyle: React.CSSProperties = {
+    ...multiplierStyle,
+    color: colors.RED_PINK,
   }
   const jobNameStyle: React.CSSProperties = {
     flex: isMobileVersion ? 4 : 1,
@@ -726,22 +668,24 @@ const JobSuggestionJob: React.FC<JobSuggestionJobProps> =
   const stressPercentLoss =
     Number.parseFloat(((1 - 1 / ((job.offersPercentGain || 0) / 100 + 1)) * 100).toPrecision(2))
 
-  return <RadiumDiv style={style} onClick={handleClick}>
-    <div style={jobNameStyle}>
+  return <RadiumExternalLink href={searchURL} style={linkStyle} onClick={onClick}>
+    <span style={jobNameStyle}>
       {job.name}
-    </div>
-    <div>
+    </span>
+    <span>
       {job.isDiplomaStrictlyRequired ? <Tag style={tagStyle}>Diplôme obligatoire</Tag> : null}
-    </div>
-    <div style={{flex: 1}}>
-      <span style={{alignItems: 'center', display: 'flex'}}>
-        {stressPercentLoss > 10 ? <Trans style={multiplierStyle} t={t}>
+    </span>
+    <span style={{flex: 1}}>
+      <span style={{alignItems: 'center', display: 'flex', justifyContent: 'flex-end'}}>
+        {stressPercentLoss > 10 ? <Trans style={multiplierStyle} t={t} parent={null}>
           -{{percentLoss: toLocaleString(stressPercentLoss)}}% de concurrence
+        </Trans> : stressPercentLoss < -10 ? <Trans style={badMultiplierStyle} t={t} parent={null}>
+          +{{percentLoss: toLocaleString(-stressPercentLoss)}}% de concurrence
         </Trans> : null}
-        <ChevronRightIcon style={chevronStyle} />
+        <ChevronRightIcon style={chevronStyle} aria-hidden={true} focusable={false} />
       </span>
-    </div>
-  </RadiumDiv>
+    </span>
+  </RadiumExternalLink>
 }
 
 const JobSuggestionBase: React.FC<JobSuggestionProps> =
@@ -751,13 +695,6 @@ const JobSuggestionBase: React.FC<JobSuggestionProps> =
     return <JobSuggestionCaption style={style} />
   }
   return <JobSuggestionJob {...props} style={style} />
-}
-JobSuggestionBase.propTypes = {
-  gender: PropTypes.oneOf(['FEMININE', 'MASCULINE']),
-  isCaption: PropTypes.bool,
-  job: PropTypes.object,
-  onClick: PropTypes.func,
-  style: PropTypes.object,
 }
 const JobSuggestion = React.memo(JobSuggestionBase)
 
@@ -801,18 +738,18 @@ const MissionBase: React.FC<MissionProps> = (props: MissionProps): React.ReactEl
     tag={tag}
     title={associationName}>
     <div style={contentStyle}>
-      <div style={{marginBottom: 20}}>
+      <p style={{margin: '0 0 20px'}}>
         <Trans parent="strong" t={t}>Intitulé de la mission&nbsp;:</Trans><br />
         {title}
-      </div>
+      </p>
 
-      <div>
+      <p style={{margin: 0}}>
         <Trans parent="strong" t={t}>Description&nbsp;:</Trans><br />
         <Markdown content={description} />
-      </div>
+      </p>
 
       {link ? <Trans
-        style={{marginTop: 20}} t={t}
+        style={{margin: '20px 0 0'}} t={t} parent="p"
         i18nKey="Lire la suite sur <0>{{aggregatorName}}</0>"
         values={{aggregatorName}}
         components={aggregatorLink} /> : null}
@@ -820,44 +757,6 @@ const MissionBase: React.FC<MissionProps> = (props: MissionProps): React.ReactEl
   </ExpandableAction>
 }
 const Mission = React.memo(MissionBase)
-
-
-interface ListItemProps {
-  children: React.ReactNode
-  hasBorder?: boolean
-  style?: RadiumCSSProperties
-}
-
-
-const ListItemBase: React.FC<ListItemProps> = (props: ListItemProps): React.ReactElement => {
-  const {children, hasBorder, style, ...extraProps} = props
-  const insideSpacing = '0 25px'
-  const containerStyle = {
-    alignItems: 'center',
-    color: colors.CHARCOAL_GREY,
-    display: 'flex',
-    fontSize: 13,
-    height: 50,
-    padding: insideSpacing,
-    ...style,
-  }
-  const borderStyle = {
-    borderTop: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
-    margin: insideSpacing,
-  }
-  return <React.Fragment>
-    {hasBorder ? <div style={borderStyle} /> : null}
-    <RadiumDiv style={containerStyle} {...extraProps}>
-      {children}
-    </RadiumDiv>
-  </React.Fragment>
-}
-ListItemBase.propTypes = {
-  children: PropTypes.node,
-  hasBorder: PropTypes.bool,
-  style: PropTypes.object,
-}
-const ListItem = React.memo(ListItemBase)
 
 
 interface StaticAdviceCardContentProps {
@@ -882,10 +781,6 @@ const StaticAdviceCardContentBase: React.FC<StaticAdviceCardContentProps> =
     </MethodSuggestionList>
   </div>
 }
-StaticAdviceCardContentBase.propTypes = {
-  expandedCardHeader: PropTypes.string,
-  expandedCardItems: PropTypes.arrayOf(PropTypes.string.isRequired),
-}
 const StaticAdviceCardContent = React.memo(StaticAdviceCardContentBase)
 
 
@@ -901,16 +796,10 @@ const HandyLinkBase: React.FC<HandyLinkProps> = (props: HandyLinkProps): React.R
     textDecoration: 'none',
   }
   return <div style={{fontWeight: 'bold', ...style}}>
-    <span style={{marginRight: 10}} role="img" aria-label="main pointant à droite">👉 </span>
+    <span style={{marginRight: 10}} aria-hidden={true}>👉 </span>
     {linkIntro ? <span>{linkIntro} </span> : null}
     <ExternalLink style={linkStyle} {...otherProps}>{children}</ExternalLink>
   </div>
-}
-HandyLinkBase.propTypes = {
-  children: PropTypes.string.isRequired,
-  href: PropTypes.string.isRequired,
-  linkIntro: PropTypes.string,
-  style: PropTypes.object,
 }
 const HandyLink = React.memo(HandyLinkBase)
 
@@ -973,10 +862,6 @@ React.ReactElement|null => {
     </div>
   </div>
 }
-SkillAssetBase.propTypes = {
-  asset: PropTypes.string.isRequired,
-  style: PropTypes.object,
-}
 const SkillAsset = React.memo(SkillAssetBase)
 
 
@@ -1023,8 +908,10 @@ interface SkillProps extends bayes.bob.Skill {
 
 const SkillBase: React.FC<SkillProps> = (props: SkillProps): React.ReactElement => {
   const {assets = [], description, discoverUrl, handleExplore, name, style} = props
+  const {t} = useTranslation('advisor')
   return <ActionWithHandyLink
-    onClick={handleExplore('link-skill')} linkIntro="Découvrir cette" linkName="compétence"
+    onClick={handleExplore('link-skill')} linkIntro={t('Découvrir cette')}
+    linkName={t('compétence')}
     {...{description, discoverUrl, style}}>
     <div style={{alignItems: 'center', display: 'flex', marginBottom: 15}}>
       <span style={{flex: 1}}>{name}</span>
@@ -1040,55 +927,56 @@ interface CardWithImageProps {
   description?: string
   image: string
   style?: React.CSSProperties
-  title?: string
+  title: string
   url: string
+}
+
+const cardLinkStyle: React.CSSProperties = {
+  color: 'inherit',
+  textDecoration: 'none',
+}
+const cardImageStyle: React.CSSProperties = {
+  borderRadius: '10px 10px 0 0',
+  width: '100%',
+}
+const cardDescriptionStyle: React.CSSProperties = {
+  color: colors.GREYISH_BROWN,
+  display: 'block',
+  marginTop: 7,
+  minHeight: 48,
 }
 
 const CardWithImageBase: React.FC<CardWithImageProps> =
 (props: CardWithImageProps): React.ReactElement => {
   const {description, image, style, title, url} = props
-  const notALinkStyle: React.CSSProperties = {
-    color: 'inherit',
-    textDecoration: 'none',
-  }
-  const cardStyle: React.CSSProperties = {
+  const cardStyle = useMemo((): React.CSSProperties => ({
     border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
     borderRadius: 10,
-    overflow: 'hidden',
+    display: 'flex',
     width: 250,
     ...style,
-  }
-  return <div key={url} style={cardStyle}>
-    <ExternalLink href={url}><img style={{width: '100%'}} src={image} alt="" /></ExternalLink>
-    <div style={{padding: 15}}>
-      {title ? <div style={{fontWeight: 'bold', marginTop: 10}}>
-        <ExternalLink href={url} style={notALinkStyle}>
-          {title}
-        </ExternalLink>
-      </div> : null}
-      {description ? <div style={{color: colors.WARM_GREY, marginTop: 7, minHeight: 48}}>
-        <ExternalLink href={url} style={notALinkStyle}>
-          {description}
-        </ExternalLink>
-      </div> : null}
-    </div>
-  </div>
-}
-CardWithImageBase.propTypes = {
-  description: PropTypes.string,
-  image: PropTypes.string.isRequired,
-  style: PropTypes.object,
-  title: PropTypes.string,
-  url: PropTypes.string.isRequired,
+  }), [style])
+  return <li key={url} style={cardStyle}><ExternalLink href={url} style={cardLinkStyle}>
+    <img style={cardImageStyle} src={image} alt="" />
+    <span style={{display: 'block', padding: 15}}>
+      <span style={{fontWeight: 'bold', marginTop: 10}}>
+        {title}
+      </span>
+      {description ? <span style={cardDescriptionStyle}>
+        {description}
+      </span> : null}
+    </span>
+  </ExternalLink></li>
 }
 const CardWithImage = React.memo(CardWithImageBase)
 
 
 interface ReorientSectionProps extends Omit<MethodSuggestionListProps, 'children'> {
   items: React.ReactElement<JobSuggestionProps>[]
+  profile: bayes.bob.UserProfile
 }
 const ReorientSectionBase = (props: ReorientSectionProps): React.ReactElement | null => {
-  const {footer, items, ...otherProps} = props
+  const {footer, items, profile, ...otherProps} = props
   if (!items.length) {
     return null
   }
@@ -1096,20 +984,54 @@ const ReorientSectionBase = (props: ReorientSectionProps): React.ReactElement | 
     {config.dataSourceLMI.replace('{{dataSourceYear}}', `${dataSourceYear}`)}
   </DataSource>
 
-  return <MethodSuggestionList {...otherProps} footer={footerContent}>
-    {items}
-  </MethodSuggestionList>
-}
-ReorientSectionBase.propTypes = {
-  footer: PropTypes.node,
-  items: PropTypes.arrayOf(PropTypes.object.isRequired),
-  style: PropTypes.object,
-  title: PropTypes.node,
+  return <React.Fragment>
+    <MethodSuggestionList {...otherProps} footer={footerContent}>
+      {items}
+    </MethodSuggestionList>
+    <HandicapSuggestionWarning hasHandicap={!!profile.hasHandicap} />
+  </React.Fragment>
 }
 const ReorientSection = React.memo(ReorientSectionBase)
 
 
+const linkStyle: RadiumCSSProperties = {
+  ':focus': {
+    textDecoration: 'underline',
+  },
+  ':hover': {
+    textDecoration: 'underline',
+  },
+  'color': colors.BOB_BLUE,
+  'fontWeight': 'bold',
+  'textDecoration': 'none',
+}
+
+interface HandicapSuggestionWarningProps {
+  hasHandicap: boolean
+  style?: React.CSSProperties
+  types?: string
+}
+
+const HandicapSuggestionWarningBase =
+  (props: HandicapSuggestionWarningProps): React.ReactElement|null => {
+    const {hasHandicap, types, style} = props
+    const {t} = useTranslation('advisor')
+    const containerStyle = useMemo((): React.CSSProperties => ({
+      ...style,
+    }), [style])
+    if (!config.handicapCounselorUrl || !hasHandicap) {
+      return null
+    }
+    const jobsOrWorkEnvironments = types || t('métiers')
+    return <Trans style={containerStyle} t={t} parent="p">
+      Pour certains {{jobsOrWorkEnvironments}}, un réaménagement de poste de travail pourrait être
+      nécessaire. Parlez-en à <RadiumExternalLink
+        href={config.handicapCounselorUrl} style={linkStyle}>votre conseiller</RadiumExternalLink>.
+    </Trans>
+  }
+const HandicapSuggestionWarning = React.memo(HandicapSuggestionWarningBase)
+
 export {ToolCard, EmailTemplate, ImproveApplicationTips, Skill,
-  StaticAdviceCardContent, Tip, PercentageBoxes, JobSuggestion, ExpandableAction, Mission,
-  MethodSection, HandyLink, ListItem, MethodSuggestionList, CardWithImage, ActionWithHandyLink,
-  useAdviceData, ReorientSection}
+  StaticAdviceCardContent, PercentageBoxes, JobSuggestion, ExpandableAction, Mission,
+  MethodSection, HandyLink, MethodSuggestionList, CardWithImage, ActionWithHandyLink,
+  useAdviceData, ReorientSection, HandicapSuggestionWarning}

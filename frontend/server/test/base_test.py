@@ -6,7 +6,7 @@ import hashlib
 import json
 import random
 import typing
-from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Union
+from typing import Any, Callable, Mapping, Optional, Tuple, Union
 import unittest
 from unittest import mock
 
@@ -27,7 +27,7 @@ def sha1(*args: str) -> str:
     return binascii.hexlify(hasher.digest()).decode('ascii')
 
 
-def add_project(user: Dict[str, Any]) -> None:
+def add_project(user: dict[str, Any]) -> None:
     """Modifier for a user proto that adds a new project.
 
     Callers should not rely on the actual values of the project, just that it's
@@ -52,7 +52,7 @@ def base64_encode(content: Union[str, bytes]) -> str:
     return base64_encoded.rstrip('=')
 
 
-def _deep_merge_dict(source: Mapping[str, Any], destination: Dict[str, Any]) -> None:
+def _deep_merge_dict(source: Mapping[str, Any], destination: dict[str, Any]) -> None:
     for key, value in source.items():
         if isinstance(value, dict):
             node = destination.setdefault(key, {})
@@ -102,6 +102,30 @@ class ServerTestCase(unittest.TestCase):
         logging_patch = mock.patch(server.__name__ + '.logging', spec=True)
         logging_patch.start()
         self.addCleanup(logging_patch.stop)
+        self._translations: list[dict[str, str]] = []
+
+    def tearDown(self) -> None:
+        final_translations = sorted(
+            (doc for doc in self._db.translations.find()),
+            key=lambda doc: typing.cast(str, doc.get('string', '')))
+        sorted_translations = sorted(self._translations, key=lambda doc: doc['string'])
+        self.assertEqual(
+            final_translations, sorted_translations,
+            msg='Do not update translations in tests. Use `self.add_translations` instead.')
+        super().tearDown()
+
+    def add_translations(self, translations: list[dict[str, str]]) -> None:
+        """Add translations to the DB.
+
+        Use this helper method to make sure to clear the cache when changing the translations.
+        """
+
+        self._db.translations.insert_many(translations)
+        self._translations.extend(translations)
+        self._clear_cache()
+
+    def _clear_cache(self) -> None:
+        cache.clear()
 
     def authenticate_new_user_token(
             self, email: str = 'foo@bar.fr', first_name: str = 'Henry',
@@ -129,9 +153,9 @@ class ServerTestCase(unittest.TestCase):
 
     def create_guest_user(
             self, first_name: str = 'Henry',
-            modifiers: Optional[List[Callable[[Dict[str, Any]], None]]] = None,
-            data: Optional[Dict[str, Any]] = None,
-            auth_data: Optional[Dict[str, Any]] = None) -> Tuple[str, str]:
+            modifiers: Optional[list[Callable[[dict[str, Any]], None]]] = None,
+            data: Optional[dict[str, Any]] = None,
+            auth_data: Optional[dict[str, Any]] = None) -> Tuple[str, str]:
         """Creates a new guest user.
 
         Args:
@@ -174,7 +198,7 @@ class ServerTestCase(unittest.TestCase):
         auth_token = auth_response['authToken']
 
         response = self.app.post(
-            '/api/user', data=json.dumps(dict(data, **{'userId': user_id})),
+            '/api/user', data=json.dumps(auth_response['authenticatedUser'] | data),
             headers={'Authorization': 'Bearer ' + auth_token, 'Content-Type': 'application/json'})
         self.assertEqual(200, response.status_code, response.get_data())
 
@@ -182,8 +206,8 @@ class ServerTestCase(unittest.TestCase):
 
     def create_user_with_token(
             self,
-            modifiers: Optional[List[Callable[[Dict[str, Any]], None]]] = None,
-            data: Optional[Dict[str, Any]] = None,
+            modifiers: Optional[list[Callable[[dict[str, Any]], None]]] = None,
+            data: Optional[dict[str, Any]] = None,
             email: Optional[str] = None, advisor: bool = True,
             password: str = 'psswd') \
             -> Tuple[str, str]:
@@ -245,7 +269,7 @@ class ServerTestCase(unittest.TestCase):
             auth_response.get('authToken', ''))
 
     def create_user_that(
-            self, predicate: Callable[[Dict[str, Any]], bool],
+            self, predicate: Callable[[dict[str, Any]], bool],
             *args: Any, num_tries: int = 50, **kwargs: Any) \
             -> Tuple[str, str]:
         """Creates a user that passes a predicate.
@@ -272,24 +296,24 @@ class ServerTestCase(unittest.TestCase):
                 pass
         self.fail('Could not create a user that matches the predicate')
 
-    def json_from_response(self, response: werkzeug.Response) -> Dict[str, Any]:
+    def json_from_response(self, response: werkzeug.Response) -> dict[str, Any]:
         """Parses the json returned in a response."""
 
         data_text = response.get_data(as_text=True)
         self.assertEqual(200, response.status_code, msg=data_text)
-        return typing.cast(Dict[str, Any], json.loads(data_text))
+        return typing.cast(dict[str, Any], json.loads(data_text))
 
     def get_user_info(self, user_id: str, auth_token: Optional[str] = None) \
-            -> Dict[str, Any]:
+            -> dict[str, Any]:
         """Retrieve the user's data from the server."""
 
-        kwargs: Dict[str, Any] = {}
+        kwargs: dict[str, Any] = {}
         if auth_token:
             kwargs['headers'] = {'Authorization': 'Bearer ' + auth_token}
         user_req = self.app.get('/api/user/' + user_id, **kwargs)
         return self.json_from_response(user_req)
 
-    def user_info_from_db(self, user_id: str) -> Dict[str, Any]:
+    def user_info_from_db(self, user_id: str) -> dict[str, Any]:
         """Get user's info directly from DB without calling any endpoint."""
 
         user_info = self._user_db.user.find_one({'_id': mongomock.ObjectId(user_id)})
@@ -298,7 +322,7 @@ class ServerTestCase(unittest.TestCase):
         return {k: v for k, v in user_info.items() if not k.startswith('_')}
 
 
-def add_project_modifier(user: Dict[str, Any]) -> None:
+def add_project_modifier(user: dict[str, Any]) -> None:
     """Modifier to use in create_user_with_token to add a project."""
 
     user['projects'] = user.get('projects', []) + [{

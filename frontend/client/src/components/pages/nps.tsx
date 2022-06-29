@@ -4,25 +4,27 @@ import React, {Suspense, useCallback, useMemo, useState} from 'react'
 import ReactDOM from 'react-dom'
 import {useTranslation} from 'react-i18next'
 import {Provider, useDispatch} from 'react-redux'
-import {Dispatch, createStore, applyMiddleware, combineReducers} from 'redux'
+import type {Dispatch} from 'redux'
+import {createStore, applyMiddleware, combineReducers} from 'redux'
 import {composeWithDevTools} from 'redux-devtools-extension'
 import thunk from 'redux-thunk'
 
-import {DispatchAllActions, AllActions, setUserProfile} from 'store/actions'
+import type {DispatchAllActions, AllActions} from 'store/actions'
+import {setUserProfile} from 'store/actions'
 import createAmplitudeMiddleware from 'store/amplitude'
 import {app} from 'store/app_reducer'
 import {inDepartement, lowerFirstLetter, ofJobName} from 'store/french'
 import {cleanHtmlError, hasErrorStatus} from 'store/http'
-import {getTranslatedImpactMeasurement, init as i18nInit, localizeOptions,
-  prepareT} from 'store/i18n'
+import {init as i18nInit, localizeOptions, prepareT} from 'store/i18n'
 import {genderizeJob} from 'store/job'
 import {Logger} from 'store/logging'
 import isMobileVersion from 'store/mobile'
 import {parseQueryString} from 'store/parse'
+import {getTranslatedImpactMeasurement} from 'store/project'
 import {useAsynceffect, useCancelablePromises} from 'store/promise'
-import createSentryMiddleware from 'store/sentry'
+import createSentryEnhancer from 'store/sentry'
 
-import logoProductImage from 'deployment/bob-logo.svg'
+import logoProductImage from 'deployment/bob-logo.svg?fill=%23fff'
 
 import BobInteraction from 'components/bob_interaction'
 import Button from 'components/button'
@@ -55,11 +57,11 @@ const oni18nInit = i18nInit()
 
 interface AckFeedbackProps {
   score: number
-  style: React.CSSProperties
+  style?: React.CSSProperties
 }
 
 
-const AckFeedback = ({score, style}: AckFeedbackProps): React.ReactElement => {
+export const AckFeedback = ({score, style}: AckFeedbackProps): React.ReactElement => {
   const containerStyle: React.CSSProperties = useMemo((): React.CSSProperties => ({
     ...style,
     textAlign: 'center',
@@ -133,7 +135,7 @@ const headerStyle: React.CSSProperties = {
   width: '100%',
 } as const
 
-const header = <header style={headerStyle}>
+export const header = <header style={headerStyle}>
   <a href="/">
     <img
       style={{height: 40}}
@@ -142,7 +144,7 @@ const header = <header style={headerStyle}>
 </header>
 
 
-const pageStyle: React.CSSProperties = {
+export const pageStyle: React.CSSProperties = {
   alignItems: 'center',
   color: colors.DARK_TWO,
   display: 'flex',
@@ -153,7 +155,7 @@ const pageStyle: React.CSSProperties = {
   lineHeight: 1.5,
   minHeight: '100vh',
 }
-const contentStyle: React.CSSProperties = {
+export const contentStyle: React.CSSProperties = {
   flex: 1,
   maxWidth: 500,
   padding: isMobileVersion ? `0 ${MIN_CONTENT_PADDING}px 50px` : '0 0 50px',
@@ -261,7 +263,9 @@ const NPSFeedbackPage: React.FC = (): React.ReactElement => {
     <NPSShareModal isShown={isShareModalShown} />
     <div style={contentStyle}>
       <div style={thankYouTitleContainerStyle}>
-        <div style={{margin: 'auto'}}><Emoji size={40}>{initScore >= 8 ? '❤' : '👍'}</Emoji></div>
+        <div style={{margin: 'auto'}}>
+          <Emoji size={40} aria-hidden={true}>{initScore >= 8 ? '❤' : '👍'}</Emoji>
+        </div>
         {thankYouTitle}
       </div>
       {initScore >= 6 ? <React.Fragment>
@@ -449,9 +453,7 @@ const NPSFullFeedbackPage = (): React.ReactElement => {
     <div style={contentStyle}>
       <div style={{fontSize: 16, margin: '40px 0 10px'}}>
         <div style={thankYouTitleContainerStyle}>
-          {/* TODO(émilie): Manage the emoji a11y. */
-            /* eslint-disable-next-line jsx-a11y/accessible-emoji */}
-          <div style={{margin: 'auto'}}><Emoji size={40}>👍</Emoji></div>
+          <div style={{margin: 'auto'}}><Emoji size={40} aria-hidden={true}>👍</Emoji></div>
           {t('Merci\u00A0!')}
         </div>
         <div>
@@ -567,11 +569,9 @@ const amplitudeMiddleware = createAmplitudeMiddleware(new Logger({
 
 
 const finalCreateStore = composeWithDevTools(applyMiddleware(
-  // sentryMiddleware needs to be first to correctly catch exception down the line.
-  createSentryMiddleware(),
   amplitudeMiddleware,
   thunk,
-))(createStore)
+), createSentryEnhancer())(createStore)
 
 // Create the store that will be provided to connected components via Context.
 const store = finalCreateStore(combineReducers({app, user}))

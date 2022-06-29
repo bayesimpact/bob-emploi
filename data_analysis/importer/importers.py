@@ -4,7 +4,7 @@ Base module to define importers, and allow registering new ones.
 
 import datetime
 import typing
-from typing import Dict, Optional, Type
+from typing import Optional, Type
 
 from google.protobuf import message
 
@@ -27,13 +27,14 @@ from bob_emploi.frontend.api import network_pb2
 from bob_emploi.frontend.api import online_salon_pb2
 from bob_emploi.frontend.api import reorient_jobbing_pb2
 from bob_emploi.frontend.api import seasonal_jobbing_pb2
-from bob_emploi.frontend.api import skill_pb2
+from bob_emploi.frontend.api import stats_pb2
 from bob_emploi.frontend.api import strategy_pb2
 from bob_emploi.frontend.api import testimonial_pb2
+from bob_emploi.frontend.api import upskilling_pb2
 from bob_emploi.frontend.api import use_case_pb2
 from bob_emploi.frontend.api import user_pb2
 
-_ROME_VERSION = 'v346'
+_ROME_VERSION = 'v347'
 
 NOW = datetime.datetime.now().strftime('%Y-%m-%d')
 
@@ -43,7 +44,7 @@ class Importer(typing.NamedTuple):
 
     name: str
     script: Optional[str]
-    args: Optional[Dict[str, str]]
+    args: Optional[dict[str, Optional[str]]]
     is_imported: bool
     # Should be in the form of a AWS ScheduleExpression (e.g. '1 hour' or '7 days')
     run_every: Optional[str]
@@ -57,21 +58,32 @@ class Importer(typing.NamedTuple):
             return self.name
         return f'{self.name} ({self.proto_type.__name__})'
 
-    def updated_with(self, script: Optional[str] = None, args: Optional[Dict[str, str]] = None) \
-            -> 'Importer':
+    def updated_with_script(self, script: str) -> 'Importer':
         """Create a copy with the script and args fields updated."""
 
-        return self._replace(
-            script=self.script if script is None else script,
-            args=self.args if args is None else args)
+        return self._replace(script=script)
 
-    def updated_with_args(self, **kwargs: str) -> 'Importer':
+    def updated_with_args(self, *, keep_old: bool = True, **kwargs: Optional[str]) -> 'Importer':
         """Create a copy with the args fields updated."""
 
-        return self._replace(args=dict(self.args, **kwargs) if self.args else kwargs)
+        return self._replace(args=(self.args | kwargs) if self.args and keep_old else kwargs)
 
 
 IMPORTERS = {
+    'challenge_actions': Importer(
+        name='Main challenges actions',
+        script='airtable_to_protos',
+        args={
+            'table': 'impact_measurement',
+            'view': 'Ready to Import',
+            'proto': 'ChallengeAction',
+            'base_id': 'appXmyc7yYj0pOcae',
+        },
+        is_imported=True,
+        run_every=None,
+        proto_type=stats_pb2.ChallengeAction,
+        key='action ID',
+        has_pii=False),
     'similar_jobs': Importer(
         name='ROME Mobility',
         script='rome_mobility',
@@ -112,6 +124,7 @@ IMPORTERS = {
             'soc_isco_crosswalk_xls': 'data/crosswalks/isco_us_soc2010_crosswalk.xls',
             'rome_isco_crosswalk_xlsx': 'data/crosswalks/Correspondance_ROME_ISCO08.xlsx',
             'trainings_csv': 'data/cpf/cpf_flatten_by_rome_trainings.csv',
+            'skills_for_future_airtable': 'appXmyc7yYj0pOcae:skills_for_future:viwfJ3L3qKPMVV2wp',
         },
         is_imported=True,
         run_every='30 days',
@@ -190,12 +203,26 @@ IMPORTERS = {
         proto_type=advisor_pb2.AdviceModule,
         key='AirTable key',
         has_pii=False),
+    'action_templates': Importer(
+        name='Action templates',
+        script='airtable_to_protos',
+        args={
+            'table': 'action_templates',
+            'proto': 'ActionTemplate',
+            'base_id': 'appXmyc7yYj0pOcae',
+            'view': 'viw0nKnPNzYygTN4R',
+        },
+        is_imported=True,
+        run_every=None,
+        proto_type=action_pb2.ActionTemplate,
+        key='action ID',
+        has_pii=False),
     'tip_templates': Importer(
         name='Tip templates',
         script='airtable_to_protos',
         args={
             'table': 'tip_templates',
-            'proto': 'ActionTemplate',
+            'proto': 'TipTemplate',
             'base_id': 'appXmyc7yYj0pOcae',
             'view': 'viwPgjqZAa7GcpkU2',
         },
@@ -386,7 +413,7 @@ IMPORTERS = {
         },
         is_imported=True,
         run_every=None,
-        proto_type=diagnostic_pb2.DiagnosticTemplate,
+        proto_type=diagnostic_pb2.DiagnosticResponse,
         key='Airtable key',
         has_pii=False),
     'regions': Importer(
@@ -492,16 +519,6 @@ IMPORTERS = {
         proto_type=online_salon_pb2.OnlineSalon,
         key='Unique mongo ID',
         has_pii=False),
-    'skills_for_future': Importer(
-        name='Skills for Future',
-        script='skills_for_future',
-        args={
-            'base_id': 'appXmyc7yYj0pOcae',
-            'table': 'skills_for_future',
-            'view': 'viwfJ3L3qKPMVV2wp',
-        },
-        is_imported=True, run_every=None, proto_type=skill_pb2.JobSkills,
-        key='ROME prefix', has_pii=False),
     'strategy_modules': Importer(
         name='Strategy modules',
         script='airtable_to_protos',
@@ -535,13 +552,27 @@ IMPORTERS = {
         script='airtable_to_protos',
         args={
             'base_id': 'appXmyc7yYj0pOcae',
-            'table': 'focus_emails',
-            'view': 'Ready to Import',
+            'table': 'coaching_emails',
+            'view': 'Live in Bob FR',
             'proto': 'Campaign',
         },
         is_imported=True,
         run_every=None,
         proto_type=email_pb2.Campaign,
         key='Campaign ID',
+        has_pii=False),
+    'section_generators': Importer(
+        name='Generators for Jobflix sections',
+        script='airtable_to_protos',
+        args={
+            'base_id': 'appOWPO09QMmFmTbk',
+            'table': 'tbly0zepNVKmBKWkP',
+            'view': 'viwAqCeFkwwjm1uvr',
+            'proto': 'upskilling.Section',
+        },
+        is_imported=True,
+        run_every=None,
+        proto_type=upskilling_pb2.Section,
+        key='Section ID',
         has_pii=False),
 }

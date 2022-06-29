@@ -1,25 +1,26 @@
 """Unit tests for the module TODO: module name."""
 
+import os
 import unittest
 from unittest import mock
 from urllib import parse
 
 import requests_mock
 
-from bob_emploi.frontend.server import auth
+from bob_emploi.frontend.server import auth_token
 from bob_emploi.frontend.server.test import base_test
 
 
 class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
     """Tests for the /api/user/nps-survey-response endpoint."""
 
-    @mock.patch(auth.__name__ + '._ADMIN_AUTH_TOKEN', new='')
+    @mock.patch(auth_token.__name__ + '._ADMIN_AUTH_TOKEN', new='')
     def test_set_nps_survey_response(self) -> None:
         """Calls to "/api/user/<user_email>/nps-survey-response"."""
 
         user_email = 'foo@bar.fr'
-        user_id, auth_token = self.create_user_with_token(email=user_email)
-        old_user_data = self.get_user_info(user_id, auth_token)
+        user_id, token = self.create_user_with_token(email=user_email)
+        old_user_data = self.get_user_info(user_id, token)
         # Make sure we actually have some fields in the user data, as we will check later
         # that old fields are not overridden.
         self.assertTrue(old_user_data)
@@ -43,7 +44,7 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(204, response.status_code, response.get_data(as_text=True))
 
         # Check the data was correctly saved in the database.
-        new_user_data = self.get_user_info(user_id, auth_token)
+        new_user_data = self.get_user_info(user_id, token)
         nps_survey_response = new_user_data.pop('netPromoterScoreSurveyResponse', None)
         other_fields_in_new_user_data = new_user_data
         self.assertEqual({
@@ -57,7 +58,7 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
         # Check that we did not override any other field than netPromoterScoreSurveyResponse.
         self.assertEqual(old_user_data, other_fields_in_new_user_data)
 
-    @mock.patch(auth.__name__ + '._ADMIN_AUTH_TOKEN', new='')
+    @mock.patch(auth_token.__name__ + '._ADMIN_AUTH_TOKEN', new='')
     def test_set_nps_survey_response_wrong_email(self) -> None:
         """Testing /api/user/<user_email>/nps-survey-response with wrong user email."""
 
@@ -70,7 +71,7 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(404, response.status_code, response.get_data(as_text=True))
 
-    @mock.patch(auth.__name__ + '._ADMIN_AUTH_TOKEN', new='cryptic-admin-auth-token-123')
+    @mock.patch(auth_token.__name__ + '._ADMIN_AUTH_TOKEN', new='cryptic-admin-auth-token-123')
     def test_set_nps_survey_response_missing_auth(self) -> None:
         """Endpoint protected and no auth token sent"."""
 
@@ -85,7 +86,7 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(401, response.status_code)
 
-    @mock.patch(auth.__name__ + '._ADMIN_AUTH_TOKEN', new='cryptic-admin-auth-token-123')
+    @mock.patch(auth_token.__name__ + '._ADMIN_AUTH_TOKEN', new='cryptic-admin-auth-token-123')
     def test_set_nps_survey_response_wrong_auth(self) -> None:
         """Endpoint protected and wrong auth token sent"."""
 
@@ -101,7 +102,7 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
             headers={'Authorization': 'wrong-token'})
         self.assertEqual(403, response.status_code)
 
-    @mock.patch(auth.__name__ + '._ADMIN_AUTH_TOKEN', new='cryptic-admin-auth-token-123')
+    @mock.patch(auth_token.__name__ + '._ADMIN_AUTH_TOKEN', new='cryptic-admin-auth-token-123')
     def test_set_nps_survey_response_correct_auth(self) -> None:
         """Endpoint protected and correct auth token sent"."""
 
@@ -125,7 +126,7 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
 
         super().setUp()
         self.user_id, self.auth_token = self.create_user_with_token()
-        self.nps_auth_token = auth.create_token(self.user_id, role='nps')
+        self.nps_auth_token = auth_token.create_token(self.user_id, role='nps')
 
     def test_set_nps_and_redirect(self) -> None:
         """Set the NPS score and redirect to end of survey."""
@@ -267,7 +268,7 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
             request.json().get('text', ''))
         return True
 
-    @mock.patch(base_test.server.user.__name__ + '._SLACK_WEBHOOK_URL', new='slack://bob-bots')
+    @mock.patch.dict(os.environ, {'SLACK_FEEDBACK_WEBHOOK_URL': 'slack://bob-bots'})
     @requests_mock.mock()
     def test_nps_zero_score_and_comment(self, mock_requests: requests_mock.Mocker) -> None:
         """Set the NPS score to 0 then comment"""
@@ -338,7 +339,7 @@ class NPSUserTests(base_test.ServerTestCase):
                 'city': {'name': 'Lyon'},
                 'createdAt': '2017-05-31T19:25:01Z',
                 'targetJob': {'name': 'CTO'}}]})[0]
-        nps_auth_token = auth.create_token(user_id, role='nps')
+        nps_auth_token = auth_token.create_token(user_id, role='nps')
 
         response = self.app.get(
             f'/api/nps/user/{user_id}',

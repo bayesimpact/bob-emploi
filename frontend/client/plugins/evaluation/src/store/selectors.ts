@@ -1,8 +1,8 @@
 import {useEffect} from 'react'
 import {useDispatch, useSelector} from 'react-redux'
 
-import {DispatchAllEvalActions, EvalRootState, getEvalUseCasePools,
-  getEvalUseCases} from './actions'
+import type {DispatchAllEvalActions, EvalRootState} from './actions'
+import {getEvalUseCasePools, getEvalUseCases} from './actions'
 
 const emptyArray = [] as const
 

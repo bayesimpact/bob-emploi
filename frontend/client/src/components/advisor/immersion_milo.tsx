@@ -1,5 +1,4 @@
-import {TOptions} from 'i18next'
-import PropTypes from 'prop-types'
+import type {TOptions} from 'i18next'
 import React, {useCallback, useMemo, useState} from 'react'
 
 import {inDepartement} from 'store/french'
@@ -9,9 +8,9 @@ import {colorToAlpha} from 'components/colors'
 import ExternalLink from 'components/external_link'
 import Trans from 'components/i18n_trans'
 import UpDownIcon from 'components/up_down_icon'
-import Picto from 'images/advices/picto-immersion.svg'
 
-import {CardProps, useAdviceData} from './base'
+import type {CardProps} from './base'
+import {useAdviceData} from './base'
 
 
 const contactContainerStyle = {
@@ -59,7 +58,7 @@ const ImmersionMiloMethod = (props: CardProps): React.ReactElement => {
       margin: '10px 0',
     }
     return <div style={contactContainerStyle}>
-      <button style={contactHeaderStyle} onClick={toggleExpansion}>
+      <button style={contactHeaderStyle} onClick={toggleExpansion} type="button">
         {t('Allez rencontrer un conseiller')}
         <span style={{flex: 1}} />
         <UpDownIcon icon="chevron" isUp={isContactMiloExpanded} />
@@ -70,7 +69,7 @@ const ImmersionMiloMethod = (props: CardProps): React.ReactElement => {
         <Trans parent={null} t={t}>
           La Mission Locale vous aidera à mettre en place votre mission. (Ils pourraient aussi
           avoir des contacts dans des entreprises qui pourraient vous
-          accueillir <span aria-label={t("clin d'œil")} role="img">😉</span>).
+          accueillir <span aria-hidden={true}>😉</span>).
         </Trans>
         <br />
         <Trans parent={null} tOptions={tOptions} t={t}>
@@ -112,20 +111,7 @@ const ImmersionMiloMethod = (props: CardProps): React.ReactElement => {
     {contactMilo}
   </div>
 }
-ImmersionMiloMethod.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-  profile: PropTypes.shape({
-    gender: PropTypes.string,
-  }).isRequired,
-  project: PropTypes.shape({
-    city: PropTypes.shape({
-      departementName: PropTypes.string,
-      departementPrefix: PropTypes.string,
-    }),
-  }).isRequired,
-  t: PropTypes.func.isRequired,
-}
 const ExpandedAdviceCardContent = React.memo(ImmersionMiloMethod)
 
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName: 'rocket' as const}

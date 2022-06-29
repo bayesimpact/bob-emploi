@@ -7,7 +7,7 @@ from bob_emploi.frontend.server import companies
 from bob_emploi.frontend.api import project_pb2
 
 
-@mock.patch(companies.emploi_store.__name__ + '.Client')
+@mock.patch('emploi_store.Client')
 class CompaniesTestCase(unittest.TestCase):
     """Unit tests for the module."""
 
@@ -33,7 +33,7 @@ class CompaniesTestCase(unittest.TestCase):
 
     @mock.patch(companies.__name__ + '._EMPLOI_STORE_DEV_CLIENT_ID', 'client-id')
     @mock.patch(companies.__name__ + '._EMPLOI_STORE_DEV_SECRET', 'secret')
-    @mock.patch(companies.logging.__name__ + '.error')
+    @mock.patch('logging.error')
     def test_get_lbb_companies_fail(
             self, mock_log_error: mock.MagicMock, mock_emploi_store_client: mock.MagicMock) -> None:
         """LBB crashed."""
@@ -49,7 +49,7 @@ class CompaniesTestCase(unittest.TestCase):
         self.assertFalse(all_companies)
         mock_log_error.assert_called()
 
-    @mock.patch(companies.logging.__name__ + '.warning')
+    @mock.patch('logging.warning')
     def test_get_lbb_companies_no_credentials(
             self, mock_log_warning: mock.MagicMock, mock_emploi_store_client: mock.MagicMock) \
             -> None:

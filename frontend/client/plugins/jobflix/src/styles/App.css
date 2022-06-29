@@ -1,0 +1,30 @@
+.jobflix-autocomplete .algolia-autocomplete .aa-dropdown-menu {
+  background-color: $colors-NAVIGATION_BACKGROUND;
+  color: $colors-DEPARTEMENT_SUGGEST_COLOR;
+}
+
+.jobflix-autocomplete .algolia-autocomplete .aa-dropdown-menu .aa-suggestion.aa-cursor {
+  background: $colors-BACKGROUND;
+}
+
+.jobflix-autocomplete .aa-footer img {
+  filter:  invert(1);
+}
+
+/* Placeholder color */
+::-webkit-input-placeholder { /* Chrome/Opera/Safari */
+  color: $colors-DEPARTEMENT_SUGGEST_COLOR !important;
+  opacity: .75;
+}
+::-moz-placeholder { /* Firefox 19+ */
+  color: $colors-DEPARTEMENT_SUGGEST_COLOR !important;
+  opacity: .75;
+}
+:-ms-input-placeholder { /* IE 10+ */
+  color: $colors-DEPARTEMENT_SUGGEST_COLOR !important;
+  opacity: .75;
+}
+:-moz-placeholder { /* Firefox 18- */
+  color: $colors-DEPARTEMENT_SUGGEST_COLOR !important;
+  opacity: .75;
+}

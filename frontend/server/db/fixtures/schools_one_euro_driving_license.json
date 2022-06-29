@@ -1,0 +1,514 @@
+[
+ {
+  "_id": "recrTJ1NXSvytKgUZ",
+  "_order": 0,
+  "filters": [
+   "for-departement(01)"
+  ],
+  "link": "http://www.ain.gouv.fr/IMG/pdf/18052018publicationlisteeecadispositifuneuroparjourain.pdf"
+ },
+ {
+  "_id": "recQiZuf4mdJF2h2F",
+  "_order": 1,
+  "filters": [
+   "for-departement(03)"
+  ],
+  "link": "http://www.allier.gouv.fr/IMG/pdf/permis_1_euro_site_.pdf"
+ },
+ {
+  "_id": "receaYYRMUMQ3nn9h",
+  "_order": 2,
+  "filters": [
+   "for-departement(09)"
+  ],
+  "link": "http://www.ariege.gouv.fr/content/download/14607/94030/file/Liste%20des%20auto-%C3%A9coles%20permis%20%C3%A0%201%E2%82%AC%20par%20jour.pdf"
+ },
+ {
+  "_id": "rec9EOjTcXglOCao0",
+  "_order": 3,
+  "filters": [
+   "for-departement(11)"
+  ],
+  "link": "http://www.aude.gouv.fr/IMG/pdf/Liste-auto-ecoles-permis1EURjour-2016_cle21be18.pdf"
+ },
+ {
+  "_id": "recZTd5QFp8vzAWs1",
+  "_order": 4,
+  "filters": [
+   "for-departement(12)"
+  ],
+  "link": "http://www.aveyron.gouv.fr/IMG/pdf/liste_autoecoles_Permis1euro_decembre_2015_cle75f4e7.pdf"
+ },
+ {
+  "_id": "recQpmLKhq6G3Zf8M",
+  "_order": 5,
+  "filters": [
+   "for-departement(14)"
+  ],
+  "link": "http://www.calvados.gouv.fr/IMG/pdf/PERMIS_1_EURO_GARANTIE.pdf"
+ },
+ {
+  "_id": "recQ7t7R3f7FPQ1bi",
+  "_order": 6,
+  "filters": [
+   "for-departement(15)"
+  ],
+  "link": "http://www.cantal.gouv.fr/IMG/pdf/Liste_AE_conventionnees-permis_1_EUR_mai_2016.pdf"
+ },
+ {
+  "_id": "recAFsmhCujVCH8Xc",
+  "_order": 7,
+  "filters": [
+   "for-departement(16)"
+  ],
+  "link": "http://www.charente.gouv.fr/content/download/12321/73595/file/Autos -écoles partenaires permis 1 €.pdf"
+ },
+ {
+  "_id": "recS3pe5twGT6txkQ",
+  "_order": 8,
+  "filters": [
+   "for-departement(17)"
+  ],
+  "link": "http://www.charente-maritime.gouv.fr/content/download/23044/158519/file/permis 1 euro-14042017.pdf"
+ },
+ {
+  "_id": "recQGEc76ufA0srD9",
+  "_order": 9,
+  "filters": [
+   "for-departement(18)"
+  ],
+  "link": "http://www.cher.gouv.fr/content/download/3904/23882/file/liste_ecole_conduite_oct_2017.pdf"
+ },
+ {
+  "_id": "recYvUbyBnsSkqVEB",
+  "_order": 10,
+  "filters": [
+   "for-departement(19)"
+  ],
+  "link": "http://www.correze.gouv.fr/Politiques-publiques/Transports-et-securite-routiere/Education-routiere-Permis-de-conduire/Le-permis-de-conduire/Le-permis-a-1-euro-par-jour"
+ },
+ {
+  "_id": "rechN81mMTtm6oYBZ",
+  "_order": 11,
+  "filters": [
+   "for-departement(2B)"
+  ],
+  "link": "http://www.haute-corse.gouv.fr/IMG/pdf/auto_ecole_conventionnees_permis_1_euro.pdf"
+ },
+ {
+  "_id": "recv3mgruEch0DXh0",
+  "_order": 12,
+  "filters": [
+   "for-departement(21)"
+  ],
+  "link": "http://www.cote-dor.gouv.fr/IMG/pdf/liste_etablissements_d_enseignement_a_la_conduite_cote_d_or_-_permis_1_eur.pdf"
+ },
+ {
+  "_id": "reczrycbrtk0bp3dp",
+  "_order": 13,
+  "filters": [
+   "for-departement(24)"
+  ],
+  "link": "http://www.dordogne.gouv.fr/Politiques-publiques/Transports-Deplacements-Accessibilite-et-Securite-Routiere/Education-routiere/Permis-a-un-euro/Permis-a-1-euro"
+ },
+ {
+  "_id": "recgj6qF2ZAf6DIVE",
+  "_order": 14,
+  "filters": [
+   "for-departement(25)"
+  ],
+  "link": "http://www.doubs.gouv.fr/Politiques-publiques/Amenagement-du-territoire-Construction-Logement-et-Transports/Transports-infrastructures-routieres-et-education-routiere/Education-routiere/Les-usagers-et-les-candidats-au-permis-de-conduire/Les-aides-pour-financer-le-permis-de-conduire"
+ },
+ {
+  "_id": "recWfG9oqIW0Lafw3",
+  "_order": 15,
+  "filters": [
+   "for-departement(26)"
+  ],
+  "link": "http://www.drome.gouv.fr/IMG/pdf/drome-etablissements_permis_a_1eurjour.pdf"
+ },
+ {
+  "_id": "recSLDBf89PQJyaz2",
+  "_order": 16,
+  "filters": [
+   "for-departement(27)"
+  ],
+  "link": "http://www.eure.gouv.fr/Politiques-publiques/Transports-deplacements-education-routiere/Education-routiere/Les-ecoles-de-conduite-ayant-signe-la-convention-permis-a-1-dans-l-Eure"
+ },
+ {
+  "_id": "recVGsVGb0Ji74MFy",
+  "_order": 17,
+  "filters": [
+   "for-departement(29)"
+  ],
+  "link": "http://www.finistere.gouv.fr/content/download/23683/191118/file/Auto-%C3%A9coles+conventionn%C3%A9es+1%E2%82%AC+par+jour.pdf"
+ },
+ {
+  "_id": "rec2ZIe2VzZMyqptt",
+  "_order": 18,
+  "filters": [
+   "for-departement(31)"
+  ],
+  "link": "http://www.haute-garonne.gouv.fr/content/download/27367/186429/file/Liste%20des%20%C3%A9coles%20de%20conduite%20conventionn%C3%A9es%20permis%20%C3%A0%201%E2%82%AC%20par%20jour.pdf"
+ },
+ {
+  "_id": "recOAwtZz3P3najMf",
+  "_order": 19,
+  "filters": [
+   "for-departement(32)"
+  ],
+  "link": "http://www.gers.gouv.fr/content/download/10419/64484/file/liste_autoecoles_Gers_2015_05.pdf"
+ },
+ {
+  "_id": "recRWxjURXRG19YRu",
+  "_order": 20,
+  "filters": [
+   "for-departement(33)"
+  ],
+  "link": "http://www.gironde.gouv.fr/content/download/35893/251153/file/ListePartenairesPermis1%E2%82%AC.pdf"
+ },
+ {
+  "_id": "recB3d5JXlzyfVmMn",
+  "_order": 21,
+  "filters": [
+   "for-departement(34)"
+  ],
+  "link": "http://www.herault.gouv.fr/content/download/22975/167668/file/Liste des auto écoles pour interner.pdf"
+ },
+ {
+  "_id": "recNkhqN2RmBycObL",
+  "_order": 22,
+  "filters": [
+   "for-departement(35)"
+  ],
+  "link": "http://www.ille-et-vilaine.gouv.fr/content/download/36708/265413/file/180115-EECApermis1euro.pdf"
+ },
+ {
+  "_id": "rec5L3bhfoXWZEYc1",
+  "_order": 23,
+  "filters": [
+   "for-departement(36)"
+  ],
+  "link": "http://www.indre.gouv.fr/content/download/15424/115378/file/liste%20permis%20%C3%A0%20un%20euro%20pour%20Pref.pdf"
+ },
+ {
+  "_id": "recpRN3rFjuweMLjb",
+  "_order": 24,
+  "filters": [
+   "for-departement(37)"
+  ],
+  "link": "http://www.indre-et-loire.gouv.fr/content/download/12159/81761/file/liste_ae_internet_permis1euros.pdf"
+ },
+ {
+  "_id": "recJnlHU4wvH5dHhD",
+  "_order": 25,
+  "filters": [
+   "for-departement(38)"
+  ],
+  "link": "http://www.isere.gouv.fr/content/download/31209/234844/file/tableau%20AE%20permis%201%20euro%20%20pour%20fichier%20national-09%2002%2017.ods"
+ },
+ {
+  "_id": "recPvPt5LLgchcWZy",
+  "_order": 26,
+  "filters": [
+   "for-departement(39)"
+  ],
+  "link": "http://www.jura.gouv.fr/Politiques-publiques/Transports-deplacements-et-securite-routiere/Enseignement-de-la-conduite/Le-permis-a-1-par-jour/permis-a-1-euro%20"
+ },
+ {
+  "_id": "recVvS9mIcPT9CAOM",
+  "_order": 27,
+  "filters": [
+   "for-departement(40)"
+  ],
+  "link": "http://www.landes.gouv.fr/IMG/pdf/Liste_EECA__permis_a_1_euro_par_jour_2015_07_24.pdf"
+ },
+ {
+  "_id": "recmRc07mgOdkEGd2",
+  "_order": 28,
+  "filters": [
+   "for-departement(41)"
+  ],
+  "link": "http://www.loir-et-cher.gouv.fr/content/download/5984/39511/file/Liste autos écoles conventionnées permis à 1 €.pdf"
+ },
+ {
+  "_id": "recvXi31O18T5QTEw",
+  "_order": 29,
+  "filters": [
+   "for-departement(42)"
+  ],
+  "link": "http://www.loire.gouv.fr/le-permis-a-1eur-par-jour-a3929.html"
+ },
+ {
+  "_id": "rec4MY9gIVtQasuI8",
+  "_order": 30,
+  "filters": [
+   "for-departement(44)"
+  ],
+  "link": "http://www.loire-atlantique.gouv.fr/content/download/16174/102934/file/charteQualite.pdf"
+ },
+ {
+  "_id": "rec0SiWjzgfk7kRoA",
+  "_order": 31,
+  "filters": [
+   "for-departement(45)"
+  ],
+  "link": "http://www.loiret.gouv.fr/content/download/23945/183689/file/Liste_%C3%A9coles_de_conduite_convention_permis_%C3%A0_1_euro_par_jour_2016_02_01.pdf"
+ },
+ {
+  "_id": "recViu5hHQ8wEc17W",
+  "_order": 32,
+  "filters": [
+   "for-departement(46)"
+  ],
+  "link": "http://www.lot.gouv.fr/IMG/pdf/liste_eeca_a_diffuser_-_maj_au_30_janv_2018.pdf"
+ },
+ {
+  "_id": "recEvRxLT1tjqm0eN",
+  "_order": 33,
+  "filters": [
+   "for-departement(47)"
+  ],
+  "link": "http://www.lot-et-garonne.gouv.fr/IMG/pdf/liste_des_auto_ecoles_conventionnees_310518.pdf"
+ },
+ {
+  "_id": "rec6kXs7cYdDZTMMe",
+  "_order": 34,
+  "filters": [
+   "for-departement(48)"
+  ],
+  "link": "http://www.lozere.gouv.fr/content/download/18763/144557/file/PERMIS%201%20EURO%20liste%20auto-%C3%A9coles.pdf"
+ },
+ {
+  "_id": "recL0Dmc9ZvwRF8Xw",
+  "_order": 35,
+  "filters": [
+   "for-departement(51)"
+  ],
+  "link": "http://www.marne.gouv.fr/content/download/12092/84971/file/liste%20des%20auto-%C3%A9coles%20partenaires%20de%20l'op%C3%A9ration%20maj%2016-11-2017.pdf"
+ },
+ {
+  "_id": "rechLdBMU25QczPRJ",
+  "_order": 36,
+  "filters": [
+   "for-departement(53)"
+  ],
+  "link": "http://www.mayenne.gouv.fr/content/download/6555/42505/file/liste_autos_ecoles_permis_1%20euro_2015_10.pdf"
+ },
+ {
+  "_id": "rechEm0DRxbPYPI9x",
+  "_order": 37,
+  "filters": [
+   "for-departement(55)"
+  ],
+  "link": "http://www.meuse.gouv.fr/content/download/10843/69784/file/list_ae_permis_1%E2%82%AC_2016.odt"
+ },
+ {
+  "_id": "recNTEqt06TZiLk32",
+  "_order": 38,
+  "filters": [
+   "for-departement(56)"
+  ],
+  "link": "http://www.morbihan.gouv.fr/content/download/31757/241015/file/Liste%20AE%20conventionn%C3%A9es.pdf"
+ },
+ {
+  "_id": "recYUy7WSaFl8qXKm",
+  "_order": 39,
+  "filters": [
+   "for-departement(58)"
+  ],
+  "link": "http://www.nievre.gouv.fr/IMG/odt/LISTE_PERMIS_A_UN_EURO_fevrier_2016.odt"
+ },
+ {
+  "_id": "rec8pkbABMiDBaRoH",
+  "_order": 40,
+  "filters": [
+   "for-departement(63)"
+  ],
+  "link": "http://www.puy-de-dome.gouv.fr/IMG/pdf/la_liste_des_auto-ecoles_du_puy-de-dome_-_permis_a_1euro_par_jour.pdf"
+ },
+ {
+  "_id": "reca6DMhK1DfD6JVU",
+  "_order": 41,
+  "filters": [
+   "for-departement(66)"
+  ],
+  "link": "http://www.pyrenees-orientales.gouv.fr/content/download/23042/172299/file/AE%20Conventionn%C3%A9es%20au%2001_09_2018.pdf"
+ },
+ {
+  "_id": "recRiLNn1yrQG58Cy",
+  "_order": 42,
+  "filters": [
+   "for-departement(70)"
+  ],
+  "link": "http://www.haute-saone.gouv.fr/Demarches-administratives/Permis-de-conduire/Le-passage-de-l-examen/La-liste-des-Auto-ecoles-agrees-permis-a-1-euro/Permis-a-1-uro"
+ },
+ {
+  "_id": "recIUi5vPXliWjEMQ",
+  "_order": 43,
+  "filters": [
+   "for-departement(71)"
+  ],
+  "link": "http://www.saone-et-loire.gouv.fr/liste-des-auto-ecoles-permis-1-eur-a3423.html"
+ },
+ {
+  "_id": "reccp2EkNKG56n75w",
+  "_order": 44,
+  "filters": [
+   "for-departement(72)"
+  ],
+  "link": "http://www.sarthe.gouv.fr/permis-a-un-euro-par-jour-a345.html"
+ },
+ {
+  "_id": "recZo7FWGNNr2GcJp",
+  "_order": 45,
+  "filters": [
+   "for-departement(74)"
+  ],
+  "link": "http://www.haute-savoie.gouv.fr/content/download/15045/88555/file/Liste%20AE%201%E2%82%AC%20Pref-30-11-2016.pdf"
+ },
+ {
+  "_id": "recV08Opkd1bFEzRM",
+  "_order": 46,
+  "filters": [
+   "for-departement(75)"
+  ],
+  "link": "http://www.driea.ile-de-france.developpement-durable.gouv.fr/IMG/pdf/Etablissements_permis1europar_jour_75.pdf"
+ },
+ {
+  "_id": "recpw6xWtBF63PLp6",
+  "_order": 47,
+  "filters": [
+   "for-departement(77)"
+  ],
+  "link": "http://www.seine-et-marne.gouv.fr/content/download/13530/96576/file/Diffusion+internet+2014+Permis+1+euro_v300914.pdf"
+ },
+ {
+  "_id": "recLVhLX0LStFL8OQ",
+  "_order": 48,
+  "filters": [
+   "for-departement(78)"
+  ],
+  "link": "http://www.driea.ile-de-france.developpement-durable.gouv.fr/IMG/pdf/permis_1_euro_depart_78.pdf"
+ },
+ {
+  "_id": "rec0GM6CC7gSdOtET",
+  "_order": 49,
+  "filters": [
+   "for-departement(79)"
+  ],
+  "link": "http://www.deux-sevres.gouv.fr/content/download/7865/56753/file/Liste%20autos-ecoles%2079.pdf"
+ },
+ {
+  "_id": "recl5YcZnOtm98krO",
+  "_order": 50,
+  "filters": [
+   "for-departement(80)"
+  ],
+  "link": "http://somme.gouv.fr/content/download/20077/137328/file/liste_pref_10_2016%20_EECA_1€.pdf"
+ },
+ {
+  "_id": "recSc29tO0RhmSAHv",
+  "_order": 51,
+  "filters": [
+   "for-departement(81)"
+  ],
+  "link": "http://www.tarn.gouv.fr/le-permis-a-un-euro-par-jour-a1385.html"
+ },
+ {
+  "_id": "recLs4okpB3kVQv3S",
+  "_order": 52,
+  "filters": [
+   "for-departement(84)"
+  ],
+  "link": "http://www.vaucluse.gouv.fr/IMG/pdf/AE84_07_mars_2015-1.pdf"
+ },
+ {
+  "_id": "recK23ayM1iyODetP",
+  "_order": 53,
+  "filters": [
+   "for-departement(85)"
+  ],
+  "link": "http://www.vendee.gouv.fr/IMG/pdf/liste_de_ae_conventionnees0618.pdf"
+ },
+ {
+  "_id": "receFq9dxhUoNv5Gf",
+  "_order": 54,
+  "filters": [
+   "for-departement(86)"
+  ],
+  "link": "http://www.vienne.gouv.fr/content/download/3455/21529/file/LISTE%20EECA%201%E2%82%AC%20.pdf"
+ },
+ {
+  "_id": "recD6XJJI57btvExL",
+  "_order": 55,
+  "filters": [
+   "for-departement(89)"
+  ],
+  "link": "http://www.yonne.gouv.fr/content/download/17420/151957/file/Liste%20AE%201_janvier_2016.pdf"
+ },
+ {
+  "_id": "recAbhm17GC6QAK7d",
+  "_order": 56,
+  "filters": [
+   "for-departement(90)"
+  ],
+  "link": "http://www.territoire-de-belfort.gouv.fr/Politiques-publiques/Securite-et-protection-de-la-population/Education-et-securite-routieres/Permis-de-conduire/Les-usagers-et-candidats-au-permis-de-conduire/Les-aides-pour-financer-le-permis-de-conduire"
+ },
+ {
+  "_id": "rec0RwastATPIDqKN",
+  "_order": 57,
+  "filters": [
+   "for-departement(91)"
+  ],
+  "link": "http://www.driea.ile-de-france.developpement-durable.gouv.fr/IMG/pdf/Etablissements_permis1europar_jour_91.pdf"
+ },
+ {
+  "_id": "recaIzNlWWNmhNz0f",
+  "_order": 58,
+  "filters": [
+   "for-departement(92)"
+  ],
+  "link": "http://www.driea.ile-de-france.developpement-durable.gouv.fr/IMG/pdf/permis_1_euro_depart_92.pdf"
+ },
+ {
+  "_id": "recuz4PjFLqekmPnc",
+  "_order": 59,
+  "filters": [
+   "for-departement(93)"
+  ],
+  "link": "http://www.driea.ile-de-france.developpement-durable.gouv.fr/IMG/pdf/93_Liste_des_auto-ecoles_conventionnees_Permis_de_conduire_a_1_euros_par_jour.pdf"
+ },
+ {
+  "_id": "recOCWPS91lXujCPx",
+  "_order": 60,
+  "filters": [
+   "for-departement(94)"
+  ],
+  "link": "http://www.driea.ile-de-france.developpement-durable.gouv.fr/IMG/pdf/Etablissements_permis1europar_jour_94_cle2dfce1.pdf"
+ },
+ {
+  "_id": "recDYBEw33buc9lBW",
+  "_order": 61,
+  "filters": [
+   "for-departement(95)"
+  ],
+  "link": "http://www.driea.ile-de-france.developpement-durable.gouv.fr/IMG/pdf/95_Liste_permis_1EUR-_29032016_driea-2.pdf"
+ },
+ {
+  "_id": "reczHLs5ql95Zwcmf",
+  "_order": 62,
+  "filters": [
+   "for-departement(971)"
+  ],
+  "link": "http://www.securite-routiere.gouv.fr/content/download/4546/41239/version/1/file/Permis1euro_charteQualite.pdf"
+ },
+ {
+  "_id": "rec2BjeEBLKrFlDrl",
+  "_order": 63,
+  "filters": [
+   "for-departement(972)"
+  ],
+  "link": "http://www.martinique.pref.gouv.fr/content/download/9428/73825/file/Auto-écoles  permis à 1 euro par jour-au 17-10-2016.pdf"
+ }
+]

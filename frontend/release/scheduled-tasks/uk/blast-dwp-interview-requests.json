@@ -1,0 +1,38 @@
+{
+  "Targets": [
+    {
+      "Arn": "arn:aws:ecs:eu-west-2:951168128976:cluster/bob-uk-ECSCluster-8TJIH1mMtBuZ",
+      "EcsParameters": {
+        "LaunchType": "FARGATE",
+        "NetworkConfiguration": {
+          "awsvpcConfiguration": {
+            "AssignPublicIp": "ENABLED",
+            "SecurityGroups": [
+              "sg-0da2d0aaa28a451a1"
+            ],
+            "Subnets": [
+              "subnet-16779b5b",
+              "subnet-6b27f210",
+              "subnet-54864b3d"
+            ]
+          }
+        },
+        "PlatformVersion": "LATEST",
+        "TaskCount": 1,
+        "TaskDefinitionArn": "arn:aws:ecs:eu-west-2:951168128976:task-definition/bob-uk-frontend-server"
+      },
+      "Id": "blast-dwp-interview-requests",
+      "Input": {
+        "containerOverrides": [
+          {
+            "command": [
+              "python", "bob_emploi/frontend/server/mail/mail_blast.py", "dwp-interview", "send", "--registered-to-days-ago", "20", "--days-since-any-email", "1"
+            ],
+            "name": "flask"
+          }
+        ]
+      },
+      "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
+    }
+  ]
+}

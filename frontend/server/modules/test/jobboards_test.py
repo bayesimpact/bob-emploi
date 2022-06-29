@@ -1,10 +1,10 @@
 """Unit tests for the jobboards module."""
 
-from typing import Any, Dict
+from typing import Any
 import unittest
 
 from bob_emploi.frontend.api import project_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
@@ -18,7 +18,7 @@ class AdviceJobBoardsTestCase(scoring_test.ScoringModelTestBase):
         """Frustrated by not enough offers."""
 
         persona = self._random_persona().clone()
-        persona.user_profile.frustrations.append(user_pb2.NO_OFFERS)
+        persona.user_profile.frustrations.append(user_profile_pb2.NO_OFFERS)
 
         score = self._score_persona(persona)
 
@@ -75,7 +75,7 @@ class EndpointTestCase(base_test.ServerTestCase):
     def test_template_in_link(self) -> None:
         """Job board with a template in the link."""
 
-        def _set_rome_id_a1234(user: Dict[str, Any]) -> None:
+        def _set_rome_id_a1234(user: dict[str, Any]) -> None:
             user['projects'][0]['targetJob']['jobGroup']['romeId'] = 'A1234'
 
         self.user_id, self.auth_token = self.create_user_with_token(

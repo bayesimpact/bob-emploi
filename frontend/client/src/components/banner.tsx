@@ -1,5 +1,4 @@
 import CloseIcon from 'mdi-react/CloseIcon'
-import PropTypes from 'prop-types'
 import React from 'react'
 import {useTranslation} from 'react-i18next'
 
@@ -17,7 +16,7 @@ interface BannerProps {
 
 const Banner: React.FC<BannerProps> = (props: BannerProps): React.ReactElement => {
   const {children, hasRoundButton = false, onClose, style} = props
-  const {t} = useTranslation()
+  const {t} = useTranslation('components')
   const boxStyle: React.CSSProperties = {
     display: 'flex',
     fontSize: 14,
@@ -53,12 +52,6 @@ const Banner: React.FC<BannerProps> = (props: BannerProps): React.ReactElement =
       <CloseIcon style={closeIconStyle} /> {isMobileVersion ? null : t('Fermer')}
     </Button>
   </aside>
-}
-Banner.propTypes = {
-  children: PropTypes.node,
-  hasRoundButton: PropTypes.bool,
-  onClose: PropTypes.func.isRequired,
-  style: PropTypes.object,
 }
 
 export default React.memo(Banner)

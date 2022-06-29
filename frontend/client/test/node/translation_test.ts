@@ -3,7 +3,8 @@ import fs from 'fs'
 import glob from 'glob'
 import path from 'path'
 import JSON5 from 'json5'
-import getAllPlugins, {Plugin} from '../../cfg/plugins'
+import type {Plugin} from '../../cfg/plugins'
+import getAllPlugins from '../../cfg/plugins'
 
 
 interface Translations {
@@ -39,11 +40,12 @@ Promise<readonly TranslationFile[]> {
         throw new Error(`${key} does not have a namespace in its path`)
       }
       const [namespace] = matches.slice(1)
+      const importedModule = await import(key)
       return {
         key: relativePath,
         namespace,
         pluginName,
-        resources: (await import(key)).default,
+        resources: importedModule.default,
       }
     }),
   )
@@ -62,12 +64,13 @@ Promise<readonly TranslationFile[]> {
         throw new Error(`${key} does not have a namespace or a language in its path`)
       }
       const [lang, namespace] = matches.slice(1)
+      const importedModule = await import(key)
       return {
         key: relativePath,
         lang,
         namespace,
         pluginName,
-        resources: (await import(key)).default,
+        resources: importedModule.default,
       }
     }),
   )
@@ -77,8 +80,8 @@ Promise<readonly TranslationFile[]> {
 
 async function getAllTranslationFiles(): Promise<[readonly TranslationFile[], TranslationTree]> {
   const plugins = await getAllPlugins()
-  const translationFiles: readonly TranslationFile[] =
-    (await Promise.all(plugins.map(getPluginTranslationFiles))).flat()
+  const allPluginTranslationFiles = await Promise.all(plugins.map(getPluginTranslationFiles))
+  const translationFiles: readonly TranslationFile[] = allPluginTranslationFiles.flat()
 
   const translationTree: TranslationTree = {}
   for (const {lang, namespace, pluginName, resources} of translationFiles) {
@@ -107,6 +110,14 @@ const dropContext = (key: string): string => {
   return split.slice(0, -1).join('_')
 }
 
+
+const redactURLs = (value: string): string => {
+  return value.replace(/\bhttps?:\/\/\S+\b/g, 'REDACTED_URL')
+}
+
+
+// The pattern of kebab-case identifiers, e.g. team:pascal:bio
+const IDENTIFIER_PATTERN = /^[a-z][A-Za-z]*(:[A-Z_a-z-]+)+$/
 
 const AUTHORIZED_EMPTY = new Set([
   // This option is unused in English.
@@ -140,140 +151,104 @@ describe('Translation files', (): void => {
     for (const file of translationFiles) {
       const {lang, key: fileKey, namespace, pluginName, resources} = file
       describe(fileKey, (): void => {
-        it("should not contain the hardcoded product's name", (): void => {
-          for (const key in resources) {
-            if (lang) {
-              expect(resources[key]).not.to.contain('Bob')
-            } else {
-              expect(key).not.to.contain('Bob')
-            }
-          }
-        })
+        const extractedFile = getExtractedFile(file)
+        const isAirtableNamespace = airtableNamespaces.has(namespace)
 
-        it('should not use curly quotes', (): void => {
-          for (const key in resources) {
-            if (lang) {
+        for (const key in resources) {
+          const resource = lang ? resources[key] : key
+          const isIdentifier = IDENTIFIER_PATTERN.test(key)
+          const canBeEmpty = AUTHORIZED_EMPTY.has(key)
+
+          describe(resource, (): void => {
+            it("should not contain the hardcoded product's name", (): void => {
+              expect(resource).not.to.contain('Bob')
+            })
+            it('should not use curly quotes', (): void => {
               // eslint-disable-next-line unicorn/string-content
-              expect(resources[key]).not.to.contain('’')
-            } else {
-              // eslint-disable-next-line unicorn/string-content
-              expect(key).not.to.contain('’')
-            }
-          }
-        })
-
-        it('should not use JSON5 control characters', (): void => {
-          for (const key in resources) {
-            if (lang) {
-              expect(resources[key], 'See https://spec.json5.org/#separators').
+              expect(resource).not.to.contain('’')
+            })
+            it('should not use JSON5 control characters', (): void => {
+              expect(resource, 'See https://spec.json5.org/#separators').
                 not.to.match(/\u2028|\u2029/)
-            } else {
-              expect(key, 'See https://spec.json5.org/#separators').
-                not.to.match(/\u2028|\u2029/)
+            })
+            if (!lang) {
+              if (!isAirtableNamespace) {
+                const text = resources[key] || key
+                if (!isIdentifier) {
+                  it("should respect language's rule about blank spaces before punctuation", () => {
+                    expect(
+                      redactURLs(text),
+                      'French double punctuation mark must be preceded by a non breakable space',
+                    ).not.to.match(/[^!:?\u00A0][!:?]/)
+                  })
+                }
+              }
+              return
             }
-          }
-        })
-
-        if (!lang) {
-          if (!airtableNamespaces.has(namespace)) {
-            it("should respect language's rule about blank spaces before punctuation", (): void => {
-              for (const [key, defaultValue] of Object.entries(resources)) {
-                const text = defaultValue || key
-                expect(
-                  text, 'French double punctuation mark must be preceded by a non breakable space').
-                  not.to.match(/[^!:?\u00A0](?!:\/\/)[!:?]/)
+            it('should not have empty translations', (): void => {
+              if (!canBeEmpty) {
+                expect(resource, key).not.to.be.empty
               }
             })
-          }
-          return
-        }
-
-        it('should not have empty translations', (): void => {
-          for (const key in resources) {
-            if (!AUTHORIZED_EMPTY.has(key)) {
-              expect(resources[key], key).not.to.be.empty
+            it('should not need to translate to the same value as the key', () => {
+              expect(resource, pluginName).not.to.equal(key)
+            })
+            if (extractedFile) {
+              it('should not have non-extracted keys', () => {
+                expect(key, `Unused key "${key}" in "${fileKey}"`).to.satisfy(
+                  (key: string): boolean =>
+                    extractedFile.resources[key] !== undefined ||
+                    extractedFile.resources[dropContext(key)] !== undefined)
+              })
             }
-          }
-        })
-
-        it('should not need to translate to the same value as the key', () => {
-          for (const key in resources) {
-            expect(resources[key], pluginName).not.to.equal(key)
-          }
-        })
-
-        const extractedFile = getExtractedFile(file)
-        if (extractedFile) {
-          it('should not have non-extracted keys', () => {
-            for (const key in resources) {
-              expect(key, `Unused key "${key}" in "${fileKey}"`).to.satisfy(
-                (key: string): boolean =>
-                  extractedFile.resources[key] === '' ||
-                  extractedFile.resources[dropContext(key)] === '')
-            }
-          })
-        }
-
-        it("should respect language's rule about blank spaces before punctuation", (): void => {
-          for (const key in resources) {
-            if (!airtableNamespaces.has(namespace)) {
-              expect(
-                key, 'French double punctuation mark must be preceded by a non breakable space').
-                not.to.match(/[^!:?\u00A0](?!:\/\/)[!:?]/)
-            }
-            if (lang.replace(/@.*$/, '') === 'fr') {
-              expect(
-                resources[key],
-                'French double punctuation mark must be preceded by a non breakable space').
-                not.to.match(/[^!:?\u00A0](?!:\/\/)[!:?]/)
-            } else if (lang === 'en') {
-              expect(
-                resources[key], 'English double punctuation should not be preceded by a blank').
-                not.to.match(/[ \u00A0][!:?]/)
-            }
-          }
-        })
-
-        if (airtableNamespaces.has(namespace)) {
-          it('should not have beginning or trailing extra spaces', () => {
-            for (const key in resources) {
-              const value = resources[key]
-              expect(value, `${key} should not have extra spaces at the beginning or end`).
-                not.to.match(/(^ | $)/g)
-            }
-          })
-        }
-
-        if (namespace === 'categories') {
-          it('should have the proper format', () => {
-            for (const key in resources) {
-              const value = resources[key]
-              expect(value, `${key} should start with an uppercase letter`).
-                not.to.match(/^[a-z]/g)
-              if (key.includes(':metric_details')) {
-                expect(value, `${key} should end with a punctuation mark`).
-                  to.match(/[!.?]$/g)
-              }
-            }
-          })
-        } else if (namespace === 'adviceModules') {
-          it('should have the proper format', () => {
-            for (const key in resources) {
-              if (!key.includes(':static_explanations')) {
-                continue
-              }
-              const explanations = resources[key].split('\n')
-              for (const [line, explanation] of explanations.entries()) {
+            it("should respect language's rule about blank spaces before punctuation", (): void => {
+              if (!isAirtableNamespace && !isIdentifier) {
                 expect(
-                  explanation,
-                  `Key ${key} at line ${line} should not have extra spaces at the beginning or ` +
-                  'end').
+                  redactURLs(key),
+                  'French double punctuation mark must be preceded by a non breakable space').
+                  not.to.match(/[^!:?\u00A0][!:?]/)
+              }
+              if (lang.replace(/@.*$/, '') === 'fr') {
+                expect(
+                  redactURLs(resource),
+                  'French double punctuation mark must be preceded by a non breakable space').
+                  not.to.match(/[^!:?\u00A0][!:?]/)
+              } else if (lang === 'en') {
+                expect(
+                  resource, 'English double punctuation should not be preceded by a blank').
+                  not.to.match(/[ \u00A0][!:?]/)
+              }
+            })
+            if (isAirtableNamespace) {
+              it('should not have beginning or trailing extra spaces', () => {
+                expect(resource, `${key} should not have extra spaces at the beginning or end`).
                   not.to.match(/(^ | $)/g)
-                expect(
-                  explanation,
-                  `Key ${key} at line ${line} should not start with an uppercase letter`).
-                  not.to.match(/^[A-Z]/g)
-              }
+              })
+            }
+            if (namespace === 'categories') {
+              it('should have the proper format', () => {
+                expect(resource, `${key} should start with an uppercase letter`).
+                  not.to.match(/^[a-z]/g)
+                if (key.includes(':metric_details')) {
+                  expect(resource, `${key} should end with a punctuation mark`).
+                    to.match(/[!.?]$/g)
+                }
+              })
+            } else if (namespace === 'adviceModules' && key.includes(':static_explanations')) {
+              it('should have the proper format', () => {
+                const explanations = resource.split('\n')
+                for (const [line, explanation] of explanations.entries()) {
+                  expect(
+                    explanation,
+                    `Key ${key} at line ${line} should not have extra spaces at the beginning or ` +
+                    'end').
+                    not.to.match(/(^ | $)/g)
+                  expect(
+                    explanation,
+                    `Key ${key} at line ${line} should not start with an uppercase letter`).
+                    not.to.match(/^[A-Z]/g)
+                }
+              })
             }
           })
         }
@@ -290,7 +265,7 @@ describe('Translation files', (): void => {
       this.skip()
       return
     }
-    expect(translationTree['core']['en']['translation']['Aide']).to.eq('Help')
+    expect(translationTree['core']['en']['components']['Aide']).to.eq('Help')
   })
 })
 
@@ -302,15 +277,10 @@ const _NO_FRENCH_PLURAL = new Set([
 
 // TODO(cyrille) : Use a specific namespace for non-genderized strings
 const _NO_GENDERIZATION = new Set([
-  'Ingénieur·e logiciel',
-  // eslint-disable-next-line max-len
-  "Quand je vous ai envoyé mon CV et ma lettre de motivation, il y a 2 semaines, l'épidémie de Coronavirus était encore loin de nos préoccupations immédiates. Aujourd'hui c'est bien différent et pourtant je crois que votre besoin d'un·e (nom du poste) est toujours présent, c'est pourquoi je me permets de vous relancer afin de connaître l'actualité de cette offre.",
-  // eslint-disable-next-line max-len
-  "Si vous touchez l'allocation chômage de Pôle emploi, ces derniers ont annulé toutes les convocations et vous ne serez donc pas radié·e pour non-présentation. <1>Les agent·e·s de Pôle emploi se mobilisent</1> et sont disponibles par téléphone au 3949 ou sur leur site internet. ",
-  // eslint-disable-next-line max-len
-  "Sil a fait de la recherche académique et s'est spécialisé·e dans l'analyse     de données dans le domaine de la santé. Iel est toujours enchanté·e de découvrir d'obscurs     romans dystopiques et ne refusera jamais une rencontre sur un terrain de basket-ball.",
-  // eslint-disable-next-line max-len
-  "Dans toutes vos communications \"emploi\"&nbsp;: candidature spontanée, lettre de motivation, email de relance, il est toujours important de personnaliser chaque message pour avoir plus de chance de toucher son destinataire. En ces temps incertains, il est tout aussi important d'adapter vos formulations en prenant en compte à la fois la situation générale mais également la situation de votre interlocuteur. N'hésitez pas à vous tenir informé·e de la situation de l'entreprise dans laquelle vous candidatez en surveillant ses réseaux sociaux.",
+  'find-what-you-like:bob_explanation',
+  'missing-diploma:bob_explanation',
+  'stuck-market:bob_explanation',
+  'competition:text',
 ])
 
 describe('French translations', () => {
@@ -322,28 +292,38 @@ describe('French translations', () => {
     }
     [translationFiles, translationTree] = await getAllTranslationFiles()
 
-    // TODO(cyrille): Handle fr@tu.
     const extractedFiles = translationFiles.filter(file => !file.lang)
     for (const {pluginName, namespace, resources} of extractedFiles) {
       describe(`${pluginName}/fr/${namespace}.json`, () => {
+        let frTranslations: Translations|undefined
         const getFrTranslations = (): Translations => {
+          if (frTranslations) {
+            return frTranslations
+          }
           expect(translationTree).to.include.all.keys(pluginName)
           expect(translationTree[pluginName], 'Missing fr translations').
             to.include.all.keys('fr')
           expect(translationTree[pluginName]['fr'], 'Missing fr namespace translations').
             to.include.all.keys(namespace)
-          return translationTree[pluginName]['fr'][namespace]
+          const validFrTranslations = translationTree[pluginName]['fr'][namespace]
+          frTranslations = validFrTranslations
+          return validFrTranslations
         }
 
-        if (namespace !== 'staticAdvice') {
-          it('should have a genderized translation for all strings with a ·', () => {
+        if (namespace !== 'staticAdvice' && namespace !== 'landing') {
+          it('should have a genderized translation for extracted strings with a ·', () => {
+            const missingKeys: string[] = []
             for (const key in resources) {
               if (key.includes('·') && !key.endsWith('_FEMININE') && !key.endsWith('_MASCULINE') &&
                 !_NO_GENDERIZATION.has(key)) {
-                expect(getFrTranslations(), `Missing genderization for key ${key}.`).
-                  to.include.all.keys(`${key}_FEMININE`, `${key}_MASCULINE`)
+                if (`${key}_FEMININE` in getFrTranslations() &&
+                  `${key}_MASCULINE` in getFrTranslations()) {
+                  continue
+                }
+                missingKeys.push(key)
               }
             }
+            expect(missingKeys, 'Missing genderization for keys.').to.be.empty
           })
         }
 
@@ -354,6 +334,23 @@ describe('French translations', () => {
             }
           }
         })
+      })
+    }
+
+    const frTuFiles = translationFiles.filter(file => file.lang && file.lang.startsWith('fr'))
+    for (const {pluginName, namespace, lang, resources} of frTuFiles) {
+      describe(`${pluginName}/${lang}/${namespace}.json`, () => {
+        if (namespace !== 'staticAdvice' && namespace !== 'landing') {
+          it('should have a genderized translation for translated strings with a ·', () => {
+            for (const key in resources) {
+              if (resources[key].includes('·') && !key.endsWith('_FEMININE') &&
+                !key.endsWith('_MASCULINE') && !_NO_GENDERIZATION.has(key)) {
+                expect(resources, `Missing genderization for key ${key}.`).
+                  to.include.all.keys(`${key}_FEMININE`, `${key}_MASCULINE`)
+              }
+            }
+          })
+        }
       })
     }
   })

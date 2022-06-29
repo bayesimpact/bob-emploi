@@ -1,18 +1,20 @@
 import _pick from 'lodash/pick'
 import _range from 'lodash/range'
-import PropTypes from 'prop-types'
-import React, {useCallback, useMemo, useState} from 'react'
+import React, {useCallback, useMemo, useRef, useState} from 'react'
 import {useDispatch} from 'react-redux'
 
-import {DispatchAllActions, diagnoseOnboarding} from 'store/actions'
+import type {DispatchAllActions} from 'store/actions'
+import {diagnoseOnboarding} from 'store/actions'
 import {localizeOptions, prepareT} from 'store/i18n'
 import {weeklyApplicationOptions, weeklyOfferOptions} from 'store/job'
 import {getJobSearchLengthMonths, useUserExample} from 'store/user'
 
-import FieldSet from 'components/field_set'
+import {OneField} from 'components/field_set'
 import Trans from 'components/i18n_trans'
-import Select, {SelectOption} from 'components/select'
-import {OnboardingComment, ProjectStepProps, Step} from './step'
+import type {Focusable, SelectOption} from 'components/select'
+import Select from 'components/select'
+import type {ProjectStepProps} from './step'
+import {OnboardingComment, Step} from './step'
 
 
 // 2,635,200,000 = 1000 * 60 * 60 * 24 * 30.5
@@ -51,21 +53,45 @@ const NewProjectJobsearchStep = (props: ProjectStepProps): React.ReactElement =>
   const [isValidated, setIsValidated] = useState(false)
   const [applicationCommentRead, setApplicationCommentRead] = useState(false)
 
-  const isFormValid = useMemo((): boolean => {
-    const {
-      jobSearchHasNotStarted = undefined,
-      jobSearchStartedAt = undefined,
-      totalInterviewCount = undefined,
-      weeklyApplicationsEstimate = undefined,
-      weeklyOffersEstimate = undefined,
-    } = newProject || {}
-    return jobSearchHasNotStarted || !!(
-      totalInterviewCount && weeklyApplicationsEstimate && weeklyOffersEstimate &&
-      jobSearchStartedAt)
-  }, [newProject])
+  const jobSearchStartedInputRef = useRef<Focusable>(null)
+  const offersEstimateInputRef = useRef<Focusable>(null)
+  const applicationsEstimateInputRef = useRef<Focusable>(null)
+  const interviewCountInputRef = useRef<Focusable>(null)
+
+  const {
+    jobSearchHasNotStarted = undefined,
+    jobSearchStartedAt = undefined,
+    targetJob = undefined,
+    totalInterviewCount = undefined,
+    weeklyApplicationsEstimate = undefined,
+    weeklyOffersEstimate = undefined,
+  } = newProject || {}
+  const isJobSearchStartedValid = jobSearchHasNotStarted || !!jobSearchStartedAt
+  const isOffersEstimateValid = jobSearchHasNotStarted || !!weeklyOffersEstimate
+  const isApplicationsEstimateValid = jobSearchHasNotStarted || !!weeklyApplicationsEstimate
+  const isInterviewCountValid = jobSearchHasNotStarted || !!totalInterviewCount
+
+  const isFormValid = isJobSearchStartedValid && isOffersEstimateValid &&
+    isApplicationsEstimateValid && isInterviewCountValid
 
   const handleSubmit = useCallback((): void => {
     setIsValidated(true)
+    if (!isJobSearchStartedValid) {
+      jobSearchStartedInputRef.current?.focus()
+      return
+    }
+    if (!isOffersEstimateValid) {
+      offersEstimateInputRef.current?.focus()
+      return
+    }
+    if (!isApplicationsEstimateValid) {
+      applicationsEstimateInputRef.current?.focus()
+      return
+    }
+    if (!isInterviewCountValid) {
+      interviewCountInputRef.current?.focus()
+      return
+    }
     const {jobSearchHasNotStarted, jobSearchStartedAt,
       totalInterviewCount, weeklyApplicationsEstimate, weeklyOffersEstimate,
     } = newProject
@@ -78,7 +104,9 @@ const NewProjectJobsearchStep = (props: ProjectStepProps): React.ReactElement =>
         weeklyOffersEstimate,
       })
     }
-  }, [isFormValid, onSubmit, newProject])
+  }, [
+    isFormValid, onSubmit, newProject, isJobSearchStartedValid, isOffersEstimateValid,
+    isApplicationsEstimateValid, isInterviewCountValid])
 
   const userExample = useUserExample()
   const fastForward = useCallback((): void => {
@@ -140,8 +168,6 @@ const NewProjectJobsearchStep = (props: ProjectStepProps): React.ReactElement =>
   // add the field name as a parameter to the function and memoize it.
   const handleCommentRead = useCallback((): void => setApplicationCommentRead(true), [])
 
-  const {targetJob, jobSearchHasNotStarted, totalInterviewCount, weeklyApplicationsEstimate,
-    weeklyOffersEstimate} = newProject
   const interviewsLabel = targetJob ?
     <Trans parent="span">
       Combien d'entretiens d'embauche avez-vous obtenus <strong style={{fontWeight: 'bold'}}>
@@ -170,10 +196,10 @@ const NewProjectJobsearchStep = (props: ProjectStepProps): React.ReactElement =>
   ]), [t])
   return <Step
     {...props} fastForward={fastForward}
-    onNextButtonClick={isFormValid ? handleSubmit : undefined}
+    onNextButtonClick={handleSubmit}
     progressInStep={checks.filter((c): boolean => !!c).length / (checks.length + 1)}
     title={t('Votre recherche')}>
-    <FieldSet
+    <OneField
       label={targetJob ?
         t('Depuis combien de temps avez-vous commencé à postuler à des offres pour ce ' +
           'métier\u00A0?') :
@@ -183,58 +209,47 @@ const NewProjectJobsearchStep = (props: ProjectStepProps): React.ReactElement =>
       hasCheck={true}>
       <Select<number>
         options={localizeOptions(t, jobSearchLengthMonthsOptions)}
-        value={jobSearchLengthMonths}
+        value={jobSearchLengthMonths} ref={jobSearchStartedInputRef}
         placeholder={t('sélectionnez la durée de votre recherche')}
         areUselessChangeEventsMuted={false} onChange={handleSearchLengthChange} />
-    </FieldSet>
-    {checks[0] && !jobSearchHasNotStarted ? <FieldSet
+    </OneField>
+    {checks[0] && !jobSearchHasNotStarted ? <OneField
       label={t('En moyenne, combien trouvez-vous de nouvelles offres qui vous conviennent par ' +
         'semaine\u00A0?')}
       isValid={!!weeklyOffersEstimate} isValidated={isValidated}
       hasCheck={true}>
-      <Select options={localizeOptions(t, weeklyOfferOptions)} value={weeklyOffersEstimate}
+      <Select<bayes.bob.NumberOfferEstimateOption>
+        options={localizeOptions(t, weeklyOfferOptions)} value={weeklyOffersEstimate}
         placeholder={t("sélectionnez le nombre d'offres que vous avez trouvées")}
-        onChange={handleChangeWeeklyOffersEstimate} />
-    </FieldSet> : null}
+        onChange={handleChangeWeeklyOffersEstimate} ref={offersEstimateInputRef} />
+    </OneField> : null}
     {checks.slice(0, 2).every((c): boolean => !!c) && !jobSearchHasNotStarted ? <React.Fragment>
-      <FieldSet
+      <OneField
         label={t('En moyenne, combien de candidatures faites-vous par semaine\u00A0?')}
         isValid={!!weeklyApplicationsEstimate} isValidated={isValidated}
         hasNoteOrComment={true} hasCheck={true}>
-        <Select
+        <Select<bayes.bob.NumberOfferEstimateOption>
           options={localizeOptions(t, weeklyApplicationOptions)}
-          value={weeklyApplicationsEstimate}
+          value={weeklyApplicationsEstimate} ref={applicationsEstimateInputRef}
           placeholder={t('sélectionnez le nombre de candidatures que vous avez faites')}
           onChange={handleChangeWeeklyApplicationsEstimate} />
-      </FieldSet>
+      </OneField>
       <OnboardingComment
         field="WEEKLY_APPLICATION_FIELD" shouldShowAfter={!!weeklyApplicationsEstimate}
         key={weeklyApplicationsEstimate}
         onDone={handleCommentRead} />
     </React.Fragment> : null}
-    {checks.slice(0, 3).every((c): boolean => !!c) && !jobSearchHasNotStarted ? <FieldSet
+    {checks.slice(0, 3).every((c): boolean => !!c) && !jobSearchHasNotStarted ? <OneField
       label={interviewsLabel}
       isValid={!!totalInterviewCount} isValidated={isValidated}
       hasCheck={true}>
       <Select<number>
         onChange={handleChangeTotalInterviewCount}
-        value={totalInterviewCount}
+        value={totalInterviewCount} ref={interviewCountInputRef}
         placeholder={t("sélectionnez le nombre d'entretiens que vous avez obtenus")}
         options={numInterviewsOptions} />
-    </FieldSet> : null}
+    </OneField> : null}
   </Step>
-}
-NewProjectJobsearchStep.propTypes = {
-  newProject: PropTypes.shape({
-    jobSearchHasNotStarted: PropTypes.bool,
-    jobSearchLengthMonths: PropTypes.number,
-    jobSearchStartedAt: PropTypes.string,
-    totalInterviewCount: PropTypes.number,
-    weeklyApplicationsEstimate: PropTypes.string,
-    weeklyOffersEstimate: PropTypes.string,
-  }),
-  onSubmit: PropTypes.func.isRequired,
-  t: PropTypes.func.isRequired,
 }
 
 

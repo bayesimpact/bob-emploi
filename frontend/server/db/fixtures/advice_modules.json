@@ -1,114 +1,222 @@
 [
  {
-  "_id": "rec2IQEWVdGvKvbI3",
-  "adviceId": "spontaneous-application",
-  "airtableId": "rec2IQEWVdGvKvbI3",
-  "emailFacts": [
-   "1 emploi sur 5 est décroché suite à une candidature spontanée",
-   "66% des employeurs recrutent via des candidatures spontanées",
-   "36% des embauches en France se font via des candidatures spontanées"
-  ],
-  "emailSubject": "candidatures spontanées",
-  "emailSuggestionSentence": "travailler sur les candidatures spontanées",
-  "emailTitle": "%you<Va/Allez> au devant des opportunités : pense%you</z> candidatures spontanées",
-  "extraDataFieldName": "spontaneous_application_data",
+  "_id": "rec1BoaDdLiwabNRk",
+  "_order": 0,
+  "adviceId": "association-help",
+  "airtableId": "rec1BoaDdLiwabNRk",
+  "extraDataFieldName": "associations_data",
   "isReadyForProd": true,
+  "shortTitle": "Coup de main",
   "tipTemplateIds": [
-   "recieKJTssgtoDN6d",
-   "recBKWIcaWhOBAnZy"
+   "recBUEjBVKRyTTnfe"
   ],
-  "title": "Pense%you</z> aux candidatures spontanées",
-  "triggerScoringModel": "advice-spontaneous-application"
+  "title": "Trouvez une association pour vous accompagner",
+  "triggerScoringModel": "advice-association-help",
+  "userGainCallout": "2x",
+  "userGainDetails": "plus rapide de retrouver un emploi"
  },
  {
-  "_id": "recp2Lq8KhHGAzyaE",
-  "adviceId": "other-work-env",
-  "airtableId": "recp2Lq8KhHGAzyaE",
-  "emailFacts": [
-   "%you<Ton/Votre> métier peut s'exercer dans d'autres types d'entreprises ou d'autres secteurs"
-  ],
-  "emailSubject": "nouveaux horizons",
-  "emailSuggestionSentence": "chercher dans des secteurs différents",
-  "emailTitle": "Garde%you</z> l'œil ouvert : Explore%you</z> d'autres types d'entreprises",
-  "extraDataFieldName": "other_work_env_advice_data",
+  "_id": "recnmpCRl4SE0RTtX",
+  "_order": 1,
+  "adviceId": "better-job-in-group",
+  "airtableId": "recnmpCRl4SE0RTtX",
+  "extraDataFieldName": "better_job_in_group_data",
   "isReadyForProd": true,
-  "title": "Postule%you</z> à d'autres types d'entreprises",
-  "triggerScoringModel": "advice-other-work-env"
+  "shortTitle": "Métiers proches",
+  "title": "Regardez les métiers proches du vôtre",
+  "triggerScoringModel": "advice-better-job-in-group",
+  "userGainCallout": "2x",
+  "userGainDetails": "plus rapide de retrouver un emploi"
  },
  {
-  "_id": "recSLhIt7aP2zI0Pb",
-  "adviceId": "improve-resume",
-  "airtableId": "recSLhIt7aP2zI0Pb",
-  "emailFacts": [
-   "%you<Tu peux/Vous pouvez> décrocher plus d’entretiens",
-   "Seulement 37% des candidats personnalisent leur CV et lettre de motivation pense%you<s/z>-y ça peut faire la différence",
-   "65% des entreprises demandent des lettres de motivation"
-  ],
-  "emailSubject": "candidature au top",
-  "emailSuggestionSentence": "travailler sur %you<tes/vos> candidatures",
-  "emailTitle": "Soigne%you</z> la première impression pour décrocher plus d’entretiens ",
-  "extraDataFieldName": "improve_success_rate_data",
-  "incompatibleAdviceIds": [
-   "rec1igR2AJ0flVDKu",
-   "recOVDF3LlPt1A49x"
-  ],
+  "_id": "recgJvIAPUNaIJ7wc",
+  "_order": 2,
+  "adviceId": "body-language",
+  "airtableId": "recgJvIAPUNaIJ7wc",
   "isReadyForProd": true,
+  "shortTitle": "Confiance en vous",
+  "title": "Boostez votre confiance en travaillant votre language corporel",
+  "triggerScoringModel": "advice-body-language",
+  "userGainCallout": "3x",
+  "userGainDetails": "plus de chances de faire une très bonne première impression"
+ },
+ {
+  "_id": "rec49ZCVOKj7obQkd",
+  "_order": 3,
+  "adviceId": "civic-service",
+  "airtableId": "rec49ZCVOKj7obQkd",
+  "isReadyForProd": true,
+  "shortTitle": "Service civique",
+  "title": "Faites une mission de service civique",
+  "triggerScoringModel": "advice-civic-service",
+  "userGainCallout": "3x",
+  "userGainDetails": "plus rapide de trouver une mission"
+ },
+ {
+  "_id": "recGFb8ExmMR7gVDf",
+  "_order": 4,
+  "adviceId": "commute",
+  "airtableId": "recGFb8ExmMR7gVDf",
+  "extraDataFieldName": "commute_data",
+  "isReadyForProd": true,
+  "shortTitle": "Villes proches",
+  "title": "Trouver les villes proches qui ont le plus de chances de recruter",
+  "triggerScoringModel": "advice-commute",
+  "userGainCallout": "+15%",
+  "userGainDetails": "d'opportunités d'embauche accessibles"
+ },
+ {
+  "_id": "recBUX0CNmioOP78J",
+  "_order": 5,
+  "adviceId": "create-your-company",
+  "airtableId": "recBUX0CNmioOP78J",
+  "extraDataFieldName": "create_your_company_data",
+  "isReadyForProd": true,
+  "shortTitle": "Création d'activité",
   "tipTemplateIds": [
-   "reclK8s0whtE39OQR",
-   "rec89xCdVZIRHZTtX",
-   "reclxp8DgacIU0oNE",
-   "recSucaFyD7L1pabV",
-   "recZ7Jz1fFyeCmFqG"
+   "recbybMJMmMnf6MfR"
   ],
-  "title": "Personnalise%you< tes/z vos> candidatures pour avoir plus d'impact",
-  "triggerScoringModel": "advice-improve-resume"
+  "title": "Envisagez de créer votre propre activité",
+  "triggerScoringModel": "advice-create-your-company",
+  "userGainDetails": "Ça dépend de vous"
+ },
+ {
+  "_id": "recRhmpRFFRWSdOUw",
+  "_order": 6,
+  "adviceId": "driving-license-euro",
+  "airtableId": "recRhmpRFFRWSdOUw",
+  "isReadyForProd": true,
+  "shortTitle": "Prêt pour le permis",
+  "title": "Essayez d'obtenir un prêt « permis à 1€ »",
+  "triggerScoringModel": "advice-driving-license-euro",
+  "userGainCallout": "2x",
+  "userGainDetails": "plus d'opportunités d'embauche"
+ },
+ {
+  "_id": "recXoCBXdkok26jII",
+  "_order": 7,
+  "adviceId": "driving-license-low-income",
+  "airtableId": "recXoCBXdkok26jII",
+  "isReadyForProd": true,
+  "shortTitle": "Aide au permis de conduire",
+  "title": "Essayez d'obtenir une aide au permis de conduire",
+  "triggerScoringModel": "advice-driving-license-low-income",
+  "userGainCallout": "2x",
+  "userGainDetails": "plus d'opportunités d'embauche"
+ },
+ {
+  "_id": "recrSw14AdmkQWZqQ",
+  "_order": 8,
+  "adviceId": "driving-license-written",
+  "airtableId": "recrSw14AdmkQWZqQ",
+  "isReadyForProd": true,
+  "shortTitle": "Code de la route",
+  "title": "Révisez votre code de la route en ligne",
+  "triggerScoringModel": "advice-driving-license-written",
+  "userGainCallout": "2x",
+  "userGainDetails": "plus d'opportunités d'embauche"
+ },
+ {
+  "_id": "recA9O67mAPYrgl6L",
+  "_order": 9,
+  "adviceId": "events",
+  "airtableId": "recA9O67mAPYrgl6L",
+  "extraDataFieldName": "events_data",
+  "isReadyForProd": true,
+  "shortTitle": "Évènements",
+  "tipTemplateIds": [
+   "recfrMrKdqGfTGXHT",
+   "recBvGSLHtxoaXSRt"
+  ],
+  "title": "Assistez à des évènements en lien avec votre recherche",
+  "triggerScoringModel": "advice-event",
+  "userGainCallout": "2x",
+  "userGainDetails": "plus de chances de décrocher un entretien en rencontrant les employeurs en personne"
+ },
+ {
+  "_id": "recJwiLpILADYyyzb",
+  "_order": 10,
+  "adviceId": "find-a-jobboard",
+  "airtableId": "recJwiLpILADYyyzb",
+  "extraDataFieldName": "job_boards_data",
+  "isReadyForProd": true,
+  "shortTitle": "Sites d'emploi",
+  "tipTemplateIds": [
+   "recbOMC6vNln4sAek",
+   "recPtn35mN5p2FFe9",
+   "recYQjcmJ9c2eaMHl"
+  ],
+  "title": "Consultez ces sites d'offres d'emploi sélectionnés pour vous",
+  "triggerScoringModel": "advice-job-boards",
+  "userGainCallout": "30 min",
+  "userGainDetails": "de temps de recherche économisé par jour"
+ },
+ {
+  "_id": "recoV1uDUtI8uVwu2",
+  "_order": 11,
+  "adviceId": "follow-up",
+  "airtableId": "recoV1uDUtI8uVwu2",
+  "isReadyForProd": true,
+  "shortTitle": "Relances",
+  "tipTemplateIds": [
+   "recR6qwFtulCXDJhj"
+  ],
+  "title": "Relancez toujours après avoir postulé",
+  "triggerScoringModel": "advice-follow-up",
+  "userGainCallout": "2x",
+  "userGainDetails": "plus de chances de décrocher un entretien"
  },
  {
   "_id": "recOVDF3LlPt1A49x",
+  "_order": 12,
   "adviceId": "fresh-resume",
   "airtableId": "recOVDF3LlPt1A49x",
-  "emailFacts": [
-   "%you<Tu peux/Vous pouvez> décrocher plus d’entretiens",
-   "Seulement 37% des candidats personnalisent leur CV et lettre de motivation pense%you<s/z>-y ça peut faire la différence"
-  ],
-  "emailSubject": "candidature au top",
-  "emailSuggestionSentence": "travailler sur %you<tes/vos> candidatures",
-  "emailTitle": "Soigne%you</z> la première impression pour décrocher plus d’entretiens",
-  "extraDataFieldName": "improve_success_rate_data",
   "incompatibleAdviceIds": [
    "recSLhIt7aP2zI0Pb",
    "rec1igR2AJ0flVDKu"
   ],
   "isReadyForProd": true,
+  "shortTitle": "CV",
   "tipTemplateIds": [
    "reclK8s0whtE39OQR",
    "rec89xCdVZIRHZTtX",
    "reclxp8DgacIU0oNE",
    "recSucaFyD7L1pabV",
-   "recZ7Jz1fFyeCmFqG"
+   "recZ7Jz1fFyeCmFqG",
+   "recxJzkNcxszgkI4g",
+   "recMZvvFHcnVL3iS7"
   ],
-  "title": "Personnalise%you< tes/z vos> candidatures pour avoir plus d'impact",
-  "triggerScoringModel": "advice-fresh-resume"
+  "title": "Refaites bien votre CV pour attirer l'œil des recruteurs",
+  "triggerScoringModel": "advice-fresh-resume",
+  "userGainCallout": "3x",
+  "userGainDetails": "plus de chances de décrocher un entretien lorsque vous postulez"
+ },
+ {
+  "_id": "recTkXH7rwfIfANKY",
+  "_order": 13,
+  "adviceId": "immersion-milo",
+  "airtableId": "recTkXH7rwfIfANKY",
+  "incompatibleAdviceIds": [
+   "recCWbR7Af6BRh6Qy"
+  ],
+  "isReadyForProd": true,
+  "shortTitle": "Immersion en entreprise",
+  "title": "Découvrez la réalité du métier grâce à une immersion",
+  "triggerScoringModel": "advice-immersion-milo",
+  "userGainCallout": "+15%",
+  "userGainDetails": "d'attractivité de votre profil"
  },
  {
   "_id": "rec1igR2AJ0flVDKu",
+  "_order": 14,
   "adviceId": "improve-interview",
   "airtableId": "rec1igR2AJ0flVDKu",
-  "emailFacts": [
-   "Seulement 12% des candidats s'entrainent avec une personne de leur entourage avant l'entretien, pourtant cela peut vraiment faire la différence",
-   "Seulement 30% des candidats pensent à se détendre avant un entretien",
-   "77% des recruteurs considèrent la personnalité comme un critère important pour le choix d'un candidat",
-   "95% des recruteurs considèrent la motivation comme un critère essentiel pour choisir un candidat"
-  ],
-  "emailSubject": "entretien",
-  "emailSuggestionSentence": "travailler la préparation de %you<tes/vos> entretiens",
-  "emailTitle": "Prépare%you</z> mieux %you<tes/vos> entretiens pour transformer l'essai",
-  "extraDataFieldName": "improve_success_rate_data",
   "incompatibleAdviceIds": [
    "recSLhIt7aP2zI0Pb",
    "recOVDF3LlPt1A49x"
   ],
   "isReadyForProd": true,
+  "shortTitle": "Entretien",
   "tipTemplateIds": [
    "recnRJutgi6QBlbUg",
    "rec3TBP5Ge7tNF4u8",
@@ -116,207 +224,419 @@
    "recbCDFYzznVPeG9C",
    "recubhmiCDh8sAiFu",
    "recOgOKlLWLkgUoMk",
-   "recwADC71N3uWO6kv"
+   "recwADC71N3uWO6kv",
+   "recZwCs3vH3WygO0o"
   ],
-  "title": "Assure%you<-toi/z-vous> de montrer %you<ta/votre> motivation lors de %you<tes/vos> entretiens",
-  "triggerScoringModel": "advice-improve-interview"
+  "title": "Apprenez à montrer votre motivation en entretien",
+  "triggerScoringModel": "advice-improve-interview",
+  "userGainCallout": "4x",
+  "userGainDetails": "plus de chances ce convaincre la personne que vous rencontrerez"
  },
  {
-  "_id": "recnmpCRl4SE0RTtX",
-  "adviceId": "better-job-in-group",
-  "airtableId": "recnmpCRl4SE0RTtX",
-  "extraDataFieldName": "better_job_in_group_data",
+  "_id": "recSLhIt7aP2zI0Pb",
+  "_order": 15,
+  "adviceId": "improve-resume",
+  "airtableId": "recSLhIt7aP2zI0Pb",
+  "incompatibleAdviceIds": [
+   "rec1igR2AJ0flVDKu",
+   "recOVDF3LlPt1A49x"
+  ],
   "isReadyForProd": true,
-  "title": "Regarde%you</z> les métiers proches du %you<tien/vôtre>",
-  "triggerScoringModel": "advice-better-job-in-group"
+  "shortTitle": "CV",
+  "tipTemplateIds": [
+   "reclK8s0whtE39OQR",
+   "rec89xCdVZIRHZTtX",
+   "reclxp8DgacIU0oNE",
+   "recSucaFyD7L1pabV",
+   "recZ7Jz1fFyeCmFqG",
+   "recxJzkNcxszgkI4g",
+   "recMZvvFHcnVL3iS7"
+  ],
+  "title": "Personnalisez vos candidatures pour avoir plus d'impact",
+  "triggerScoringModel": "advice-improve-resume",
+  "userGainCallout": "3x",
+  "userGainDetails": "plus de chances de décrocher un entretien lorsque vous postulez"
+ },
+ {
+  "_id": "reczKoPuQaDPPnYvu",
+  "_order": 16,
+  "adviceId": "less-applications",
+  "airtableId": "reczKoPuQaDPPnYvu",
+  "isReadyForProd": true,
+  "shortTitle": "Candidatures ciblées",
+  "title": "Ne vous épuisez pas à faire trop de candidatures, postulez moins !",
+  "triggerScoringModel": "advice-less-applications",
+  "userGainCallout": "-80%",
+  "userGainDetails": "de candidatures inutiles"
  },
  {
   "_id": "rec4KA4xY98cIFHRv",
+  "_order": 17,
   "adviceId": "life-balance",
   "airtableId": "rec4KA4xY98cIFHRv",
-  "emailFacts": [
-   "80% des accompagnateurs du SNC pensent que le bénévolat contribue au retour à l'emploi"
-  ],
-  "emailSubject": "s'aérer l'esprit",
-  "emailSuggestionSentence": "%you<te/vous> concentrer sur %you<ton/votre> bien-être",
-  "emailTitle": "Préserve%you< ton/z votre> équilibre de vie pour garder %you<ton/votre> moral au top",
-  "isEasy": true,
   "isReadyForProd": true,
+  "shortTitle": "Équilibre de vie",
   "tipTemplateIds": [
    "recCkPXDF0iuLxwwG",
    "rec2eX4Qqp9YtPWLl",
    "recvbdzGhx0pdzxWy",
-   "recMJKwFHVaVL6Zbe"
+   "recMJKwFHVaVL6Zbe",
+   "recrwNw9GFhFQ95D3",
+   "rec2qVLOT9ibcbGSZ"
   ],
-  "title": "Préserve%you< ton/z votre> équilibre de vie",
-  "triggerScoringModel": "constant(1)"
+  "title": "Pensez à vous aérer l'esprit",
+  "triggerScoringModel": "advice-life-balance",
+  "userGainCallout": "🤗🤗🤗",
+  "userGainDetails": "de bien-être dans votre recherche"
+ },
+ {
+  "_id": "rec9TGmEFmDCrvlCT",
+  "_order": 18,
+  "adviceId": "motivation-email",
+  "airtableId": "rec9TGmEFmDCrvlCT",
+  "isReadyForProd": true,
+  "shortTitle": "Mails de motivation",
+  "tipTemplateIds": [
+   "recGOTCKx2IK0pM5m"
+  ],
+  "title": "Soignez vraiment vos mails de motivation",
+  "triggerScoringModel": "advice-more-offer-answers",
+  "userGainCallout": "3x",
+  "userGainDetails": "plus de chances de décrocher un entretien"
  },
  {
   "_id": "recqeiR3Vl0WwFj17",
+  "_order": 19,
   "adviceId": "network-application",
   "airtableId": "recqeiR3Vl0WwFj17",
-  "emailFacts": [
-   "44% des gens retrouvent un emploi grâce à leurs contacts contre seulement 12% via des offres sur internet",
-   "65% des entreprises utilisent le réseau pour recruter"
-  ],
-  "emailSubject": "marché caché",
-  "emailSuggestionSentence": "nous concentrer sur le réseau",
-  "emailTitle": "Construis%you</ez> et développe%you< ton/z votre> réseau pour booster %you<ta/votre> recherche",
   "incompatibleAdviceIds": [
    "recYVbuShgn0ku9cm",
    "recuOzLy0Ks7y88kj"
   ],
   "isReadyForProd": true,
+  "shortTitle": "Bouche-à-oreille",
   "tipTemplateIds": [
-   "reclUt1eptGzxmvM9"
+   "reclUt1eptGzxmvM9",
+   "recSYtXKj36DC9yLb"
   ],
-  "title": "Construis%you</ez> et développe%you< ton/z votre> réseau",
-  "triggerScoringModel": "advice-improve-network"
+  "title": "Vous utilisez peu le réseau, commencez par expliquer aux gens comment ils peuvent vous aider",
+  "triggerScoringModel": "advice-improve-network",
+  "userGainCallout": "3x",
+  "userGainDetails": "plus de chances de décrocher un entretien"
  },
  {
   "_id": "recYVbuShgn0ku9cm",
+  "_order": 20,
   "adviceId": "network-application-good",
   "airtableId": "recYVbuShgn0ku9cm",
-  "emailFacts": [
-   "44% des gens retrouvent un emploi grâce à leurs contacts contre seulement 12% via des offres sur internet",
-   "65% des entreprises utilisent le réseau pour recruter"
-  ],
-  "emailSubject": "marché caché",
-  "emailSuggestionSentence": "nous concentrer sur le réseau",
-  "emailTitle": "Utilise%you</z> à fond %you<ton/votre> réseau pour %you<t'/vous >attaquer au marché caché",
   "incompatibleAdviceIds": [
    "recYVbuShgn0ku9cm",
    "recuOzLy0Ks7y88kj"
   ],
   "isReadyForProd": true,
+  "shortTitle": "Bouche-à-oreille",
   "tipTemplateIds": [
-   "reclUt1eptGzxmvM9"
+   "reclUt1eptGzxmvM9",
+   "recSYtXKj36DC9yLb"
   ],
-  "title": "Utilise%you</z> à fond %you<ton/votre> réseau",
-  "triggerScoringModel": "advice-use-good-network"
+  "title": "Vous connaissez du monde, passez en priorité par eux !",
+  "triggerScoringModel": "advice-use-good-network",
+  "userGainCallout": "3x",
+  "userGainDetails": "plus de chances de décrocher un entretien"
  },
  {
   "_id": "recuOzLy0Ks7y88kj",
+  "_order": 21,
   "adviceId": "network-application-medium",
   "airtableId": "recuOzLy0Ks7y88kj",
-  "emailFacts": [
-   "44% des gens retrouvent un emploi grâce à leurs contacts contre seulement 12% via des offres sur internet",
-   "65% des entreprises utilisent le réseau pour recruter"
-  ],
-  "emailSubject": "marché caché",
-  "emailSuggestionSentence": "nous concentrer sur le réseau",
-  "emailTitle": "Développe%you< ton/z votre> réseau pour %you<t'/vous >attaquer au marché caché",
   "incompatibleAdviceIds": [
    "recYVbuShgn0ku9cm",
    "recqeiR3Vl0WwFj17"
   ],
   "isReadyForProd": true,
+  "shortTitle": "Bouche-à-oreille",
   "tipTemplateIds": [
-   "reclUt1eptGzxmvM9"
+   "reclUt1eptGzxmvM9",
+   "recSYtXKj36DC9yLb"
   ],
-  "title": "Utilisez %you<ton/votre> réseau",
-  "triggerScoringModel": "advice-better-network"
+  "title": "Vous utilisez peu votre réseau, expliquez aux gens comment ils peuvent vous aider",
+  "triggerScoringModel": "advice-better-network",
+  "userGainCallout": "3x",
+  "userGainDetails": "plus de chances de décrocher un entretien"
  },
  {
-  "_id": "recJwiLpILADYyyzb",
-  "adviceId": "find-a-jobboard",
-  "airtableId": "recJwiLpILADYyyzb",
-  "emailFacts": [
-   "Plus de 1500 Job board existent en France",
-   "80% des chercheurs consultent les annonces seulement 40% y répondent vraiment"
-  ],
-  "emailSubject": "jobboard",
-  "emailSuggestionSentence": "de postuler à des offres sur internet",
-  "emailTitle": "Trouve%you</z> des offres qui %you<te/vous> correspondent",
-  "extraDataFieldName": "job_boards_data",
+  "_id": "recp2Lq8KhHGAzyaE",
+  "_order": 22,
+  "adviceId": "other-work-env",
+  "airtableId": "recp2Lq8KhHGAzyaE",
   "isReadyForProd": true,
+  "shortTitle": "Autres types d'entreprises",
+  "title": "Voici des secteurs où vous pouvez envisager de postuler",
+  "triggerScoringModel": "advice-other-work-env",
+  "userGainCallout": "2x",
+  "userGainDetails": "plus d'opportunités d'embauches"
+ },
+ {
+  "_id": "recA8jok5KqDzynuE",
+  "_order": 23,
+  "adviceId": "personality-test",
+  "airtableId": "recA8jok5KqDzynuE",
+  "isReadyForProd": true,
+  "shortTitle": "Tests de personnalité",
   "tipTemplateIds": [
-   "recbOMC6vNln4sAek"
+   "recj7sdSiJeJT71zF",
+   "recLc48oiItNAiPP7"
   ],
-  "title": "Fai%you</te>s le tour des sites d'emploi intéressants pour %you<toi/vous>",
-  "triggerScoringModel": "advice-job-boards"
+  "title": "Faire des tests de personnalité pour mieux connaître vos forces",
+  "triggerScoringModel": "constant(2.5)"
  },
  {
-  "_id": "recA9O67mAPYrgl6L",
-  "adviceId": "events",
-  "airtableId": "recA9O67mAPYrgl6L",
-  "emailFacts": [
-   "Plus de 150 évènements emploi ont lieu en France chaque semaine"
-  ],
-  "emailSubject": "évènements",
-  "emailSuggestionSentence": "de trouver et de %you<te/vous> préparer pour aller à des évènements",
-  "emailTitle": "Rencontre%you</z> de nouvelles têtes, %you<va/allez> à des évènements",
+  "_id": "recvfoCpqHSFk7KPr",
+  "_order": 24,
+  "adviceId": "jobflix",
+  "airtableId": "recvfoCpqHSFk7KPr",
   "isReadyForProd": true,
+  "shortTitle": "Explorateur de carrières",
+  "title": "Découvrir un explorateur de carrières",
+  "triggerScoringModel": "constant(2.5)"
+ },
+ {
+  "_id": "recTqfaeRyx8ij9bN",
+  "_order": 25,
+  "adviceId": "relocate",
+  "airtableId": "recTqfaeRyx8ij9bN",
+  "extraDataFieldName": "relocate_data",
+  "isReadyForProd": true,
+  "shortTitle": "Déménagement",
+  "title": "Trouver les départements en France qui ont le plus de chances de recruter",
+  "triggerScoringModel": "advice-relocate",
+  "userGainCallout": "+32%",
+  "userGainDetails": "d'opportunités d'embauche accessibles"
+ },
+ {
+  "_id": "recJaUjt9ZNASPu3S",
+  "_order": 26,
+  "adviceId": "reorient-jobbing",
+  "airtableId": "recJaUjt9ZNASPu3S",
+  "extraDataFieldName": "reorient_data",
+  "isReadyForProd": true,
+  "shortTitle": "Métiers qui recrutent",
+  "title": "Misez sur les métiers qui recrutent le plus dans votre département",
+  "triggerScoringModel": "advice-reorient-jobbing",
+  "userGainCallout": "1 mois",
+  "userGainDetails": "pour trouver un emploi"
+ },
+ {
+  "_id": "recPRRszciZRM59jd",
+  "_order": 27,
+  "adviceId": "reorient-to-close-job",
+  "airtableId": "recPRRszciZRM59jd",
+  "extraDataFieldName": "reorient_data",
+  "isReadyForProd": true,
+  "shortTitle": "Autres métiers",
+  "title": "Valorisez vos compétences dans un métier proche",
+  "triggerScoringModel": "advice-reorient-to-close-job",
+  "userGainCallout": "2x",
+  "userGainDetails": "plus rapide de retrouver un emploi"
+ },
+ {
+  "_id": "recVLJtmDZGsG0W1g",
+  "_order": 28,
+  "adviceId": "seasonal-relocate",
+  "airtableId": "recVLJtmDZGsG0W1g",
+  "isReadyForProd": true,
+  "shortTitle": "Emplois saisonniers",
+  "title": "Pensez aux emplois saisonniers",
+  "triggerScoringModel": "advice-seasonal-relocate",
+  "userGainCallout": "5x",
+  "userGainDetails": "plus de chances de trouver un emploi en 1 mois"
+ },
+ {
+  "_id": "rec3I6BBWwy10Ws4I",
+  "_order": 29,
+  "adviceId": "senior",
+  "airtableId": "rec3I6BBWwy10Ws4I",
+  "isReadyForProd": true,
+  "shortTitle": "Senior",
+  "title": "Votre âge est un atout, valorisez-le !",
+  "triggerScoringModel": "advice-senior",
+  "userGainCallout": "+15%",
+  "userGainDetails": "d'attractivité de votre profil"
+ },
+ {
+  "_id": "rec0y49zf4YMrkGj0",
+  "_order": 30,
+  "adviceId": "specific-to-job",
+  "airtableId": "rec0y49zf4YMrkGj0",
+  "incompatibleAdviceIds": [
+   "rec88C9OP5tTUVyHv",
+   "recLhOsHX8eOs8ede"
+  ],
+  "isReadyForProd": true,
+  "shortTitle": "Ficelles des experts",
   "tipTemplateIds": [
-   "recfrMrKdqGfTGXHT",
-   "recBvGSLHtxoaXSRt"
+   "recHOTEgtwOJLDO2L"
   ],
-  "title": "%you<Va/Allez> à des évènements",
-  "triggerScoringModel": "advice-event"
+  "title": "Utilisez les ficelles des experts",
+  "triggerScoringModel": "advice-specific-to-job",
+  "userGainCallout": "3x",
+  "userGainDetails": "plus de chances de décrocher un entretien"
  },
  {
-  "_id": "rec9TGmEFmDCrvlCT",
-  "adviceId": "motivation-email",
-  "airtableId": "rec9TGmEFmDCrvlCT",
-  "emailFacts": [
-   "Les recruteurs prennent entre 30 et 60 secondes pour lire une candidature"
-  ],
-  "emailSubject": "mail de motivation",
-  "emailSuggestionSentence": "de travailler sur votre mail de motivation",
-  "emailTitle": "Donne%you</z> tout dans %you<ton/votre> mail de motivation",
+  "_id": "rec2IQEWVdGvKvbI3",
+  "_order": 31,
+  "adviceId": "spontaneous-application",
+  "airtableId": "rec2IQEWVdGvKvbI3",
   "isReadyForProd": true,
-  "title": "Attire%you</z> tout de suite l'œil du recruteur dans %you<ton/votre> email de candidature",
-  "triggerScoringModel": "advice-more-offer-answers"
- },
- {
-  "_id": "rec1BoaDdLiwabNRk",
-  "adviceId": "association-help",
-  "airtableId": "rec1BoaDdLiwabNRk",
-  "extraDataFieldName": "associations_data",
-  "isReadyForProd": true,
+  "shortTitle": "Candidatures spontanées",
   "tipTemplateIds": [
-   "recBUEjBVKRyTTnfe"
+   "recieKJTssgtoDN6d",
+   "recBKWIcaWhOBAnZy",
+   "recMZvvFHcnVL3iS7"
   ],
-  "title": "Trouve%you</z> une association pour %you<t'/vous >accompagner",
-  "triggerScoringModel": "advice-association-help"
+  "title": "Privilégiez les candidatures spontanées sur le reste",
+  "triggerScoringModel": "advice-spontaneous-application",
+  "userGainCallout": "5x",
+  "userGainDetails": "plus de chances de trouver un poste"
  },
  {
-  "_id": "rec88C9OP5tTUVyHv",
-  "adviceId": "wow-baker",
-  "airtableId": "rec88C9OP5tTUVyHv",
+  "_id": "reciVxy8fHerv0VcB",
+  "_order": 32,
+  "adviceId": "training",
+  "airtableId": "reciVxy8fHerv0VcB",
+  "extraDataFieldName": "training_data",
   "isReadyForProd": true,
-  "title": "Présente%you<-toi/z-vous> au chef boulanger dès son arrivée tôt le matin",
-  "triggerScoringModel": "advice-wow-baker"
+  "shortTitle": "Formations",
+  "title": "Trouvez la bonne formation pour vous",
+  "triggerScoringModel": "advice-training",
+  "userGainCallout": "2,3x",
+  "userGainDetails": "plus de chances de retrouver un emploi en moins de 6 mois"
  },
  {
-  "_id": "recLhOsHX8eOs8ede",
-  "adviceId": "wow-hairdresser",
-  "airtableId": "recLhOsHX8eOs8ede",
+  "_id": "rec77oiiSC4Ckckw6",
+  "_order": 33,
+  "adviceId": "alternance",
+  "airtableId": "rec77oiiSC4Ckckw6",
   "isReadyForProd": true,
-  "title": "Assure%you<-toi/z-vous> de donner %you<ton/votre> CV à la bonne personne quand %you<tu/vous> postule%you<s/z>",
-  "triggerScoringModel": "for-job-group(D1202)"
+  "shortTitle": "Alternance",
+  "title": "Découvrez les opportunités qu'offre l'alternance",
+  "triggerScoringModel": "advice-try-alternance",
+  "userGainCallout": "2x",
+  "userGainDetails": "plus de chance de trouver un emploi à la fin de votre formation"
  },
  {
-  "_id": "recGFb8ExmMR7gVDf",
-  "adviceId": "commute",
-  "airtableId": "recGFb8ExmMR7gVDf",
-  "emailFacts": [
-   "Il y a parfois plus d'offres dans des villes proches"
-  ],
-  "emailSubject": "offres dans les villes proches",
-  "emailSuggestionSentence": "de trouver des offres dans des villes proches",
-  "emailTitle": "Explore%you</z> les offres dans des villes proches",
-  "extraDataFieldName": "commute_data",
-  "title": "Explore%you</z> les offres dans des villes proches",
-  "triggerScoringModel": "advice-commute"
+  "_id": "reczM54gZnAPT5JSr",
+  "_order": 34,
+  "adviceId": "vae",
+  "airtableId": "reczM54gZnAPT5JSr",
+  "isReadyForProd": true,
+  "shortTitle": "VAE",
+  "title": "Valorisez vos années d'expérience par un diplôme",
+  "triggerScoringModel": "advice-vae",
+  "userGainCallout": "3x",
+  "userGainDetails": "plus d'entreprises prêtes à vous embaucher"
  },
  {
   "_id": "rec5Xv4wpehxeL5EW",
+  "_order": 35,
   "adviceId": "volunteer",
   "airtableId": "rec5Xv4wpehxeL5EW",
   "extraDataFieldName": "volunteer_data",
   "isReadyForProd": true,
-  "title": "Reste%you</z> actif en aidant une association",
-  "triggerScoringModel": "advice-volunteer"
+  "shortTitle": "Bénévolat",
+  "tipTemplateIds": [
+   "recMJKwFHVaVL6Zbe",
+   "recvbdzGhx0pdzxWy"
+  ],
+  "title": "Faites du bénévolat pour rencontrer des gens et gagner en expérience",
+  "triggerScoringModel": "advice-volunteer",
+  "userGainCallout": "🤗🤗🤗",
+  "userGainDetails": "de bien-être dans votre recherche et un CV qui sort du lot"
+ },
+ {
+  "_id": "recPyYpwSzGDjCa1T",
+  "_order": 36,
+  "adviceId": "online-salons",
+  "airtableId": "recPyYpwSzGDjCa1T",
+  "isReadyForProd": true,
+  "shortTitle": "Salons en ligne",
+  "title": "Participez à des salons en ligne",
+  "triggerScoringModel": "advice-online-salons",
+  "userGainCallout": "4x",
+  "userGainDetails": "plus de chances de décrocher un entretien"
+ },
+ {
+  "_id": "recRvmWf8y7xOSEMP",
+  "_order": 37,
+  "adviceId": "skill-for-future",
+  "airtableId": "recRvmWf8y7xOSEMP",
+  "isReadyForProd": true,
+  "shortTitle": "Compétences d'avenir",
+  "tipTemplateIds": [
+   "recX26gSThOuDGTFC",
+   "recVfxSG78QxUcYE6",
+   "recfXxBuyLhCykKST"
+  ],
+  "title": "Acquérez des compétences d'avenir pour anticiper les attentes des recruteurs",
+  "triggerScoringModel": "advice-skill-for-future"
+ },
+ {
+  "_id": "recszxIsuYdrKPGaT",
+  "_order": 38,
+  "adviceId": "long-term-mom",
+  "airtableId": "recszxIsuYdrKPGaT",
+  "isReadyForProd": true,
+  "shortTitle": "Valoriser une pause de carrière",
+  "title": "Faites de votre expérience de maman un atout",
+  "triggerScoringModel": "for-long-term-mom"
+ },
+ {
+  "_id": "recCWbR7Af6BRh6Qy",
+  "_order": 39,
+  "adviceId": "immersion",
+  "airtableId": "recCWbR7Af6BRh6Qy",
+  "incompatibleAdviceIds": [
+   "recTkXH7rwfIfANKY"
+  ],
+  "isReadyForProd": true,
+  "shortTitle": "Immersion en entreprise",
+  "tipTemplateIds": [
+   "recqBMsYCpIReRk3x"
+  ],
+  "title": "Découvrez la réalité d'un métier grâce à une immersion",
+  "triggerScoringModel": "category-find-what-you-like",
+  "userGainCallout": "+15%",
+  "userGainDetails": "d'attractivité de votre profil"
+ },
+ {
+  "_id": "reczh3WfxC4QOXks1",
+  "_order": 40,
+  "adviceId": "explore-other-jobs",
+  "airtableId": "reczh3WfxC4QOXks1",
+  "isReadyForProd": true,
+  "shortTitle": "Exploration des métiers",
+  "title": "Explorez de nombreux métiers en vidéo",
+  "triggerScoringModel": "constant(2.4)"
+ },
+ {
+  "_id": "recFI5guaLPE8slWA",
+  "_order": 41,
+  "adviceId": "needs-for-handicap",
+  "airtableId": "recFI5guaLPE8slWA",
+  "isReadyForProd": true,
+  "shortTitle": "Communication sur le handicap",
+  "title": "Aider l'employeur à comprendre ses besoins",
+  "triggerScoringModel": "for-handicaped",
+  "userGainDetails": "d'attractivité de votre profil"
+ },
+ {
+  "_id": "recD89ATkjkSB1BdV",
+  "_order": 42,
+  "adviceId": "explore-safe-jobs",
+  "airtableId": "recD89ATkjkSB1BdV",
+  "isReadyForProd": true,
+  "shortTitle": "Métiers avec de bonnes perspectives",
+  "title": "Visez un métier avec de bonnes perspectives",
+  "triggerScoringModel": "advice-explore-safe-jobs"
  }
 ]

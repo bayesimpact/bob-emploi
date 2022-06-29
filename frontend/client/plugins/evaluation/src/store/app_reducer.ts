@@ -1,4 +1,4 @@
-import {EvalAppState, AllEvalActions} from './actions'
+import type {EvalAppState, AllEvalActions} from './actions'
 
 const appInitialData: EvalAppState = {}
 

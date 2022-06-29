@@ -21,9 +21,12 @@ _FIELDNAME = 'vae_ratio_in_diploma'
 
 def main(
         api_key: str, base_id: str = 'appMRMtWV61Kibt37', table: str = 'VAE_Stats',
-        data_folder: str = 'data', filename: str = 'vae-2018.xls',
+        data_folder: str = 'data', filename: str = '',
         sheetname: str = 'Figure 5 web') -> None:
     """Update an AirTable field based on data from XLS file."""
+
+    if not filename:
+        filename = path.join(data_folder, 'vae-2018.xls')
 
     file = pd.ExcelFile(path.join(data_folder, filename))
     vae_stats = file.parse(sheetname, header=1).dropna()

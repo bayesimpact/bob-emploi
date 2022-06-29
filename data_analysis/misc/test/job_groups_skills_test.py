@@ -23,7 +23,8 @@ class JobOffersTrimTestCase(unittest.TestCase):
 
         job_groups_skills.main(data_folder=self.testdata_dir, out_dir=self.out_dir)
 
-        with open(path.join(self.testdata_dir, 'test_out/skills_A1101.json')) as output_file:
+        output_file_name = path.join(self.testdata_dir, 'test_out/skills_A1101.json')
+        with open(output_file_name, encoding='utf-8') as output_file:
             output = json.load(output_file)
 
         self.assertEqual(2, len(output))

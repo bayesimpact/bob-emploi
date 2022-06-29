@@ -14,7 +14,7 @@ You can try it out on a local instance:
 
 import locale
 import typing
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy
 import pandas
@@ -27,16 +27,26 @@ _BIN_WIDTH = importer_helpers.DAYS_PER_MONTH
 locale.setlocale(locale.LC_ALL, 'fr_FR.UTF-8')
 
 
-def _get_histogram(duration: pandas.Series) -> List[float]:
+class _NumpyHistogramFunc(typing.Protocol):
+
+    def __call__(self, a: pandas.Series, bins: int = 0) -> pandas.Series:  # pylint: disable=invalid-name
+        ...
+
+
+# TODO(pascal): Fix the upstream type.
+_numpy_histogram = typing.cast(_NumpyHistogramFunc, numpy.histogram)
+
+
+def _get_histogram(duration: pandas.Series) -> list[float]:
     cutoff = duration.quantile(0.95)
     data = duration[duration <= cutoff]
     bins = numpy.arange(0, cutoff + _BIN_WIDTH, _BIN_WIDTH)
-    histo = numpy.histogram(data, bins=bins)
+    histo = _numpy_histogram(data, bins=bins)
     normalized_histo = histo[0] / numpy.sum(histo[0])
-    return typing.cast(List[float], normalized_histo.tolist())
+    return typing.cast(list[float], normalized_histo.tolist())
 
 
-def fhs2dicts(durations_csv: str) -> List[Dict[str, Any]]:
+def fhs2dicts(durations_csv: str) -> list[dict[str, Any]]:
     """Import stats from FHS as gobal diagnosis.
 
     Args:

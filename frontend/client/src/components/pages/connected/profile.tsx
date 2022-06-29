@@ -1,15 +1,15 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 import _pick from 'lodash/pick'
 import CheckIcon from 'mdi-react/CheckIcon'
-import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useDispatch, useSelector} from 'react-redux'
 import {useLocation, useParams} from 'react-router'
 import {Redirect} from 'react-router-dom'
 
-import {DispatchAllActions, RootState, diagnoseOnboarding, displayToasterMessage,
-  onboardingPage, setUserProfile} from 'store/actions'
+import type {DispatchAllActions, RootState} from 'store/actions'
+import {diagnoseOnboarding, displayToasterMessage, onboardingPage,
+  setUserProfile} from 'store/actions'
 import {onboardingComplete} from 'store/main_selectors'
 import {useSafeDispatch} from 'store/promise'
 import {USER_PROFILE_FIELDS} from 'store/user'
@@ -17,12 +17,13 @@ import {USER_PROFILE_FIELDS} from 'store/user'
 import Trans from 'components/i18n_trans'
 import isMobileVersion from 'store/mobile'
 import {colorToAlpha} from 'components/colors'
-import {PageWithNavigationBar, Scrollable} from 'components/navigation'
-import {RadiumLink} from 'components/radium'
+import type {Scrollable} from 'components/navigation'
+import {PageWithNavigationBar} from 'components/navigation'
+import {SmartLink} from 'components/radium'
 import {SmoothTransitions, Styles} from 'components/theme'
 import {Routes} from 'components/url'
 
-import {ProfileStepProps} from './profile/step'
+import type {ProfileStepProps} from './profile/step'
 import {useProfileOnboarding} from './profile/onboarding'
 import AccountStep from './profile/account'
 import FrustrationsStep from './profile/frustrations'
@@ -169,12 +170,6 @@ const OnboardingViewBase = (props: OnboardingViewProps): React.ReactElement => {
       isLastOnboardingStep={!hasNextStep} />
   </PageWithNavigationBar>
 }
-OnboardingViewBase.propTypes = {
-  featuresEnabled: PropTypes.object,
-  onProfileSave: PropTypes.func.isRequired,
-  stepName: PropTypes.string.isRequired,
-  userProfile: PropTypes.object.isRequired,
-}
 const OnboardingView = React.memo(OnboardingViewBase)
 
 
@@ -219,13 +214,13 @@ const TabListBase: React.FC<TabsProps> = (props: TabsProps): React.ReactElement 
     padding: 25,
     ...style,
   }
-  return <div style={tabsStyle}>
-    {tabs.map(({fragment, title}) => <RadiumLink
+  return <nav style={tabsStyle}>
+    {tabs.map(({fragment, title}) => <SmartLink
       key={fragment} style={tabStyle(fragment === stepName)}
-      to={`${Routes.PROFILE_PAGE}/${fragment}`}>
+      to={fragment === stepName ? '' : `${Routes.PROFILE_PAGE}/${fragment}`}>
       {title}
-    </RadiumLink>)}
-  </div>
+    </SmartLink>)}
+  </nav>
 }
 const TabList = React.memo(TabListBase)
 
@@ -271,12 +266,6 @@ const SaveNotificationBase = (props: SaveNotificationProps): React.ReactElement 
     <div style={checkIconStyle}><CheckIcon size={24} style={{color: '#fff'}} /></div>
     <Trans parent={null}>Sauvegardé</Trans>
   </div>
-}
-SaveNotificationBase.propTypes = {
-  index: PropTypes.number.isRequired,
-  isActive: PropTypes.bool.isRequired,
-  onRemove: PropTypes.func.isRequired,
-  rank: PropTypes.number.isRequired,
 }
 const SaveNotification = React.memo(SaveNotificationBase)
 
@@ -384,7 +373,6 @@ const PageViewBase = (props: PageViewProps): React.ReactElement => {
     marginTop: isMobileVersion ? 40 : 0,
   }
   const contentStyle = {
-    alignItems: 'flex-start',
     marginTop: 0,
     padding: 0,
   }
@@ -452,7 +440,7 @@ const ProfilePageBase = (): React.ReactElement => {
     return <PageWithNavigationBar
       style={{backgroundColor: colors.BACKGROUND_GREY}}
       page="profile" isContentScrollable={true}
-      isChatButtonShown={true}>
+      isChatButtonShown={false}>
       <PageView
         userProfile={profile || emptyObject} stepName={stepName} onChange={handleProfileSave}
         hasAccount={hasAccount} featuresEnabled={featuresEnabled || emptyObject} />

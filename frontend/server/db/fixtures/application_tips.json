@@ -1,0 +1,3977 @@
+[
+ {
+  "_id": "rec08pXDLoZ4LKSWf",
+  "_order": 0,
+  "content": "Vous savez créer une relation de confiance basée sur l'écoute active, la patience, la disponibilité et la compréhension",
+  "filters": [
+   "for-job-group(K1104, K1101, K1103)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec0IYXnJMrtiIiuK",
+  "_order": 1,
+  "content": "Renseignez-vous sur les services financiers proposés avant l'entretien",
+  "filters": [
+   "for-job-group(C13)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec0enjpHFrub1lcX",
+  "_order": 2,
+  "content": "Renseignez-vous sur les animations et activités proposées",
+  "filters": [
+   "for-job-group(G12)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec0v5wmk5kKeevu5",
+  "_order": 3,
+  "content": "Vous savez prendre des initiatives et vous organiser",
+  "filters": [
+   "for-job-group(M1705)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec14clpVaxDV4StU",
+  "_order": 4,
+  "content": "Vous avez une bonne maîtrise des normes de sécurité et suivez l'actualité dans ce domaine",
+  "filters": [
+   "for-job-group(M1803)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec19GSXFXzm1KwmC",
+  "_order": 5,
+  "content": "Si vous postulez en agence, renseignez-vous sur les artistes déjà représentés",
+  "filters": [
+   "for-job-group(L11)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec1CdSAI8JtUtzOb",
+  "_order": 6,
+  "content": "Renseignez-vous sur les différentes espèces de poissons proposées et leur provenance",
+  "filters": [
+   "for-job-group(D1105)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec1IfJkwqhymIAJp",
+  "_order": 7,
+  "content": "Vous êtes curieuse et savez parler de vos produits",
+  "contentMasculine": "Vous êtes curieux et savez parler de vos produits",
+  "filters": [
+   "for-job-group(D1106, D1101, D1103, D1105, D1102, D1104, D1209, D1210)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec1QE5jBppIs6xHJ",
+  "_order": 8,
+  "content": "Renseignez-vous sur les méthodes d'encadrement privilégiées par l'entreprise",
+  "filters": [
+   "for-job-group(I11)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec1U6eaIhLAoxgT0",
+  "_order": 9,
+  "content": "Renseignez-vous sur les différents soins proposées",
+  "filters": [
+   "for-job-group(D1203, D1208)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec2Ce8K7otyQGXW3",
+  "_order": 10,
+  "content": "Vous savez faire de la gestion de projet",
+  "filters": [
+   "for-job-group(M1402)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec2R85JRxdIUWI1V",
+  "_order": 11,
+  "content": "Renseignez-vous sur les techniques et outils de production utilisés par l'entreprise",
+  "filters": [
+   "for-job-group(H25)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec2e3SJ1KjUe35iG",
+  "_order": 12,
+  "content": "Vous savez réagir vite et vous adapter aux changements",
+  "filters": [
+   "for-job-group(M1101)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec2fGSaK33twyJiY",
+  "_order": 13,
+  "content": "Vous êtes rigoureuse",
+  "contentMasculine": "Vous êtes rigoureux",
+  "filters": [
+   "for-job-group(J1301)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec2ilZ3RbcvHcQvn",
+  "_order": 14,
+  "content": "Vous aimez travailler de manière autonome",
+  "filters": [
+   "for-job-group(K2402, N1401)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec2oyeDXPNJ1QVEn",
+  "_order": 15,
+  "content": "Vous savez négocier pour obtenir les meilleurs produits au meilleur rapport qualité/prix",
+  "filters": [
+   "for-job-group(M1101)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec2xEbCp0xGWD4Ug",
+  "_order": 16,
+  "content": "Renseignez-vous sur les différents sports représentés par le club",
+  "filters": [
+   "for-job-group(L14)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec2z01hAQGugSfav",
+  "_order": 17,
+  "content": "Renseignez-vous sur les principaux chercheurs du centre",
+  "filters": [
+   "for-job-group(K24)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec3KpV6dS9kpsxAt",
+  "_order": 18,
+  "content": "Vous savez faire preuve de patience et vous montrer rassurante pour répondre aux demandes des patients",
+  "filters": [
+   "for-job-group(M1609)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec3YHEwBnaiWckLr",
+  "_order": 19,
+  "content": "Vous savez bien communiquer et vous avez l'esprit d'équipe",
+  "filters": [
+   "for-job-group(H1206)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec3zCG0MUX2IMwQx",
+  "_order": 20,
+  "content": "Vous savez vous organiser, travailler en autonomie et prendre des initiatives",
+  "filters": [
+   "for-job-group(K1201)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec41cEUBPsZJOLGx",
+  "_order": 21,
+  "content": "Vous savez prendre des initiatives grâce à votre créativité et curiosité",
+  "filters": [
+   "for-job-group(E1205)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec4EetbLocE8HBRL",
+  "_order": 22,
+  "content": "Renseignez-vous sur les différentes plantes proposées",
+  "filters": [
+   "for-job-group(D1209)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec4hTAGFUj4oXGg9",
+  "_order": 23,
+  "content": "Vous avez l'esprit d'équipe et savez collaborer au sein d'équipes multi-disciplinaires",
+  "filters": [
+   "for-job-group(F1106)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec4v65qJ0T0bj71v",
+  "_order": 24,
+  "content": "Vous avez une bonne élocution et vous êtes à l'aise au téléphone",
+  "filters": [
+   "for-job-group(M1604, M1607, M1601, G1401)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec4zRnouTt9bD512",
+  "_order": 25,
+  "content": "Vous êtes organisée et travailleuse",
+  "contentMasculine": "Vous êtes organisé et travailleur",
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec539e3iy7qqlasX",
+  "_order": 26,
+  "content": "Renseignez-vous sur les soins médicosociaux proposés par la structure",
+  "filters": [
+   "for-job-group(K1301)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec54eBJIKhEHOJRu",
+  "_order": 27,
+  "content": "Vous avez le sens de la diplomatie et une bonne aisance relationnelle pour pouvoir concilier les besoins et contraintes de tous vos interlocuteurs",
+  "filters": [
+   "for-job-group(N1303)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec56IOfqfrP9lV4X",
+  "_order": 28,
+  "content": "Vous avez un bon sens du relationnel et savez faire preuve d'empathie pour construire une relation de confiance avec l'élève et sa famille",
+  "filters": [
+   "for-job-group(K2107)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec59kVS3sZvq1jt2",
+  "_order": 29,
+  "content": "Vous savez créer une atmosphère chaleureuse pour les clients du salon",
+  "filters": [
+   "for-job-group(D1202)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec5WaQUCdTAVqe6r",
+  "_order": 30,
+  "content": "Vous êtes serviable et avez un bon relationnel",
+  "filters": [
+   "for-job-group(D1301)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec5db7mKzlbh8F4C",
+  "_order": 31,
+  "content": "Vous savez travailler de façon rapide, consciencieuse, autonome, efficace et créative",
+  "filters": [
+   "for-job-group(M1805)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec5g0sKOo4Vvkr5F",
+  "_order": 32,
+  "content": "Vous savez vous adapter aux horaires décalés et aux urgences du métier",
+  "filters": [
+   "for-job-group(E1104)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec5uT91l6OmbKv2v",
+  "_order": 33,
+  "content": "Consultez les derniers projets et les créations emblématiques de l'entreprise",
+  "filters": [
+   "for-job-group(E1104)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec5vuzttoI4srYnS",
+  "_order": 34,
+  "content": "Vous avez un goût prononcé pour les challenges",
+  "filters": [
+   "for-job-group(I1401, H1206, M1803, D1402, K1903, M1707, D1406, D1509, D1504)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec5x3HtTf7iQl5Cb",
+  "_order": 35,
+  "content": "Renseignez-vous sur les services proposés par la banque que vous allez rencontrer",
+  "filters": [
+   "for-job-group(C12)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec5zweHEmgDl1jaf",
+  "_order": 36,
+  "content": "Renseignez-vous sur les aides proposées par la structure",
+  "filters": [
+   "for-job-group(K1102)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec66q9PI5ZxTkRrT",
+  "_order": 37,
+  "content": "Vous savez utiliser des techniques de résolution de problème créatives et penser de manière novatrice pour rationaliser les systèmes et réduire les coûts",
+  "filters": [
+   "for-job-group(M1204)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec6F16RPw6YLK3Cn",
+  "_order": 38,
+  "content": "Consultez les publications de la structure avant l'entretien",
+  "filters": [
+   "for-job-group(E1108)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec6IKEUvwhU3QHPV",
+  "_order": 39,
+  "content": "Vous avez un bon sens du relationnel et savez développer et faciliter des relations",
+  "filters": [
+   "for-job-group(M1703)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec6SFHAthSouDlZx",
+  "_order": 40,
+  "content": "Renseignez-vous sur les enjeux actuels de santé publique",
+  "filters": [
+   "for-job-group(K1402)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec6V1AiBiZeJyiLX",
+  "_order": 41,
+  "content": "Renseignez-vous sur les documents et contenus conservés par la structure",
+  "filters": [
+   "for-job-group(K1601)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec6dqxlIJrvehlY3",
+  "_order": 42,
+  "content": "Vous êtes organisée et vous savez garder à jour des documents",
+  "contentMasculine": "Vous êtes organisé et vous savez garder à jour des documents",
+  "filters": [
+   "for-job-group(N1401)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec6iVmMo1Z0bsoId",
+  "_order": 43,
+  "content": "Vous avez le sens de la diplomatie et un excellent relationnel, aussi bien avec les équipes médicales, qu'avec les patients.",
+  "filters": [
+   "for-job-group(M1609)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec6k9GZK2jVmTCF4",
+  "_order": 44,
+  "content": "Renseignez-vous sur le type d'équipements entretenu par l'entreprise",
+  "filters": [
+   "for-job-group(I14, I16)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec72UA4KoiQIVQ9G",
+  "_order": 45,
+  "content": "Renseignez-vous sur les artistes qui ont participé aux précédents projets",
+  "filters": [
+   "for-job-group(L13)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec7HivDbmyfknHKU",
+  "_order": 46,
+  "content": "Vous savez manager et organiser le travail d'une équipe",
+  "filters": [
+   "for-job-group(K2402)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec7KBsY9CRP2tOe2",
+  "_order": 47,
+  "content": "Vous savez travailler avec plusieurs équipes en même temps",
+  "filters": [
+   "for-job-group(M1607)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec7SM6UMEKm9mqa9",
+  "_order": 48,
+  "content": "Vous avez le goût des relations humaines et le sens de la pédagogie pour former et être écouté par les différents utilisateurs de votre fonds documentaire",
+  "filters": [
+   "for-job-group(K1601)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec7aGazP69h9juAp",
+  "_order": 49,
+  "content": "Vous avez un bon sens de l'organisation (vous savez gérer des stocks, organiser une réunion de A à Z)",
+  "filters": [
+   "for-job-group(M1607, G1401)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec7qSPXj2izQMsz3",
+  "_order": 50,
+  "content": "Faites des recherches avant pour bien connaître les véhicules et les marques proposées",
+  "filters": [
+   "for-job-group(D1404)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec7rEi8ljAUdWQzS",
+  "_order": 51,
+  "content": "Vous avez un bon sens pratique et une connaissance approfondie de votre secteur pour pouvoir proposer des solutions",
+  "filters": [
+   "for-job-group(K1201)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec8Oo1zC1BcycTjo",
+  "_order": 52,
+  "content": "Vous aimez les défis et atteindre des objectifs",
+  "filters": [
+   "for-job-group(C1401, C1201, C1206, C1203)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec8QZR8jeofao78i",
+  "_order": 53,
+  "content": "Renseignez-vous sur la stratégie commerciale et marketing de l'entreprise",
+  "filters": [
+   "for-job-group(M17)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec8TaWkMkOOLTxzf",
+  "_order": 54,
+  "content": "Vous savez respecter des consignes et faire attention aux détails",
+  "filters": [
+   "for-job-group(K2204)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec8iqwrqebFn4Hkj",
+  "_order": 55,
+  "content": "Vous avez le sens des affaires et une bonne intuition",
+  "filters": [
+   "for-job-group(M1101)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec8msRW1rxjCA33z",
+  "_order": 56,
+  "content": "Vous savez parler de vos passions et faire preuve de bon sens dans des situations nouvelles",
+  "filters": [
+   "for-job-group(D1214 ,D1211, D1209, D1210)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec91LKtC98xFkiW0",
+  "_order": 57,
+  "content": "Vous savez écouter et comprendre les attentes de la personnes que vous coiffez",
+  "filters": [
+   "for-job-group(D1202)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec96KQVZNNguaRDj",
+  "_order": 58,
+  "content": "Vous savez bien gérer votre planning",
+  "filters": [
+   "for-job-group(M1607)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec9DitqtVTP3lPrV",
+  "_order": 59,
+  "content": "Vous savez manager une équipes et jongler entre diplomatie et fermeté pour obtenir les réponses ou les chiffres indispensables à la réalisation de sa mission",
+  "filters": [
+   "for-job-group(M1204)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec9LZOQAAdUnoh37",
+  "_order": 60,
+  "content": "Vous êtes ouverte au contact avec les autres corps de métier intervenant sur un chantier",
+  "contentMasculine": "Vous êtes ouvert au contact avec les autres corps de métier intervenant sur un chantier",
+  "filters": [
+   "for-job-group(F1704)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rec9iE9PKyt7p9qys",
+  "_order": 61,
+  "content": "Faites des recherches sur les expertises spécifiques de l'entreprise",
+  "filters": [
+   "for-job-group(I14, I15)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec9oGTmzLt3bJINu",
+  "_order": 62,
+  "content": "Renseignez-vous sur les principaux dirigeants du cabinet",
+  "filters": [
+   "for-job-group(K1903)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rec9qJqDt4EzDr51H",
+  "_order": 63,
+  "content": "Vous êtes curieuse et serez capable de vous auto-former pour vous adapter aux dernières nouveautés",
+  "contentMasculine": "Vous êtes curieux et serez capable de vous auto-former pour vous adapter aux dernières nouveautés",
+  "filters": [
+   "for-job-group(E1104)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recA9XFymuq6026Ur",
+  "_order": 64,
+  "content": "Si vous êtes prête à travailler le week-end ou le soir précisez-le bien cela peut faire la différence dans votre métier",
+  "contentMasculine": "Si vous êtes prêt à travailler le week-end ou le soir précisez-le bien cela peut faire la différence dans votre métier",
+  "filters": [
+   "for-job-group(N4105)"
+  ],
+  "type": "CV_IMPROVEMENT"
+ },
+ {
+  "_id": "recA9gi5SxPIEPZXH",
+  "_order": 65,
+  "content": "Essayez de visiter l'hôtel ou le restaurant avant votre entretien",
+  "filters": [
+   "for-job-group(G15, G1403)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recAB7Wv7nQkPQZby",
+  "_order": 66,
+  "content": "Renseignez-vous sur les produits d'assurances de la compagnie",
+  "filters": [
+   "for-job-group(C11)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recAIMKjrJFAxWMLU",
+  "_order": 67,
+  "content": "Renseignez-vous sur tous les spectacles à venir de la structure",
+  "filters": [
+   "for-job-group(L13, L15)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recATdAss5BJORQxm",
+  "_order": 68,
+  "content": "Vous avez un état d'esprit positif et constructif envers les élèves et savez faire preuve de confiance envers le potentiel des élèves",
+  "filters": [
+   "for-job-group(K2107)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recAVJvLZfkPTMtma",
+  "_order": 69,
+  "content": "Renseignez-vous sur les techniques utilisées",
+  "filters": [
+   "for-job-group(D1205, D1206, E13, F14, F16, F17, H2101, H2201, H2204, H2205, H2206, H2207, H2208, H2209, H23, K2302, K2303, K2304, K2305, K2306, H26, H27, H28, H29, H30, H31, H32, H33, H34)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recB1oq6aQCVnmuoH",
+  "_order": 70,
+  "content": "Vous êtes ponctuelle",
+  "contentMasculine": "Vous êtes ponctuel",
+  "filters": [
+   "for-job-group(H2903)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recB3gVZtw5dZq2X2",
+  "_order": 71,
+  "content": "Vous maîtriser les outils, les techniques et les méthodes d'évaluation",
+  "filters": [
+   "for-job-group(K1104, K1101, K1103)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recB4XPKMz0e0AC71",
+  "_order": 72,
+  "content": "Trouvez un détail qui vous a marqué dans une précédente production",
+  "filters": [
+   "for-job-group(L15)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recB5vQmGwkDgi5KW",
+  "_order": 73,
+  "content": "Renseignez-vous sur les valeurs et le positionnement de l'hôtel (Low cost, Luxe, Écotourisme, etc..)",
+  "filters": [
+   "for-job-group(G15, G17)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recB82NAinmwnEzJ9",
+  "_order": 74,
+  "content": "Renseignez-vous sur les valeurs et le positionnement de l'agence (Low cost, Luxe, Écotourisme, etc..)",
+  "filters": [
+   "for-job-group(G13)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recB8ZOoaS5jkdGKg",
+  "_order": 75,
+  "content": "Vous avez de bonnes capacités d'analyse, de synthèse et de négociation pour vous adapter à des interlocuteurs différents",
+  "filters": [
+   "for-job-group(K1801)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recB8ZqoMWrboW3da",
+  "_order": 76,
+  "content": "Renseignez-vous sur les différentes spécialités proposées",
+  "filters": [
+   "for-job-group(D11)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recBLoIR5kpthEk6Y",
+  "_order": 77,
+  "content": "Vous savez vous organiser. Lorsque vous dites ça sera prêt mardi, c'est prêt mardi !",
+  "filters": [
+   "for-job-group(D1205, D1206, D1207)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recBgQbPJtYBIer4d",
+  "_order": 78,
+  "content": "Vous êtes serviable, à l'aise à l'orale et aimez la vente",
+  "filters": [
+   "for-job-group(D1507)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recBmSkTWj0d6KRiJ",
+  "_order": 79,
+  "content": "Renseignez-vous sur les différentes techniques proposées par le salon",
+  "filters": [
+   "for-job-group(D1202)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recBrNmq1Hj7gP6hB",
+  "_order": 80,
+  "content": "Vous êtes autonome et organisée",
+  "contentMasculine": "Vous êtes autonome et organisé",
+  "filters": [
+   "for-job-group(F1602, F1606)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recBvncySj0QBiaHY",
+  "_order": 81,
+  "content": "Renseignez-vous sur les méthodes privilégiées par le site",
+  "filters": [
+   "for-job-group(K2306)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recC8ycTBUTUQqOSn",
+  "_order": 82,
+  "content": "Vous savez faire preuve de rigueur et d'organisation",
+  "filters": [
+   "for-job-group(M16)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recCJT5NALvmWdVga",
+  "_order": 83,
+  "content": "Montrez votre talent grâce à un bon portfolio de publication",
+  "filters": [
+   "for-job-group(E1106)"
+  ],
+  "type": "CV_IMPROVEMENT"
+ },
+ {
+  "_id": "recCVyjd4geXtY5b5",
+  "_order": 84,
+  "content": "Vous savez cultiver l'esprit d'équipe et être attentif au bien-être de chacun",
+  "filters": [
+   "for-job-group(D1508, G1402, G1403, G1404, G1503, G1601, G1802)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recCa5PruIaefF46v",
+  "_order": 85,
+  "content": "Vous êtes autonome et polyvalente",
+  "contentMasculine": "Vous êtes autonome et polyvalent",
+  "filters": [
+   "for-job-group(J1301)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recCfSg496O6vtZyQ",
+  "_order": 86,
+  "content": "Renseignez-vous sur les derniers spectacles mis en scène par la structure",
+  "filters": [
+   "for-job-group(L13, L15)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recCfuwIItwCdihiI",
+  "_order": 87,
+  "content": "Vous êtes \"touche à tout\", vous savez vous adapter à de nouvelles tâches",
+  "filters": [
+   "for-job-group(M1601, M1605, M1607)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recCr09RwPbQ9GzxL",
+  "_order": 88,
+  "content": "Vous apportez de l'attention aux détails",
+  "filters": [
+   "for-job-group(N1105)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recCy2CJTiunlNTop",
+  "_order": 89,
+  "content": "Vous savez être à l'écoute et garder le cap pour rester alignée avec la vision de l'entreprise",
+  "contentMasculine": "Vous savez être à l'écoute et garder le cap pour rester aligné avec la vision de l'entreprise",
+  "filters": [
+   "for-job-group(M1703)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recD4b5wmLthz2O47",
+  "_order": 90,
+  "content": "Vous savez faire preuve de discrétion",
+  "filters": [
+   "for-job-group(M1607)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recD4sLox4vlD98hC",
+  "_order": 91,
+  "content": "Renseignez-vous sur les enjeux actuels de la politique des pouvoirs publics",
+  "filters": [
+   "for-job-group(K1401, K1404, K1405)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recDA80B3J1MmP4C3",
+  "_order": 92,
+  "content": "Vous êtes organisée et avez de bonnes qualités relationnelles pour pouvoir travailler avec plusieurs acteurs simultanément",
+  "contentMasculine": "Vous êtes organisé et avez de bonnes qualités relationnelles pour pouvoir travailler avec plusieurs acteurs simultanément",
+  "filters": [
+   "for-job-group(K2101)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recDFjfpNc6cPWN57",
+  "_order": 93,
+  "content": "Vous êtes rigoureuse et méthodique",
+  "contentMasculine": "Vous êtes rigoureux et méthodique",
+  "filters": [
+   "for-job-group(F1704)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recDGGoXaf3sMuC95",
+  "_order": 94,
+  "content": "Vous savez vous adapter vite à de nouveaux sujets et travailler avec des interlocuteurs variés",
+  "filters": [
+   "for-job-group(E1103)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recDNQgEA3iKJsCnl",
+  "_order": 95,
+  "content": "Renseignez-vous sur la stratégie à court et long terme de la structure",
+  "filters": [
+   "for-job-group(M13)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recDNlQ4qZGGsUGaE",
+  "_order": 96,
+  "content": "Vous maîtrisez le rôle de gestionnaire",
+  "filters": [
+   "for-job-group(M1302)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recDQGMOeRl1ZBfY5",
+  "_order": 97,
+  "content": "Renseignez-vous sur les enjeux financiers et comptables de l'entreprise",
+  "filters": [
+   "for-job-group(M12)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recDebgSpEK0QBzYE",
+  "_order": 98,
+  "content": "Vous êtes méticuleuse et avez à coeur que chaque détail soit revu en profondeur au cours de l'exécution d'un projet",
+  "contentMasculine": "Vous êtes méticuleux et avez à coeur que chaque détail soit revu en profondeur au cours de l'exécution d'un projet",
+  "filters": [
+   "for-job-group(F1106)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recDpsSP47npYCxbG",
+  "_order": 99,
+  "content": "Vous avez beaucoup de maturité et d'équilibre pour affronter des situations de détresse",
+  "filters": [
+   "for-job-group(K1201)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recDwmwq0s1OIMp6J",
+  "_order": 100,
+  "content": "Essayez de visiter le restaurant avant votre entretien",
+  "filters": [
+   "for-job-group(G18)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recE0SAXigIAuqClN",
+  "_order": 101,
+  "content": "Essayez de visiter l'hôtel avant votre entretien",
+  "filters": [
+   "for-job-group(G17)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recEDoOs7EEq84kon",
+  "_order": 102,
+  "content": "Vous avez le sens de la discrétion pour assurer un secrétariat de qualité",
+  "filters": [
+   "for-job-group(M1609)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recEEU22SOfzAtt5p",
+  "_order": 103,
+  "content": "Si c'est la cas, précisez bien que vous êtes disponible dès que possible",
+  "filters": [
+   "for-job-group(K22, K2302, K25)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recEF3aeYrWd32JPB",
+  "_order": 104,
+  "content": "Renseignez-vous sur les différents véhicules et le matériel proposés à la location",
+  "filters": [
+   "for-job-group(D1204)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recELTxQ8CJqqZZnC",
+  "_order": 105,
+  "content": "Vous faites preuve d'autonomie, de rigueur et d'organisation",
+  "filters": [
+   "for-job-group(H2903)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recEWXJXjVRN6pPaj",
+  "_order": 106,
+  "content": "Vous êtes souriante et dynamique et savez transmettre votre énergie et votre bonne humeur",
+  "contentMasculine": "Vous êtes souriant et dynamique et savez transmettre votre énergie et votre bonne humeur",
+  "filters": [
+   "for-job-group(K1206, K1202)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recEdehoZV3sQFUrP",
+  "_order": 107,
+  "content": "Vous pouvez travailler à un rythme soutenu",
+  "filters": [
+   "for-job-group(N1103)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recEh9HrAOQayZ6Ds",
+  "_order": 108,
+  "content": "Vous êtes disponible et à l'écoute et avez sincèrement envie d'aider et de soutenir les salariés",
+  "filters": [
+   "for-job-group(K1207)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recEnPoKYPBgPmBHg",
+  "_order": 109,
+  "content": "Vous avez l'esprit d'équipe",
+  "filters": [
+   "for-job-group(H2903)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recEwQqkpYzwjow4t",
+  "_order": 110,
+  "content": "Vous êtes disponible, réactive et dynamique pour répondre à toutes les sollicitations et gérer une production",
+  "contentMasculine": "Vous êtes disponible, réactif et dynamique pour répondre à toutes les sollicitations et gérer une production",
+  "filters": [
+   "for-job-group(L1302)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recF2DpxEJf1S6ISt",
+  "_order": 111,
+  "content": "Vous faites preuve de patience, de rapidité, de rigueur et de vigilance",
+  "filters": [
+   "for-job-group(D1505)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recFBE8dq5A2vnssD",
+  "_order": 112,
+  "content": "Renseignez-vous sur les systèmes d'information utilisés par l'entreprise",
+  "filters": [
+   "for-job-group(M18)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recFTwHMSGCd2SQsY",
+  "_order": 113,
+  "content": "Vous savez hiérarchiser et établir des priorités grâce à votre rigueur et votre sens de l'organisation",
+  "filters": [
+   "for-job-group(E1107)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recFc09KcSk9dRPkL",
+  "_order": 114,
+  "content": "Renseignez-vous sur les techniques agricoles utilisées avant l'entretien",
+  "filters": [
+   "for-job-group(A13)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recFjAmvlVCMxjw3Y",
+  "_order": 115,
+  "content": "Faites rentrer votre CV dans une seule page",
+  "type": "CV_IMPROVEMENT"
+ },
+ {
+  "_id": "recG1E3udOou4oOzh",
+  "_order": 116,
+  "content": "Si vous êtes prête à travailler le week-end ou le soir précisez-le bien cela peut faire la différence dans votre métier",
+  "contentMasculine": "Si vous êtes prêt à travailler le week-end ou le soir précisez-le bien cela peut faire la différence dans votre métier",
+  "filters": [
+   "for-job-group(F1602, D1214, K2204)"
+  ],
+  "type": "CV_IMPROVEMENT"
+ },
+ {
+  "_id": "recG2RMzGxkSmBd2B",
+  "_order": 117,
+  "content": "Assurez-vous de connaître les valeurs et le positionnement de la structure",
+  "filters": [
+   "for-job-group(G14)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recG2sfvyf5ud7d30",
+  "_order": 118,
+  "content": "Renseignez-vous sur les techniques privilégiées par le cabinet ou la clinique",
+  "filters": [
+   "for-job-group(J14)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recGWmmcwEvEsNWoV",
+  "_order": 119,
+  "content": "Vous avez une bonne capacité de synthèse et des aptitudes rédactionnelles pour rédiger des résumés d'ouvrage par exemple",
+  "filters": [
+   "for-job-group(K1601)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recGb9eC6qcSkVPEz",
+  "_order": 120,
+  "content": "Vous aimez les plantes et avez quelques connaissances sur leur entretien",
+  "filters": [
+   "for-job-group(D1209)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recGbcUpYdSUPclHD",
+  "_order": 121,
+  "content": "Renseignez-vous sur les autres sportifs dans le club",
+  "filters": [
+   "for-job-group(L14)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recGrcLbtUP8gaxD0",
+  "_order": 122,
+  "content": "Vous êtes à l'aise avec les chiffres et êtes capable d'envisager des solutions globales pour optimiser les coûts et la durée de transport",
+  "filters": [
+   "for-job-group(N1303)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recGsFBjPGtZyF1yx",
+  "_order": 123,
+  "content": "Vous savez prendre de la hauteur (dimension stratégique) tout en restant proche du terrain (dimension opérationnelle)",
+  "filters": [
+   "for-job-group(D1406, D1506, D1509, D1504, G1402, G1403, G1404)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recGvZW8jshRQSIYR",
+  "_order": 124,
+  "content": "Vous faites preuve d'autonomie, d'organisation, de méthode et de rigueur",
+  "filters": [
+   "for-job-group(H1404,  H1303)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recH6OPD19arSCp68",
+  "_order": 125,
+  "content": "Vous avez un sens aigu de l'organisation",
+  "filters": [
+   "for-job-group(N1303)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recHFGRKNlJ50FiKz",
+  "_order": 126,
+  "content": "Vous êtes autonome et méthodique",
+  "filters": [
+   "for-job-group(G1602, G1603, G1604, G1605)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recHFkEQYS5iVBT01",
+  "_order": 127,
+  "content": "Vous êtes créative et curieuse, vous savez proposer des idées innovantes ou bien sortir du cadre si besoin",
+  "contentMasculine": "Vous êtes créatif et curieux, vous savez proposer des idées innovantes ou bien sortir du cadre si besoin",
+  "filters": [
+   "for-job-group(M1703)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recHf0bWnaytKZIDF",
+  "_order": 128,
+  "content": "Vous comprenez l'importance de votre rôle en tant que représentant de l'entreprise",
+  "filters": [
+   "for-job-group(D1505)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recHs6e0DL2fNNXC2",
+  "_order": 129,
+  "content": "Renseignez-vous sur la provenance de la viande et les différentes appellations",
+  "filters": [
+   "for-job-group(D1101, D1103, H2101)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recHwxOAnxIs4sUal",
+  "_order": 130,
+  "content": "Vous avez un bon sens du relationnel et vous savez gérer la relation avec les clients",
+  "filters": [
+   "for-job-group(M1402)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recI179YpOqDKNVLW",
+  "_order": 131,
+  "content": "Vous savez créer une relation de confiance basée sur l'écoute active, la patience, la disponibilité et la compréhension",
+  "filters": [
+   "for-job-group(K2111)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recI2dmXGgXFUmkR7",
+  "_order": 132,
+  "content": "Renseignez-vous sur les différents services juridiques proposés",
+  "filters": [
+   "for-job-group(K1902)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recIADGIO96G2YVNu",
+  "_order": 133,
+  "content": "Vous avez le sens du contact et aimez voir repartir un client satisfait",
+  "filters": [
+   "for-job-group(D1106, D1101, D1103, D1105, D1102, D1104, D1202, D1205, D1207, D1209, D1210, D1206, D1214, G1801)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recIOrEuHoru8XwqE",
+  "_order": 134,
+  "content": "Vous savez faire preuve de patience et de soin dans votre travail",
+  "filters": [
+   "for-job-group(F1606)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recIRIuWUy7kGwRVm",
+  "_order": 135,
+  "content": "Vous avez une bonne résistance morale et savez rester en retrait et preuve de discrétion",
+  "filters": [
+   "for-job-group(K1207)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recIVM4fDFhc5odRF",
+  "_order": 136,
+  "content": "Vous savez travailler de manière autonome tout en étant à l'écoute du reste de l'équipe ou bien de vos clients",
+  "filters": [
+   "for-job-group(E1104)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recJAspKmsGflhV4M",
+  "_order": 137,
+  "content": "Vous avez une très grande capacité de concentration",
+  "filters": [
+   "for-job-group(N1401)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recJCogJZRI6yuOnP",
+  "_order": 138,
+  "content": "Assurez-vous de bien connaître le projet éducatif de la structure",
+  "filters": [
+   "for-job-group(K1202, K1207)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recJPLVbv42uN14Ny",
+  "_order": 139,
+  "content": "Essayez d'analyser la stratégie de communication de la structure avant l'entretien",
+  "filters": [
+   "for-job-group(E1103)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recJpaox313OhP9vO",
+  "_order": 140,
+  "content": "Vous comprenez l'importance de la ponctualité",
+  "filters": [
+   "for-job-group(K2204)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recK40NBpS8OwC32s",
+  "_order": 141,
+  "content": "Renseignez-vous sur le parcours des principaux managers de l'entreprise",
+  "filters": [
+   "for-job-group(M15)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recK9jiGphFRYZv8s",
+  "_order": 142,
+  "content": "Vous avez une bonne capacité à déchiffrer un plan simple d'exécution",
+  "filters": [
+   "for-job-group(F1704)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recKCpl7RVbsNzdbS",
+  "_order": 143,
+  "content": "Vous faites preuve d'autonomie",
+  "filters": [
+   "for-job-group(C1401, C1201, C1206, C1203)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recKEcc1DmyunLlnw",
+  "_order": 144,
+  "content": "Vous êtes organisée et savez gérer des plannings",
+  "contentMasculine": "Vous êtes organisé et savez gérer des plannings",
+  "filters": [
+   "for-job-group(D1508, G1503, G1601, G1802)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recKvB3iortNcdz60",
+  "_order": 145,
+  "content": "Renseignez-vous sur les oeuvres et les artistes mis en avant par la structure",
+  "filters": [
+   "for-job-group(E1201, E1202, E1203, E1204)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recKwvzM4T4TGsJWr",
+  "_order": 146,
+  "content": "Vous faites preuve de réactivité, d'autonomie, de vigilance et vous êtes digne de confiance",
+  "filters": [
+   "for-job-group(N1401)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recLIWYtIpMJebXoV",
+  "_order": 147,
+  "content": "Vous savez faire preuve d'humilité",
+  "filters": [
+   "for-job-group(E1205, M1602, M1805)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recLIzFp9DsNxbAV6",
+  "_order": 148,
+  "content": "Vous savez bien écrire, correctement, mais sans forcément être très littéraire",
+  "filters": [
+   "for-job-group(E1106)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recLM1CZgUtsZdlNo",
+  "_order": 149,
+  "content": "Vous savez prendre des initiatives et vous adapter grâce à votre curiosité, votre créativité et votre intuition",
+  "filters": [
+   "for-job-group(E1106)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recLQB9XtFvqw6VpE",
+  "_order": 150,
+  "content": "Vous aimez travailler à la fois en équipe mais aussi de façon indépendante",
+  "filters": [
+   "for-job-group(E1205)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recLWQTdFNmslCK9R",
+  "_order": 151,
+  "content": "Vous avez l'esprit d'équipe et pouvez collaborer facilement avec des équipes pluridisciplinaires",
+  "filters": [
+   "for-job-group(K1201)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recLXLmJMGc1ihvdu",
+  "_order": 152,
+  "content": "Vous savez créer un espace d'échange pour bien comprendre les besoins de l'équipe",
+  "filters": [
+   "for-job-group(M1501, M1503)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recLZozF88pGjSehF",
+  "_order": 153,
+  "content": "Consultez avant l'entretien les médias et contenus produits par l'entreprise ou l'agence",
+  "filters": [
+   "for-job-group(E1205)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recLhBfo4q7qNu0GZ",
+  "_order": 154,
+  "content": "Vous avez le sens de la discrétion et savez respecter le secret professionnel",
+  "filters": [
+   "for-job-group(K1903)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recLsrqHWEU0gDVZ4",
+  "_order": 155,
+  "content": "Vous savez prendre des décisions et trouver des solutions pour faire face à de nouveaux problèmes",
+  "filters": [
+   "for-job-group(K1403, K1404)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recMFJUqFllFydGp0",
+  "_order": 156,
+  "content": "Vous savez faire preuve d'empathie et d'humilité",
+  "filters": [
+   "for-job-group(M1302)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recMHGGTHqnfR3xeh",
+  "_order": 157,
+  "content": "Vous avez un bon sens relationnel et de la diplomatie",
+  "filters": [
+   "for-job-group(D1401)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recMIr2npn2ok3KHs",
+  "_order": 158,
+  "content": "Vous savez garder votre calme et vous adapter",
+  "filters": [
+   "for-job-group(N1401)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recMSANH4lvSgLj9D",
+  "_order": 159,
+  "content": "Vous savez bien vous exprimer aussi bien par écrit qu'à l'oral",
+  "filters": [
+   "for-job-group(K1903)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recMTPRo1BPs9w06m",
+  "_order": 160,
+  "content": "Vous savez faire preuve de créativité, d'autonomie et vous n'avez pas peur de prendre des initiatives",
+  "filters": [
+   "for-job-group(E1103)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recMYioUjWpd144sv",
+  "_order": 161,
+  "content": "Vous savez vous projeter pour établir une stratégie",
+  "filters": [
+   "for-job-group(M1705)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recMZd7VtuvM6d1al",
+  "_order": 162,
+  "content": "Vous savez planifier des activités variées pour les tout-petits",
+  "filters": [
+   "for-job-group(K1303)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recMe99Pf6fpKzMUQ",
+  "_order": 163,
+  "content": "Vous savez gérer des priorités et garder une todo à jour",
+  "filters": [
+   "for-job-group(M1602, M1605, G1401)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recMgCnmGuy7haj0Y",
+  "_order": 164,
+  "content": "Réutilisez les mots-clés des fiches de postes dans vos CV",
+  "type": "CV_IMPROVEMENT"
+ },
+ {
+  "_id": "recMoC6Gf5ulQigjT",
+  "_order": 165,
+  "content": "Essayez d'identifier le ton de l'entreprise sur les réseaux sociaux avant l'entretien",
+  "filters": [
+   "for-job-group(E1101)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recMocrSKZRMVljR8",
+  "_order": 166,
+  "content": "Vous savez être créative et imaginative pour trouver des solutions originales à des problèmes qui n'ont pas encore été résolus",
+  "contentMasculine": "Vous savez être créatif et imaginatif pour trouver des solutions originales à des problèmes qui n'ont pas encore été résolus",
+  "filters": [
+   "for-job-group(K2402)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recMqZF5JoHQtuPkk",
+  "_order": 167,
+  "content": "Renseignez-vous avant sur les techniques sylvicoles de l'exploitation",
+  "filters": [
+   "for-job-group(A12)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recNDwfGVdnS2h6hX",
+  "_order": 168,
+  "content": "Vous savez faire preuve d'empathie et vous identifier à votre client",
+  "filters": [
+   "for-job-group(D1402, D1506, G1503, G1601, G1802)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recNGf7qYAPtyGxAa",
+  "_order": 169,
+  "content": "Vous savez prévoir les besoins et définir la meilleure stratégie en fonction du poste",
+  "filters": [
+   "for-job-group(M1502)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recNQeKKQa7RKClqg",
+  "_order": 170,
+  "content": "Vous avez une grande capacité d'écoute et d'empathie pour comprendre au mieux les besoins",
+  "filters": [
+   "for-job-group(K2101)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recNVbLB4IF0GI0lj",
+  "_order": 171,
+  "content": "Vous avez de solides connaissances du monde du travail",
+  "filters": [
+   "for-job-group(K1801)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recNoTleLVkshjnLD",
+  "_order": 172,
+  "content": "Vous savez faire preuve de pédagogie pour expliquer et transmettre des informations clairement",
+  "filters": [
+   "for-job-group(K1903, M1205, M1204)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recNsmDbrTS7mdib6",
+  "_order": 173,
+  "content": "Vous savez utiliser votre créativité et rester flexible pour proposer de nouvelles solutions et résoudre des problèmes opérationnels",
+  "filters": [
+   "for-job-group(E1107)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recO1GIa73ZHtBdis",
+  "_order": 174,
+  "content": "Renseignez-vous sur les derniers projets de l'entreprise",
+  "filters": [
+   "for-job-group(H12)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recOFfbnAqiLACn7r",
+  "_order": 175,
+  "content": "Vous savez vous adapter et acquérir de manière autonome de nouvelles compétences et anticiper les besoins",
+  "filters": [
+   "for-job-group(M1602, G1401)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recOH0VOBFKmxhuzZ",
+  "_order": 176,
+  "content": "Renseignez-vous sur les services sociaux couverts par la structure",
+  "filters": [
+   "for-job-group(K1205)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recOsfB7AufyzIfHa",
+  "_order": 177,
+  "content": "Partagez un projet personnel ou bénévole que vous avez développé en utilisant les nouvelles technos pour montrer vos compétences",
+  "filters": [
+   "for-job-group(M1805)"
+  ],
+  "type": "CV_IMPROVEMENT"
+ },
+ {
+  "_id": "recOsi2YSKSmpYdG8",
+  "_order": 178,
+  "content": "Vous êtes dynamique et en bonne forme physique",
+  "filters": [
+   "for-job-group(N1105)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recP3mvWtweodvrLK",
+  "_order": 179,
+  "content": "Si vous en avez, mettez en avant votre expertise en management agile et design thinking",
+  "filters": [
+   "for-job-group(M1402)"
+  ],
+  "type": "CV_IMPROVEMENT"
+ },
+ {
+  "_id": "recP6MG8RXrGgRL4e",
+  "_order": 180,
+  "content": "Vous avez une capacité d'anticipation et d'adaptation",
+  "filters": [
+   "for-job-group(M1302, D1406, D1502, D1503, D1509, D1504, D1509)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recP8LkkX0ibNaSGd",
+  "_order": 181,
+  "content": "Renseignez-vous sur les soins proposés",
+  "filters": [
+   "for-job-group(J14, J15)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recPTVN3EChNb2YQj",
+  "_order": 182,
+  "content": "Vous êtes patiente et savez rester concentrée en attendant le moment de pouvoir concrétiser votre vente",
+  "contentMasculine": "Vous êtes patient et savez rester concentrer en attendant le moment de pouvoir concrétiser une vente",
+  "filters": [
+   "for-job-group(D1408)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recPWBOtKvbDXp3sR",
+  "_order": 183,
+  "content": "Faites des recherches pour connaître le type de clients servi par l'entreprise",
+  "filters": [
+   "for-job-group(H14)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recPX5VlwOgylRnmf",
+  "_order": 184,
+  "content": "Lisez quelques ouvrages et renseignez-vous sur les autres auteurs de la structure",
+  "filters": [
+   "for-job-group(E1102, E1105)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recPZczJUiIsUWUCF",
+  "_order": 185,
+  "content": "Essayez de trouver des articles ou des posts de blogs sur les événements passés",
+  "filters": [
+   "for-job-group(E1107)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recPpm6KxR79XmklM",
+  "_order": 186,
+  "content": "Vous faites preuve d'ouverture d'esprit",
+  "filters": [
+   "for-job-group(K1104, K1101, K1103)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recPsJiY8pqXOoGhI",
+  "_order": 187,
+  "content": "Vous êtes curieuse et restez à jour en ce qui concerne l'évolution de l'industrie",
+  "contentMasculine": "Vous êtes curieux et restez à jour en ce qui concerne l'évolution de l'industrie",
+  "filters": [
+   "for-job-group(F1106)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recQ1nLdBswQMX4on",
+  "_order": 188,
+  "content": "Vous êtes vendeuse, communicante et sympathique",
+  "contentMasculine": "Vous êtes vendeur, communicant et sympathique",
+  "filters": [
+   "for-job-group(M1302)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recQ7eU7qFqgbaHbz",
+  "_order": 189,
+  "content": "Renseignez-vous sur les techniques de production utilisée avant l'entretien",
+  "filters": [
+   "for-job-group(A14)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recQkZhcMvYgARL3u",
+  "_order": 190,
+  "content": "Vous êtes responsable et montrez de l'implication dans votre travail",
+  "filters": [
+   "for-job-group(K1302)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recQlS6TyaH7ZhWAb",
+  "_order": 191,
+  "content": "Vous êtes intègre et savez défendre vos principes si nécessaire",
+  "filters": [
+   "for-job-group(M1205)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recQnMTj2fazoPEGX",
+  "_order": 192,
+  "content": "Renseignez-vous sur les valeurs de l'entreprise avant l'entretien",
+  "filters": [
+   "for-job-group(D14, E11, H11)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recQrAxcDrq30T24D",
+  "_order": 193,
+  "content": "Renseignez-vous sur les techniques privilégiées par la structure",
+  "filters": [
+   "for-job-group(J15)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recR3O3XWWcJY6aw3",
+  "_order": 194,
+  "content": "Vous avez le sens de la discrétion",
+  "filters": [
+   "for-job-group(K1201)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recR8bGwtrxFKBuGF",
+  "_order": 195,
+  "content": "Vous êtes autonome et savez prendre des initiatives pour vous adapter à la personnalité des médecins et répondre à leurs exigences",
+  "filters": [
+   "for-job-group(M1609)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recRJI9NKFGJyQ8SS",
+  "_order": 196,
+  "content": "Trouvez un projet mené par l'entreprise qui vous a marqué pour en parler en entretien",
+  "filters": [
+   "for-job-group(H12)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recRZr6Wip2bXB7Im",
+  "_order": 197,
+  "content": "Vous avez une bonne connaissances du secteur, et vous savez vous positionner dans un jeu d'acteurs multiples et de réseaux",
+  "filters": [
+   "for-job-group(K1403, K1404)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recRbZzlArDsFZYwx",
+  "_order": 198,
+  "content": "Vous avez de bonnes capacités de gestion comptable et financière pour pouvoir analyser et suivre les éléments de production",
+  "filters": [
+   "for-job-group(L1302)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recRic34ddwsj8PP9",
+  "_order": 199,
+  "content": "Renseignez-vous sur les événements à venir",
+  "filters": [
+   "for-job-group(E1107)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recRkj2VyS8lWJe3n",
+  "_order": 200,
+  "content": "Vous pouvez travailler à un rythme soutenu",
+  "filters": [
+   "for-job-group(N1105, D1507)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recRzw0UDRSDjetex",
+  "_order": 201,
+  "content": "Vous êtes rigoureuse et savez manipuler des chiffres",
+  "contentMasculine": "Vous êtes rigoureux et savez manipuler des chiffres",
+  "filters": [
+   "for-job-group(M1101)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recS5iHwJ2ITu1wWm",
+  "_order": 202,
+  "content": "Vous savez prendre de la distance pour faire face à des situations parfois difficiles",
+  "filters": [
+   "for-job-group(K1801)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recSKzkc1DQNUd1wG",
+  "_order": 203,
+  "content": "Vous avez un bon sens du relationnel et pouvez aussi bien dialoguer avec des techniciens qu'avec des responsables de sociétés de distribution",
+  "filters": [
+   "for-job-group(L1302)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recSfC6ylSm2Lyles",
+  "_order": 204,
+  "content": "Si vous postulez en agence, renseignez-vous sur leurs derniers projets",
+  "filters": [
+   "for-job-group(L11)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recSgqrAubCgd51jM",
+  "_order": 205,
+  "content": "Vous avez un bon sens de l'observation et de l'analyse pour prendre en charge, évaluer et guider",
+  "filters": [
+   "for-job-group(K1207, K1206, K1202)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recSllSs1Nk651PbN",
+  "_order": 206,
+  "content": "Renseignez-vous sur les techniques thérapeutiques privilégiées par la structure",
+  "filters": [
+   "for-job-group(K1104)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recSzECXtPFvwJ63y",
+  "_order": 207,
+  "content": "Vous êtes dynamique, motivé et impliqué",
+  "filters": [
+   "for-job-group(M1502)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recT0lsM82kLPv0UX",
+  "_order": 208,
+  "content": "Renseignez-vous sur les différents soins et services proposés",
+  "filters": [
+   "for-job-group(J13)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recT13SUeXZ1XBGtp",
+  "_order": 209,
+  "content": "Vous avez un bon esprit d'analyse et de synthèse pour gérer une grande quantité d'informations",
+  "filters": [
+   "for-job-group(M1205)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recT6GRZIudajftTO",
+  "_order": 210,
+  "content": "Vous savez gérer les conflits et les litiges",
+  "filters": [
+   "for-job-group(D1401)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recTcmjgbG6xcEauy",
+  "_order": 211,
+  "content": "Trouvez une création de l'entreprise qui vous plaît particulièrement pour en parler en entretien",
+  "filters": [
+   "for-job-group(H24)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recTcvhVqB9TW4rys",
+  "_order": 212,
+  "content": "Vous savez respecter des consignes, faire attention aux détails et être responsable",
+  "filters": [
+   "for-job-group(K1303, K1202)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recTnKDpfeI1Lkjvr",
+  "_order": 213,
+  "content": "Vous savez faire preuve de réactivité et de dynamisme",
+  "filters": [
+   "for-job-group(J1301)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recTnxP7hMMD3zxql",
+  "_order": 214,
+  "content": "Vous savez hiérarchiser les tâches urgentes, prioritaires ou importantes",
+  "filters": [
+   "for-job-group(M1605)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recU9c6qGyJ6e5DUX",
+  "_order": 215,
+  "content": "Trouvez un article ou reportage de la rédaction qui vous a particulièrement marqué",
+  "filters": [
+   "for-job-group(E1106)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recUAkeQQGMCM859H",
+  "_order": 216,
+  "content": "Vous avez une bonne capacité d'adaptation pour pallier les imprévus",
+  "filters": [
+   "for-job-group(L1302)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recUQ9PsClZM4QGh8",
+  "_order": 217,
+  "content": "Vous avez un bon sens du relationnel et savez interagir avec divers intervenants",
+  "filters": [
+   "for-job-group(M1204)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recUkqWSgyUfo3O5J",
+  "_order": 218,
+  "content": "Vous avez le sens du relationnel et une bonne capacité d'écoute",
+  "filters": [
+   "for-job-group(J1301)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recVIs4R6QB5uJr12",
+  "_order": 219,
+  "content": "Vous êtes curieuse et vous tenez en permanence au courant de toutes les possibilités existantes en matière de formation",
+  "contentMasculine": "Vous êtes curieux et vous tenez en permanence au courant de toutes les possibilités existantes en matière de formation",
+  "filters": [
+   "for-job-group(K2101)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recVJBj3tyOvKEshP",
+  "_order": 220,
+  "content": "Vous avez un bon esprit d'équipe et l'envie de rendre la vie des membres de l'équipe plus simple",
+  "filters": [
+   "for-job-group(M1602, M1605)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recVa54z2DiSjF8cb",
+  "_order": 221,
+  "content": "Vous possédez l'oeil et le savoir-faire d'un artiste pour bien utiliser les couleurs, harmoniser les diverses nuances et créer une atmosphère",
+  "filters": [
+   "for-job-group(F1606)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recVhdh6hjfDhPahh",
+  "_order": 222,
+  "content": "Vous êtes aimable et discrète",
+  "contentMasculine": "Vous êtes aimable et discret",
+  "filters": [
+   "for-job-group(G1803)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recVsKpCKAnds75un",
+  "_order": 223,
+  "content": "Vous êtes curieuse et passionnée par l'information",
+  "contentMasculine": "Vous êtes curieux et passionné par l'information",
+  "filters": [
+   "for-job-group(K1601)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recWBnfbXRMRGftIx",
+  "_order": 224,
+  "content": "Vous êtes organisée",
+  "contentMasculine": "Vous êtes organisé",
+  "filters": [
+   "for-job-group(K1304)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recWHZZrKeu1c1Mh8",
+  "_order": 225,
+  "content": "Assurez-vous de bien connaître les produits ou services proposés par l'entreprise",
+  "filters": [
+   "for-job-group(M)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recWMugOo0wS6JYZb",
+  "_order": 226,
+  "content": "Vous savez respecter des consignes",
+  "filters": [
+   "for-job-group(N1105)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recWObgGA5TNwei54",
+  "_order": 227,
+  "content": "Vous avez une bonne résistance physique",
+  "filters": [
+   "for-job-group(F1704)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recWi8IhZ0YV7aF4Q",
+  "_order": 228,
+  "content": "Si vous avez des recommandations d'anciens employeurs, n'hésitez pas à les partager",
+  "filters": [
+   "for-job-group(K1303)"
+  ],
+  "type": "CV_IMPROVEMENT"
+ },
+ {
+  "_id": "recWjZuGFaRA0gu0R",
+  "_order": 229,
+  "content": "Renseignez-vous sur l'organisation de l'équipe technique",
+  "filters": [
+   "for-job-group(L15)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recWpUcjzdUINEjXw",
+  "_order": 230,
+  "content": "Vous savez orienter et encadrer le travail d'équipes opérationnelles",
+  "filters": [
+   "for-job-group(K1403, K1404)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recWt414a3nbHtZRh",
+  "_order": 231,
+  "content": "Renseignez-vous sur l'accompagnement proposé par la structure",
+  "filters": [
+   "for-job-group(K1101, K1103, K1104, K12, K1301, K1302, K1303, K1305, K1801)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recWwge0WAnBFJj01",
+  "_order": 232,
+  "content": "Vous êtes polyvalent vous savez aussi bien établir un diagnostic de territoire, monter un dossier technique et financier que mobiliser les élus et les partenaires des projets",
+  "filters": [
+   "for-job-group(K1802)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recX5VYwpTJETwjCh",
+  "_order": 233,
+  "content": "Renseignez-vous sur l'esprit et les valeurs de la structure",
+  "filters": [
+   "for-job-group(K1305)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recX6Au7EWkkhqDAu",
+  "_order": 234,
+  "content": "Renseignez-vous sur les méthodes et techniques utilisées par l'entreprise",
+  "filters": [
+   "for-job-group(I12)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recX8Qs584QyNm7rg",
+  "_order": 235,
+  "content": "Vous êtes à l'écoute et faites preuve d'empathie",
+  "filters": [
+   "for-job-group(K1104, K1101, K1103)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recXIbrD9SR9BjIjF",
+  "_order": 236,
+  "content": "Assurez-vous de bien connaître les produits proposés",
+  "filters": [
+   "for-job-group(D14, D15, H11)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recXKJrMJarRT09ts",
+  "_order": 237,
+  "content": "Vous savez faire preuve de psychologie et possédez des qualités d'écoute et de communication pour cerner les candidats",
+  "filters": [
+   "for-job-group(M1502)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recXnOnWqyBAKhDPM",
+  "_order": 238,
+  "content": "Vous ferez preuve d'implication grâce à votre courage et à votre motivation",
+  "filters": [
+   "for-job-group(M1302)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recXqXm5QvuWmdM6K",
+  "_order": 239,
+  "content": "Vous connaissez bien et vous avez plaisir à creuser les sujets qui vous intéresse",
+  "filters": [
+   "for-job-group(E1106)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recXy5J0Y8jYnEgg8",
+  "_order": 240,
+  "content": "Vous êtes serviable et avez le sens du relationnel",
+  "filters": [
+   "for-job-group(C1401, C1201, C1206, C1203)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recY9uhRhfNLcrUoB",
+  "_order": 241,
+  "content": "Vous êtes aimable, patiente, serviable et souriante",
+  "contentMasculine": "Vous êtes aimable, patient, serviable et souriant",
+  "filters": [
+   "for-job-group(D1106, D1101, D1103, D1105, D1102, D1104, D1202, D1205, D1207, D1209, D1210, D1206)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recYVUpSzmG7d0RnU",
+  "_order": 242,
+  "content": "Vous avez une bonne capacité d'anticipation, vous arrivez bien à prévoir les prochains besoins",
+  "filters": [
+   "for-job-group(D1401, D1506, G1503, G1601, G1802)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recYgGbLBdzoAvA94",
+  "_order": 243,
+  "content": "Renseignez-vous sur le profil des adultes accompagnés",
+  "filters": [
+   "for-job-group(K1302)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recYjsImdr178sYBA",
+  "_order": 244,
+  "content": "Vous savez transmettre ce qui vous fait vibrer grâce à votre curiosité, votre sens du relationnel et votre aisance",
+  "filters": [
+   "for-job-group(D1301)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recYl7K5YWg9iSbKt",
+  "_order": 245,
+  "content": "Vous savez aussi prendre soin du cadre de vie du patient",
+  "filters": [
+   "for-job-group(K1302)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recZ0S3AIuXWNHnW0",
+  "_order": 246,
+  "content": "Montrez que vous connaissez bien les collections proposées",
+  "filters": [
+   "for-job-group(D1201)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recZBjAMck2wYf0wE",
+  "_order": 247,
+  "content": "Vous savez gérer l'entretien d'une maison",
+  "filters": [
+   "for-job-group(K1304)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recZOfq6j6CLWbtjP",
+  "_order": 248,
+  "content": "Vous avez l'esprit d'équipe et vous saurez bien coordonner votre travail avec les autres membres de l'équipe",
+  "filters": [
+   "for-job-group(K2204)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recZYKZinZjiUXXoX",
+  "_order": 249,
+  "content": "Vous êtes réactive pour pouvoir gérer les imprévus et assurer la circulation des produits dans les délais impartis",
+  "contentMasculine": "Vous êtes réactif pour pouvoir gérer les imprévus et assurer la circulation des produits dans les délais impartis",
+  "filters": [
+   "for-job-group(N1303)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reca7l8t96ZhfeyR2",
+  "_order": 250,
+  "content": "Vous savez gérer des priorités",
+  "filters": [
+   "for-job-group(I1401)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reca7mOpi4ntOFM0o",
+  "_order": 251,
+  "content": "Vous savez vous adapter et trouver des solutions",
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reca9CHMEE5eMexEv",
+  "_order": 252,
+  "content": "Lisez quelques ouvrages et renseignez-vous sur les autres auteurs de la rédaction",
+  "filters": [
+   "for-job-group(E1106)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recaULDxyc3cXQT6F",
+  "_order": 253,
+  "content": "Vous aimez l'automobile et conseiller vos clients",
+  "filters": [
+   "for-job-group(D1404)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recaiOb0nLo13lSQy",
+  "_order": 254,
+  "content": "Vous savez planifier vos tâches",
+  "filters": [
+   "for-job-group(K1304)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recap2QUvkGirE62l",
+  "_order": 255,
+  "content": "Vous êtes à la fois technicien et créatif",
+  "filters": [
+   "for-job-group(E1205)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recaphh50hNJYBdWP",
+  "_order": 256,
+  "content": "Renseignez-vous sur les modèles et outils d'amélioration déjà utilisés par l'entreprise",
+  "filters": [
+   "for-job-group(H14)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recbL8YT7CYvwGxBe",
+  "_order": 257,
+  "content": "Vous savez gérer votre stress et garder la tête froide pour bien gérer vos priorités",
+  "filters": [
+   "for-job-group(E1104)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recbNCunhkgKD75w3",
+  "_order": 258,
+  "content": "Vous êtes polyvalente et pouvez à tour de rôle être aussi bien technicienne, graphiste que rédactrice",
+  "contentMasculine": "Vous êtes polyvalent et pouvez à tour de rôle être aussi bien technicien, graphiste que rédacteur",
+  "filters": [
+   "for-job-group(E1104)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recbNyjx5WgTrmtwH",
+  "_order": 259,
+  "content": "Vous êtes rigoureuse, organisée, rapide et disponible pour pouvoir travailler simultanément sur plusieurs dossiers",
+  "contentMasculine": "Vous êtes rigoureux, organisé, rapide et disponible pour pouvoir travailler simultanément sur plusieurs dossiers",
+  "filters": [
+   "for-job-group(K1903)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recbTL7BLq7eqc9Zs",
+  "_order": 260,
+  "content": "Renseignez-vous sur les formations proposées par la structure",
+  "filters": [
+   "for-job-group(K21)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recbaKolU7gE5JHJX",
+  "_order": 261,
+  "content": "Rendez-vous sur place avant l'entretien pour connaître le magasin",
+  "filters": [
+   "for-job-group(D1209, D1210, D1211, D1212, D1214, D13, D15)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recbclVZpzqs78jhv",
+  "_order": 262,
+  "content": "Vous aimez le contact avec les employés de la société et avec les candidats",
+  "filters": [
+   "for-job-group(M1502)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recbcnaramHjpjVi7",
+  "_order": 263,
+  "content": "Vous savez faire preuve d'écoute, d'empathie, de diplomatie pour pouvoir apporter une solution sur mesure",
+  "filters": [
+   "for-job-group(M1806)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recbs5ZSgePMLntQz",
+  "_order": 264,
+  "content": "Vous connaissez les programmes existants et les objectifs que se fixent les institutions d'aide sociale",
+  "filters": [
+   "for-job-group(K1207)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recc2LJVgW07VwVWC",
+  "_order": 265,
+  "content": "Vous êtes rigoureuse, autonome et organisée",
+  "contentMasculine": "Vous êtes rigoureux, autonome et organisé",
+  "filters": [
+   "for-job-group(D1507)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recc2X3owqmea9vPR",
+  "_order": 266,
+  "content": "Montrez votre passion personnelle poussée et déclinée : blog, page Youtube, boutique en ligne Etsy, chaîne de podcasts, etc...",
+  "filters": [
+   "for-job-group(M1705)"
+  ],
+  "type": "CV_IMPROVEMENT"
+ },
+ {
+  "_id": "reccCHuVrAo0Vm7UL",
+  "_order": 267,
+  "content": "Vous avez une grande capacité d'adaptation et un bon sens du relationnel, notamment pour passer d'un client à l'autre",
+  "filters": [
+   "for-job-group(M1203)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reccEnAHWymYnaJlk",
+  "_order": 268,
+  "content": "Vous savez comprendre une marque et vous adapter à l'esprit d'une nouvelle entreprise",
+  "filters": [
+   "for-job-group(D1212, D1403, D1214, D1211, D1404, D1506)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reccGBwSYflUClp9y",
+  "_order": 269,
+  "content": "Vous êtes dynamique et mature pour pouvoir faire face et vous adapter à des situations parfois difficiles",
+  "filters": [
+   "for-job-group(K2111)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reccM6vU2xCspZTP5",
+  "_order": 270,
+  "content": "Vous avez le sens du relationnel",
+  "filters": [
+   "for-job-group(H1404, H1303, D1403)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reccN0Bxas5EwecQL",
+  "_order": 271,
+  "content": "Si vous postulez dans une compagnie, renseignez-vous sur leurs projets passés et à venir",
+  "filters": [
+   "for-job-group(L12)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "reccRi5A4t4o61Y4f",
+  "_order": 272,
+  "content": "Vous savez accompagner et guider les personnes",
+  "filters": [
+   "for-job-group(K1104, K1101, K1103)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reccSNnXQnzyNjwRp",
+  "_order": 273,
+  "content": "Renseignez-vous sur les animations et activités éventuellement proposées",
+  "filters": [
+   "for-job-group(G14)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "reccVycWvP4qf7304",
+  "_order": 274,
+  "content": "Vous êtes curieuse et vous êtes capable de vous poser les bonnes questions techniques et de trouver des solutions",
+  "contentMasculine": "Vous êtes curieux et vous êtes capable de vous poser les bonnes questions techniques et de trouver des solutions.",
+  "filters": [
+   "for-job-group(M1203, M1205)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reccY5lghu3eZIDJ7",
+  "_order": 275,
+  "content": "Vous savez combiner votre créativité, votre rigueur et votre autonomie pour mener à bien vos projets",
+  "filters": [
+   "for-job-group(E1104)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reccfOdPV7BUBqg0C",
+  "_order": 276,
+  "content": "Vous savez faire preuve de patience et d'humilité pour pouvoir expliquer clairement des concepts qui peuvent sembler complexes pour des néophytes",
+  "filters": [
+   "for-job-group(K2101)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recchFvz6bFdX7Bmp",
+  "_order": 277,
+  "content": "Vous faites preuve de rigueur et savez vous organiser",
+  "filters": [
+   "for-job-group(G1602, G1603, G1604, G1605)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recdFzSrEYwEYHSAI",
+  "_order": 278,
+  "content": "Renseignez-vous sur les enjeux actuels de la structure",
+  "filters": [
+   "for-job-group(K1403)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recdLsGYuiw5pGAyf",
+  "_order": 279,
+  "content": "Faites relire votre CV par un proche",
+  "type": "CV_IMPROVEMENT"
+ },
+ {
+  "_id": "recdQbD8lJtCSfHFg",
+  "_order": 280,
+  "content": "Vous avez des compétences techniques comptables, fiscales, juridiques et en droit social",
+  "filters": [
+   "for-job-group(M1203, M1205)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recdmyXdo9LL4pGsP",
+  "_order": 281,
+  "content": "Trouvez les raisons pour lesquelles cette structure vous plaît particulièrement (localisation, esprit, activités, etc..)",
+  "filters": [
+   "for-job-group(G1403)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recdo16u7WhuTsxeU",
+  "_order": 282,
+  "content": "Vous aimez les animaux et savez prendre soin d'eux",
+  "filters": [
+   "for-job-group(D1210)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recdo3cxTaU0W7KCm",
+  "_order": 283,
+  "content": "Vous êtes habile, agile et rapide et vous avez une bonne mémoire",
+  "filters": [
+   "for-job-group(G1803, G1801)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recdrYNSlLiFQhHm0",
+  "_order": 284,
+  "content": "Vous maîtrisez les savoirs propres à vos matières et savez transmettre votre passion",
+  "filters": [
+   "for-job-group(K2107)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recdydJQPsGnjfnJV",
+  "_order": 285,
+  "content": "Renseignez-vous sur le projet pédagogique de la structure",
+  "filters": [
+   "for-job-group(K21)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rece51aaVUnQSQAhi",
+  "_order": 286,
+  "content": "Renseignez-vous sur les animaux proposés",
+  "filters": [
+   "for-job-group(D1210)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rece8kgug9ALU6JK1",
+  "_order": 287,
+  "content": "Vous avez une compréhension approfondie du monde de l'entreprise, de son fonctionnement et de ses systèmes d'information",
+  "filters": [
+   "for-job-group(M1806)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "receIVZmtRROTbR6n",
+  "_order": 288,
+  "content": "Renseignez-vous sur le type d'analyse proposé par le laboratoire",
+  "filters": [
+   "for-job-group(J1201)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "receKXILMORagxDzA",
+  "_order": 289,
+  "content": "Vous savez trouver des solutions lorsque vous faites face à un problème nouveau",
+  "filters": [
+   "for-job-group(D1205, D1206, D1207)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recedd3OkwhEkyQML",
+  "_order": 290,
+  "content": "Vous êtes créative et pouvez imaginer de nouvelles méthodes innovatrices",
+  "contentMasculine": "Vous êtes créatif et pouvez imaginer de nouvelles méthodes innovatrices",
+  "filters": [
+   "for-job-group(F1106)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recelhgEWzEmOqaSX",
+  "_order": 291,
+  "content": "Vous êtes créative et organisée pour pouvoir planifier des activités variées",
+  "contentMasculine": "Vous êtes créatif et organisé pour pouvoir planifier des activités variées",
+  "filters": [
+   "for-job-group(K1206, K1202)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "receoYSHKIwDlJjsi",
+  "_order": 292,
+  "content": "Essayez de visiter avant l'entretien un chantier réalisé par l'entreprise",
+  "filters": [
+   "for-job-group(F11, F12, F15)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recf12aqC4J3aCV6F",
+  "_order": 293,
+  "content": "Trouvez une activité ou animation qui vous plaît particulièrement pour en parler à l'entretien",
+  "filters": [
+   "for-job-group(G12)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recf6HGtwmwJaKGY0",
+  "_order": 294,
+  "content": "Vous savez motiver vos équipes pour atteindre les objectifs",
+  "filters": [
+   "for-job-group(D1406, D1502, D1503, D1509, D1504, D1508)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recf9b9ifWPoHV0Wl",
+  "_order": 295,
+  "content": "Vous savez travailler en équipe et animer des réunions",
+  "filters": [
+   "for-job-group(K1403, K1404)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recfKwlLwyDDePlvY",
+  "_order": 296,
+  "content": "Vous savez vous organiser et garder à jour des documents",
+  "filters": [
+   "for-job-group(N4105)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recfM6Z6mvFtFXFO9",
+  "_order": 297,
+  "content": "Trouvez un média ou contenu qui vous interpelle particulièrement pour en parler à l'entretien",
+  "filters": [
+   "for-job-group(E1205)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recfMXJuE3nzIPaGf",
+  "_order": 298,
+  "content": "Renseignez-vous sur les biens gérés par l'entreprise que vous allez rencontrer",
+  "filters": [
+   "for-job-group(C15)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recfSlNu2QfN5cnon",
+  "_order": 299,
+  "content": "Vous savez anticiper les attentes de vos clients et faciliter des discussions et négociations",
+  "filters": [
+   "for-job-group(E1107)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recfSuOlN1ym6hUML",
+  "_order": 300,
+  "content": "Vous avez l'esprit d'équipe",
+  "filters": [
+   "for-job-group(H1404, H1303, C1401, C1201, C1206, G1602)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recff7tNHeo414VTc",
+  "_order": 301,
+  "content": "Renseignez-vous sur la culture managériale et les valeurs de l'entreprise",
+  "filters": [
+   "for-job-group(M13, M1402, M15, M16)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recftRA49i0oPCtVT",
+  "_order": 302,
+  "content": "Intéressez-vous aux labels ou certifications obtenus par l'exploitation",
+  "filters": [
+   "for-job-group(A14)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recfu2iliv06X8ZLF",
+  "_order": 303,
+  "content": "Vous avez à coeur la satisfaction du client",
+  "filters": [
+   "for-job-group(D1505, G1402, G1403, G1404)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recfuuvBQAaE8Lh1C",
+  "_order": 304,
+  "content": "Vous savez mettre en valeur une idée-force, valoriser l'image de l'entreprise et affirmer son identité",
+  "filters": [
+   "for-job-group(E1103)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recgCANG05DAX3b1s",
+  "_order": 305,
+  "content": "Renseignez-vous sur l'ensemble des soins proposés aux patients par la structure",
+  "filters": [
+   "for-job-group(J11)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recgLb3OURzOXfic7",
+  "_order": 306,
+  "content": "Vous avez un bon esprit d'analyse et savez rester impartial pour sélectionner les meilleurs candidatures",
+  "filters": [
+   "for-job-group(M1502)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recgYmMPkpA52FUTj",
+  "_order": 307,
+  "content": "Vous êtes à l'écoute et avez une bonne capacité d'analyse pour comprendre les besoins de l'entreprise",
+  "filters": [
+   "for-job-group(M1101)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recgtPeUYtyVH2k0p",
+  "_order": 308,
+  "content": "Vous savez donner des explications, fixer des objectifs et célébrer les victoires",
+  "filters": [
+   "for-job-group(D1504, D1509, G1402, G1403, G1404, G1503, G1601, G1802)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recgyx62lCMGLWfF5",
+  "_order": 309,
+  "content": "Ajoutez des liens vers vos publications dans des revues scientifiques",
+  "filters": [
+   "for-job-group(K2402)"
+  ],
+  "type": "CV_IMPROVEMENT"
+ },
+ {
+  "_id": "rech2azq1kMNPPU1j",
+  "_order": 310,
+  "content": "Vous avez un bon sens du relationnel et savez aussi bien échanger avec les habitants qu'avec les élus",
+  "filters": [
+   "for-job-group(K1802)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rechGTyVwnMrIOjJN",
+  "_order": 311,
+  "content": "Essayez d'analyser les problèmes rencontrés par la structure dans le passé",
+  "filters": [
+   "for-job-group(M13)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rechm9ZsArXqzRm5M",
+  "_order": 312,
+  "content": "Vous êtes organisée et rigoureuse pour ne pas être débordée par le poids des responsabilités",
+  "contentMasculine": "Vous êtes organisé et rigoureux pour ne pas être débordé par le poids des responsabilités",
+  "filters": [
+   "for-job-group(L1302)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rechp1PQJD3iVVqfV",
+  "_order": 313,
+  "content": "Vous êtes rigoureuse et précise",
+  "contentMasculine": "Vous êtes rigoureux et précis",
+  "filters": [
+   "for-job-group(M1810)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reciF7lLRF6p73QAz",
+  "_order": 314,
+  "content": "Vous avez une bonne capacité d'observation afin d'anticiper les besoins du patient",
+  "filters": [
+   "for-job-group(K1302)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reciOALOJx4gDzm57",
+  "_order": 315,
+  "content": "Vous êtes à l'aise à l'oral",
+  "filters": [
+   "for-job-group(D1401)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reciVKIwWMgwhGiPm",
+  "_order": 316,
+  "content": "Visitez avant les espaces naturels que vous pourriez avoir en charge",
+  "filters": [
+   "for-job-group(A12)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recia5kxaXCgrZlQ4",
+  "_order": 317,
+  "content": "Intéressez-vous aux engins spécifiques utilisés",
+  "filters": [
+   "for-job-group(A11, F13, H2102, H2202, H2203, H23, K2302, K2303, K2304, K2306, N1, H26, H27, H28, H29, H30, H31, H32, H33, H34)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recif9v0ZJeGkFINc",
+  "_order": 318,
+  "content": "Vous avez une bonne capacité d'analyse pour saisir finement les faits et chiffres d'un marché",
+  "filters": [
+   "for-job-group(D1406, D1509, D1504, G1402, G1403, G1404)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recixPQmUWNPVj5q4",
+  "_order": 319,
+  "content": "Vous savez convaincre et faire la médiatrice entre les différents membres de l'équipe",
+  "contentMasculine": "Vous savez convaincre et faire le médiateur entre les différents membres de l'équipe",
+  "filters": [
+   "for-job-group(M1501, M1503)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recixunZrtYliqFXT",
+  "_order": 320,
+  "content": "Vous apprenez rapidement de nouveaux langages de programmation ou un nouveau process",
+  "filters": [
+   "for-job-group(M1805)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recj7VUUk7eaTQjfh",
+  "_order": 321,
+  "content": "Faites des recherches sur les principaux architectes de l'entreprise",
+  "filters": [
+   "for-job-group(F11, F12)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recjI5NglktgSH6Dx",
+  "_order": 322,
+  "content": "Vous comprenez l'importance de votre rôle auprès des enfants et vous savez donner beaucoup d'attention et d'amour",
+  "filters": [
+   "for-job-group(K1303, K1202)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recjJWHwaetLltcRd",
+  "_order": 323,
+  "content": "Vous avez un bon sens du relationnel",
+  "filters": [
+   "for-job-group(M1604,I1401, H1206, M1803, D1402, K1903, M1707, M1502, M1501, D1212, G1401)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recjN7hAVjGwqT89w",
+  "_order": 324,
+  "content": "Renseignez-vous sur les normes couvertes ou utilisées par l'entreprise",
+  "filters": [
+   "for-job-group(H13)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recjOIkz0n7iTeI9Z",
+  "_order": 325,
+  "content": "Renseignez-vous sur les techniques d'insertion professionnelle privilégiée par la structure",
+  "filters": [
+   "for-job-group(K1203)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recjOKqXntHCFfQTQ",
+  "_order": 326,
+  "content": "Vous avez le soucis du bien-être de vos équipes et de la satisfaction des clients",
+  "filters": [
+   "for-job-group(M1302)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recjSfoBjrudeoTlo",
+  "_order": 327,
+  "content": "Vous avez les qualités humaines les plus demandées (gentillesse, empathie, compréhension...)",
+  "filters": [
+   "for-job-group(K1302)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recjUMQurCFA5pZ03",
+  "_order": 328,
+  "content": "Assurez-vous de bien connaître les dernières normes mises en place",
+  "filters": [
+   "for-job-group(K15)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recjXc4wMWbbXD5qa",
+  "_order": 329,
+  "content": "Vous savez présenter vos travaux de façon claire et convaincante tout en restant complet et rigoureux",
+  "filters": [
+   "for-job-group(K2402)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recjc1WSeOASXMFu1",
+  "_order": 330,
+  "content": "Essayez de visiter les installations avant votre entretien",
+  "filters": [
+   "for-job-group(G11)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recjjFcxNWB9G3GvQ",
+  "_order": 331,
+  "content": "Vous savez faire face à la solitude d'une fonction de dirigeant et avancer avec sérénité.",
+  "filters": [
+   "for-job-group(M1803)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reck8MK7MYqYhQWip",
+  "_order": 332,
+  "content": "Renseignez-vous sur le patrimoine conservé par la structure",
+  "filters": [
+   "for-job-group(K1602)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "reckA48WXFQ61WPHs",
+  "_order": 333,
+  "content": "Vous maîtrisez la didactique et la pédagogie et êtes capable d'expliquer un concept de multiples façons",
+  "filters": [
+   "for-job-group(K2107)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reckVcS9B0ifmyaMk",
+  "_order": 334,
+  "content": "Vous savez prendre des initiatives pour répondre aux besoins des habitants",
+  "filters": [
+   "for-job-group(K1802)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reckp1J9e3l5olOMI",
+  "_order": 335,
+  "content": "Vous avez une bonne capacité d'anticipation et d'écoute",
+  "filters": [
+   "for-job-group(M1501, M1503, M1502)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reckvzgk6eYe1xgK8",
+  "_order": 336,
+  "content": "Renseignez-vous sur la personne que vous allez rencontrer",
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recllplwCvM0sCQij",
+  "_order": 337,
+  "content": "Renseignez-vous sur les contenus produits par les entreprises concurrentes",
+  "filters": [
+   "for-job-group(E1205)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "reclmtbsrNM5Fvb9U",
+  "_order": 338,
+  "content": "Vous êtes à l'aise à l'écrit comme à l'oral",
+  "filters": [
+   "for-job-group(M1609, G1401)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reclr065onPQ8f9TD",
+  "_order": 339,
+  "content": "Renseignez-vous sur le type de chantiers réalisés par l'entreprise",
+  "filters": [
+   "for-job-group(F16, F17)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recmS8HAOir5oSThD",
+  "_order": 340,
+  "content": "Vous supportez bien le stress et la répétition des tâches",
+  "filters": [
+   "for-job-group(D1505, D1408)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recmW0rvexeenc32Z",
+  "_order": 341,
+  "content": "Vous savez prendre des décisions rapides grâce à votre grande autonomie",
+  "filters": [
+   "for-job-group(D1301)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recmjHwxbi97JGM2E",
+  "_order": 342,
+  "content": "Vous maîtrisez toutes les finesses de la communication pour fédérer autour d'un projet et animer une équipe",
+  "filters": [
+   "for-job-group(M1806)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recmm65BoMVErE4zo",
+  "_order": 343,
+  "content": "Vous savez faire preuve de patience pour trouver les causes du problème et de pédagogie pour les expliquer à vos interlocuteurs",
+  "filters": [
+   "for-job-group(M1810)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recmo3FHOM0Fen8xe",
+  "_order": 344,
+  "content": "Vous avez une autorité naturelle et êtes pédagogue pour pouvoir être écoutée et respectée",
+  "contentMasculine": "Vous avez une autorité naturelle et êtes pédagogue pour pouvoir être écouté et respecté",
+  "filters": [
+   "for-job-group(K1207, K1206, K1202)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recn5c5NQIaUiMqXU",
+  "_order": 345,
+  "content": "Vous avez une bonne capacité d'assimilation, d'analyse et de synthèse",
+  "filters": [
+   "for-job-group(C1401, C1201, C1206, C1203)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recn717F2qMggtono",
+  "_order": 346,
+  "content": "Vous supportez bien le stress et les fortes cadences de travail",
+  "filters": [
+   "for-job-group(G1803, G1801)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recnCzgiNje68YnJe",
+  "_order": 347,
+  "content": "Vous avez un vrai sens de la discrétion, de la confidentialité",
+  "filters": [
+   "for-job-group(M1501, M1503)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recnD6QSgoQnwuow5",
+  "_order": 348,
+  "content": "Renseignez-vous sur le fonctionnement de l'établissement",
+  "filters": [
+   "for-job-group(G1404)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recnDECS4yDckvgP6",
+  "_order": 349,
+  "content": "Vous maîtrisez les techniques de résolution de problèmes et vous avez de l'expérience dans ce domaine",
+  "filters": [
+   "for-job-group(M1402)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recnGSwL16DjOdFAW",
+  "_order": 350,
+  "content": "Vous savez travailler en équipe et être sociable",
+  "filters": [
+   "for-job-group(M1705)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recnScw93GRgRcZ1T",
+  "_order": 351,
+  "content": "Assurez-vous de bien connaître les équipements proposés",
+  "filters": [
+   "for-job-group(D1213)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recnWDakBtjhyLSv3",
+  "_order": 352,
+  "content": "Vous avez un très bon sens de l'organisation pour gérer plusieurs priorités en parallèle",
+  "filters": [
+   "for-job-group(K1802)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recngFmvmmGGHoxLS",
+  "_order": 353,
+  "content": "Vous avez un bon sens de l'écoute et êtes capable de retranscrire les besoins, même lorsque la personne a du mal à verbaliser son ressenti",
+  "filters": [
+   "for-job-group(K1207)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recnhY2gQlRyDZtnd",
+  "_order": 354,
+  "content": "Renseignez-vous sur le type de cuisine proposée",
+  "filters": [
+   "for-job-group(G16, G17)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recnom3g5RrEqyyQn",
+  "_order": 355,
+  "content": "Renseignez-vous sur les différents animaux traités par le cabinet ou la clinique",
+  "filters": [
+   "for-job-group(A15)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recnuzAPYGOSGSCs9",
+  "_order": 356,
+  "content": "Vous êtes souriante et dynamique et savez transmettre votre énergie et votre bonne humeur à votre interlocuteur",
+  "contentMasculine": "Vous êtes souriant et dynamique et savez transmettre votre énergie et votre bonne humeur à votre interlocuteur",
+  "filters": [
+   "for-job-group(D1408)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recnzeQJEadKz2fen",
+  "_order": 357,
+  "content": "Vous êtes dynamique, motivée et déterminée",
+  "contentMasculine": "Vous êtes dynamique, motivé et déterminé",
+  "filters": [
+   "for-job-group(I1401, H1206, M1803, D1402, K1903, M1707, D1406, D1404, D1502, D1503, D1506, D1509, D1504, G1402, G1403, G1404)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reco4bLfsjBFSphx2",
+  "_order": 358,
+  "content": "Vous êtes honnête et savez créer une relation de confiance",
+  "filters": [
+   "for-job-group(D1402, D1404)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recoJ7AHnDDsbpo6A",
+  "_order": 359,
+  "content": "Renseignez-vous sur les méthodes et outils d'amélioration déjà utilisés par l'entreprise",
+  "filters": [
+   "for-job-group(H15)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recoXrsS1sgrqIoZx",
+  "_order": 360,
+  "content": "Renseignez-vous sur les méthodes de médiation privilégiées",
+  "filters": [
+   "for-job-group(K1101, K1204, K1901)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recpDMPU3yCJL9NAG",
+  "_order": 361,
+  "content": "Renseignez-vous sur les dernières études et enquêtes menées",
+  "filters": [
+   "for-job-group(M14)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recpGyWVAxtijGt5T",
+  "_order": 362,
+  "content": "Renseignez-vous sur les enjeux de développement local de la région",
+  "filters": [
+   "for-job-group(K1802)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recpSZi0mZQSJEwc8",
+  "_order": 363,
+  "content": "Vous savez être force de propositions pour améliorer la qualité de vie des patients",
+  "filters": [
+   "for-job-group(K1302)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recpeuwfFmfV9ufnq",
+  "_order": 364,
+  "content": "Assurez-vous de savoir quels sont les différents sujets de recherche du centre",
+  "filters": [
+   "for-job-group(K24)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recpwALXDiSxAywzW",
+  "_order": 365,
+  "content": "Vous avez un esprit critique et la capacité d'analyse pour déterminer méthodiquement d'où la panne peut venir",
+  "filters": [
+   "for-job-group(I1401)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recpwZETLyFNbvlx8",
+  "_order": 366,
+  "content": "Renseignez-vous sur les équipements proposés par l'entreprise",
+  "filters": [
+   "for-job-group(I13)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recpz35JNJrvpnsbr",
+  "_order": 367,
+  "content": "Essayez de voir quel projet éducatif vous pourriez proposer",
+  "filters": [
+   "for-job-group(K1303)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recq7es3y23qT2pyx",
+  "_order": 368,
+  "content": "Renseignez-vous sur les ouvrages réalisé par l'entreprise",
+  "filters": [
+   "for-job-group(F11, F12)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recqIuZPE7eEcVbbb",
+  "_order": 369,
+  "content": "Vous êtes capable de rester pragmatique et de prendre des décisions",
+  "filters": [
+   "for-job-group(D1508, G1402, G1403, G1404)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recrFRyJINYcSU3O4",
+  "_order": 370,
+  "content": "Vous êtes rigoureuse et organisée pour gérer de nombreuses tâches administratives",
+  "contentMasculine": "Vous êtes rigoureux et organisé pour gérer de nombreuses tâches administratives",
+  "filters": [
+   "for-job-group(M1609)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recrMPISAIOjmQ8xG",
+  "_order": 371,
+  "content": "Vous êtes polyvalente et touche-à-tout",
+  "contentMasculine": "Vous êtes polyvalent et touche-à-tout",
+  "filters": [
+   "for-job-group(L1302)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recrlTHzxJhS6Zjww",
+  "_order": 372,
+  "content": "Vous êtes bon communiquant et savez animer des réunions et groupes de travail",
+  "filters": [
+   "for-job-group(K1802)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recrydVabu1gm7DCJ",
+  "_order": 373,
+  "content": "Vous savez proposer de nouvelles idées tout en gardant en tête les besoins exprimés par votre client ou les autres membres de l'équipe",
+  "filters": [
+   "for-job-group(E1107)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recrzBliBPnrriS20",
+  "_order": 374,
+  "content": "Renseignez-vous sur les différents ouvrages et projets déjà réalisés par l'entreprise",
+  "filters": [
+   "for-job-group(H2201, H2204, H2205, H2206, H2207, H2208, H2209)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recs5oqnMreAP7gcy",
+  "_order": 375,
+  "content": "Vous avez le sens de la discrétion",
+  "filters": [
+   "for-job-group(J1301)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recsABbPT3yQ3ArJB",
+  "_order": 376,
+  "content": "Grâce à votre optimisme, votre patience et votre courage vous savez surmonter des difficultés qui mettent du temps à être réglées",
+  "filters": [
+   "for-job-group(K1201)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recsCqLwh7BjHQcKf",
+  "_order": 377,
+  "content": "Renseignez-vous sur les services de distribution et assainissement proposés par la structure",
+  "filters": [
+   "for-job-group(K2301)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recsFTOaLeJDNj8CR",
+  "_order": 378,
+  "content": "Vous savez gérer votre stress et garder le sourire",
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recsNiarNtYLMW4Sv",
+  "_order": 379,
+  "content": "Renseignez-vous sur les services proposés avant l'entretien",
+  "filters": [
+   "for-job-group(C14, D1207, G11, K1802, K26, N)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recsPcL0jAzyToRkn",
+  "_order": 380,
+  "content": "Vous savez vous faire respecter et marquer des limites pour pouvoir bien gérer les dynamiques de groupe",
+  "filters": [
+   "for-job-group(K2111)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recsVYzCGw2XiExss",
+  "_order": 381,
+  "content": "Compte tenu de l'entreprise pensez aux projets sur lesquels vous aimeriez travailler",
+  "filters": [
+   "for-job-group(H12)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recsYeTiekAP8W9U5",
+  "_order": 382,
+  "content": "Vous êtes rigoureuse et savez suivre une méthodologie",
+  "contentMasculine": "Vous êtes rigoureux et savez suivre une méthodologie",
+  "filters": [
+   "for-job-group(M1703)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recsbihw0v8GyUKMH",
+  "_order": 383,
+  "content": "Montrez votre talent grâce à un bon portfolio en ligne, un books, une page Behance ou bien une page Dribbble",
+  "filters": [
+   "for-job-group(E1205)"
+  ],
+  "type": "CV_IMPROVEMENT"
+ },
+ {
+  "_id": "recsfnKf3sJYo04DW",
+  "_order": 384,
+  "content": "Renseignez-vous sur les valeurs et le positionnement de l'entreprise",
+  "filters": [
+   "for-job-group(H24)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recsx3OqTNrJAlTTK",
+  "_order": 385,
+  "content": "Assurez-vous de bien connaître les articles proposés",
+  "filters": [
+   "for-job-group(D1211, D1212, D1214, D13)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "rect1APhQ0XNkUqmM",
+  "_order": 386,
+  "content": "Vous avez plus envie d'avancer que d'utiliser des technologies compliquées",
+  "filters": [
+   "for-job-group(M1805)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rect3aplptZ0hQW4o",
+  "_order": 387,
+  "content": "Vous savez faire preuve d'anticipation et prévenir les risques potentiels",
+  "filters": [
+   "for-job-group(M1205)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rect4E4EGZ3rSKbYT",
+  "_order": 388,
+  "content": "Vous savez faire face au stress grâce à votre engagement et votre ténacité",
+  "filters": [
+   "for-job-group(K1403, K1404)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rect5Ob0U017i7mul",
+  "_order": 389,
+  "content": "Vous savez faire preuve de diplomatie pour gérer des interlocuteurs très différents",
+  "filters": [
+   "for-job-group(K1802)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rectFpFzCgoxLGtaM",
+  "_order": 390,
+  "content": "Vous savez faire preuve d'empathie pour anticiper les réactions de votre interlocuteur",
+  "filters": [
+   "for-job-group(D1408, D1404)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rectHPR2rdaaAUYRr",
+  "_order": 391,
+  "content": "Vous savez faire preuve de débrouillardise et de dynamisme pour répondre aux besoins de la personne que vous assistez",
+  "filters": [
+   "for-job-group(M1604, G1401)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rectaLWkTtxLpn1TI",
+  "_order": 392,
+  "content": "Vous faites attention aux détails",
+  "filters": [
+   "for-job-group(N1103)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rectlRIi9oE70CTeo",
+  "_order": 393,
+  "content": "Vous supportez bien le stress et savez garder votre calme et vous adapter",
+  "filters": [
+   "for-job-group(N4105)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rectpBnLiNrG3KiBl",
+  "_order": 394,
+  "content": "Vous avez de bonnes capacités analytiques et avez le souci d'aider pour que tout fonctionne mieux",
+  "filters": [
+   "for-job-group(F1106)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "rectvkNOiW45vl0Ol",
+  "_order": 395,
+  "content": "Vous savez travailler conjointement avec les autres travailleurs sociaux et/ou du milieu médical",
+  "filters": [
+   "for-job-group(K1207)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recu2sSrV5MeH2y1X",
+  "_order": 396,
+  "content": "Renseignez-vous sur les besoins des patients suivis par la structure",
+  "filters": [
+   "for-job-group(J1202, J13, J11)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recuHBkSrQ9uxA7oO",
+  "_order": 397,
+  "content": "Vous savez bien respecter les consignes",
+  "filters": [
+   "for-job-group(N1103)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recuK63LrGYMazdqK",
+  "_order": 398,
+  "content": "Envoyez des emails de relance aux recruteurs",
+  "type": "CV_IMPROVEMENT"
+ },
+ {
+  "_id": "recuSpw8NZLBXiALk",
+  "_order": 399,
+  "content": "Vous avez le sens de l'écoute et le goût du contact",
+  "filters": [
+   "for-job-group(K1207)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recuUrFnQxXY12cMz",
+  "_order": 400,
+  "content": "Vous êtes au fait des méthodes de négociation et savez vous adapter rapidement à une nouvelle entreprise",
+  "filters": [
+   "for-job-group(M1806)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recuchJNRML6so2B2",
+  "_order": 401,
+  "content": "Vous avez des bases en anglais, pour pouvoir gérer des réservations ou l'accueil",
+  "filters": [
+   "for-job-group(M1604)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recujVxS7IH4rAYCx",
+  "_order": 402,
+  "content": "Vous savez vous adapter rapidement à de nouvelles applications et technologies pour continuellement optimiser le système",
+  "filters": [
+   "for-job-group(M1803)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recuzDmYNa9dPHat4",
+  "_order": 403,
+  "content": "Vous savez anticiper pour mettre en œuvre des solutions innovantes, en fonction de la stratégie de l'entreprise",
+  "filters": [
+   "for-job-group(M1803)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recvZ5C9Bw1L1OSkY",
+  "_order": 404,
+  "content": "Si vous maîtrisez l'anglais ou l'allemand, mettez le bien en avant dans votre CV",
+  "filters": [
+   "for-job-group(K2402)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recvbbhuiqQNs8nNj",
+  "_order": 405,
+  "content": "Vous savez faire preuve de créativité et de polyvalence",
+  "filters": [
+   "for-job-group(M1705)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recvcLnQeIkdGScLE",
+  "_order": 406,
+  "content": "Vous savez gérer de manière indépendante un projet opérationnel et gérer des collaborateurs",
+  "filters": [
+   "for-job-group(E1107)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recviQpBbfnZ6XLUA",
+  "_order": 407,
+  "content": "Renseignez-vous sur les zones déservies par la compagnie",
+  "filters": [
+   "for-job-group(N)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recvlBsAUzLRrGIf4",
+  "_order": 408,
+  "content": "Vous êtes polyvalente pour pouvoir trouver des solutions à tous les problèmes rencontrés dans votre activité",
+  "contentMasculine": "Vous êtes polyvalent pour pouvoir trouver des solutions à tous les problèmes rencontrés dans votre activité",
+  "filters": [
+   "for-job-group(M1810)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recvljouGqwIlJJ8D",
+  "_order": 409,
+  "content": "Vous avez le sens de la rigueur et de l'organisation",
+  "filters": [
+   "for-job-group(K1601)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recvr5tv1uc2niFmE",
+  "_order": 410,
+  "content": "Vous savez aussi faire preuve d'ingéniosité et d'audace pour permettre à l'entreprise de progresser",
+  "filters": [
+   "for-job-group(M1205)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recw85yTnYHB2o5Ym",
+  "_order": 411,
+  "content": "Vous savez adapter votre argumentation en fonction des clients et faire preuve de tact",
+  "filters": [
+   "for-job-group(D1212, D1403, D1214, D1211, D1404)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recwE1M03GbpLGREv",
+  "_order": 412,
+  "content": "Vous savez créer une relation de confiance basée sur l'écoute active, la patience, la disponibilité et la compréhension",
+  "filters": [
+   "for-job-group(K1801)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recwHXoxJUgTr7LVQ",
+  "_order": 413,
+  "content": "Vous savez utiliser votre sens du contact pour créer un climat de confiance et désamorcer des montées d'agressivité",
+  "filters": [
+   "for-job-group(K1201)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recwSoX8sY3uKDmKt",
+  "_order": 414,
+  "content": "Vous comprenez l'importance de la patience et de l'honnêteté dans votre métier",
+  "filters": [
+   "for-job-group(E1106)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recwe51gUaHdvXm9j",
+  "_order": 415,
+  "content": "Renseignez-vous sur les dernières tendances du recrutement et de l'emploi",
+  "filters": [
+   "for-job-group(K1801)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recwjzO3ersBDVZ4m",
+  "_order": 416,
+  "content": "Renseignez-vous sur les conditions d'intervention de l'entreprise",
+  "filters": [
+   "for-job-group(I15)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recx7UYOsAOs2wRwE",
+  "_order": 417,
+  "content": "Vous avez un bon esprit de synthèse et d'analyse pour décrypter et faire ressortir des tendances",
+  "filters": [
+   "for-job-group(M1703)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recxL5pWKuxSxNa13",
+  "_order": 418,
+  "content": "Vous êtes dynamique et en bonne forme physique",
+  "filters": [
+   "for-job-group(N1401)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recxOvBc6P4oWEtHb",
+  "_order": 419,
+  "content": "Renseignez-vous sur l'organisation de l'équipe pour pouvoir poser des questions précises sur votre rôle",
+  "filters": [
+   "for-job-group(G15)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recxPUUWJY5lJpKJ2",
+  "_order": 420,
+  "content": "Vous avez un bon esprit d'analyse et savez réagir vite face à une panne",
+  "filters": [
+   "for-job-group(M1810)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recxQpGmKVqvdSw3x",
+  "_order": 421,
+  "content": "Vous faites preuve de rigueur, d'autonomie et d'organisation",
+  "filters": [
+   "for-job-group(E1205)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recxRlzrPx0VKa3Is",
+  "_order": 422,
+  "content": "Trouvez les raisons pour lesquelles cet hôtel ou restaurant vous plaît particulièrement",
+  "filters": [
+   "for-job-group(G1401, G1402)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recxppuWzMNq8ZhDo",
+  "_order": 423,
+  "content": "Ajoutez un lien vers votre profil Linkedin bien complété",
+  "filters": [
+   "for-complex-application"
+  ],
+  "type": "CV_IMPROVEMENT"
+ },
+ {
+  "_id": "recxsi2FR5Oq6QP4e",
+  "_order": 424,
+  "content": "Faites doublement attention aux fautes d'orthographe, les qualités rédactionnelles sont importantes dans votre métier",
+  "filters": [
+   "for-job-group(E1103, E1106, M1602, M1604, M1601)"
+  ],
+  "type": "CV_IMPROVEMENT"
+ },
+ {
+  "_id": "recy42poSVCdBXJBH",
+  "_order": 425,
+  "content": "Vous avez d'excellentes compétences en communication, vous pouvez traduire un jargon technique complexe en un français courant",
+  "filters": [
+   "for-job-group(F1106)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recyYNRr5y54v5Pbq",
+  "_order": 426,
+  "content": "Vous avez de bonnes manières et une bonne présentation",
+  "filters": [
+   "for-job-group(D1212, D1403, D1214, D1211)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recyaMmmESFdUuLZQ",
+  "_order": 427,
+  "content": "Si vous postulez dans une compagnie, renseignez-vous sur les artistes qui en font partie",
+  "filters": [
+   "for-job-group(L12)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recyepEOo2h7AzoRf",
+  "_order": 428,
+  "content": "Vous savez vous adapter à un nouveau chantier",
+  "filters": [
+   "for-job-group(F1606, F1602)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recyfdhAFeNJ7wpV8",
+  "_order": 429,
+  "content": "Vous avez une bonne condition physique",
+  "filters": [
+   "for-job-group(G1602, G1603, G1604, G1605)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recyknhxvl60eOP1J",
+  "_order": 430,
+  "content": "Renseignez-vous sur les produits proposés par l'entreprise",
+  "filters": [
+   "for-job-group(H23)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "recz1hdAhDxOsNvs6",
+  "_order": 431,
+  "content": "Vous faites preuve de rapidité dans l'exécution",
+  "filters": [
+   "for-job-group(G1602, G1603, G1604, G1605)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recz8F8RzugJ6pJ1N",
+  "_order": 432,
+  "content": "Vous savez organiser vos pensées et les transmettre de manière intéressante, tout particulièrement par écrit",
+  "filters": [
+   "for-job-group(M1204)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reczAw07DRY25ucgF",
+  "_order": 433,
+  "content": "Renseignez-vous sur le type d'objets proposés",
+  "filters": [
+   "for-job-group(D1201)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "reczFjf3Udp9iuqqU",
+  "_order": 434,
+  "content": "Renseignez-vous sur les techniques de bien-être privilégiées par la structure",
+  "filters": [
+   "for-job-group(K1103)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ },
+ {
+  "_id": "reczcr7KZ1mVmdbGJ",
+  "_order": 435,
+  "content": "Vous aimez la mode et savez conseiller des clients",
+  "filters": [
+   "for-job-group(D1214)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reczkT7QLXfuwZWYZ",
+  "_order": 436,
+  "content": "Vous êtes réactive, autonome et vigilante",
+  "contentMasculine": "Vous êtes réactif, autonome et vigilant",
+  "filters": [
+   "for-job-group(N4105)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "recztNWmLIPdjaLAE",
+  "_order": 437,
+  "content": "Vous êtes curieuse et restez toujours au courant des dernières nouveautés",
+  "contentMasculine": "Vous êtes curieux et restez toujours au courant des dernières nouveautés",
+  "filters": [
+   "for-job-group(M1810)"
+  ],
+  "type": "QUALITY"
+ },
+ {
+  "_id": "reczvndbzgcjHZJVB",
+  "_order": 438,
+  "content": "Renseignez-vous sur la stratégie d'achat de l'entreprise",
+  "filters": [
+   "for-job-group(M11)"
+  ],
+  "type": "INTERVIEW_PREPARATION"
+ }
+]

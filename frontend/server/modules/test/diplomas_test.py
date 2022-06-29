@@ -1,7 +1,9 @@
 """ Tests for the diplomas module."""
 
+import unittest
+
 from bob_emploi.frontend.api import job_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server.test import filters_test
 from bob_emploi.frontend.server.test import scoring_test
 
@@ -90,12 +92,16 @@ class ForeignDiplomaTestCase(filters_test.FilterTestBase):
     def test_frustrated_by_foreign_diploma(self) -> None:
         """User is frustrated about their unrecognized foreign diploma."""
 
-        self.persona.user_profile.frustrations.append(user_pb2.FOREIGN_QUALIFICATIONS)
+        self.persona.user_profile.frustrations.append(user_profile_pb2.FOREIGN_QUALIFICATIONS)
         self._assert_pass_filter()
 
     def test_not_frustrated(self) -> None:
         """User isn't frustrated by a foreign diploma."""
 
-        if user_pb2.FOREIGN_QUALIFICATIONS in self.persona.user_profile.frustrations:
-            self.persona.user_profile.frustrations.remove(user_pb2.FOREIGN_QUALIFICATIONS)
+        if user_profile_pb2.FOREIGN_QUALIFICATIONS in self.persona.user_profile.frustrations:
+            self.persona.user_profile.frustrations.remove(user_profile_pb2.FOREIGN_QUALIFICATIONS)
         self._assert_fail_filter()
+
+
+if __name__ == '__main__':
+    unittest.main()

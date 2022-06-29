@@ -2,7 +2,7 @@
 
 from os import path
 import typing
-from typing import List, Optional
+from typing import Optional
 import unittest
 
 from bob_emploi.frontend.api import job_pb2
@@ -26,7 +26,7 @@ class _JobOffer(typing.NamedTuple):
 
 
 def _list_diplomas_from_fake_offer(job_offer: _JobOffer) \
-        -> List['job_offers_requirements._DiplomaRequirement']:
+        -> list['job_offers_requirements._DiplomaRequirement']:
     return list(job_offers_requirements.list_diplomas(
         typing.cast('job_offers_requirements.job_offers._JobOffer', job_offer)))
 

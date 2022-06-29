@@ -7,7 +7,7 @@ from typing import Callable, Iterable, Optional, Tuple
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import project_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 
 _ESTIMATE_OPTION_TO_NUMBER = {
     project_pb2.UNKNOWN_NUMBER_ESTIMATE_OPTION: 0,
@@ -181,11 +181,11 @@ class _JobSimilarityScoringModel(scoring_base.ModelHundredBase):
         if project.details.previous_job_similarity == project_pb2.NEVER_DONE:
             return 0
         if project.details.previous_job_similarity == project_pb2.DONE_SIMILAR:
-            if user_pb2.ATYPIC_PROFILE in project.user_profile.frustrations:
+            if user_profile_pb2.ATYPIC_PROFILE in project.user_profile.frustrations:
                 return 60
             return 50
         if project.details.previous_job_similarity == project_pb2.DONE_THIS:
-            if user_pb2.MOTIVATION in project.user_profile.frustrations:
+            if user_profile_pb2.MOTIVATION in project.user_profile.frustrations:
                 return 100
             return 90
         raise scoring_base.NotEnoughDataException()
@@ -238,7 +238,8 @@ class _ReturnToEmploymentScoringModel(scoring_base.ModelHundredBase):
         # Rescale unemployment_duration: 0 -> 100, >= 12 months -> 0
         # As unemployment_duration has much more low values in DB, use ** .7 to have more variance
         # in high scores (50% -> 136 ~= median).
-        return 100 * (1 - (local_diagnosis.unemployment_duration.days / 365) ** .7)
+        duration_score: float = (local_diagnosis.unemployment_duration.days / 365) ** .7
+        return 100 * (1 - duration_score)
 
 
 class _JobOfTheFutureScoringModel(scoring_base.ModelHundredBase):
@@ -296,7 +297,7 @@ class _FrustrationScoringModel(scoring_base.ModelHundredBase):
     to lower the overall score of a submetric.
     """
 
-    def __init__(self, frustration: 'user_pb2.Frustration.V') -> None:
+    def __init__(self, frustration: 'user_profile_pb2.Frustration.V') -> None:
         self.frustration = frustration
 
     def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:
@@ -357,17 +358,19 @@ scoring_base.register_model('for-good-diagnostic-submetrics(+4)', _GoodDiagnosti
 scoring_base.register_model('for-good-diagnostic-submetrics(ALL)', _GoodDiagnosticCountFilter(
     len(diagnostic_pb2.DiagnosticTopic.values()) - 1))
 scoring_base.register_model(
-    'frustration-atypic-scorer', _FrustrationScoringModel(user_pb2.ATYPIC_PROFILE))
+    'frustration-atypic-scorer', _FrustrationScoringModel(user_profile_pb2.ATYPIC_PROFILE))
 scoring_base.register_model(
-    'frustration-interview-scorer', _FrustrationScoringModel(user_pb2.INTERVIEW))
+    'frustration-interview-scorer', _FrustrationScoringModel(user_profile_pb2.INTERVIEW))
 scoring_base.register_model(
-    'frustration-motivation-scorer', _FrustrationScoringModel(user_pb2.MOTIVATION))
+    'frustration-motivation-scorer', _FrustrationScoringModel(user_profile_pb2.MOTIVATION))
 scoring_base.register_model(
-    'frustration-resume-scorer', _FrustrationScoringModel(user_pb2.RESUME))
+    'frustration-resume-scorer', _FrustrationScoringModel(user_profile_pb2.RESUME))
 scoring_base.register_model(
-    'frustration-self-confidence-scorer', _FrustrationScoringModel(user_pb2.SELF_CONFIDENCE))
+    'frustration-self-confidence-scorer',
+    _FrustrationScoringModel(user_profile_pb2.SELF_CONFIDENCE))
 scoring_base.register_model(
-    'frustration-time-managment-scorer', _FrustrationScoringModel(user_pb2.TIME_MANAGEMENT))
+    'frustration-time-managment-scorer',
+    _FrustrationScoringModel(user_profile_pb2.TIME_MANAGEMENT))
 scoring_base.register_model('interview-rate-score', _InterviewRateScoringModel())
 scoring_base.register_model('job-passionate-score', _JobPassionScoringModel())
 scoring_base.register_model('job-similarity-score', _JobSimilarityScoringModel())

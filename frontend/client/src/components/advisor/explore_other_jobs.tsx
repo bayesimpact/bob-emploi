@@ -1,9 +1,10 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 import _groupBy from 'lodash/groupBy'
 import React from 'react'
 import {useTranslation} from 'react-i18next'
 
-import {LocalizableString, prepareT} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {prepareT} from 'store/i18n'
 import isMobileVersion from 'store/mobile'
 
 import GrowingNumber from 'components/growing_number'
@@ -20,10 +21,11 @@ import onisepPreviewImage from 'images/advices/explore-other-jobs/onisep.jpg'
 import openClassroomsImage from 'images/advices/explore-other-jobs/openclassrooms.png'
 import placeDesMetiersPreviewImage from 'images/advices/explore-other-jobs/placedesmetiers.jpg'
 import semaineIndustriePreviewImage from 'images/advices/explore-other-jobs/semaineindustrie.jpg'
+import wouldYouRatherBePreviewImage from 'images/advices/explore-other-jobs/wouldyouratherbe.jpg'
 import zoomSurLesMetiersPreviewImage from 'images/advices/explore-other-jobs/zoomsurlesmetiers.jpg'
-import Picto from 'images/advices/picto-explore-other-jobs.svg'
 
-import {CardProps, CardWithImage, ExpandableAction, ActionWithHandyLink,
+import type {CardProps} from './base'
+import {CardWithImage, ExpandableAction, ActionWithHandyLink,
   MethodSuggestionList} from './base'
 
 
@@ -53,7 +55,7 @@ const JOB_VIDEO_SITES = [
     language: 'fr',
     section: prepareT('Vidéos sur tous types de métiers'),
     title: 'Ce sera moi\u00A0!',
-    url: 'https://oniseptv.onisep.fr',
+    url: 'https://oniseptv.onisep.fr', // checkURL
   },
   {
     description:
@@ -62,7 +64,7 @@ const JOB_VIDEO_SITES = [
     language: 'fr',
     section: prepareT('Vidéos sur tous types de métiers'),
     title: 'Zoom sur les métiers',
-    url: 'https://www.youtube.com/user/zoomsurlesmetiers/videos',
+    url: 'https://www.youtube.com/user/zoomsurlesmetiers/videos', // checkURL
   },
   {
     description: 'Chaine YouTube avec plus de 2000 vidéos pour découvrir des métiers.',
@@ -70,7 +72,7 @@ const JOB_VIDEO_SITES = [
     language: 'fr',
     section: prepareT('Vidéos sur tous types de métiers'),
     title: 'La Place des Métiers',
-    url: 'https://www.youtube.com/channel/UCQ7LCRNS1os00PP7_WRZIAg/playlists',
+    url: 'https://www.youtube.com/channel/UCQ7LCRNS1os00PP7_WRZIAg/playlists', // checkURL
   },
   {
     description: "200 vidéos (en version gratuite) sur les métiers d'avenir.",
@@ -78,7 +80,7 @@ const JOB_VIDEO_SITES = [
     language: 'fr',
     section: prepareT("Vidéos sur des métiers d'avenir"),
     title: 'Le Canal des Métiers',
-    url: 'https://www.lecanaldesmetiers.tv',
+    url: 'https://www.lecanaldesmetiers.tv', // checkURL
   },
   {
     creator: 'Welcome to the Jungle',
@@ -88,7 +90,7 @@ const JOB_VIDEO_SITES = [
     language: 'fr',
     section: prepareT("Vidéos sur des métiers d'avenir"),
     title: 'Oh My Job!',
-    url: 'https://www.welcometothejungle.co/collections/metiers',
+    url: 'https://www.welcometothejungle.co/collections/metiers', // checkURL
   },
   {
     description: "Des vidéos humoristiques sur 9 métiers d'avenir",
@@ -96,7 +98,7 @@ const JOB_VIDEO_SITES = [
     language: 'fr',
     section: prepareT("Vidéos sur des métiers d'avenir"),
     title: 'Mon métier en vrai',
-    url: 'https://www.youtube.com/playlist?list=PL44SpMa9ShRDa9gcFfhHhSDdXUnR3YCkm',
+    url: 'https://www.youtube.com/playlist?list=PL44SpMa9ShRDa9gcFfhHhSDdXUnR3YCkm', // checkURL
   },
   {
     creator: 'La Fondation Culture & Diversité',
@@ -105,7 +107,7 @@ const JOB_VIDEO_SITES = [
     language: 'fr',
     section: prepareT('Vidéos sur des métiers de la culture'),
     title: "Je m'oriente",
-    url: 'http://www.fondationcultureetdiversite.org/je-moriente',
+    url: 'http://www.fondationcultureetdiversite.org/je-moriente', // checkURL
   },
   {
     creator: "La Semaine de l'Industrie",
@@ -114,7 +116,7 @@ const JOB_VIDEO_SITES = [
     language: 'fr',
     section: prepareT("Vidéos sur des métiers de l'industrie"),
     title: 'Jobs inattendus',
-    url: 'https://www.semaine-industrie.gouv.fr/jobsinattendus',
+    url: 'https://www.semaine-industrie.gouv.fr/jobsinattendus', // checkURL
   },
   {
     creator: 'Wait but Why',
@@ -125,7 +127,7 @@ const JOB_VIDEO_SITES = [
     language: 'en',
     section: prepareT('Articles et outils pour explorer les métiers et les carrières'),
     title: 'How to pick a career (that actually fits you)',
-    url: 'https://waitbutwhy.com/2018/04/picking-career.html',
+    url: 'https://waitbutwhy.com/2018/04/picking-career.html', // checkURL
   },
   {
     creator: 'Open Classrooms',
@@ -134,7 +136,7 @@ const JOB_VIDEO_SITES = [
     language: 'en',
     section: prepareT('Articles et outils pour explorer les métiers et les carrières'),
     title: 'Developing a career plan',
-    url: 'https://openclassrooms.com/fr/courses/5291411-develop-your-career-plan?archived-source=3848156',
+    url: 'https://openclassrooms.com/fr/courses/5291411-develop-your-career-plan?archived-source=3848156', // checkURL
   },
   {
     creator: 'CareerOneStop',
@@ -143,7 +145,7 @@ const JOB_VIDEO_SITES = [
     language: 'en',
     section: prepareT('Vidéos sur tous types de métiers'),
     title: 'Career Videos',
-    url: 'https://www.youtube.com/user/CareerOneStop/playlists',
+    url: 'https://www.youtube.com/user/CareerOneStop/playlists', // checkURL
   },
   {
     creator: 'CareersBox',
@@ -152,7 +154,7 @@ const JOB_VIDEO_SITES = [
     language: 'en',
     section: prepareT('Vidéos sur tous types de métiers'),
     title: 'Career videos',
-    url: 'https://www.careersbox.co.uk',
+    url: 'https://www.careersbox.co.uk', // checkURL
   },
   {
     creator: 'UK Department of Education',
@@ -161,7 +163,18 @@ const JOB_VIDEO_SITES = [
     language: 'en',
     section: prepareT('Vidéos sur tous types de métiers'),
     title: 'Explore careers',
-    url: 'https://www.youtube.com/playlist?list=PL6gGtLyXoeq-9N4CyXIJVhIIlseXKG5YT',
+    url: 'https://www.youtube.com/playlist?list=PL6gGtLyXoeq-9N4CyXIJVhIIlseXKG5YT', // checkURL
+  },
+  {
+    creator: 'Would You Rather Be',
+    description:
+    'A quiz tells you which careers you could thrive in, helping you build to-do lists with the ' +
+    'time and cost to get into each career.',
+    image: wouldYouRatherBePreviewImage,
+    language: 'en',
+    section: prepareT('Articles et outils pour explorer les métiers et les carrières'),
+    title: 'Would You Rather be?',
+    url: 'https://wouldyouratherbe.com/?utm_source=bob', // checkURL
   },
 ] as const
 
@@ -179,11 +192,15 @@ interface JobVideoCardsProps extends JobVideoSectionProps {
 
 const titleStyle: React.CSSProperties = {
   fontSize: isMobileVersion ? 16 : 18,
-  fontWeight: 'bold',
-  marginBottom: 15,
+  margin: '0 0 15px',
 }
-const cardStyle = {
-  marginBottom: 40,
+const cardsListStyle: React.CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 30,
+  listStyleType: 'none',
+  margin: 0,
+  padding: 0,
 }
 
 
@@ -195,14 +212,12 @@ const JobVideoCardsBase = (props: JobVideoCardsProps): React.ReactElement|null =
     return null
   }
   return <div style={style}>
-    <div style={titleStyle}>{translate(...title)}</div>
-    <div style={{display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between'}}>
+    <h3 style={titleStyle}>{translate(...title)}</h3>
+    <ul style={cardsListStyle}>
       {sitesInLang.map(({creator, description, title, ...site}): React.ReactNode => <CardWithImage
         key={site.url} description={description}
-        title={creator ? t('{{title}} par {{creator}}', {creator, title}) : title} {...site}
-        // TODO(cyrille) avoid bottom margin on last row.
-        style={cardStyle} />)}
-    </div>
+        title={creator ? t('{{title}} par {{creator}}', {creator, title}) : title} {...site} />)}
+    </ul>
   </div>
 }
 const JobVideoCards = React.memo(JobVideoCardsBase)
@@ -267,15 +282,18 @@ const HandicapIdeas: React.FC<CardProps> = ({handleExplore, t}: CardProps): Reac
   </MethodSuggestionList>
 }
 
+const jobVideoCardsStyle: React.CSSProperties = {
+  marginBottom: 30,
+}
 
 const ExploreOtherJobsMethod = (props: CardProps): React.ReactElement => {
   return <React.Fragment>
     {props.profile.hasHandicap ? <HandicapIdeas {...props} /> : null}
     {JOB_VIDEO_SECTIONS.map((section: Omit<JobVideoSectionProps, 't'>): React.ReactNode =>
-      <JobVideoCards key={section.title[0]} {...section} t={props.t} />)}
+      <JobVideoCards key={section.title[0]} {...section} style={jobVideoCardsStyle} t={props.t} />)}
   </React.Fragment>
 }
 const ExpandedAdviceCardContent = React.memo(ExploreOtherJobsMethod)
 
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName: 'binocularsBlue' as const}

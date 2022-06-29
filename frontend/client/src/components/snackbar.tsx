@@ -1,5 +1,4 @@
-import PropTypes from 'prop-types'
-import React, {useCallback, useEffect, useState} from 'react'
+import React, {useCallback, useEffect, useMemo, useState} from 'react'
 
 import isMobileVersion from 'store/mobile'
 
@@ -100,31 +99,28 @@ const Snackbar = (props: SnackbarProps): React.ReactElement => {
     fontSize: 14,
     lineHeight: '24px',
   }
-  const snackStyle: React.CSSProperties = {
+  const snackStyle = useMemo((): React.CSSProperties => ({
     backgroundColor: 'rgba(0, 0, 0, 0.9)',
     borderRadius: isMobileVersion ? 'initial' : '2px',
+    margin: 0,
     maxWidth: 'calc(100% - 48px)',
     minWidth: 288,
-    padding: '13px 24px',
+    padding: isVisible ? '13px 24px' : 0,
     transform: isVisible ? 'translate(0, 0)' : 'translate(0, 100%)',
     transition: 'transform 200ms ease-out',
     width: isMobileVersion ? 'calc(100% - 48px)' : 'auto',
     willChange: 'transform',
-  }
+    ...style,
+  }), [isVisible, style])
   return <OutsideClickHandler onOutsideClick={hide} style={containerStyle} {...otherProps}>
-    <div
-      style={{...snackStyle, ...(style || {})}}
+    <p
+      style={snackStyle}
       onTransitionEnd={handleTransitionEnd}
+      role="status"
     >
       <span style={labelStyle}>{visibleSnack}</span>
-    </div>
+    </p>
   </OutsideClickHandler>
-}
-Snackbar.propTypes = {
-  onHide: PropTypes.func.isRequired,
-  snack: PropTypes.node,
-  style: PropTypes.object,
-  timeoutMillisecs: PropTypes.number.isRequired,
 }
 
 

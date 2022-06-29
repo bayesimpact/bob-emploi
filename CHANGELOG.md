@@ -1,5 +1,557 @@
 This is a detailed changelog of past Bob product releases. For a high level non-technical view of the project history, see [HISTORY.md](HISTORY.md).
 
+# 2022-06-13_00
+
+* Fix a bug with translations in the landding page.
+* Add a way to delete a user from the eval tool.
+* Add a free form text to the RER survey.
+
+Deployed on 2022-06-14 10:04:19.089475
+
+# 2022-06-01_jobflix_00
+
+First release of Jobflix on its own.
+
+- ask for the city even in FR
+- TPro header tuning
+
+Deployed on 2022-06-01 14:33:59.237215
+
+# 2022-05-31_02
+
+- Prepare another email dwp-interview with apologies.
+- Start improving the 3-months survey (RER).
+- Drop transparency page.
+
+Deployed on 2022-06-01 07:24:13.455649
+
+# 2022-05-25_00
+
+- Bug Fixes, Clean Code, ...
+
+Deployed on 2022-05-25 14:36:51.011069
+
+# 2022-05-17_01 (auto-generated notes)
+
+[Analytics] Allow Basic auth with API Key on ElasticSearch. (#19744)
+[CD] Make it possible to deploy a branch instead of a tag. (#19719)
+[DWP]
+	 Enable mail blast for dwp-interview requests. (#19702)
+	 Send the activation email asynchronously. (#19713)
+[Jobflix Split] Drop jobflix-only stacks from code. (#19746)
+[Operational Exit]
+	 Remove some pings to slack. (#19728)
+	 Remove slack ping after mail blast. (#19729)
+
+Deployed on 2022-05-17 12:26:49.324205
+
+# 2022-05-10_00 (auto-generated notes)
+
+2022-05-09_00
+
+- Update activation email: send it the next day with actions.
+ - Fix confidencce boost email.
+ - Allow to delete very old inactive users even without notice.
+
+Deployed on 2022-05-10 08:11:55.073896
+
+# 2022-05-04_00 [Emails] New confidence email (UK).
+
+Deployed on 2022-05-04 15:42:42.574360
+
+# 2022-05-03_00 (auto-generated notes)
+
+2022-04-26_00 (auto-generated notes)
+
+[Broken Links] Check URLs from client code. (#19665)
+[DWP]
+	 Create a confidence-boost email template. (#19661)
+	 Add an eval question on improving self-confidence. (#19678)
+	 Translate the dwp-interview email to English. (#19684)
+	 Prepare the schedule task to send dwp-interview weekly. (#19685)
+[Operational Exit]
+	 Add a server feature to turn off email answers. (#19676)
+	 First batch to update emails text to prevent responses. (#19677)
+	 A second batch to update emails text to prevent responses. (#19682)
+	 A third batch to update emails text to prevent responses. (#19683)
+	 A fourth batch to update emails text to prevent responses. (#19686)
+
+Deployed on 2022-05-03 09:49:20.285793
+
+# 2022-04-21_00
+
+- Jobflix banner
+
+Deployed on 2022-04-22 11:39:23.988158
+
+# 2022-04-12_00 (auto-generated notes)
+
+* More accessibility and UI fixes.
+* Endpoint to volunteer for feedback in one click.
+
+Deployed on 2022-04-12 09:10:48.916331
+
+# 2022-04-05_00
+
+* Accessibility
+* Tweaks on the new strat page (still hidden by a feature flag)
+
+Deployed on 2022-04-05 07:08:52.443351
+
+# 2022-04-04_01
+
+- Accessibility
+- New A/B testing mechanism
+- New strategy page
+- Fix bugs, Clean Code
+
+Deployed on 2022-04-04 17:04:19.054971
+
+# 2022-03-29_00
+
+* Move action name in the recap page.
+* Improve accessibility after Temesis review.
+* Fixes on CI and CD.
+* Prepare a dwp-interview email
+* (re) Prepare to send the jobflix first survey reminder with a changed date.
+* In eval tool: text feedback export to CSV.
+* Prepare a generic mail to recruit users for interviews.
+
+Deployed on 2022-03-29 13:14:41.093632
+
+# 2022-03-22_00
+
+2022-03-18_00
+
+- Fix some French left in English version to select actions schedule date.
+- Drop help desk link for non FR versions.
+- Show the training websites when no training sessions available.
+- A11y fixes.
+- Fix the missing-diploma main challenge trigger for the UK.
+
+Deployed on Tue, 22 Mar 2022 13:55:14 +0000
+
+# 2022-03-17_00
+
+* More accessibility fixes.
+* Change the training URL in Jobflix UK for Scotland and in T-Pro.
+* Prepare a mailing campain for Jobflix eval reminder.
+
+Deployed on Thu, 17 Mar 2022 10:26:34 +0000
+
+# 2022-03-15_04
+
+* Remove the criteria onboarding page to avoid a drop off during onboarding.
+* Improve Action Plan Mobie UI.
+* Many a11y fixes after Temesis review.
+* Fix some translations.
+* Improve the UI of resource with static content.
+
+Deployed on Wed, 16 Mar 2022 10:57:29 +0000
+
+# 2022-03-08_01
+
+- Improved accessibility
+- Updates in Action Plan UI
+- New coaching emails
+
+Deployed on Tue, 08 Mar 2022 10:11:48 +0000
+
+Deployed on Wed, 16 Mar 2022 14:33:14 +0000
+
+# 2022-03-03_00
+
+* Fix many accessibility issues in Jobflix after an external audit
+* Start improving the UI of the action plan on mobile
+* Translate the first-followup-survey
+* Various fixes and logging improvements
+
+Deployed on Thu, 03 Mar 2022 16:06:33 +0000
+
+# 2022-03-01_00 (auto-generated notes)
+
+- a11y fixes
+- dwp logo on landing page
+- ffs and inapp survey updates
+- jobflix wording change
+- logs added
+- youzful fixes
+
+Deployed on Tue, 01 Mar 2022 11:31:35 +0000
+
+# 2022-02-24_04
+
+- UI updates on Action Plan
+- First follow-up survey email
+- Small fixes
+
+Deployed on Thu, 24 Feb 2022 18:21:34 +0000
+
+# 2022-02-22_01 - [UI] Bob Actions revamp. - [Small fixes] Youzful. - First Feedback survey: under the hood.
+
+Deployed on Wed, 23 Feb 2022 10:43:12 +0000
+
+# 2022-02-15_02
+
+* Security improvements: use https images instead of http in our emails, SSL and HTTPS tuning, increase password complexity
+* Start revamping actions UI, adding some icons et colors
+* Improve experience for users coming from DWP
+* Improve the feedback stars experience
+* Various bug and logging fixes
+* Transition Pro: use its own favicon and job images.
+* Start the Youzful website
+
+Deployed on Tue, 15 Feb 2022 13:40:39 +0000
+
+# 2022-02-08_02
+
+- DWP: deactivate Coaching for Jobflix
+- Feedback: fixes and UI
+- TPro: Wording
+- Team updates
+- Star rating
+- Youzful: UI implementation start
+- Updates and fixes for Continuous Deployment, i18n
+
+Deployed on Tue, 08 Feb 2022 15:34:58 +0000
+
+# 2022-02-01_02
+
+* Improve salary stats for DWP
+* Improve a11y for French selector
+* Fix some translations, and logging
+
+Deployed on Tue, 01 Feb 2022 17:21:24 +0000
+
+# 2022-01-29_00
+
+* Fix the training link for T-Pro to use the Rome ID
+
+Deployed on Mon, 31 Jan 2022 09:17:33 +0000
+
+# 2022-01-28_02
+
+- a11y fixes
+- i18n fixes
+- bugfixes
+
+Deployed on Fri, 28 Jan 2022 16:47:39 +0000
+
+# 2022-01-25_03
+
+- Jobflix / Bob synergies
+- Jobflix data
+- Fix Send Project Feedback
+- Cookies / Privacy fixes
+- Jobflix T-Pro updates
+- Open undefined project strategy
+- a11y improvements
+
+Deployed on Wed, 26 Jan 2022 08:46:46 +0000
+
+# 2022-01-18_01
+
+* Improve a11y of Jobflix
+* Jobflix UK : drop the hiring tag, add a training link to National Careers.
+
+Deployed on Tue, 18 Jan 2022 16:28:47 +0000
+
+# 2022-01-15_00
+
+- Accessibility
+- Transitions Pro version for Jobflix
+
+Deployed on Mon, 17 Jan 2022 07:30:17 +0000
+
+# 2022-01-11_02
+
+- actions content update / creation for EN and FR
+- a11y fixes / improvements
+- fixes (email templates access...)
+
+Deployed on Tue, 11 Jan 2022 11:25:00 +0000
+
+# 2022-01-05_03
+
+- Update / revamp actions with English content 
+- T_Pro UI
+- Feedback modal
+- Jobflix: get section generators from DB
+
+Deployed on Thu, 06 Jan 2022 09:41:52 +0000
+
+# 2021-12-21_00
+
+* Content and data preparation for Bob in the UK
+* Altlernate landing page titles in English
+* Allow to save Jobfllix users even if they didn't ask for coaching
+* Small a11y improvement
+
+Deployed on Tue, 21 Dec 2021 14:28:01 +0000
+
+# 2021-12-14_00 (auto-generated notes)
+
+- Fix bugs in Action Plan
+- Prepare a DWP deployment
+- Clean Code, Bug Fixes, ...
+
+Deployed on Tue, 14 Dec 2021 16:41:18 +0000
+
+# 2021-12-08_00
+
+- Jobflix for Transition pro
+- fixes (a11y, i18n, CD...)
+- USA content
+
+Deployed on Thu, 09 Dec 2021 10:37:30 +0000
+
+# 2021-12-02_01
+
+* fixes on action plan
+* a11y improvements
+* Jobflix for Transitions Pro
+* small fixes (i18n, CD, config...)
+
+Deployed on Thu, 02 Dec 2021 14:37:15 +0000
+
+# 2021-11-22_01
+
+2021-11-22_00
+
+[ActionPlan] Launch Action Plan feature.
+Bug fixes.
+Transition Pro (under the hood)
+
+Deployed on Mon, 22 Nov 2021 14:49:30 +0000
+
+# 2021-11-17_00
+
+- Add some translations
+- Prepare the action plan
+- Improve the events action/method
+- Small Bugs, Clean Code, ...
+
+Deployed on Thu, 18 Nov 2021 12:59:39 +0000
+
+# 2021-11-09_00
+
+- Start the action plan workflow
+- Small Fixes, Clean Code, ...
+
+Deployed on Tue, 09 Nov 2021 12:49:15 +0000
+
+# 2021-11-02_00
+
+Preparing an Action Plan
+
+Deployed on Tue, 02 Nov 2021 13:23:20 +0000
+
+# 2021-10-26_00 (auto-generated notes)
+
+- Under the hood: action plan (WIP).
+
+Deployed on Thu, 28 Oct 2021 09:14:48 +0000
+
+# 2021-10-19_00
+
+- Update A-Li onboarding
+- Better filters for jobflix CPF link
+- Clean Code, Bug Fixes, ...
+
+Deployed on Tue, 19 Oct 2021 12:24:50 +0000
+
+# 2021-10-12_01
+
+- Accessibility improvements
+- Update jobflix coaching feature
+
+Deployed on Wed, 13 Oct 2021 13:08:08 +0000
+
+# 2021-10-05_01
+
+- Small Changes
+- Jobflix online trainings
+
+Deployed on Wed, 06 Oct 2021 07:56:20 +0000
+
+# 2021-09-22_00
+
+- Changes to increase the conversion on Jobflix
+- Some a11y fixes
+- Google Tag Manager for SkillUp
+
+Deployed on Wed, 22 Sep 2021 14:50:53 +0000
+
+# 2021-09-14_00
+
+- Prepare coaching emails for 3rd parties
+- Jobflix UI upgrade
+- Update Skillup terms
+- Clean Code, Bug Fixes, ...
+
+Deployed on Tue, 14 Sep 2021 09:25:15 +0000
+
+# 2021-09-07_00 (auto-generated notes)
+
+[Bug Fix]
+	 Remove unserializable proto list from ES export. (#16672)
+	 Use valid command for translation downloads. (#16713)
+[Coaching]
+	 Add nextYear var for christmas email. (#16669)
+	 Update new-year email to use new vars. (#16670)
+	 Update mailjet/index.ts to handle multiple templates. (#16676)
+	 Use vars for coaching emails footer. (#16678)
+	 Prepare coaching vars for holiday campaigns. (#16679)
+	 Use var:baseUrl in all email templates. (#16698)
+	 Add the productLogoUrl var to all templates. (#16702)
+	 Promote the use {{var:productName}} in emails. (#16717)
+[Debug] Add more information about missing message ID from mailjet. (#16689)
+[Lib Upgrade] Upgrade to unicorn v35+. (#16685)
+[Monitoring]
+	 Create a React environment for the monitoring app. (#16674)
+	 Add first skeleton for react App. (#16682)
+	 Add style in React app. (#16686)
+	 Use static file for data. (#16692)
+	 Make the demo available from CircleCI assets. (#16715)
+	 Use protos is monitoring lambda. (#16718)
+	 Export collection metadata for database. (#16719)
+
+Deployed on Wed, 08 Sep 2021 14:58:07 +0000
+
+# 2021-09-01_00
+
+Fixing small bugs
+
+Deployed on Thu, 02 Sep 2021 07:35:47 +0000
+
+# 2021-08-31_00
+
+- Small change in A-Li
+- Small UI Fixes
+- Add several emails for coaching
+
+Deployed on Wed, 01 Sep 2021 13:01:01 +0000
+
+# 2021-08-24_00
+
+Update emails content
+Small content updates
+Clean Code, Bug Fixes, ...
+
+Deployed on Wed, 25 Aug 2021 08:37:30 +0000
+
+# 2021-08-17_00 (auto-generated notes)
+
+[Coaching]
+	 Add a campaign for galita-2-short coaching email. (#16543)
+	 Create prepare-your-application-short campaign. (#16544)
+	 Create galita-3-short coaching email. (#16545)
+	 Add translations for galita-2-short coaching email. (#16546)
+	 Translate prepare-your-application-short email. (#16554)
+	 Add jobbing-short coaching email. (#16558)
+	 Add campaign for jobbing-short. (#16559)
+[Fix] Wrap texts in span to prevent from Google Translate crash. (#16547)
+
+Deployed on Wed, 18 Aug 2021 12:26:48 +0000
+
+# 2021-08-12_00
+
+- Update fields exported to Kibana.
+- Under the hood: new coaching emails.
+
+Deployed on Thu, 12 Aug 2021 14:33:28 +0000
+
+# 2021-08-10_00 (auto-generated notes)
+
+[Coaching] Add a short diploma coaching email. (#16507)
+[SkillUp]
+	 Add custom gender to elasticsearch export. (#16505)
+	 Sync race field to eslasticSearch. (#16506)
+[US] Activate race question on US. (#16513)
+
+Deployed on Wed, 11 Aug 2021 12:41:02 +0000
+
+# 2021-08-03_00 (auto-generated notes)
+
+[Coaching]
+	 Add a short spontaneous coaching email. (#16464)
+	 Create an fr@tu version of sponatenous-short. (#16467)
+	 Create en and en_UK versions of spontaneous-short. (#16470)
+	 Fix spontaneous-short template. (#16472)
+[Gender]
+	 Allow FR users to self-describe their gender. (#16473)
+	 Drop transgender which is not a gender. (#16476)
+	 Propagate the grammatical gender question to the profile. (#16480)
+[I18n] Extract images from MJML when using a self-closing tag. (#16465)
+
+Deployed on Thu, 05 Aug 2021 09:04:53 +0000
+
+# 2021-07-28_01
+
+- Small fixes for SkillU deployment.
+- Re-enable unknown job in the UK.
+
+Deployed on Thu, 29 Jul 2021 08:22:27 +0000
+
+# 2021-07-27_00
+
+* SkillUp : more visual integration with the website.
+* Recommands regular coaching. (#16414)
+* Disable Google Analytics tracking on Jobflix (except for user coming from Google Ads)
+* Few content updates for UK and US
+
+Deployed on Tue, 27 Jul 2021 09:57:08 +0000
+
+# 2021-07-20_01
+
+* Analytics: Some tweaks for Jobflix.
+* Remove the COVID banner or disclaimers.
+* Create a SkillUp deployment (simple onboarding, ask for race and gender).
+* Improvements for USA content (skills for future, trainings, veteran).
+
+Deployed on Tue, 20 Jul 2021 15:11:45 +0000
+
+# 2021-07-05_02
+
+- US: personalize some methods
+- Jobflix: add an Open Classrooms section
+
+Deployed on Mon, 05 Jul 2021 14:19:31 +0000
+
+# 2021-06-23_00
+
+- Remove information from PE connect
+- Prepare branding for coaching emails
+- Clean Code, Easier Dev, Bug Fixes, ...
+
+Deployed on Mon, 28 Jun 2021 15:55:55 +0000
+
+# 2021-06-15_02
+
+- Start a coaching program in Jobflix
+
+Deployed on Wed, 16 Jun 2021 08:18:32 +0000
+
+# 2021-06-08_00
+
+- Clean emails content
+- Clean Code, Bug Fixes, ...
+
+# 2021-06-01_00
+
+- Update US contract types
+- Email List updates
+- Clean Code, Bug Fixes
+
+Deployed on Tue, 01 Jun 2021 12:34:50 +0000
+
+# 2021-05-26_00
+
+- Behind-the-scene emails
+- Clean Code, Bug Fixes, ...
+
+Deployed on Wed, 26 May 2021 13:44:29 +0000
+
 # 2021-05-19_00
 
 - Fix the deep URLs in the Eval tool.

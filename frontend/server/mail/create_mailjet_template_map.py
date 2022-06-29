@@ -14,7 +14,7 @@ def _create_lines(lines: Iterable[str], indent: str = '') -> str:
 def main(json_map_filename: str) -> str:
     """Create a template map in Python code."""
 
-    with open(json_map_filename, 'rt') as json_map_file:
+    with open(json_map_filename, 'rt', encoding='utf-8') as json_map_file:
         templates = json.load(json_map_file)
 
     assert len({t['name'] for t in templates}) == len(templates), 'Template names are not unique'
@@ -24,8 +24,9 @@ def main(json_map_filename: str) -> str:
 
         # Generated automatically.  DO NOT EDIT!
         # source: {json_map_filename}
+        # pylint: disable=line-too-long
 
-        from typing import Dict, Literal, Mapping, TypedDict
+        from typing import Literal, Mapping, TypedDict
 
 
         # Root path for template folders.
@@ -45,7 +46,8 @@ def main(json_map_filename: str) -> str:
         class Template(_RequiredTemplate, total=False):
             """Description of a MailJet template."""
 
-            i18n: Dict[str, int]
+            i18n: dict[str, int]
+            noI18n: bool
 
 
         MAP: Mapping[Id, Template] = {{

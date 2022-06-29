@@ -4,9 +4,9 @@ import {getJobPlacesFromDepartementStats} from 'store/job'
 
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
-import Picto from 'images/advices/picto-seasonal-relocate.svg'
 
-import {CardProps, MethodSuggestionList, useAdviceData} from './base'
+import type {CardProps} from './base'
+import {MethodSuggestionList, useAdviceData} from './base'
 
 
 const SeasonalRelocate = (props: CardProps): React.ReactElement => {
@@ -37,4 +37,4 @@ const SeasonalRelocate = (props: CardProps): React.ReactElement => {
 const ExpandedAdviceCardContent = React.memo(SeasonalRelocate)
 
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName: 'cloud' as const}

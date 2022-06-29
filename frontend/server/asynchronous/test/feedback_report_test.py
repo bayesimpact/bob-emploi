@@ -10,21 +10,19 @@ import requests_mock
 import sentry_sdk
 
 from bob_emploi.frontend.server.asynchronous import feedback_report
+from bob_emploi.frontend.server.asynchronous.test import asynchronous_test_case
 
 
 @requests_mock.mock()
 @mock.patch(sentry_sdk.__name__ + '.init')
 @mock.patch(feedback_report.__name__ + '._SLACK_FEEDBACK_URL', 'https://slack/')
 @mock.patch.dict(os.environ, {'SENTRY_DSN': 'https://42:42@sentry.io/42'})
-class FeedbackReportTestCase(unittest.TestCase):
+class FeedbackReportTestCase(asynchronous_test_case.TestCase):
     """Unit tests for the module."""
 
     def setUp(self) -> None:
         super().setUp()
-        self._db = mongomock.MongoClient().test
-        patcher = mock.patch(feedback_report.__name__ + '._USER_DB', new=self._db)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        self._db = self._user_db
 
     def test_send_report(
             self, mock_requests: requests_mock.Mocker, mock_sentry_init: mock.MagicMock) -> None:

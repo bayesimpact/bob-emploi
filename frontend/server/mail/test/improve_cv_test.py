@@ -3,11 +3,11 @@
 import datetime
 import re
 import unittest
-from unittest import mock
 
-from bob_emploi.common.python import now
+from bob_emploi.common.python.test import nowmock
+from bob_emploi.frontend.api import email_pb2
 from bob_emploi.frontend.api import project_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server.mail.test import campaign_helper
 
 
@@ -19,11 +19,11 @@ class ImproveCvTest(campaign_helper.CampaignTestBase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.user.profile.frustrations.append(user_pb2.RESUME)
+        self.user.profile.frustrations.append(user_profile_pb2.RESUME)
 
-        self.user.profile.gender = user_pb2.MASCULINE
+        self.user.profile.gender = user_profile_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
-        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_ONCE_A_MONTH
 
     def test_basic_mail_blast(self) -> None:
         """Basic usage of a mail blast."""
@@ -37,7 +37,7 @@ class ImproveCvTest(campaign_helper.CampaignTestBase):
 
         self._assert_user_receives_focus(should_be_sent=False)
 
-    @mock.patch(now.__name__ + '.get', new=lambda: datetime.datetime(2019, 8, 15))
+    @nowmock.patch(new=lambda: datetime.datetime(2019, 8, 15))
     def test_basic_focus(self) -> None:
         """Basic usage."""
 
@@ -59,7 +59,7 @@ class ImproveCvTest(campaign_helper.CampaignTestBase):
             'isSeptember': '',
         })
 
-    @mock.patch(now.__name__ + '.get', new=lambda: datetime.datetime(2019, 9, 15))
+    @nowmock.patch(new=lambda: datetime.datetime(2019, 9, 15))
     def test_first_job_in_september(self) -> None:
         """User is looking for its first job in September."""
 
@@ -73,9 +73,10 @@ class ImproveCvTest(campaign_helper.CampaignTestBase):
             'coachingEmailFrequency': 'EMAIL_ONCE_A_MONTH',
         })
         self._assert_has_status_update_link('statusUpdateUrl')
-        base_url = f'https://www.bob-emploi.fr?userId={self.user.user_id}'
+        base_url = 'https://www.bob-emploi.fr?'
         self._assert_regex_field(
-            'loginUrl', rf'^{re.escape(base_url)}&authToken=\d+\.[a-f0-9]+$')
+            'loginUrl',
+            rf'^{re.escape(base_url)}authToken=\d+\.[a-f0-9]+&userId={self.user.user_id}$')
 
         self._assert_remaining_variables({
             'deepLinkAdviceUrl': '',
@@ -83,7 +84,7 @@ class ImproveCvTest(campaign_helper.CampaignTestBase):
             'isSeptember': 'True',
         })
 
-    @mock.patch(now.__name__ + '.get', new=lambda: datetime.datetime(2019, 9, 15))
+    @nowmock.patch(new=lambda: datetime.datetime(2019, 9, 15))
     def test_antoher_job_in_september(self) -> None:
         """User is looking for another job in September."""
 
@@ -97,9 +98,10 @@ class ImproveCvTest(campaign_helper.CampaignTestBase):
             'coachingEmailFrequency': 'EMAIL_ONCE_A_MONTH',
         })
         self._assert_has_status_update_link('statusUpdateUrl')
-        base_url = f'https://www.bob-emploi.fr?userId={self.user.user_id}'
+        base_url = 'https://www.bob-emploi.fr?'
         self._assert_regex_field(
-            'loginUrl', rf'^{re.escape(base_url)}&authToken=\d+\.[a-f0-9]+$')
+            'loginUrl',
+            rf'^{re.escape(base_url)}authToken=\d+\.[a-f0-9]+&userId={self.user.user_id}$')
 
         self._assert_remaining_variables({
             'deepLinkAdviceUrl': '',

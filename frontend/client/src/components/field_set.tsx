@@ -1,7 +1,9 @@
+import type {TFunctionResult} from 'i18next'
+import _uniqueId from 'lodash/uniqueId'
 import CheckIcon from 'mdi-react/CheckIcon'
 import CloseIcon from 'mdi-react/CloseIcon'
-import PropTypes from 'prop-types'
-import React, {useMemo} from 'react'
+import React, {useEffect, useMemo, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 
 import isMobileVersion from 'store/mobile'
 
@@ -9,6 +11,7 @@ import isMobileVersion from 'store/mobile'
 interface FieldCheckProps {
   isMarkedInvalid?: boolean
   isValid?: boolean
+  onCheckDescriptionId?: (id?: string) => void
   style?: React.CSSProperties
 }
 
@@ -20,7 +23,8 @@ const fieldCheckIconStyle: React.CSSProperties = {
 
 
 const FieldCheckBase = (props: FieldCheckProps): React.ReactElement => {
-  const {isMarkedInvalid, isValid, style} = props
+  const {isMarkedInvalid, isValid, onCheckDescriptionId, style, ...otherProps} = props
+  const {t} = useTranslation('components')
   const checkboxStyle = useMemo((): React.CSSProperties => ({
     alignItems: 'center',
     backgroundColor: isMarkedInvalid ? colors.RED_PINK : colors.GREENISH_TEAL,
@@ -41,90 +45,186 @@ const FieldCheckBase = (props: FieldCheckProps): React.ReactElement => {
     width: isMobileVersion ? 20 : 30,
     ...style,
   }), [style, isValid, isMarkedInvalid])
+  const descriptionId = useMemo(_uniqueId, [])
+  useEffect(() => {
+    if (!isMarkedInvalid && !isValid) {
+      onCheckDescriptionId?.(undefined)
+    } else {
+      onCheckDescriptionId?.(descriptionId)
+    }
+  }, [descriptionId, isMarkedInvalid, isValid, onCheckDescriptionId])
   return <div style={checkboxStyle}>
-    {isMarkedInvalid ? <CloseIcon style={fieldCheckIconStyle} /> : null}
-    {isValid ? <CheckIcon style={fieldCheckIconStyle} /> : null}
+    {isMarkedInvalid ? <CloseIcon
+      style={fieldCheckIconStyle} role="img" aria-label={t('Erreur')}
+      {...otherProps} id={descriptionId} /> :
+      isValid ? <CheckIcon
+        style={fieldCheckIconStyle} role="img" aria-label={t('Valide')}
+        {...otherProps} id={descriptionId} /> : null}
   </div>
-}
-FieldCheckBase.propTypes = {
-  isMarkedInvalid: PropTypes.bool,
-  isValid: PropTypes.bool,
-  style: PropTypes.object,
 }
 const FieldCheck = React.memo(FieldCheckBase)
 
 
-interface FieldSetProps {
-  children: React.ReactNode
-  disabled?: boolean
-  hasCheck?: boolean
+interface FieldContainerProps {
   hasNoteOrComment?: boolean
   isInline?: boolean
+  style?: React.CSSProperties
+}
+
+
+const makeContainerStyle = (
+  {hasNoteOrComment, isInline, style}: FieldContainerProps): React.CSSProperties => ({
+  border: 'none',
+  display: 'flex',
+  flexDirection: 'column',
+  fontSize: 15,
+  marginBottom: hasNoteOrComment || isInline ? 0 : 25,
+  marginLeft: 0,
+  marginRight: 0,
+  minWidth: isInline ? 'initial' : isMobileVersion ? '100%' : 360,
+  padding: 0,
+  position: 'relative',
+  ...style,
+})
+
+
+interface Props extends FieldContainerProps {
+  // TODO(pascal): Clean up fieldsets using only one element and switch this to only accept multiple
+  // children and force a legend.
+  children: NonNullable<React.ReactNode>
   isValid?: boolean
   isValidated?: boolean
-  label?: React.ReactNode
-  style?: React.CSSProperties
+  legend?: string | TFunctionResult
+  tooltip?: React.ReactElement<{'aria-describedby'?: string}> | null
 }
 
 
 const fieldSetStyle: React.CSSProperties = {
   position: 'relative',
 }
+const extendedLabelStyle: React.CSSProperties = {
+  color: colors.COOL_GREY,
+  fontSize: '90%',
+  fontStyle: 'italic',
+  margin: '0 0 11px',
+}
+const legendStyle: React.CSSProperties = {
+  marginBottom: 15,
+}
 
 
-const FieldSet = (props: FieldSetProps): React.ReactElement => {
-  const {children, disabled, hasCheck, hasNoteOrComment, isInline, isValid, isValidated, label,
-    style, ...otherProps} = props
-  const isMarkedInvalid = !disabled && isValidated && !isValid
-  const containerStyle = useMemo((): React.CSSProperties => ({
-    border: 'none',
-    display: 'flex',
-    flexDirection: 'column',
-    fontSize: 15,
-    marginBottom: hasNoteOrComment || isInline ? 0 : 25,
-    marginLeft: 0,
-    marginRight: 0,
-    minWidth: isInline ? 'initial' : isMobileVersion ? '100%' : 360,
-    opacity: disabled ? 0.5 : 'inherit',
-    padding: 0,
-    position: 'relative',
-    ...style,
-  }), [disabled, isInline, hasNoteOrComment, style])
+const FieldSet = (props: Props): React.ReactElement => {
+  const {children, hasNoteOrComment, isInline, isValid,
+    isValidated, legend, style, tooltip, ...otherProps} = props
+  const isMarkedInvalid = isValidated && !isValid
+  const containerStyle = useMemo(
+    (): React.CSSProperties => makeContainerStyle({hasNoteOrComment, isInline, style}),
+    [isInline, hasNoteOrComment, style],
+  )
+  // TODO(pascal): Fix the tooltip in legend for a11y.
+  const legendId = useMemo(_uniqueId, [])
+  return <fieldset
+    className={isMarkedInvalid ? 'marked-invalid' : ''}
+    style={containerStyle}
+    {...otherProps}>
+    {legend ? <legend style={legendStyle}>
+      {legend}
+      {tooltip && React.cloneElement(tooltip, {'aria-describedby': legendId})}
+    </legend> : null}
+    <div style={fieldSetStyle}>
+      <div>
+        {children}
+      </div>
+      {isMarkedInvalid ?
+        <FieldCheck isValid={isValid} isMarkedInvalid={isMarkedInvalid} /> : null}
+    </div>
+  </fieldset>
+}
+
+const makeIdList = (id1?: string, id2?: string): string|undefined => {
+  if (!id1) {
+    return id2
+  }
+  if (!id2) {
+    return id1
+  }
+  return `${id1} ${id2}`
+}
+
+
+interface OneFieldProps extends FieldContainerProps {
+  children: React.ReactElement<{
+    'aria-describedby'?: string
+    'aria-invalid': boolean
+    'aria-labelledby'?: string
+  }>
+  extendedLabel?: React.ReactNode
+  hasCheck?: boolean
+  invalidClassName?: string
+  isValid?: boolean
+  isValidated?: boolean
+  label: string | TFunctionResult
+  note?: React.ReactElement<{id?: string}> | null
+  tooltip?: React.ReactElement<{'aria-describedby'?: string}> | null
+}
+
+const noPStyle: React.CSSProperties = {
+  display: 'inline',
+  margin: 0,
+}
+
+
+const OneFieldBase = (props: OneFieldProps): React.ReactElement => {
+  const {children, extendedLabel, hasCheck, hasNoteOrComment, invalidClassName = 'marked-invalid',
+    isInline, isValid, isValidated, label, note, style, tooltip, ...otherProps} = props
+  const isMarkedInvalid = isValidated && !isValid
+  const containerStyle = useMemo(
+    (): React.CSSProperties => makeContainerStyle({hasNoteOrComment, isInline, style}),
+    [isInline, hasNoteOrComment, style],
+  )
 
   const labelStyle = useMemo((): React.CSSProperties => ({
     color: isInline && isMarkedInvalid ? colors.RED_PINK : colors.CHARCOAL_GREY,
     fontSize: style && style.fontSize || 15,
     lineHeight: 1.3,
-    marginBottom: isInline ? 0 : 11,
+    margin: isInline ? 0 : '0 0 11px',
   }), [style, isInline, isMarkedInvalid])
 
-  return <fieldset
-    style={containerStyle} disabled={disabled}
-    className={isMarkedInvalid ? 'marked-invalid' : ''}
+  const child = React.Children.only(children)
+
+  const labelId = useMemo(_uniqueId, [])
+  const noteId = useMemo(_uniqueId, [])
+  const [descriptionId, setDescriptionId] = useState<undefined|string>()
+
+  return <div
+    className={isMarkedInvalid ? invalidClassName : ''}
+    style={containerStyle}
     {...otherProps}>
-    <label style={labelStyle}>{label}</label>
+    <div style={labelStyle}>
+      <p style={noPStyle} id={labelId}>{label}</p>
+      {tooltip && React.cloneElement(tooltip, {'aria-describedby': labelId})}
+    </div>
+    {extendedLabel ? <p style={extendedLabelStyle} aria-describedby={labelId}>
+      {extendedLabel}</p> : null}
     <div style={fieldSetStyle}>
       <div>
-        {children}
+        {React.cloneElement(child, {
+          'aria-describedby': makeIdList(
+            makeIdList(descriptionId, child.props['aria-describedby']),
+            note && noteId || undefined),
+          'aria-invalid': isMarkedInvalid,
+          'aria-labelledby': makeIdList(labelId, child.props['aria-labelledby']),
+        })}
+        {note ? React.cloneElement(note, {id: noteId}) : null}
       </div>
       {(hasCheck && isValid) || isMarkedInvalid ?
-        <FieldCheck isValid={isValid} isMarkedInvalid={isMarkedInvalid} /> : null}
+        <FieldCheck
+          onCheckDescriptionId={setDescriptionId} isValid={isValid}
+          isMarkedInvalid={isMarkedInvalid} /> : null}
     </div>
-  </fieldset>
+  </div>
 }
-FieldSet.propTypes = {
-  children: PropTypes.node,
-  // We keep disabled by consistency with the DOM fieldset element.
-  // eslint-disable-next-line react/boolean-prop-naming
-  disabled: PropTypes.bool,
-  hasCheck: PropTypes.bool,
-  hasNoteOrComment: PropTypes.bool,
-  isInline: PropTypes.bool,
-  isValid: PropTypes.bool,
-  isValidated: PropTypes.bool,
-  label: PropTypes.node,
-  style: PropTypes.object,
-}
+export const OneField = React.memo(OneFieldBase)
 
 
 export default React.memo(FieldSet)

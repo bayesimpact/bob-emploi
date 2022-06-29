@@ -8,7 +8,7 @@
 pushd "$(dirname "$0")/notebooks" > /dev/null
 
 readonly GIT_REMOTE="origin"
-readonly GIT_REMOTE_BRANCH="master"
+readonly GIT_REMOTE_BRANCH="main"
 
 readonly NOTEBOOK_FOLDER="$(git rev-parse --show-prefix)"
 readonly RANDOM_NOTEBOOK="$(\

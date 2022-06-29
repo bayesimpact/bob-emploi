@@ -5,11 +5,14 @@ set -e
 PROTO_FOLDERS="frontend/api frontend/api/radar"
 
 if [ -n "$TEST_ENV" ]; then
-  PROTO_FOLDERS="$PROTO_FOLDERS data_analysis/importer/test/testdata"
+  PROTO_FOLDERS="$PROTO_FOLDERS data_analysis/importer/test/testdata data_analysis/lib/test/testdata"
+  readonly TEST_FLAGS="--mypy_out=quiet:."
+else
+  readonly TEST_FLAGS=""
 fi
 
 for folder in $PROTO_FOLDERS; do
-  protoc -I . -I /usr/local/share/proto/ bob_emploi/$folder/*.proto --python_out=.  --mypy_out=quiet:.
+  protoc -I . -I /usr/local/share/proto/ bob_emploi/$folder/*.proto --python_out=. $TEST_FLAGS
   touch "bob_emploi/$folder/__init__.py"
 done
 

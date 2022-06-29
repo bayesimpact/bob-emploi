@@ -1,12 +1,15 @@
 """Endpoints for the evaluation tool."""
 
+import csv
+import datetime
+import io
 import logging
 import os
 import random
 import re
-import typing
-from typing import Any, Dict, Iterable, Iterator, Tuple
+from typing import Any, Iterable, Iterator, Tuple
 
+import bson
 from bson import objectid
 import flask
 from google.protobuf import json_format
@@ -15,6 +18,7 @@ from pymongo import errors
 from requests import exceptions
 
 from bob_emploi.common.python import now
+from bob_emploi.common.python import proto as common_proto
 from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import diagnostic
 from bob_emploi.frontend.server import mongo
@@ -24,6 +28,8 @@ from bob_emploi.frontend.server import proto_flask
 from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server.mail import mail_send
 from bob_emploi.frontend.api import diagnostic_pb2
+from bob_emploi.frontend.api import feedback_pb2
+from bob_emploi.frontend.api import mailjet_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.api import use_case_pb2
 
@@ -90,10 +96,8 @@ def evaluate_use_case(
         -> str:
     """Evaluate a use case."""
 
-    use_case.evaluated_at.GetCurrentTime()
+    common_proto.set_date_now(use_case.evaluated_at)
     use_case.by = evaluator_email
-    # No need to pollute our DB with super precise timestamps.
-    use_case.evaluated_at.nanos = 0
     _get_eval_db().use_case.update_one(
         {'_id': use_case_id},
         {'$set': {'evaluation': json_format.MessageToDict(use_case)}})
@@ -126,7 +130,7 @@ def create_use_case(request: use_case_pb2.UseCaseCreateRequest, requester_email:
     if not identifier:
         flask.abort(400, "Il manque un identifiant pour créer le cas d'usage.")
 
-    query: Dict[str, Any]
+    query: dict[str, Any]
     if request.email:
         _log_request(request.email, requester_email, database)
         query = {'hashedEmail': auth.hash_user_email(request.email)}
@@ -286,7 +290,8 @@ _SUBJECT_DOC = 'Wrong %s in email subject: "%s"\nSet subject as "<user_id> <subj
 #   query.
 # TODO(cyrille): Consider allowing attachements.
 @app.route('/mailjet', methods=['POST'])
-def direct_email_to_user() -> Tuple[str, int]:
+@proto_flask.api(in_type=mailjet_pb2.Parse)
+def direct_email_to_user(mailjet_parse_email: mailjet_pb2.Parse) -> Tuple[str, int]:
     """Send an email from incoming Mailjet API to a user, using its ID given in the subject.
 
     # Setting the Mailjet API Parse route:
@@ -309,19 +314,26 @@ def direct_email_to_user() -> Tuple[str, int]:
     subject).
     """
 
-    mailjet_parse_email = typing.cast(
-        'mail_send._MailjetParseJson', flask.request.get_json(force=True))
-
-    subject = mailjet_parse_email['Subject']
+    subject = mailjet_parse_email.subject
     try:
-        [user_id, subject] = subject.split(' ', 1)
+        user_id, subject = subject.split(' ', 1)
+        try:
+            prefix, user_id = user_id.split(':', 1)
+        except ValueError:
+            # No prefix found, ignoring.
+            prefix = ''
     except ValueError:
         logging.warning(_SUBJECT_DOC, 'format', subject)
         mail_send.mailer_daemon(_SUBJECT_DOC % ('format', subject), mailjet_parse_email)
         return 'Invalid email subject', 202
+    subject = subject.strip()
+    if subject.startswith('#'):
+        logging.warning(
+            'Subject of direct email to %s starts with a #. Ignoring the subject.', user_id)
+        subject = ''
     try:
         selector = {'_id': objectid.ObjectId(user_id)}
-    except errors.InvalidId:
+    except bson.errors.InvalidId:
         logging.warning(_SUBJECT_DOC, 'user ID', user_id)
         mail_send.mailer_daemon(_SUBJECT_DOC % ('user ID', user_id), mailjet_parse_email, user_id)
         return 'Invalid user ID', 202
@@ -333,7 +345,7 @@ def direct_email_to_user() -> Tuple[str, int]:
 
     user_database = mongo.get_connections_from_env().user_db
     user = proto.create_from_mongo(
-        user_database.user.find_one(selector),
+        user_database.with_prefix(prefix).user.find_one(selector),
         user_pb2.User, always_create=False)
     if not user:
         return return_error('User not found')
@@ -347,3 +359,47 @@ def direct_email_to_user() -> Tuple[str, int]:
             f'Mailjet response {response.status_code} with message:\n{response.text}')
     # TODO(cyrille): Consider logging the email in user.emails_sent
     return 'OK', 200
+
+
+@app.route('/feedback/export', methods=['GET'])
+@auth.require_google_user(_EMAILS_PATTERN)
+@proto_flask.api(in_type=feedback_pb2.FeedbackExportRequest)
+def export_feedback(request: feedback_pb2.FeedbackExportRequest) -> flask.Response:
+    """Export feedback."""
+
+    if not request.HasField('after'):
+        flask.abort(422, 'The parameter "after" is required.')
+
+    after_time = request.after.ToDatetime()
+    id_filter = {
+        '$gt': objectid.ObjectId.from_datetime(after_time),
+    }
+    if request.HasField('before'):
+        before_time = request.before.ToDatetime()
+        id_filter['$lte'] = objectid.ObjectId.from_datetime(before_time)
+    else:
+        before_time = datetime.datetime.utcnow()
+    user_database = mongo.get_connections_from_env().user_db
+    entries = user_database.feedbacks.find({'_id': id_filter})
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['date', 'source', 'text', 'score', 'user_id'])
+
+    for feedback_entry in entries:
+        entry_id = objectid.ObjectId(feedback_entry['_id'])
+        writer.writerow((
+            entry_id.generation_time.strftime('%Y-%m-%d'),
+            feedback_entry.get('source', ''),
+            feedback_entry.get('feedback', ''),
+            str(score) if (score := feedback_entry.get('score', 0)) else '',
+            feedback_entry.get('userId', ''),
+        ))
+
+    filename = f'feedback-{after_time.strftime("%Y-%m-%d")}-{before_time.strftime("%Y-%m-%d")}.csv'
+    return flask.Response(
+        output.getvalue(),
+        content_type='text/csv; charset=utf-8',
+        headers={
+            'Content-disposition': f'attachment;filename={filename}',
+        })

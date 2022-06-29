@@ -1,0 +1,34 @@
+<mjml owa="desktop" version="4.6.3">
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-text line-height="1.38">Bonjour {{var:firstName:"Olivier"}},</mj-text>
+        <mj-text line-height="1.38">{%if var:weeklyApplicationsEstimate:""=="SOME"%}J'ai noté que vous postulez pour 2 à 5 offres par semaine, c'est le nombre idéal, bravo !{%elseif var:weeklyApplicationsEstimate:""=="DECENT_AMOUNT"%}J'ai noté que vous postulez pour 6 à 15 offres d'emploi par semaine. C'est beaucoup !{%elseif var:weeklyApplicationsEstimate:""=="A_LOT"%}J'ai noté que vous postulez à plus de 15 offres par semaine. C'est beaucoup !{%endif%}</mj-text>
+        <mj-text line-height="1.38">{%if var:advicePageUrl:""!=""%}J'ai trouvé <a href="{{var:advicePageUrl}}">un excellent article</a> qui explique l'importance de relancer après avoir envoyé une candidature, quel est le bon délai de relance et quoi écrire. Cela m'a fait penser à vous, alors j'ai décidé de vous écrire pour vérifier si vous preniez le temps d'envoyer ces messages.{%else%}Peut-être vous demandez vous s'il était utile de relancer après avoir envoyé une candidature, quel est le bon délai de relance et quoi écrire. J'ai décidé de vous écrire pour vérifier si vous preniez le temps d'envoyer ces messages.{%endif%}</mj-text>
+        <mj-text line-height="1.38">Ils sont très importants car ils montrent de la motivation, qui est un atout indéniable pour les recruteurs. Ils vous permettent également de savoir où en est votre candidature et d'avoir plus de visibilité.</mj-text>
+        <mj-text line-height="1.38">{%if var:hasImageUrl:"False"=="True"%}Le graphique ci-dessous vous montre quel est le meilleur moment pour relancer un recruteur :</mj-text>
+          <mj-image src="https://t.bob-emploi.fr/tplimg/6u2u/b/4psz/ioh37.jpeg" id="i0fs" width="auto" padding-top="20px" padding-left="20%" padding-right="20%" padding-bottom="0"></mj-image>
+          <mj-text line-height="1.38" padding-left="15%" padding-right="15%" padding-top="5px" font-size="small">Graphique de {{var:advicePageUrl}}{%elseif var:advicePageUrl:""!=""%}Les différents sites de recrutement s'accordent sur un délai de relance entre 1 à 2 semaines après l'envoi de la candidature.</mj-text>
+          <mj-text line-height="1.38">Ci-dessous les résultats de l'enquête : quand les candidats doivent-ils relancer un recruteur ?</mj-text>
+            <mj-text line-height="1.38"><ul><li>Moins d'une semaine : 19%</li><li>1 à 2 semaines : 43%</li><li>2 à 3 semaines : 30%</li><li>3 semaines ou plus : 8%</li><li>Les candidats ne devraient pas relancer : 0%</li></ul></mj-text>
+          <mj-text line-height="1.38" font-size="13px">Source: {{var:advicePageUrl}}{%endif%}</mj-text>
+        <mj-text line-height="1.38">Le plus important est de rappeler que vous avez postulé et de demander poliment des informations sur le délai. Vous pouvez également ajouter des éléments pour personnaliser votre relance :</mj-text>
+        <mj-text line-height="1.38"><strong>1. S'il s'agit d'une offre d'emploi publiée, remerciez la personne pour l'opportunité :</strong></mj-text>
+        <mj-text line-height="1.38">"Je tiens à vous remercier d'avoir publié l'offre d'emploi pour [nom du rôle], ce fut une joie de pouvoir préparer ma candidature pour ce rôle."</mj-text>
+        <mj-text line-height="1.38"><strong>2. Mentionnez quelque chose que vous ne saviez pas sur le travail ou l'entreprise et que vous avez vraiment aimé</strong></mj-text>
+        <mj-text line-height="1.38">"J'étais vraiment intéressé{%if var:gender:""=="FEMININE"%}e{%else%}{%if var:gender:""=="MASCULINE"%}{%else%}·e{%endif%}{%endif%} de lire sur votre site Web/réseaux sociaux que..."</mj-text>
+        <mj-text line-height="1.38"><strong>3. Mentionnez quelque chose dont vous aimeriez discuter dans une interview :</strong></mj-text>
+        <mj-text line-height="1.38">"Si vous êtes disponible pour un entretien, j'aimerais montrer comment [un aspect tiré de votre CV] serait un réel avantage [un aspect tiré de la description du poste]..."</mj-text>
+        <mj-text line-height="1.38">J'espère que cet e-mail vous a donné quelques idées pour relancer les recruteurs{%if var:advicePageUrl:""!=""%}, vous en trouverez d'autres au sein de l'article que je vous ai partagé{%endif%}.</mj-text>
+        <mj-text line-height="1.38">{%if var:areEmailsAnswerRead%}Vous pouvez m'envoyer un brouillon par e-mail pour que je l'examine si cela peut être utile.{%endif%}</mj-text>
+        <mj-text line-height="1.38">{{var:senderName}}</mj-text>
+        <mj-text line-height="1.38">{%if var:areEmailsAnswerRead%}PS: Je lis toutes les réponses aux emails.{%endif%}</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-text font-size="11px" color="#55575d" line-height="2">Vous recevez cet email car vous êtes inscrit{%if var:gender:""=="FEMININE"%}e{%elseif var:gender:""=="MASCULINE"%}{%else%}·e{%endif%} sur <a href="{{var:baseUrl}}?utm_source=bob-emploi&amp;utm_medium=email" target="_blank">{{var:productName}}</a> et avez demandé des emails de coaching. <a href="{{var:changeEmailSettingsUrl}}" target="_blank">Cliquez ici</a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte {{var:productName}} en veille ? <a href="{{var:statusUpdateUrl}}" target="_blank">cliquez ici</a>.</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

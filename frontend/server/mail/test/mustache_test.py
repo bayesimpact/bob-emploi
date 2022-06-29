@@ -1,8 +1,11 @@
 """Tests for the mail.mustache module."""
 
+# TODO(pascal): Move to a place where we test common.
+
+
 import unittest
 
-from bob_emploi.frontend.server.mail import mustache
+from bob_emploi.common.python import mustache
 
 
 class MustacheTests(unittest.TestCase):
@@ -37,7 +40,7 @@ class MustacheTests(unittest.TestCase):
     def test_if_block(self) -> None:
         """A template containing a simple if block."""
 
-        result = mustache.instantiate('I am{% if var:ready %} ready{%endif%}', {'ready': True})
+        result = mustache.instantiate('I am{%if var:ready%} ready{%endif%}', {'ready': True})
         self.assertEqual('I am ready', result)
         result = mustache.instantiate('I am{%if var:ready%} ready{%endif%}', {'ready': False})
         self.assertEqual('I am', result)
@@ -52,14 +55,14 @@ class MustacheTests(unittest.TestCase):
         """A template missing an endif."""
 
         with self.assertRaises(mustache.SyntaxTemplateError):
-            mustache.instantiate('A string with {%if var:myVar %}b{%else%}c', {'myVar': 'a'})
+            mustache.instantiate('A string with {%if var:myVar%}b{%else%}c', {'myVar': 'a'})
 
     def test_syntax_error_in_unused_branch(self) -> None:
         """A template with a syntax error in branch not used in the output."""
 
         with self.assertRaises(mustache.SyntaxTemplateError):
             mustache.instantiate(
-                'A string with {%if var:myVar %}b{%else%}c{%irf%}{%endif%}',
+                'A string with {%if var:myVar%}b{%else%}c{%irf%}{%endif%}',
                 {'myVar': True})
 
     def test_spurious_else(self) -> None:
@@ -98,7 +101,7 @@ class MustacheTests(unittest.TestCase):
         """A template containing a simple for block."""
 
         result = mustache.instantiate(
-            'I want{%for fruit in var:fruits %} {{fruit}},{%endfor%} and more',
+            'I want{%for fruit in var:fruits%} {{fruit}},{%endfor%} and more',
             {'fruits': ['apples', 'bananas']})
         self.assertEqual('I want apples, bananas, and more', result)
 
@@ -135,6 +138,17 @@ class MustacheTests(unittest.TestCase):
         result = mustache.instantiate(
             'I am {%if var:score > 10%}A {%endif%}OK', {'score': 12})
         self.assertEqual('I am A OK', result)
+
+    def test_loose_syntax(self) -> None:
+        """A template containing mustached var with white spaces."""
+
+        with self.assertRaises(mustache.StrictSyntaxTemplateError):
+            mustache.instantiate(
+                'A string with {{ var:myVar }}', {'myVar': 'a mustache'}, use_strict_syntax=True)
+
+        result = mustache.instantiate(
+            'A string with {{ var:myVar }}', {'myVar': 'a mustache'}, use_strict_syntax=False)
+        self.assertEqual('A string with a mustache', result)
 
 
 if __name__ == '__main__':

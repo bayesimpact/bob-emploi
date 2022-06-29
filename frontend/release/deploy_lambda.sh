@@ -3,9 +3,8 @@
 # Needs bob-emploi-deploy-lambda IAM policy or equivalent.
 # https://console.aws.amazon.com/iam/home?region=us-east-1#/policies/arn:aws:iam::951168128976:policy/bob-emploi-deploy-lambda$serviceLevelSummary
 #
-# To use the new version, you would need to update the LambdaFunctionARN with
-# the new version numbers in "cloudfront/fr.json".
-# TODO(cyrille): Take care of the possibility for multiple cloudfront files.
+# To use the new version, you would need to update the "LambdaAuxPageRedirect" parameter
+# in the cloudformation stack.
 set -e
 
 readonly LAMBDA_FOLDER="$(dirname "$0")/lambdas"
@@ -79,6 +78,11 @@ function upload_lambda() {
     echo "$lambda_function_name already up to date."
   fi
 }
+
+if [ -n "$1" ]; then
+  upload_lambda "$@"
+  exit
+fi
 
 # TODO(cyrille): Generate those as zip-files using Typescript and an npm script.
 upload_lambda opengraph_redirect.js opengraph-redirect

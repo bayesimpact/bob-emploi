@@ -21,11 +21,30 @@ _ProtoIn = typing.TypeVar('_ProtoIn', bound=message.Message)
 _FlaskResponse = Union[str, werkzeug.Response, Tuple[str, int]]
 
 
+def make_response(
+        result: Any, out_type: Type[_ProtoOut], func_name: str) -> flask.Response:
+    """Creates a proto response for a flask request."""
+
+    if not isinstance(result, out_type):
+        raise TypeError(
+            f'{func_name} expects a {out_type.__name__} output but got: '
+            f'{type(result).__name__}')
+
+    best_format = flask.request.accept_mimetypes.best_match(
+        ['application/json', 'application/x-protobuf-base64']
+    )
+    if best_format == 'application/x-protobuf-base64':
+        return flask.Response(
+            base64.encodebytes(result.SerializeToString()).decode('ascii'),
+            content_type='application/x-protobuf-base64')
+    return flask.make_response(json_format.MessageToJson(result))
+
+
 @typing.overload
 def api(
         out_type: Type[_ProtoOut], *,
         in_type: Optional[Type[_ProtoIn]] = ...) \
-        -> Callable[[Callable[..., _ProtoOut]], Callable[..., _FlaskResponse]]:
+        -> Callable[[Callable[..., _ProtoOut]], Callable[..., werkzeug.Response]]:
     ...
 
 
@@ -65,19 +84,7 @@ def api(
             ret = func(*args, **kwargs)
             if not out_type:
                 return typing.cast(Union[str, flask.Response], ret)
-            if not isinstance(ret, out_type):
-                raise TypeError(
-                    f'{func.__name__} expects a {out_type.__name__} output but got: '
-                    f'{type(ret).__name__}')
-            proto_ret = typing.cast(_ProtoIn, ret)
-            best_format = flask.request.accept_mimetypes.best_match(
-                ['application/json', 'application/x-protobuf-base64']
-            )
-            if best_format == 'application/x-protobuf-base64':
-                return flask.Response(
-                    base64.encodebytes(proto_ret.SerializeToString()).decode('ascii'),
-                    content_type='application/x-protobuf-base64')
-            return json_format.MessageToJson(proto_ret)
+            return make_response(ret, out_type=out_type, func_name=func.__name__)
         return functools.wraps(func)(_decorated_fun)
     return _proto_api_decorator
 

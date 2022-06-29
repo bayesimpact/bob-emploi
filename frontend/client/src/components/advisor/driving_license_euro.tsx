@@ -1,18 +1,17 @@
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
-import PropTypes from 'prop-types'
 import React, {useCallback, useMemo} from 'react'
 
+import {getEmailTemplates} from 'store/advice'
 import {inDepartement} from 'store/french'
-import {getEmailTemplates} from 'store/i18n'
 import {missionLocaleUrl} from 'store/job'
 
 import ExternalLink from 'components/external_link'
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
-import Picto from 'images/advices/picto-driving-license.svg'
 import missionLocaleImage from 'images/missions-locales-logo.png'
 
-import {CardProps, useAdviceData, EmailTemplate, ExpandableAction, MethodSuggestionList,
+import type {CardProps} from './base'
+import {useAdviceData, EmailTemplate, ExpandableAction, MethodSuggestionList,
   ToolCard} from './base'
 
 
@@ -292,23 +291,7 @@ const DrivingLicenseEuro = (props: CardProps): React.ReactElement => {
     </div>
   </div>
 }
-DrivingLicenseEuro.propTypes = {
-  advice: PropTypes.shape({
-    adviceId: PropTypes.string.isRequired,
-  }).isRequired,
-  handleExplore: PropTypes.func.isRequired,
-  profile: PropTypes.shape({
-    yearOfBirth: PropTypes.number,
-  }).isRequired,
-  project: PropTypes.shape({
-    city: PropTypes.shape({
-      departementName: PropTypes.string,
-      departementPrefix: PropTypes.string,
-    }),
-  }).isRequired,
-  t: PropTypes.func.isRequired,
-}
 const ExpandedAdviceCardContent = React.memo(DrivingLicenseEuro)
 
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName: 'drivingLicense' as const}

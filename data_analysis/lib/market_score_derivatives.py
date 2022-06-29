@@ -12,7 +12,7 @@ TODO(cyrille): Replace with area_id.
 
 import itertools
 import typing
-from typing import Any, Dict, Iterator, List, Optional, TypedDict
+from typing import Any, Iterator, Optional, TypedDict
 
 import pandas as pd
 
@@ -24,7 +24,7 @@ class _BetterMarket(TypedDict):
 
 def _less_stressful_job_groups(
         job_group_prefix: str, market_scores: pd.DataFrame, career_jumps: pd.DataFrame) \
-        -> Dict[str, List[_BetterMarket]]:
+        -> dict[str, list[_BetterMarket]]:
     """Compute the less stressful job groups locally.
 
     Assumes market_scores has columns 'Area', 'local_id', 'job_group' and 'market_score'.
@@ -43,14 +43,16 @@ def _less_stressful_job_groups(
             'local_id', 'market_score_target', 'target_job_group']]\
         .groupby(['local_id'])\
         .apply(lambda x: x[:5].to_dict(orient='records'))
-    return typing.cast(Dict[str, List[_BetterMarket]], local_stats.to_dict())
+    return typing.cast(dict[str, list[_BetterMarket]], local_stats.to_dict())
 
 
 def local_diagnosis(
         market_score_frame: pd.DataFrame,
-        career_jumps: Optional[pd.DataFrame] = None, prefix_length: int = 0,
-        job_group_names: Optional[Dict[str, str]] = None) \
-        -> Iterator[Dict[str, Any]]:
+        career_jumps: Optional[pd.DataFrame] = None,
+        salaries: Optional[pd.Series] = None, prefix_length: int = 0,
+        job_group_names: Optional[dict[str, str]] = None,
+        skip_markets: Optional[frozenset[str]] = None) \
+        -> Iterator[dict[str, Any]]:
     """Add the lessStressfulJobGroups and numLessStressfulDepartements to the local diagnosis.
 
     career_jumps is a DataFrame with columns 'job_group', 'target_job_group'.
@@ -64,16 +66,21 @@ def local_diagnosis(
     local_stats['numLessStressfulDepartements'] = local_stats\
         .groupby(['job_group'])\
         .cumcount()
+
+    salaries_map = salaries.set_index('local_id').to_dict() if salaries is not None else {}
     for job_group_prefix, markets in itertools.groupby(
             local_stats.itertuples(),
             lambda market: typing.cast(str, market.job_group[:prefix_length])):
         better_job_groups = _less_stressful_job_groups(
             job_group_prefix, local_stats, career_jumps) if career_jumps is not None else {}
         for market in markets:
+            if skip_markets and market.local_id in skip_markets:
+                continue
             yield {
                 '_id': market.local_id,
                 'imt': {
                     'yearlyAvgOffersPer10Candidates': market.market_score,
+                    'medianSalary': salaries_map.get('salary', {}).get(market.local_id, {})
                 },
                 'lessStressfulJobGroups': [{
                     'jobGroup': {

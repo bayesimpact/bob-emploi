@@ -1,12 +1,13 @@
-import {TOptions} from 'i18next'
+import type {TOptions} from 'i18next'
 import React, {useMemo} from 'react'
 
-import {LocalizableString, combineTOptions, prepareT} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {combineTOptions, prepareT} from 'store/i18n'
 
 import Trans from 'components/i18n_trans'
-import Picto from 'images/advices/picto-long-term-mom.svg'
 
-import {CardProps, MethodSuggestionList, Skill} from './base'
+import type {CardProps} from './base'
+import {MethodSuggestionList, Skill} from './base'
 
 
 interface MomSkill {
@@ -60,7 +61,7 @@ const LongTermParent: React.FC<CardProps> = (props: CardProps): React.ReactEleme
     <Trans parent={null} t={t} tOptions={tOptions}>
       Vous vous êtes un peu éloigné·e du monde de l'emploi, rien de plus normal. Pourtant, vous avez
       continué de développer vos talents pendant un des plus grands défis de la vie&nbsp;:
-      la parentalité <span aria-label={t('muscle')} role="img">💪</span>{' '}
+      la parentalité <span aria-hidden={true}>💪</span>{' '}
 
       Pour vous réinventer dans cette nouvelle étape professionnelle, <strong>
         valorisez votre expérience de parent dans vos candidatures
@@ -78,4 +79,4 @@ const LongTermParent: React.FC<CardProps> = (props: CardProps): React.ReactEleme
 const ExpandedAdviceCardContent = React.memo(LongTermParent)
 
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName: 'womanWithManyArms' as const}

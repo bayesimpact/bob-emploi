@@ -1,0 +1,35 @@
+<mjml owa="desktop" version="4.6.3">
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-text line-height="1.38">Bonjour {{var:firstName:"Rémi"}},</mj-text>
+        <mj-text line-height="1.38">J'espère que vous allez bien. Lors de votre passage sur <a data-cke-saved-href="{{var:productUrl}}" href="{{var:productUrl}}">{{var:productName}}</a>, vous nous avez indiqué que le métier {{var:ofJobName:"de boulanger"}} vous intéressait particulièrement et que vous n'aviez pas forcément les diplômes demandés par les recruteurs.</mj-text>
+        <mj-text line-height="1.38">Votre parcours m'a fait penser à une discussion que j'ai récemment eue avec un ami. Ce dernier avait des difficultés à choisir une formation. Il semblait pourtant déjà avoir un métier précis en tête. Mais une tonne de questions le paralysait pour faire son choix :</mj-text>
+        <mj-text line-height="1.38" padding-left="15%" padding-right="15%" padding-top="5px" font-size="small">
+          <ul>
+            <li>Cette formation X semble offrir de très bons salaires sur différents métiers à sa sortie, mais est-ce vraiment la meilleure option pour le métier visé ?</li>
+            <li>La formation Y est plus courte mais peut-être cela veut-il dire qu'elle est moins reconnue ?</li>
+            <li>La formation pour avoir le diplôme Z est très chère, mais peut-être est-ce synonyme de qualité… ou d'argent jeté par les fenêtres ?</li>
+            <li>…</li>
+          </ul>
+        </mj-text>
+        <mj-image src="https://t.bob-emploi.fr/tplimg/6u2u/b/vv9v/izlqk.png" id="i0fs" width="auto" padding-top="20px" padding-left="20%" padding-right="20%" padding-bottom="0"></mj-image>
+        <mj-text line-height="1.38">Dans le fond, cela ne m'étonne pas car le choix d'une formation ou d'un diplôme est souvent un sujet angoissant. Personnellement, j'ai encore souvenir de mes années au collège où les professeurs nous demandaient déjà d'imaginer la suite de notre scolarité ET un futur métier par la même occasion.</mj-text>
+        <mj-text line-height="1.38">J'ai donc donné ce conseil à mon ami : 
+          <strong>faire une formation n'est utile que parce qu'on vise un métier précis,</strong> il faut donc s'appuyer sur ce dernier pour trouver la formation idéale; et non l'inverse !</mj-text>
+        <mj-text line-height="1.38">Partant de cela, il y a une action simple que vous pouvez effectuer : 
+          <strong>demander aux gens qui exercent déjà le métier {{var:ofJobName:"de boulanger"}} leurs conseils de formation à réaliser.</strong></mj-text>
+        <mj-text line-height="1.38">Dans un premier temps, vous pouvez découvrir les parcours et diplômes des gens qui vous inspirent en regardant leurs profils en ligne (sur Linkedin par exemple). Ensuite, n'hésitez pas à contacter directement ces personnes afin d'avoir plus de précisions et des conseils sur les diplômes. C'est généralement très valorisant de savoir qu'on est un exemple de réussite pour quelqu'un, engagez donc la conversation sans crainte. D'ailleurs, nous avons rédigé un <a data-cke-saved-href="{{var:deepTrainingAdviceUrl}}" href="{{var:deepTrainingAdviceUrl}}"> exemple de message</a> de contact dont vous pouvez vous inspirer.</mj-text>
+        <mj-text line-height="1.38">Cerise sur le gâteau : ces prises de contact vous aideront également à développer votre réseau professionnel. Cela vous sera utile suite à la formation pour trouver votre premier poste. Vous pourrez effectivement revenir vers les personnes qui vous ont aidé{%if var:gender:""=="FEMININE"%}e{%else%}{%if var:gender:""=="MASCULINE"%}{%else%}·e{%endif%}{%endif%}, elles seront d'autant plus partantes à vous signaler des opportunités d'embauche dans leurs propres entreprises ou leurs réseaux professionnels.</mj-text>
+        <mj-text line-height="1.38">J'espère que ce conseil vous sera utile et que vous trouverez la formation qui vous convient. Vous le méritez.</mj-text>
+        <mj-text line-height="1.38">A très vite,</mj-text>
+        <mj-text line-height="1.38">Pascal de {{var:productName}}</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-text font-size="11px" color="#55575d" line-height="2">Vous recevez cet email car vous êtes inscrit{%if var:gender:""=="FEMININE"%}e{%elseif var:gender:""=="MASCULINE"%}{%else%}·e{%endif%} sur <a href="{{var:baseUrl}}?utm_source=bob-emploi&amp;utm_medium=email" target="_blank">{{var:productName}}</a> et avez demandé des emails de coaching. <a href="{{var:changeEmailSettingsUrl}}" target="_blank">Cliquez ici</a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte {{var:productName}} en veille ? <a href="{{var:statusUpdateUrl}}" target="_blank">cliquez ici</a>.</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

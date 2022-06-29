@@ -14,7 +14,7 @@ You can try it out on a local instance:
 """
 
 import typing
-from typing import Any, Dict, List
+from typing import Any
 
 import pandas as pd
 
@@ -24,7 +24,7 @@ from bob_emploi.data_analysis.lib import mongo
 _SEASONAL_CODE = 'SAI'
 
 
-def csv2dicts(offer_types_csv: str) -> List[Dict[str, Any]]:
+def csv2dicts(offer_types_csv: str) -> list[dict[str, Any]]:
     """Import seasonal jobbing data per month per departement in MongoDB.
 
     Args:
@@ -92,7 +92,7 @@ def csv2dicts(offer_types_csv: str) -> List[Dict[str, Any]]:
         .to_frame('departementStats')\
         .reset_index()
 
-    return typing.cast(List[Dict[str, Any]], monthly_data.to_dict(orient='records'))
+    return typing.cast(list[dict[str, Any]], monthly_data.to_dict(orient='records'))
 
 
 if __name__ == '__main__':

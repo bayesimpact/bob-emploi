@@ -1,0 +1,94 @@
+[
+ {
+  "_id": "reczPK8iv1iQisGSn",
+  "_order": 0,
+  "campaignId": "focus-body-language"
+ },
+ {
+  "_id": "rech08i3DtHpVOWu3",
+  "_order": 1,
+  "campaignId": "focus-network",
+  "scoringModel": "favor-strategy(targeted-search,targeted-search-bravo,targeted-search-start,apply-in-unliked-job,application-methods-to-interview,application-methods-to-interview-start,get-alternance,try-without-diploma,application-methods-bravo,auto-didact,get-diploma-covid,get-diploma,application-methods-covid,application-methods,targeted-search-covid,presearch-methods,application-methods-undefined-project)"
+ },
+ {
+  "_id": "recEnOvT841BTC2yG",
+  "_order": 2,
+  "campaignId": "focus-self-develop",
+  "scoringModel": "favor-strategy(upskilling,other-leads-covid,other-leads,diploma-free-job,diploma-free-job-undefined)"
+ },
+ {
+  "_id": "recBYV0REpaHaH5dv",
+  "_order": 3,
+  "campaignId": "galita-1",
+  "scoringModel": "favor-strategy(motivate-in-job,upskilling,keep-going,life-balance,confidence-boost,likeable-job)"
+ },
+ {
+  "_id": "recQQtsMk2Pu7AQWA",
+  "_order": 4,
+  "campaignId": "galita-2",
+  "scoringModel": "favor-strategy(upskilling,likeable-job)"
+ },
+ {
+  "_id": "recKrqbs3Xb1Tdz6V",
+  "_order": 5,
+  "campaignId": "galita-3",
+  "scoringModel": "favor-strategy(targeted-search,targeted-search-bravo,targeted-search-start,apply-in-unliked-job,application-methods-to-interview,application-methods-to-interview-start,get-alternance,try-without-diploma,application-methods-bravo,auto-didact,get-diploma-covid,get-diploma,application-methods-covid,application-methods,targeted-search-covid,presearch-methods,interview-success-start,interview-success,interview-success-bravo,application-methods-undefined-project)"
+ },
+ {
+  "_id": "recRrw67avr3mVgF7",
+  "_order": 6,
+  "campaignId": "improve-cv",
+  "scoringModel": "favor-strategy(targeted-search,targeted-search-bravo,targeted-search-start,apply-in-unliked-job,application-methods-to-interview,application-methods-to-interview-start,get-alternance,try-without-diploma,application-methods-bravo,auto-didact,get-diploma-covid,get-diploma,application-methods-covid,application-methods,targeted-search-covid,presearch-methods,application-methods-undefined-project)"
+ },
+ {
+  "_id": "recm4Pa3zCnCwJfSG",
+  "_order": 7,
+  "campaignId": "imt"
+ },
+ {
+  "_id": "recId0dq8YG1pPAvf",
+  "_order": 8,
+  "campaignId": "network-plus",
+  "scoringModel": "favor-strategy(targeted-search,targeted-search-bravo,targeted-search-start,apply-in-unliked-job,application-methods-to-interview,application-methods-to-interview-start,get-alternance,try-without-diploma,application-methods-bravo,auto-didact,get-diploma-covid,get-diploma,application-methods-covid,application-methods,targeted-search-covid,presearch-methods,application-methods-undefined-project)"
+ },
+ {
+  "_id": "recQg1EdmDpY8UV0a",
+  "_order": 9,
+  "campaignId": "switch-grant"
+ },
+ {
+  "_id": "recn7k5E0WjUHPUng",
+  "_order": 10,
+  "campaignId": "spontaneous-short",
+  "scoringModel": "favor-strategy(targeted-search,targeted-search-bravo,targeted-search-start,apply-in-unliked-job,application-methods-to-interview,application-methods-to-interview-start,get-alternance,try-without-diploma,application-methods-bravo,auto-didact,get-diploma-covid,get-diploma,application-methods-covid,application-methods,targeted-search-covid,presearch-methods,application-methods-undefined-project)"
+ },
+ {
+  "_id": "recF9FRup2CA0ScHi",
+  "_order": 11,
+  "campaignId": "get-diploma-short",
+  "scoringModel": "favor-strategy(get-diploma,get-diploma-covid)"
+ },
+ {
+  "_id": "recIpOeqQYlCjTV18",
+  "_order": 12,
+  "campaignId": "jobbing-short",
+  "scoringModel": "favor-strategy(targeted-search,targeted-search-bravo,try-without-diploma,targeted-search-covid,other-leads-covid,other-leads,diploma-free-job-undefined,diploma-free-job,targeted-search-start)"
+ },
+ {
+  "_id": "recuuDfrPO3ismMOk",
+  "_order": 13,
+  "campaignId": "prepare-your-application-short",
+  "scoringModel": "favor-strategy(targeted-search,targeted-search-bravo,targeted-search-start,apply-in-unliked-job,application-methods-to-interview,application-methods-to-interview-start,get-alternance,try-without-diploma,application-methods-bravo,auto-didact,get-diploma,get-diploma-covid,application-methods,application-methods-covid,targeted-search-covid,presearch-methods,application-methods-undefined-project)"
+ },
+ {
+  "_id": "recYD4dZL9ctmQO4Y",
+  "_order": 14,
+  "campaignId": "jobflix-invite",
+  "scoringModel": "favor-strategy(likeable-job,upskilling)"
+ },
+ {
+  "_id": "recbknuBwJeb0UhZA",
+  "_order": 15,
+  "campaignId": "christmas"
+ }
+]

@@ -9,7 +9,7 @@ from bob_emploi.frontend.api import create_company_expanded_data_pb2
 from bob_emploi.frontend.api import event_pb2
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import testimonial_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server import geo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
@@ -70,12 +70,12 @@ class _AdviceCreateYourCompany(scoring_base.ModelBase):
             'vous nous avez dit que les employeurs ne '
             'vous donnent pas votre chance')
         relevant_frustrations = {
-            user_pb2.AGE_DISCRIMINATION: discrimination_reason,
-            user_pb2.ATYPIC_PROFILE: discrimination_reason,
-            user_pb2.NO_OFFERS: project.translate_static_string(
+            user_profile_pb2.AGE_DISCRIMINATION: discrimination_reason,
+            user_profile_pb2.ATYPIC_PROFILE: discrimination_reason,
+            user_profile_pb2.NO_OFFERS: project.translate_static_string(
                 "vous nous avez dit ne pas trouver d'offres correspondant "
                 'à vos critères'),
-            user_pb2.SEX_DISCRIMINATION: discrimination_reason,
+            user_profile_pb2.SEX_DISCRIMINATION: discrimination_reason,
         }
         frustration_reasons = {
             relevant_frustrations[frustration] for frustration in project.user_profile.frustrations

@@ -1,6 +1,6 @@
 """Tests for the bob_emploi.importer.deployments.uk.city_suggest module."""
 
-import io
+import logging
 import re
 from os import path
 import unittest
@@ -12,7 +12,7 @@ import requests_mock
 from bob_emploi.data_analysis.importer.deployments.uk import city_suggest
 
 
-@mock.patch(city_suggest.__name__ + '.search_client')
+@mock.patch(city_suggest.algolia.__name__ + '.search_client')
 @requests_mock.mock()
 class UploadTestCase(unittest.TestCase):
     """Integration tests for the upload function."""
@@ -45,19 +45,24 @@ class UploadTestCase(unittest.TestCase):
         index = mock_client.init_index()
         self.assertTrue(index.save_objects.called)
         self.assertEqual(
-            ['Stornoway', 'Dagenham', 'Strensall', 'Barking and Dagenham', 'Greenwich', 'Hackney'],
+            [
+                'Wolverhampton', 'Stornoway', 'Dagenham', 'Strensall',
+                'Barking and Dagenham', 'Greenwich', 'Hackney'
+            ],
             [
                 city.get('name')
                 for call in index.save_objects.call_args_list
                 for city in call[0][0]])
 
         # Point check.
-        city = index.save_objects.call_args[0][0][2]
+        city = index.save_objects.call_args[0][0][3]
         self.assertEqual('Strensall', city.get('name'), msg=city)
         self.assertEqual('E12000003', city.get('admin1Code'), msg=city)
         self.assertEqual('Yorkshire and The Humber', city.get('admin1Name'), msg=city)
         self.assertEqual('York', city.get('admin2Name'), msg=city)
         self.assertEqual('E06000014', city.get('admin2Code'), msg=city)
+        self.assertAlmostEqual(-1.035, city.get('longitude'), places=3, msg=city)
+        self.assertAlmostEqual(54.04, city.get('latitude'), places=3, msg=city)
         self.assertEqual('', city.get('county'), msg=city)
         self.assertEqual('England', city.get('countryUK'), msg=city)
 
@@ -81,21 +86,20 @@ class UploadTestCase(unittest.TestCase):
         mock_client = mock_algoliasearch.SearchClient.create()
         mock_client.init_index().save_objects.side_effect = exceptions.AlgoliaException
 
-        output = io.StringIO()
-
         with self.assertRaises(exceptions.AlgoliaException):
-            city_suggest.upload([
-                '--ward-ons-list', path.join(self.testdata_folder, 'wards.csv'),
-                '--geonames', path.join(self.testdata_folder, 'geonames.txt'),
-                '--geonames-admin', path.join(self.testdata_folder, 'geonames_admin.txt'),
-                '--algolia-api-key', 'my-api-key',
-            ], out=output)
+            with self.assertLogs(level=logging.ERROR) as logged:
+                city_suggest.upload([
+                    '--ward-ons-list', path.join(self.testdata_folder, 'wards.csv'),
+                    '--geonames', path.join(self.testdata_folder, 'geonames.txt'),
+                    '--geonames-admin', path.join(self.testdata_folder, 'geonames_admin.txt'),
+                    '--algolia-api-key', 'my-api-key',
+                ])
 
         mock_client.move_index.assert_not_called()
         mock_client.init_index().delete.assert_called_once_with()
-        output_value = output.getvalue()
-        self.assertTrue(
-            output_value.startswith('[\n  {\n    "objectID": "2636790",'), msg=output_value)
+        output_value = logged.records[0].getMessage()
+        self.assertIn('An error occurred while saving to Algolia', output_value)
+        self.assertIn('\n[\n  {\n    "objectID": "2633691"', output_value)
 
 
 if __name__ == '__main__':

@@ -1,15 +1,14 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 import _memoize from 'lodash/memoize'
-import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
 import {prepareT} from 'store/i18n'
 
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
-import Picto from 'images/advices/picto-improve-resume.svg'
 
-import {CardProps, ExpandableAction, HandyLink, ImproveApplicationTips,
+import type {CardProps} from './base'
+import {ExpandableAction, HandyLink, ImproveApplicationTips,
   MethodSuggestionList} from './base'
 
 
@@ -113,10 +112,6 @@ const HandicapResumeBase: React.FC<CardProps> =
       title={title}><div style={descriptionStyle}>{description}</div></ExpandableAction>)}
   </MethodSuggestionList>
 }
-HandicapResumeBase.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-  t: PropTypes.func.isRequired,
-}
 const HandicapResume = React.memo(HandicapResumeBase)
 
 
@@ -127,13 +122,7 @@ const ImproveResume: React.FC<CardProps> = (props): React.ReactElement => {
     <ImproveApplicationTips {...props} sections={SECTIONS} />
   </React.Fragment>
 }
-ImproveResume.propTypes = {
-  profile: PropTypes.shape({
-    hasHandicap: PropTypes.bool,
-  }),
-  t: PropTypes.func.isRequired,
-}
 const ExpandedAdviceCardContent = React.memo(ImproveResume)
 
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName: 'documentStamped' as const}

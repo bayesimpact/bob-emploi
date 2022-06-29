@@ -1,13 +1,12 @@
 import React, {useMemo} from 'react'
-import PropTypes from 'prop-types'
 
 import {inDepartement} from 'store/french'
 
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
-import Picto from 'images/advices/picto-reorient-jobbing.svg'
 
-import {CardProps, JobSuggestion, useAdviceData, ReorientSection} from './base'
+import type {CardProps} from './base'
+import {JobSuggestion, useAdviceData, ReorientSection} from './base'
 
 
 const emptyArray = [] as const
@@ -15,7 +14,7 @@ type JobSuggestionProps = React.ComponentProps<typeof JobSuggestion>
 
 
 const ReorientJobbing = (props: CardProps): React.ReactElement|null => {
-  const {handleExplore, project: {city}, t} = props
+  const {handleExplore, profile, project: {city}, t} = props
   const {data: {reorientJobbingJobs = emptyArray}, loading} =
     useAdviceData<bayes.bob.JobbingReorientJobs>(props)
   const allJobs = useMemo(
@@ -44,14 +43,9 @@ const ReorientJobbing = (props: CardProps): React.ReactElement|null => {
   return <ReorientSection
     title={title}
     isNotClickable={true}
-    items={items} />
-}
-ReorientJobbing.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-  project: PropTypes.object.isRequired,
-  t: PropTypes.func.isRequired,
+    items={items} profile={profile} />
 }
 const ExpandedAdviceCardContent = React.memo(ReorientJobbing)
 
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName: 'target' as const}

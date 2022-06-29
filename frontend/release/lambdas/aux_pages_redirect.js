@@ -22,6 +22,10 @@ const AUX_PAGES = [
     urlTest: /^\/design-system($|\/)/,
   },
   {
+    redirect: '/first-followup-survey.html',
+    urlTest: /^\/first-followup-survey($|\/)/,
+  },
+  {
     redirect: '/eval.html',
     urlTest: /^\/eval($|\/)/,
   },

@@ -1,0 +1,10 @@
+[
+  {
+    "file": "./src/bob.ts",
+    "url": "https://exists.com"
+  },
+  {
+    "file": "./src/bob.ts",
+    "url": "https://does-not-exist.com"
+  }
+]

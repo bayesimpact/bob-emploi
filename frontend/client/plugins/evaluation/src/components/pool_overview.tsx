@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 import React, {useCallback, useMemo} from 'react'
 import {useTranslation} from 'react-i18next'
 
@@ -75,7 +74,7 @@ const UseCaseBase = ({index, onSelect, useCase}: UseCaseProps): React.ReactEleme
   const onClick = useCallback((): void => onSelect(useCase), [onSelect, useCase])
   return <tr style={containerStyle}>
     <td style={useCaseCellStyle}>
-      <button onClick={onClick}>
+      <button onClick={onClick} type="button">
         {indexInPool || '0'} - {title}
       </button>
     </td>
@@ -135,19 +134,6 @@ const PoolOverview = (props: PoolOverviewProps): React.ReactElement => {
     </tbody>
   </table>
 }
-PoolOverview.propTypes = {
-  onSelectUseCase: PropTypes.func.isRequired,
-  useCases: PropTypes.arrayOf(PropTypes.shape({
-    evaluation: PropTypes.shape({
-      comments: PropTypes.string,
-      score: PropTypes.string,
-    }),
-    indexInPool: PropTypes.number,
-    title: PropTypes.string,
-    useCaseId: PropTypes.string.isRequired,
-  }).isRequired).isRequired,
-}
-
 
 
 export default React.memo(PoolOverview)

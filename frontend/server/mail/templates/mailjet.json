@@ -1,46 +1,56 @@
 [
   {
-    "mailjetTemplate": 205970,
-    "name": "focus-network",
     "i18n": {
       "en": 1662707,
       "en_UK": 1662707,
       "fr@tu": 1782843
-    }
+    },
+    "mailjetTemplate": 205970,
+    "name": "focus-network"
   },
   {
-    "mailjetTemplate": 255279,
-    "name": "focus-self-develop",
     "i18n": {
+      "en": 3127480,
+      "en_UK": 3127486,
       "fr@tu": 1763111
-    }
+    },
+    "mailjetTemplate": 255279,
+    "name": "focus-self-develop"
   },
   {
-    "mailjetTemplate": 225287,
-    "name": "employment-status",
     "i18n": {
-      "fr@tu": 1724387,
       "en": 2381387,
-      "en_UK": 2398392
-    }
+      "en_UK": 2398392,
+      "fr@tu": 1724387
+    },
+    "mailjetTemplate": 225287,
+    "name": "employment-status"
   },
   {
-    "mailjetTemplate": 277304,
-    "name": "focus-body-language",
     "i18n": {
       "en": 1662623,
       "en_UK": 1662623,
       "fr@tu": 1782655
-    }
+    },
+    "mailjetTemplate": 277304,
+    "name": "focus-body-language"
   },
   {
-    "mailjetTemplate": 100819,
-    "name": "nps",
     "i18n": {
-      "fr@tu": 1590505,
       "en": 1597390,
-      "en_UK": 1765582
-    }
+      "en_UK": 1765582,
+      "fr@tu": 1590505
+    },
+    "mailjetTemplate": 100819,
+    "name": "nps"
+  },
+  {
+    "i18n": {
+      "en": 3699784,
+      "fr@tu": 3699783
+    },
+    "mailjetTemplate": 3645620,
+    "name": "first-followup-survey"
   },
   {
     "mailjetTemplate": 279688,
@@ -51,167 +61,283 @@
     "name": "new-year"
   },
   {
-    "mailjetTemplate": 300528,
-    "name": "network-plus",
     "i18n": {
       "en": 1662675,
       "en_UK": 1662675,
       "fr@tu": 1801927
-    }
+    },
+    "mailjetTemplate": 300528,
+    "name": "network-plus"
   },
   {
-    "mailjetTemplate": 315773,
-    "name": "galita-1",
     "i18n": {
       "fr@tu": 1752504
-    }
+    },
+    "mailjetTemplate": 315773,
+    "name": "galita-1"
   },
   {
-    "mailjetTemplate": 318212,
-    "name": "imt",
     "i18n": {
+      "en": 3124565,
       "fr@tu": 1783133
-    }
-  },
-  {
-    "mailjetTemplate": 1101331,
-    "name": "handicap-week"
-  },
-  {
-    "mailjetTemplate": 334851,
-    "name": "viral-sharing-1"
+    },
+    "mailjetTemplate": 318212,
+    "name": "imt"
   },
   {
     "mailjetTemplate": 536272,
-    "name": "open-classrooms"
+    "name": "open-classrooms",
+    "noI18n": true
   },
   {
-    "mailjetTemplate": 572106,
-    "name": "galita-2",
     "i18n": {
       "fr@tu": 1752506
-    }
+    },
+    "mailjetTemplate": 572106,
+    "name": "galita-2"
   },
   {
-    "mailjetTemplate": 481320,
-    "name": "galita-3",
     "i18n": {
       "fr@tu": 1752545
-    }
+    },
+    "mailjetTemplate": 481320,
+    "name": "galita-3"
   },
   {
-    "mailjetTemplate": 212606,
-    "name": "focus-spontaneous",
     "i18n": {
       "fr@tu": 1817618
-    }
+    },
+    "mailjetTemplate": 212606,
+    "name": "focus-spontaneous"
   },
   {
     "mailjetTemplate": 896724,
-    "name": "mailer-daemon"
+    "name": "mailer-daemon",
+    "noI18n": true
   },
   {
-    "mailjetTemplate": 636862,
-    "name": "activation-email",
     "i18n": {
-      "fr@tu": 1590495,
       "en": 1623604,
-      "en_UK": 1746513
-    }
+      "en_UK": 1746513,
+      "fr@tu": 1590495
+    },
+    "mailjetTemplate": 636862,
+    "name": "activation-email"
   },
   {
-    "mailjetTemplate": 980269,
-    "name": "improve-cv",
     "i18n": {
-      "fr@tu": 1801817,
+      "en": 2113309,
       "en_UK": 1956927,
-      "en": 2113309
-    }
+      "fr@tu": 1801817
+    },
+    "mailjetTemplate": 980269,
+    "name": "improve-cv"
   },
   {
-    "mailjetTemplate": 1088068,
-    "name": "account-deletion-notice",
     "i18n": {
       "fr@tu": 1756840
-    }
+    },
+    "mailjetTemplate": 1088068,
+    "name": "account-deletion-notice"
   },
   {
     "mailjetTemplate": 1107108,
-    "name": "ali_connect_user"
+    "name": "ali_connect_user",
+    "noI18n": true
   },
   {
     "mailjetTemplate": 1109007,
-    "name": "ali_connect_counselor"
+    "name": "ali_connect_counselor",
+    "noI18n": true
   },
   {
-    "mailjetTemplate": 1118228,
-    "name": "prepare-your-application",
     "i18n": {
       "fr@tu": 1750061
-    }
+    },
+    "mailjetTemplate": 1118228,
+    "name": "prepare-your-application"
   },
   {
-    "mailjetTemplate": 1130230,
-    "name": "get-diploma",
     "i18n": {
       "fr@tu": 1817584
-    }
+    },
+    "mailjetTemplate": 1130230,
+    "name": "get-diploma"
   },
   {
-    "mailjetTemplate": 1183675,
-    "name": "jobbing",
     "i18n": {
       "fr@tu": 1801833
-    }
+    },
+    "mailjetTemplate": 1183675,
+    "name": "jobbing"
   },
   {
-    "mailjetTemplate": 71254,
-    "name": "reset-password",
     "i18n": {
       "en": 1575670,
-      "fr@tu": 1590496,
-      "en_UK": 1746524
-    }
+      "en_UK": 1746524,
+      "fr@tu": 1590496
+    },
+    "mailjetTemplate": 71254,
+    "name": "reset-password"
   },
   {
-    "mailjetTemplate": 1533850,
-    "name": "post-covid",
     "i18n": {
-      "fr@tu": 1782472,
-      "en_UK": 1956835
-    }
+      "en_UK": 1956835,
+      "fr@tu": 1782472
+    },
+    "mailjetTemplate": 1533850,
+    "name": "post-covid"
   },
   {
-    "mailjetTemplate": 1140080,
-    "name": "send-auth-token",
     "i18n": {
       "en": 1590502,
       "fr@tu": 1590500
-    }
+    },
+    "mailjetTemplate": 1140080,
+    "name": "send-auth-token"
   },
   {
-    "mailjetTemplate": 1704139,
-    "name": "switch-grant",
     "i18n": {
       "fr@tu": 1709842
-    }
+    },
+    "mailjetTemplate": 1704139,
+    "name": "switch-grant"
   },
   {
-    "mailjetTemplate": 1719896,
-    "name": "upskilling-user-research",
+    "mailjetTemplate": 2957705,
+    "name": "jobflix-welcome",
+    "noI18n": true
+  },
+  {
+    "mailjetTemplate": 2953794,
+    "name": "jobflix-first-actions",
+    "noI18n": true
+  },
+  {
+    "mailjetTemplate": 3203143,
+    "name": "jobflix-survey",
+    "noI18n": true
+  },
+  {
     "i18n": {
-      "fr@tu": 1724107
-    }
+      "en": 3075121,
+      "en_UK": 3075122,
+      "fr@tu": 3074478
+    },
+    "mailjetTemplate": 3073930,
+    "name": "spontaneous-short"
   },
   {
-    "mailjetTemplate": 1951708,
-    "name": "upskilling-undefined-project",
     "i18n": {
-      "fr@tu": 1955502
-    }
+      "en": 3095929,
+      "en_UK": 3707846,
+      "fr@tu": 3095911
+    },
+    "mailjetTemplate": 3088539,
+    "name": "get-diploma-short"
   },
   {
-    "mailjetTemplate": 2110388,
-    "name": "upskilling-undefined-project-beta"
+    "i18n": {
+      "en": 3105045,
+      "en_UK": 3707855,
+      "fr@tu": 3105037
+    },
+    "mailjetTemplate": 3098052,
+    "name": "prepare-your-application-short"
+  },
+  {
+    "i18n": {
+      "en": 3102926,
+      "fr@tu": 3102925
+    },
+    "mailjetTemplate": 3096303,
+    "name": "galita-2-short"
+  },
+  {
+    "i18n": {
+      "en": 3115804,
+      "en_UK": 3115788,
+      "fr@tu": 3115586
+    },
+    "mailjetTemplate": 3102909,
+    "name": "galita-3-short"
+  },
+  {
+    "i18n": {
+      "en": 3106378,
+      "en_UK": 3708920,
+      "fr@tu": 3106377
+    },
+    "mailjetTemplate": 3105234,
+    "name": "jobbing-short"
+  },
+  {
+    "mailjetTemplate": 3124367,
+    "name": "mental-blockers"
+  },
+  {
+    "i18n": {
+      "en": 3503578,
+      "fr@tu": 3503535
+    },
+    "mailjetTemplate": 3334192,
+    "name": "action-plan"
+  },
+  {
+    "i18n": {
+      "en": 3853748,
+      "en_UK": 3853738,
+      "fr@tu": 3853719
+    },
+    "mailjetTemplate": 3643543,
+    "name": "send-pwd-update-confirmation"
+  },
+  {
+    "i18n": {
+      "en": 3707760,
+      "en_UK": 3707776,
+      "fr@tu": 3707742
+    },
+    "mailjetTemplate": 3675582,
+    "name": "jobflix-invite"
+  },
+  {
+    "mailjetTemplate": 3699314,
+    "name": "jobflix-first-eval"
+  },
+  {
+    "mailjetTemplate": 3756949,
+    "name": "jobflix-first-eval-reminder"
+  },
+  {
+    "i18n": {
+      "en_UK": 3905809
+    },
+    "mailjetTemplate": 3785603,
+    "name": "dwp-interview"
+  },
+  {
+    "i18n": {
+      "en": 3817592,
+      "en_UK": 3817593,
+      "fr@tu": 3817594
+    },
+    "mailjetTemplate": 3814815,
+    "name": "bob-research-recruit"
+  },
+  {
+    "i18n": {
+      "en": 3909015,
+      "en_UK": 3916570
+    },
+    "mailjetTemplate": 3864961,
+    "name": "confidence-boost"
+  },
+  {
+    "i18n": {
+      "en_UK": 3972788
+    },
+    "mailjetTemplate": 3972755,
+    "name": "dwp-interview-apologies"
   }
 ]

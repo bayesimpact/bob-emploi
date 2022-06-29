@@ -13,49 +13,49 @@ export default [
     imageAltText: 'PositivR',
     imageSrc: pressPositivrImage,
     title: "Développer le conseil à l'emploi grâce aux nouvelles technologies, avec Bob Emploi.",
-    url: 'https://positivr.fr/humain-et-ia-bob-emploi-positiveimpact/',
+    url: 'https://positivr.fr/humain-et-ia-bob-emploi-positiveimpact/', // checkURL
   },
   {
     imageAltText: 'Les Échos Start',
     imageSrc: pressEchoStartImage,
     title: "Bob Emploi, l'algorithme qui s'attaque au chômage",
-    url: 'https://start.lesechos.fr/entreprendre/actu-startup/bob-emploi-l-algorithme-qui-s-attaque-au-chomage-12226.php',
+    url: 'https://start.lesechos.fr/entreprendre/actu-startup/bob-emploi-l-algorithme-qui-s-attaque-au-chomage-12226.php', // checkURL
   },
   {
     imageAltText: 'Europe 1',
     imageSrc: pressEurope1Image,
     title: 'Cinq choses à savoir sur Bob Emploi, le site qui veut enrayer le chômage',
-    url: 'http://www.europe1.fr/economie/cinq-choses-a-savoir-sur-bob-emploi-le-site-qui-veut-enrayer-le-chomage-2901977',
+    url: 'http://www.europe1.fr/economie/cinq-choses-a-savoir-sur-bob-emploi-le-site-qui-veut-enrayer-le-chomage-2901977', // checkURL
   },
   {
     imageAltText: 'Nouvelle Vie Pro',
     imageSrc: pressNouvelleVieImage,
     title: "Bob Emploi\u00A0: besoin d'aide dans vos recherches\u00A0? Demandez Bob\u00A0!",
-    url: 'https://www.nouvelleviepro.fr/actualite/587/bob-emploi-besoin-daide-dans-vos-recherches-demandez-bob',
+    url: 'https://www.nouvelleviepro.fr/actualite/587/bob-emploi-besoin-daide-dans-vos-recherches-demandez-bob', // checkURL
   },
   {
     imageAltText: 'Femme Actuelle',
     imageSrc: pressFemmeActuelleImage,
     title: 'Quel site choisir pour trouver un emploi\u00A0?',
-    url: 'https://www.femmeactuelle.fr/actu/vie-pratique/quel-site-choisir-pour-trouver-un-emploi-48341',
+    url: 'https://www.femmeactuelle.fr/actu/vie-pratique/quel-site-choisir-pour-trouver-un-emploi-48341', // checkURL
   },
   {
     imageAltText: 'France Info',
     imageSrc: pressFranceInfoImage,
     title: "VIDÉO. Pour endiguer le chômage, il crée un site de recherche d'emplois personnalisé",
-    url: 'https://www.francetvinfo.fr/economie/emploi/chomage/video-pour-endiguer-le-chomage-il-cree-un-site-de-recherche-demplois-personnalise_2801901.html',
+    url: 'https://www.francetvinfo.fr/economie/emploi/chomage/video-pour-endiguer-le-chomage-il-cree-un-site-de-recherche-demplois-personnalise_2801901.html', // checkURL
   },
   {
     imageAltText: 'Conso Collaborative',
     imageSrc: pressConsolabImage,
     title: 'Big Data et bonnes volontés, la recette de Bob Emploi pour lutter ' +
       'contre le chômage',
-    url: 'http://consocollaborative.com/article/big-data-et-bonnes-volontes-la-recette-de-bob-emploi-pour-lutter-contre-le-chomage/',
+    url: 'http://consocollaborative.com/article/big-data-et-bonnes-volontes-la-recette-de-bob-emploi-pour-lutter-contre-le-chomage/', // checkURL
   },
   {
     imageAltText: "L'Étudiant",
     imageSrc: pressLetudiantImage,
     title: "Bob Emploi, la meilleure façon de démarrer ta recherche d'emploi",
-    url: 'https://www.letudiant.fr/metiers/bob-emploi-la-meilleure-facon-de-demarrer-ta-recherche-d-emploi.html',
+    url: 'https://www.letudiant.fr/metiers/bob-emploi-la-meilleure-facon-de-demarrer-ta-recherche-d-emploi.html', // checkURL
   },
 ] as const

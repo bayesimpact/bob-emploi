@@ -1,30 +1,35 @@
 // eslint-disable-next-line you-dont-need-lodash-underscore/omit
 import _omit from 'lodash/omit'
-import PropTypes from 'prop-types'
-import React, {useCallback, useEffect, useRef, useMemo, useState} from 'react'
+import React, {useCallback, useEffect, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useDispatch, useSelector} from 'react-redux'
 
-import {DispatchAllActions, RootState, diagnoseOnboarding} from 'store/actions'
+import type {DispatchAllActions, RootState} from 'store/actions'
+import {diagnoseOnboarding} from 'store/actions'
 import {lowerFirstLetter, ofJobName} from 'store/french'
-import {LocalizableString, localizeOptions, prepareT} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {localizeOptions, prepareT} from 'store/i18n'
 import {genderizeJob} from 'store/job'
 import {PROJECT_KIND_OPTIONS, PROJECT_LOCATION_AREA_TYPE_OPTIONS,
   PROJECT_PASSIONATE_OPTIONS} from 'store/project'
 import {useUserExample} from 'store/user'
 
+import type {Focusable} from 'components/autocomplete'
 import ExternalLink from 'components/external_link'
-import FieldSet from 'components/field_set'
+import {OneField} from 'components/field_set'
 import Trans from 'components/i18n_trans'
 import LabeledToggle from 'components/labeled_toggle'
 import Select from 'components/select'
-import {CitySuggest, Focusable, JobSuggest} from 'components/suggestions'
+import CityInput from 'components/city_input'
+import JobInput from 'components/job_input'
 import {Styles} from 'components/theme'
 import WithNote from 'components/with_note'
 import companyCreationTools from 'deployment/company_creation_tools'
-import getTools, {Tool} from 'deployment/reorientation_tools'
+import type {Tool} from 'deployment/reorientation_tools'
+import getTools from 'deployment/reorientation_tools'
 
-import {OnboardingComment, ProjectStepProps, Step} from './step'
+import type {ProjectStepProps} from './step'
+import {OnboardingComment, Step} from './step'
 
 const toolContainerStyle = {
   border: `solid 1px ${colors.SILVER}`,
@@ -125,7 +130,7 @@ const UnsupportedProjectKind = React.memo(UnsupportedProjectKindBase)
 const _CREATION_ARGS: CreationArgs = {
   title: prepareT("Nous ne traitons pas encore bien la création d'entreprise",
     {productName: config.productName}),
-  tools: companyCreationTools as unknown as readonly Tool[],
+  tools: companyCreationTools,
 }
 
 
@@ -133,9 +138,13 @@ const _REORIENTATION_ARGS: CreationArgs = {
   title: prepareT('Nous ne traitons pas encore bien la reconversion professionnelle'),
   tools: getTools(),
 } as const
+const isReorientationInterstitialEnabled = !!_REORIENTATION_ARGS.tools.length
 
 
 const jobUnknownStyle: React.CSSProperties = {marginBottom: 25}
+const noMarginStyle: React.CSSProperties = {
+  margin: 0,
+}
 
 
 // Fields to reset when changing the job.
@@ -158,7 +167,7 @@ const NewProjectGoalStep = (props: ProjectStepProps): React.ReactElement => {
     areaType, city, hasClearProject, kind, passionateLevel, targetJob,
   }, onSubmit, profile: {gender = undefined, hasHandicap = undefined} = {}} = props
   const dispatch = useDispatch<DispatchAllActions>()
-  const {i18n, t} = useTranslation()
+  const {t} = useTranslation()
   const defaultProjectProps = useSelector(
     ({app: {defaultProjectProps = undefined}}: RootState): bayes.bob.Project|undefined =>
       defaultProjectProps,
@@ -166,6 +175,7 @@ const NewProjectGoalStep = (props: ProjectStepProps): React.ReactElement => {
   const isUnknownJobEnabledForUser = useSelector(
     ({user: {featuresEnabled: {jobUnknownDisabled = false} = {}}}: RootState): boolean =>
       !jobUnknownDisabled)
+  const isAlpha = useSelector(({user: {featuresEnabled: {alpha} = {}}}: RootState) => !!alpha)
   const [isCompanyCreationShown, setIsCompanyCreationShown] = useState(false)
   const [isReorientationShown, setIsReorientationShown] = useState(false)
   const hideCompanyCreation = useCallback((): void => setIsCompanyCreationShown(false), [])
@@ -192,35 +202,76 @@ const NewProjectGoalStep = (props: ProjectStepProps): React.ReactElement => {
     dispatch(diagnoseOnboarding({projects: [freshProject]}))
   }, [dispatch, freshProject])
 
+  const kindInputRef = useRef<Focusable>(null)
   const jobSuggestRef = useRef<Focusable>(null)
+  const passionateLevelInputRef = useRef<Focusable>(null)
+  const cityInputRef = useRef<Focusable>(null)
+  const areaInputRef = useRef<Focusable>(null)
 
-  const isFormValid = !!(
-    kind && (targetJob || isJobUnknown) && city && areaType &&
-    (passionateLevel || isJobUnknown)
-  )
+  const isKindValid = !!kind
+  const isJobValid = !!(targetJob || isJobUnknown)
+  const isPassionateValid = !!(passionateLevel || isJobUnknown)
+  const isCityValid = !!city
+  const isAreaValid = kind === 'CREATE_OR_TAKE_OVER_COMPANY' || !!areaType
+  const isFormValid = isKindValid && isJobValid && isCityValid && isAreaValid && isPassionateValid
 
-  const handleSubmit = useCallback((): void => {
-    setIsValidated(true)
-    if (!isFormValid) {
-      return
-    }
-    if (kind === 'CREATE_OR_TAKE_OVER_COMPANY' && !isCompanyCreationShown) {
+  const isInterstitialShown = isCompanyCreationShown || isReorientationShown
+
+  const maybeShowInterstitial = useCallback((): boolean => {
+    if (kind === 'CREATE_OR_TAKE_OVER_COMPANY') {
       setIsCompanyCreationShown(true)
-      return
+      return true
     }
-    if (kind === 'REORIENTATION' && !isReorientationShown && !isJobUnknown) {
+    if (kind === 'REORIENTATION' && !isJobUnknown && isReorientationInterstitialEnabled) {
       setIsReorientationShown(true)
-      return
+      return true
     }
+    return false
+  }, [isJobUnknown, kind])
+
+  const submitForm = useCallback((): void => {
     const projectDiff: {-readonly [K in keyof bayes.bob.Project]?: bayes.bob.Project[K]} =
       {areaType, city, hasClearProject, kind, passionateLevel, targetJob}
     onSubmit(projectDiff)
+  }, [areaType, city, hasClearProject, kind, passionateLevel, targetJob, onSubmit])
+
+  const handleSubmit = useCallback((): void => {
+    setIsValidated(true)
+    if (!isKindValid) {
+      kindInputRef.current?.focus()
+      return
+    }
+    if (!isJobValid) {
+      jobSuggestRef.current?.focus()
+      return
+    }
+    if (!isPassionateValid) {
+      passionateLevelInputRef.current?.focus()
+      return
+    }
+    if (!isCityValid) {
+      cityInputRef.current?.focus()
+      return
+    }
+    if (!isAreaValid) {
+      areaInputRef.current?.focus()
+      return
+    }
+    if (!isFormValid) {
+      return
+    }
+    // TODO(émilie): Switch isAlpha in favor of isDemo to drop the reorientation tool during demo.
+    if (!isInterstitialShown && !config.isSimpleOnboardingEnabled && !isAlpha &&
+      maybeShowInterstitial()) {
+      return
+    }
+    submitForm()
   }, [
-    isFormValid, isJobUnknown, areaType, city, hasClearProject, kind, passionateLevel,
-    targetJob, isCompanyCreationShown, isReorientationShown, onSubmit,
+    isAlpha, isAreaValid, isCityValid, isFormValid, isInterstitialShown, isJobValid, isKindValid,
+    isPassionateValid, maybeShowInterstitial, submitForm,
   ])
 
-  const handleJobSuggestChange = useCallback((job: bayes.bob.Job|null): void => {
+  const handleJobSuggestChange = useCallback((job?: bayes.bob.Job): void => {
     if (!job) {
       return
     }
@@ -236,7 +287,7 @@ const NewProjectGoalStep = (props: ProjectStepProps): React.ReactElement => {
     dispatch(diagnoseOnboarding({projects: [projectDiff]}))
   }, [dispatch, isJobCommentRead, targetJob])
 
-  const handleCitySuggestChange = useCallback((city: bayes.bob.FrenchCity|null): void => {
+  const handleCitySuggestChange = useCallback((city?: bayes.bob.FrenchCity): void => {
     if (!city) {
       return
     }
@@ -276,12 +327,13 @@ const NewProjectGoalStep = (props: ProjectStepProps): React.ReactElement => {
   const readJobComment = useCallback((): void => setIsJobCommentRead(true), [])
 
   const handleChangeJobUnknown = useCallback((): void => {
-    setIsJobUnknown(!isJobUnknown)
-    if (isJobUnknown) {
+    const wasJobUnknown = isJobUnknown
+    setIsJobUnknown(!wasJobUnknown)
+    if (wasJobUnknown) {
       jobSuggestRef.current?.focus()
     }
     dispatch(diagnoseOnboarding({projects: [{
-      hasClearProject: isJobUnknown ? undefined : 'FALSE',
+      hasClearProject: wasJobUnknown ? undefined : 'FALSE',
       ...resetProjectForJobChange,
       targetJob: undefined,
     }]}))
@@ -297,19 +349,22 @@ const NewProjectGoalStep = (props: ProjectStepProps): React.ReactElement => {
     if (!kind) {
       projectDiff.kind = userExample.projects[0].kind
     }
-    if (!isJobUnknown) {
-      if (!targetJob) {
-        projectDiff.targetJob = userExample.projects[0].targetJob
-        Object.assign(projectDiff, resetProjectForJobChange)
-      }
-      if (!passionateLevel) {
-        projectDiff.passionateLevel = userExample.projects[0].passionateLevel
-      }
+    if (!isJobUnknown && !targetJob) {
+      projectDiff.hasClearProject = userExample.projects[0].hasClearProject
+      projectDiff.targetJob = userExample.projects[0].targetJob
+      Object.assign(projectDiff, resetProjectForJobChange)
+    }
+    const newIsJobUnkown = !(targetJob || projectDiff.targetJob)
+    if (!passionateLevel && !newIsJobUnkown) {
+      projectDiff.passionateLevel = userExample.projects[0].passionateLevel
     }
     if (!city) {
       projectDiff.city = userExample.projects[0].city
     }
-    projectDiff.hasClearProject = isJobUnknown ? 'FALSE' : 'TRUE'
+    projectDiff.hasClearProject = newIsJobUnkown ? 'FALSE' : 'TRUE'
+    if (!isJobUnknown && newIsJobUnkown) {
+      setIsJobUnknown(true)
+    }
     if (!areaType) {
       projectDiff.areaType = userExample.projects[0].areaType
     }
@@ -321,7 +376,7 @@ const NewProjectGoalStep = (props: ProjectStepProps): React.ReactElement => {
     targetJob, userExample,
   ])
 
-  const whichJobQuestion = ((): React.ReactNode => {
+  const whichJobQuestion = ((): string => {
     switch (kind) {
       case 'CREATE_OR_TAKE_OVER_COMPANY':
         return t('Quel métier représente le plus votre expertise\u00A0?')
@@ -335,10 +390,6 @@ const NewProjectGoalStep = (props: ProjectStepProps): React.ReactElement => {
   const whichCityQuestion = (kind === 'CREATE_OR_TAKE_OVER_COMPANY') ?
     t('Où voulez-vous créer ou reprendre une entreprise\u00A0?') :
     t('Autour de quelle ville cherchez-vous\u00A0?')
-
-  const airtableLink = useMemo(() => i18n.language === 'en' ?
-    'https://airtable.com/shrWOxkYASM8mtttA' : 'https://airtable.com/shreUw3GYqAwVAA27',
-  [i18n.language])
 
   if (isCompanyCreationShown) {
     return <UnsupportedProjectKind
@@ -372,40 +423,45 @@ const NewProjectGoalStep = (props: ProjectStepProps): React.ReactElement => {
     title={t('Votre projet')}
     {...props} fastForward={fastForward}
     progressInStep={checks.filter((c): boolean => !!c).length / (checks.length + 1)}
-    onNextButtonClick={isFormValid ? handleSubmit : undefined}>
-    <FieldSet label={t('Quel est votre projet\u00A0:')}
+    onNextButtonClick={handleSubmit}>
+    <OneField
+      label={t('Quel est votre projet\u00A0:')}
       isValid={!!kind} isValidated={isValidated} hasCheck={true}>
-      <Select
+      <Select<bayes.bob.ProjectKind>
         value={kind} options={localizeOptions(t, PROJECT_KIND_OPTIONS)}
-        onChange={handleChangeKind}
+        onChange={handleChangeKind} ref={kindInputRef}
         placeholder={t('choisissez un type de projet')} />
-    </FieldSet>
+    </OneField>
     {checks[0] ? <React.Fragment>
       {/* TODO(cyrille): Find a way to avoid note + comment. */}
       <WithNote
         hasComment={true}
-        note={<Trans parent={null}>
+        note={<Trans parent="p" style={noMarginStyle}>
           Vous ne trouvez pas votre métier&nbsp;?
           <ExternalLink style={{color: colors.BOB_BLUE, fontSize: 15, marginLeft: 3}}
-            href={airtableLink}>
+            href={t('https://airtable.com/shreUw3GYqAwVAA27')}>
             Cliquez ici pour l'ajouter
           </ExternalLink>
         </Trans>}>
-        <FieldSet
+        <OneField
           label={whichJobQuestion}
+          extendedLabel={t(
+            "Si vous ne trouvez pas l'intitulé exact du métier que vous cherchez, " +
+            'choisissez un intitulé proche de ce que vous avez en tête.',
+          )}
           isValid={!!targetJob || isJobUnknown}
           isValidated={isValidated}
           hasCheck={true}
           hasNoteOrComment={true}>
-          <JobSuggest
+          <JobInput
             placeholder={isJobUnknown ?
               t('décochez la case ci-dessous pour entrer un métier') : t('entrez votre métier')}
-            value={targetJob} textValue={isJobUnknown ? '' : undefined}
+            value={targetJob}
             onChange={handleJobSuggestChange}
             gender={gender}
             disabled={isJobUnknown}
             style={{padding: 1, ...Styles.INPUT}} ref={jobSuggestRef} />
-        </FieldSet>
+        </OneField>
       </WithNote>
       {isUnknownJobEnabled ? <LabeledToggle
         type="checkbox" isSelected={isJobUnknown} onClick={handleChangeJobUnknown}
@@ -417,47 +473,43 @@ const NewProjectGoalStep = (props: ProjectStepProps): React.ReactElement => {
           field="TARGET_JOB_FIELD" shouldShowAfter={!!targetJob} />}
     </React.Fragment> : null}
     {checks.slice(0, 2).every((c): boolean => !!c) && !isJobUnknown ?
-      <FieldSet label={t('Que représente ce travail pour vous\u00A0?')}
+      <OneField label={t('Que représente ce travail pour vous\u00A0?')}
         isValid={!!passionateLevel} isValidated={isValidated} hasCheck={true}>
-        <Select value={passionateLevel} options={localizeOptions(t, PROJECT_PASSIONATE_OPTIONS)}
-          onChange={handleChangePassionateLevel}
+        <Select<bayes.bob.PassionateLevel>
+          value={passionateLevel} options={localizeOptions(t, PROJECT_PASSIONATE_OPTIONS)}
+          onChange={handleChangePassionateLevel} ref={passionateLevelInputRef}
           placeholder={t('choisissez une proposition')} />
-      </FieldSet> : null}
+      </OneField> : null}
     {checks.slice(0, 3).every((c): boolean => !!c) ? <React.Fragment>
-      <FieldSet
+      <OneField
         label={whichCityQuestion}
         isValid={!!city}
         isValidated={isValidated}
         hasNoteOrComment={true}
         hasCheck={true}>
-        <CitySuggest
-          onChange={handleCitySuggestChange}
+        <CityInput
+          onChange={handleCitySuggestChange} ref={cityInputRef}
           style={{padding: 1, ...Styles.INPUT}}
           value={city}
           placeholder={t('entrez votre ville ou votre code postal')} />
-      </FieldSet>
+      </OneField>
       <OnboardingComment key={city && city.cityId}
         onDone={readCityComment}
         field="CITY_FIELD" shouldShowAfter={!!city} />
     </React.Fragment> : null}
     {checks.slice(0, 4).every((c): boolean => !!c) && kind !== 'CREATE_OR_TAKE_OVER_COMPANY' ?
-      <FieldSet
+      <OneField
         label={t("Jusqu'où êtes-vous prêt·e à vous déplacer\u00A0?", {context: gender})}
         isValid={!!areaType}
         isValidated={isValidated} hasCheck={true}>
-        <Select
+        <Select<bayes.bob.AreaType>
           options={
             localizeOptions(t, PROJECT_LOCATION_AREA_TYPE_OPTIONS, {context: config.countryId})}
-          value={areaType} onChange={handleChangeAreaType}
+          value={areaType} onChange={handleChangeAreaType} ref={areaInputRef}
           placeholder={t(
             'choisissez une zone où vous êtes prêt·e à vous déplacer', {context: gender})} />
-      </FieldSet> : null}
+      </OneField> : null}
   </Step>
-}
-NewProjectGoalStep.propTypes = {
-  newProject: PropTypes.object,
-  onSubmit: PropTypes.func.isRequired,
-  profile: PropTypes.object,
 }
 
 

@@ -1,4 +1,13 @@
-"""Script to create a pool of use cases from actual users."""
+"""Script to create a pool of use cases from actual users.
+
+Usage:
+    docker-compose run --rm \
+        -e SLACK_CREATE_POOL_URL ... \
+        -e MONGO_URL ... \
+        -e USER_MONGO_URL ... \
+        -e EVAL_MONGO_URL ... \
+        frontend-flask python bob_emploi/frontend/server/asynchronous/create_pool.py
+"""
 
 import datetime
 import json
@@ -16,14 +25,11 @@ import requests
 from bob_emploi.frontend.server import diagnostic
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import privacy
+from bob_emploi.frontend.server.mail import campaign
 
 # A Slack WebHook URL to send final reports to. Defined in the Incoming
 # WebHooks of https://bayesimpact.slack.com/apps/A0F7XDUAZ-incoming-webhooks
 _SLACK_CREATE_POOL_URL = os.getenv('SLACK_CREATE_POOL_URL')
-
-# The base URL to use as the prefix of all links to the website. E.g. in dev,
-# you should use http://localhost:3000.
-_BASE_URL = os.getenv('BASE_URL', 'https://www.bob-emploi.fr')
 
 _YESTERDAY = (datetime.date.today() + datetime.timedelta(days=-1)).strftime('%Y-%m-%d')
 _DEFAULT_USERS_FILTER = {
@@ -68,7 +74,7 @@ def main(pool_name: str = _YESTERDAY, users_json_filters: str = '', limit: str =
         num_cases += 1
 
     if num_cases and _SLACK_CREATE_POOL_URL:
-        pool_url = f'{_BASE_URL}/eval/{parse.quote(pool_name)}'
+        pool_url = campaign.get_bob_link(f'/eval/{parse.quote(pool_name)}')
         requests.post(_SLACK_CREATE_POOL_URL, json={
             'text': f'A new use cases pool is ready for evaluation: <{pool_url}|{pool_name}>',
         })

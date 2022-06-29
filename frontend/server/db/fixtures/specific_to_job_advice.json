@@ -1,0 +1,1036 @@
+[
+ {
+  "_id": "recXcRQpltbFS5i4s",
+  "_order": 0,
+  "cardText": "Tous les artistes le disent, la première chose à faire c'est de **se construire un bon portfolio.**",
+  "diagnosticTopics": [
+   "JOB_SEARCH_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "4 idées pour vous aider à réussir votre portfolio :\n\nTous les artistes le disent, la première chose à faire\n",
+  "expandedCardHeaderFeminine": "Voici quelques idées pour vous aider à réussir votre portfolio :",
+  "expandedCardItems": [
+   "Choisissez bien votre plateforme pour avoir une interface intuitive et valorisante",
+   "Utilisez une structure simple \"profil\", \"projets\" et “contact”",
+   "Sélectionnez vos projets dont vous êtes le·a plus fier·e",
+   "Collaborez avec d'autres artistes (mannequin, acteur …) cela vous permettra d'enrichir vos portfolios mutuellement"
+  ],
+  "expandedCardItemsFeminine": [
+   "Choisissez bien votre plateforme pour avoir une interface intuitive et valorisante",
+   "Utilisez une structure simple \"profil\", \"projets\" et “contact”",
+   "Sélectionnez vos projets dont vous êtes la plus fière",
+   "Collaborez avec d'autres artistes (mannequin, acteur …) cela vous permettra d'enrichir vos portfolios mutuellement"
+  ],
+  "filters": [
+   "for-job-group(B1101, L1203)"
+  ],
+  "goal": "soigner son portfolio",
+  "id": "artist",
+  "shortTitle": "Portfolio",
+  "strategyIds": [
+   "presearch-methods",
+   "apply-in-unliked-job",
+   "get-alternance",
+   "get-diploma",
+   "try-without-diploma",
+   "application-methods-to-interview",
+   "application-methods-to-interview-start",
+   "application-methods-bravo",
+   "get-diploma-covid",
+   "application-methods-covid"
+  ],
+  "title": "Concentrez-vous sur votre portfolio"
+ },
+ {
+  "_id": "reccpoAsKAJWCIMka",
+  "_order": 1,
+  "cardText": "**Allez à la boulangerie la veille** pour savoir à quelle heure arrive le chef boulanger.",
+  "diagnosticTopics": [
+   "JOB_SEARCH_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "3 idées pour vous aider à réussir votre approche :",
+  "expandedCardItems": [
+   "Se présenter aux boulangers entre 4h et 7h du matin.",
+   "Demander au vendeur / à la vendeuse à quelle heure arrive le chef le matin.",
+   "Contacter les fournisseurs de farine locaux : ils connaissent tous les boulangers du coin et sauront où il y a des embauches."
+  ],
+  "filters": [
+   "not-for-job(12006)",
+   "for-job-group(D1102)"
+  ],
+  "goal": "adopter les astuces de boulangers",
+  "id": "baker",
+  "shortTitle": "Astuces de boulangers",
+  "strategyIds": [
+   "application-methods",
+   "apply-in-unliked-job",
+   "get-alternance",
+   "try-without-diploma",
+   "targeted-search",
+   "targeted-search-start",
+   "targeted-search-bravo",
+   "targeted-search-covid",
+   "application-methods-undefined-project"
+  ],
+  "title": "Présentez-vous au chef boulanger dès son arrivée tôt le matin"
+ },
+ {
+  "_id": "rectYaUwXkzhfiYIA",
+  "_order": 2,
+  "cardText": "Ne déposez pas juste votre CV : essayez de vous présenter en quelques mots au **responsable du salon de coiffure**.",
+  "diagnosticTopics": [
+   "JOB_SEARCH_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "5 idées pour vous aider à réussir votre approche :",
+  "expandedCardHeaderFeminine": "Voici quelques idées pour vous aider à réussir votre approche :",
+  "expandedCardItems": [
+   "Postulez toujours en personne",
+   "Essayez de vous présenter en quelques mots au **responsable du salon de coiffure**.",
+   "Les responsables de salon sont souvent très occupés, pour être sûr de les trouver allez les voir en heures creuses.",
+   "La coiffure est un métier d'esthétique, soyez toujours très soigné pour vous présenter au responsable.",
+   "Si le responsable n'est pas là, gardez le nom de la personne que vous avez rencontrée et revenez quand le responsable sera là."
+  ],
+  "expandedCardItemsFeminine": [
+   "Postulez toujours en personne",
+   "Les responsables de salon sont souvent très occupés, pour être sûre de les trouver allez les voir en heures creuses.",
+   "La coiffure est un métier d'esthétique, soyez toujours très soignée pour vous présenter au responsable.",
+   "Si le responsable n'est pas là, gardez le nom de la personne que vous avez rencontrée et revenez quand le responsable sera là."
+  ],
+  "filters": [
+   "for-job-group(D1202)"
+  ],
+  "goal": "adopter les astuces de coiffeurs",
+  "id": "hairdresser",
+  "shortTitle": "Astuces de coiffeurs",
+  "strategyIds": [
+   "application-methods",
+   "apply-in-unliked-job",
+   "get-alternance",
+   "try-without-diploma",
+   "targeted-search",
+   "targeted-search-start",
+   "targeted-search-bravo",
+   "application-methods-bravo",
+   "targeted-search-covid",
+   "application-methods-covid",
+   "application-methods-undefined-project"
+  ],
+  "title": "Assurez-vous de donner votre CV à la bonne personne quand vous postulez"
+ },
+ {
+  "_id": "recioXM5Pd2x5HI4W",
+  "_order": 3,
+  "cardText": "Pour vendre un produit il faut qu'il vous parle, **postulez peu mais pour des marques que vous aimez vraiment** et montrez-le en entretien.",
+  "diagnosticTopics": [
+   "PROFILE_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "5 idées pour vous aider à trouver les marques qui vous plaisent :\n\nPostulez peu mais pour des marques que vous aimez vraiment\n",
+  "expandedCardItems": [
+   "Pour vendre un produit il faut qu'il vous parle. Avant l'entretien, préparez des reflexions sincères qui montrent votre passion pour les produits.",
+   "Posez-vous les bonnes questions : Quelle est votre pièce préféré dans la collection actuelle ?",
+   "Posez-vous les bonnes questions : La marque a-t-elle fait des collaborations avec des artistes récemment ?",
+   "Posez-vous les bonnes questions : Quel est votre produit fétiche fait par cette marque ?",
+   "Passez aussi du temps sur les réseaux sociaux de la marque pour comprendre comment elle s'adresse à ses clients/es"
+  ],
+  "filters": [
+   "for-job-group(D1214)"
+  ],
+  "goal": "identifier ce qui vous plait vraiment",
+  "id": "clothes-sales",
+  "shortTitle": "Astuces de vendeurs",
+  "strategyIds": [
+   "presearch-methods",
+   "motivate-in-job",
+   "get-alternance",
+   "try-without-diploma",
+   "application-methods-to-interview",
+   "application-methods-to-interview-start",
+   "application-methods-bravo",
+   "application-methods-covid"
+  ],
+  "title": "Allez vers les marques que vous aimez"
+ },
+ {
+  "_id": "recMdAuPEMdqtG5jB",
+  "_order": 4,
+  "cardText": "Le métier d'assistant a beaucoup évolué et demande de plus en plus de compétences.",
+  "diagnosticTopics": [
+   "JOB_OF_THE_FUTURE_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "4 compétences qui pourraient faire la différence :\n\nLe métier d'assistant a beaucoup évolué ces dernières années\n",
+  "expandedCardItems": [
+   "**Apprenez à faire des Macro Excel** : \"En travaillant dans une PME cette compétence m'a permis de vite me faire remarquer comme LA personne a avoir dans son équipe\"",
+   "**Apprenez à utiliser sketch pour pouvoir réaliser des infographie** : \"Mon responsable commercial était bloqué pour modifier son flyer. Il a été bluffé quand je lui ai dit “'C'est bon je m'en occupe”.\" [Tutoriel](https://la-cascade.io/sketch-tutoriel_01/)",
+   "**Apprenez les bases d'un langage informatique** : “Avoir quelques bases de code peut faire la différence et montre votre capacité à apprendre et à vous challenger\" [MOOC](https://mooc-francophone.com/cours/apprendre-a-coder-pour-les-vrais-debutants/)",
+   "**Faites certifier votre niveau d'anglais** : \"Anglais : niveau professionnel c'est bien , pouvoir dire j'ai obtenu 112 au TOEFL c'est mieux\". [site](https://www.emploi-store.fr/portail/services/sePreparerAuToeic)"
+  ],
+  "filters": [
+   "for-job-group(D1401)"
+  ],
+  "goal": "maîtriser les nouveaux outils du métier",
+  "id": "secretary-skill",
+  "shortTitle": "Avenir",
+  "strategyIds": [
+   "presearch-methods",
+   "auto-didact",
+   "get-alternance",
+   "get-diploma",
+   "application-methods-to-interview",
+   "application-methods-to-interview-start",
+   "application-methods-bravo",
+   "get-diploma-covid",
+   "application-methods-covid"
+  ],
+  "title": "Obtenez ces nouvelles compétences pour sortir du lot"
+ },
+ {
+  "_id": "recfWS8JbtIkc7kDG",
+  "_order": 5,
+  "cardText": "Les experts le disent, le métier de commercial B to B évolue. Face à des acheteurs très informés, le commercial doit prouver sa valeur ajoutée et savoir influencer.",
+  "diagnosticTopics": [
+   "JOB_OF_THE_FUTURE_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "Les experts le disent, le métier de commercial B to B évolue. Face à des acheteurs très informés, le commercial doit **prouver sa valeur ajoutée** et **savoir influencer**.\n\nVoici 3 nouvelles compétences clés à acquérir :",
+  "expandedCardItems": [
+   "**L'analyse des données** : de plus en plus, les clients attendent du “sur-mesure”. L'analyse des données est un vrai atout pour mieux comprendre son marché et ses clients. Par exemple, vous pouvez apprendre à maîtriser [les outils proposés par Google](https://www.thinkwithgoogle.com/intl/fr-fr/outils/)",
+   "**L'utilisation des réseaux sociaux comme outil de prospection** : La veille sur les réseaux sociaux professionnels est aussi un atout essentiel mais qui demande une bonne maîtrise pour ne pas devenir une perte de temps. [Cette présentation](https://www.slideshare.net/ehostachy/comment-utiliser-linkedin) donne de bonnes pistes sur le sujet.",
+   "**L'influence** : la dimension psychologique prend de plus en plus de place. Il ne faut plus convaincre, mais influencer. Sur le sujet, on adore [cette mini conférence](https://www.ted.com/talks/simon_sinek_how_great_leaders_inspire_action?language=fr)."
+  ],
+  "filters": [
+   "for-job-group(D1402, D1407)"
+  ],
+  "goal": "développer les nouvelles compétences pour ce métier",
+  "id": "sales",
+  "shortTitle": "Avenir",
+  "strategyIds": [
+   "presearch-methods",
+   "apply-in-unliked-job",
+   "get-diploma",
+   "get-alternance",
+   "motivate-in-job",
+   "application-methods-to-interview",
+   "targeted-search-start",
+   "targeted-search-bravo",
+   "application-methods-bravo",
+   "get-diploma-covid",
+   "targeted-search-covid",
+   "application-methods-covid"
+  ],
+  "title": "Préparez-vous au futur du métier de commercial"
+ },
+ {
+  "_id": "rec4JPjCRLhSedpVz",
+  "_order": 6,
+  "cardText": "Ce que nous ont dit les recruteurs et les gens du métier",
+  "diagnosticTopics": [
+   "JOB_SEARCH_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "Ce que nous ont dit les recruteurs et les gens du métier :",
+  "expandedCardHeaderFeminine": "Ce que nous ont dit les recruteurs et les gens du métier :",
+  "expandedCardItems": [
+   "Soyez conscient que les horaires seront difficiles. Les recruteurs nous le disent : les personnes qui ne seront pas prêtes à assumer ce rythme de travail ne resteront pas.",
+   "Un hôte de caisse nous a dit : \"C'est comme tout, il faut pouvoir aimer son métier sinon ça se voit direct\".",
+   "Même si vous n'avez pas d'expérience, c'est votre motivation et votre ouverture d'esprit qui seront jugées en entretien.",
+   "La période d'essai est plus \"sélective\" que l'entretien. La ponctualité est essentielle pour ce type de métier.",
+   "Comme tout métier d'accueil, il faut pouvoir bien présenter. Choisissez bien votre tenue !",
+   "Dans certains supermarchés (de type super U), vous pouvez encore venir avec votre CV mais dans la plupart des gros supermarchés franchisés, l'inscription se fait en ligne.",
+   "Si vous pouvez être recommandé par un employé du supermarché, un directeur de magasin pourra vous faire confiance et faire remonter votre CV. Misez là-dessus si vous avez des relations !",
+   "Si vous souhaitez évoluer professionnellement, choisissez les hypermarchés. Vous pouvez évoluer vers un poste d'adjoint, de manager de caisse ou aller vers des fonctions d'accueil.",
+   "Dans certains supermarchés, vous pourrez être à la fois hôte de caisse et chargé de mise en rayon. En entretien, soyez ouvert à cette possibilité."
+  ],
+  "expandedCardItemsFeminine": [
+   "Soyez consciente que les horaires seront difficiles. Les recruteurs nous le disent : les personnes qui ne seront pas prêtes à assumer ce rythme de travail ne resteront pas.",
+   "Un hôte de caisse nous a dit : \"C'est comme tout, il faut pouvoir aimer son métier sinon ça se voit direct\".",
+   "Même si vous n'avez pas d'expérience, c'est votre motivation et votre ouverture d'esprit qui seront jugées en entretien.",
+   "La période d'essai est plus \"sélective\" que l'entretien. La ponctualité est essentielle pour ce type de métier.",
+   "Comme tout métier d'accueil, il faut pouvoir bien présenter. Choisissez bien votre tenue !",
+   "Dans certains supermarchés (de type super U), vous pouvez encore venir avec votre CV mais dans la plupart des gros supermarchés franchisés, l'inscription se fait en ligne.",
+   "Si vous pouvez être recommandée par un employé du supermarché, un directeur de magasin pourra vous faire confiance et faire remonter votre CV. Misez là-dessus si vous avez des relations !",
+   "Si vous souhaitez évoluer professionnellement, choisissez les hypermarchés. Vous pouvez évoluer vers un poste d'adjoint, de manager de caisse ou aller vers des fonctions d'accueil.",
+   "Dans certains supermarchés, vous pourrez être à la fois hôtesse de caisse et chargée de mise en rayon. En entretien, soyez ouverte à cette possibilité."
+  ],
+  "filters": [
+   "for-job-group(D1505)"
+  ],
+  "goal": "adopter les astuces de caissiers",
+  "id": "cashier",
+  "shortTitle": "Astuces personnel de caisse",
+  "strategyIds": [
+   "application-methods-to-interview",
+   "application-methods",
+   "try-without-diploma",
+   "apply-in-unliked-job",
+   "application-methods-to-interview-start",
+   "targeted-search-start",
+   "targeted-search-bravo",
+   "application-methods-bravo",
+   "targeted-search-covid",
+   "application-methods-covid",
+   "application-methods-undefined-project"
+  ],
+  "title": "Choisissez bien votre métier"
+ },
+ {
+  "_id": "recqofjfUVy5r41yJ",
+  "_order": 7,
+  "cardText": "Ce que nous ont dit les recruteurs et les gens du métier",
+  "diagnosticTopics": [
+   "JOB_SEARCH_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "Ce que nous ont dit les recruteurs et les gens du métier :",
+  "expandedCardHeaderFeminine": "Ce que nous ont dit les recruteurs et les gens du métier :",
+  "expandedCardItems": [
+   "Soyez conscient que les horaires seront difficiles. Les recruteurs nous le disent : les personnes qui ne seront pas prêtes à assumer ce rythme de travail ne resteront pas.",
+   "Un employé de mise en rayon nous a dit : \"C'est comme tout, il faut pouvoir aimer son métier sinon ça se voit direct\".",
+   "Même si vous n'avez pas d'expérience, c'est votre motivation et votre ouverture d'esprit qui seront jugées en entretien.",
+   "La période d'essai est plus \"sélective\" que l'entretien. La ponctualité est essentielle pour ce type de métier.",
+   "Comme tout métier d'accueil, il faut pouvoir bien présenter. Choisissez bien votre tenue !",
+   "Dans certains supermarchés (de type super U), vous pouvez encore venir avec votre CV mais dans la plupart des gros supermarchés franchisés, l'inscription se fait en ligne.",
+   "Si vous pouvez être recommandé par un employé du supermarché, un directeur de magasin pourra vous faire confiance et faire remonter votre CV. Misez là-dessus si vous avez des relations !",
+   "Si vous souhaitez évoluer professionnellement, choisissez les hypermarchés. Vous pouvez évoluer vers un poste d'adjoint, de manager de caisse ou aller vers des fonctions d'accueil.",
+   "Dans certains supermarchés, vous pourrez être à la fois hôte de caisse et chargé de mise en rayon. En entretien, soyez ouverte à cette possibilité."
+  ],
+  "expandedCardItemsFeminine": [
+   "Soyez consciente que les horaires seront difficiles. Les recruteurs nous le disent : les personnes qui ne seront pas prêtes à assumer ce rythme de travail ne resteront pas.",
+   "Un employé de mise en rayon nous a dit : \"C'est comme tout, il faut pouvoir aimer son métier sinon ça se voit direct\".",
+   "Même si vous n'avez pas d'expérience, c'est votre motivation et votre ouverture d'esprit qui seront jugées en entretien.",
+   "La période d'essai est plus \"sélective\" que l'entretien. La ponctualité est essentielle pour ce type de métier.",
+   "Comme tout métier d'accueil, il faut pouvoir bien présenter. Choisissez bien votre tenue !",
+   "Dans certains supermarchés (de type super U), vous pouvez encore venir avec votre CV mais dans la plupart des gros supermarchés franchisés, l'inscription se fait en ligne.",
+   "Si vous pouvez être recommandée par un employé du supermarché, un directeur de magasin pourra vous faire confiance et faire remonter votre CV. Misez là-dessus si vous avez des relations !",
+   "Si vous souhaitez évoluer professionnellement, choisissez les hypermarchés. Vous pouvez évoluer vers un poste d'adjointe, de manager de caisse ou aller vers des fonctions d'accueil.",
+   "Dans certains supermarchés, vous pourrez être à la fois hôtesse de caisse et chargée de mise en rayon. En entretien, soyez ouverte à cette possibilité."
+  ],
+  "filters": [
+   "for-job-group(D1507)"
+  ],
+  "goal": "lire les conseils des recruteurs",
+  "id": "store-keeper",
+  "shortTitle": "Astuces mise en rayon libre-service",
+  "strategyIds": [
+   "application-methods",
+   "application-methods-to-interview",
+   "try-without-diploma",
+   "apply-in-unliked-job",
+   "application-methods-to-interview-start",
+   "targeted-search-start",
+   "application-methods-bravo",
+   "targeted-search-bravo",
+   "targeted-search-covid",
+   "application-methods-covid",
+   "application-methods-undefined-project"
+  ],
+  "title": "Choississez bien votre métier"
+ },
+ {
+  "_id": "rechazbVdRffYNTVP",
+  "_order": 8,
+  "cardText": "Exprimez et développez votre créativité et vos passions grâce à **un blog, une page Medium, une page Youtube, ou bien une chaîne de podcasts.**",
+  "diagnosticTopics": [
+   "JOB_SEARCH_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "4 idées pour vous aider à réussir votre blog :\n\nOu page Medium, page Youtube, voire même une chaîne de podcasts\n",
+  "expandedCardItems": [
+   "Choisissez un sujet qui vous passionne ou que vous avez envie de partager",
+   "Dessin, écriture, photos, vidéos, choisissez le bon format pour mettre en avant vos talents",
+   "Essayez de consacrer au moins 30 min par jour à ce projet",
+   "Partagez-le dans un premier temps avec vos proches pour avoir leurs avis"
+  ],
+  "filters": [
+   "for-job-group(E1103, E1106)"
+  ],
+  "goal": "créer un blog ou un site",
+  "id": "journalist",
+  "shortTitle": "Restez créatif",
+  "strategyIds": [
+   "presearch-methods",
+   "motivate-in-job",
+   "get-alternance",
+   "auto-didact",
+   "try-without-diploma",
+   "targeted-search",
+   "targeted-search-start",
+   "life-balance",
+   "application-methods-bravo",
+   "application-methods-covid"
+  ],
+  "title": "Continuez de vous exprimer et de cultiver vos talents"
+ },
+ {
+  "_id": "rec7xzZnCIVmbYUub",
+  "_order": 9,
+  "cardText": "Tous les designers le disent, la première chose à faire c'est de **se construire un bon portfolio.**",
+  "diagnosticTopics": [
+   "JOB_SEARCH_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "6 idées pour vous aider à réussir votre portfolio :\n\nTous les designers le disent, c'est la première chose à faire\n",
+  "expandedCardItems": [
+   "Utilisez une structure simple \"profil\", \"projets\" et “contact”",
+   "Indiquez pour chaque projet votre rôle, le nom de votre client et de vos collaborateurs",
+   "Créez des cas d'études pour chaque projet pour présenter vos méthodes de travail",
+   "Partagez votre portfolio avec des designers pour avoir leur avis",
+   "Partagez votre portfolio sur les réseaux sociaux professionnels",
+   "Partagez aussi vos projets sur des plateformes spécialisées comme **BeHance**, **Dribbble** ou **Connect d'Étape**."
+  ],
+  "filters": [
+   "for-job-group(E1205)"
+  ],
+  "goal": "créer un portfolio",
+  "id": "multimedia",
+  "shortTitle": "Portfolio",
+  "strategyIds": [
+   "presearch-methods",
+   "apply-in-unliked-job",
+   "try-without-diploma",
+   "application-methods-to-interview",
+   "application-methods-to-interview-start",
+   "application-methods-bravo",
+   "application-methods-covid"
+  ],
+  "title": "Concentrez-vous sur votre portfolio"
+ },
+ {
+  "_id": "rectkTA5F2kl78CcK",
+  "_order": 10,
+  "cardText": "Quelques conseils pour adopter la bonne dynamique",
+  "diagnosticTopics": [
+   "JOB_SEARCH_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "Quelques conseils pour adopter la bonne dynamique :",
+  "expandedCardHeaderFeminine": "Quelques conseils pour adopter la bonne dynamique :",
+  "expandedCardItems": [
+   "C'est possible d'arriver sans expérience et sans diplôme : il suffit d'arriver motivé et de montrer que vous en voulez ! Proposez-vous en tant que runner, c'est le meilleur poste pour se forger de l'expérience 😊",
+   "D'ailleurs, un serveur nous l'a dit : le manque d'expérience se voit direct ! Le mieux est d'être sincère, vous aurez plus de chances de gagner la confiance de votre recruteur et de valider votre période d'essai.",
+   "Rendez-vous directement sur place avec votre CV, en matinée avant 11h30, sinon c'est le rush.",
+   "Entre avril et fin juillet, ainsi qu'au mois de septembre, les petites mains sont les bienvenues, vous avez toutes vos chances d'intéresser ! Évitez la saison basse par contre (décembre - avril) ...",
+   "Ce n'est pas parce que vous vous prenez plusieurs refus qu'il faut abandonner. L'autre jour, un recruteur nous disait : \"Franchement, vous faites 30 structures en 3 jours, vous êtes sûr de trouver !\"",
+   "Nous avons parlé avec des serveurs et ils sont unanimes : la façon dont vous vous habillerez est déterminante. Chemises (blanche, pas de t-shirt), pantalons (noir, pas de jean), chaussures \"chics\", rasé de près.",
+   "Prenez-vous un temps d'observation pour voir comment les serveurs de l'espace que vous visez sont habillés. Vous pourrez mieux adapter votre tenue. Par exemple pour savoir si vous pouvez mettre des baskets ou non.",
+   "Les serveurs nous ont dit qu'au début c'est normal de faire des erreurs d'organisation. Ce qu'ils vont remarquer c'est votre bonne volonté."
+  ],
+  "expandedCardItemsFeminine": [
+   "Rendez-vous directement sur place avec votre CV, en matinée avant 11h30, sinon c'est le rush.",
+   "Entre avril et fin juillet, ainsi qu'au mois de septembre, les petites mains sont les bienvenues, vous avez toutes vos chances d'intéresser ! Évitez la saison basse par contre (décembre - avril) ...",
+   "Parole d'un recruteur : \"Franchement, vous faites 30 structures en 3 jours, vous êtes sûre de trouver !\"",
+   "Nous avons parlé avec des serveurs et ils sont unanimes : la façon dont vous vous habillerez est déterminante. Chemises (blanche, pas de t-shirt), pantalons (noir, pas de jean) et chaussures \"chics\".",
+   "Prenez-vous un temps d'observation pour voir comment les serveurs de l'espace que vous visez sont habillés. Vous pourrez mieux adapter votre tenue. Par exemple pour savoir si vous pouvez mettre des baskets ou non.",
+   "Les serveurs nous ont dit qu'au début c'est normal de faire des erreurs d'organisation. Ce qu'ils vont remarquer c'est votre bonne volonté."
+  ],
+  "filters": [
+   "not-for-experience-in-domain",
+   "for-job-group(G1803)"
+  ],
+  "goal": "lire les conseils des recruteurs",
+  "id": "new-waiter",
+  "shortTitle": "Astuces service en restauration",
+  "strategyIds": [
+   "presearch-methods",
+   "interview-success",
+   "try-without-diploma",
+   "apply-in-unliked-job",
+   "interview-success-start",
+   "targeted-search-bravo",
+   "interview-success-bravo",
+   "targeted-search-covid"
+  ],
+  "title": "Soignez votre présentation et rendez-vous directement sur place"
+ },
+ {
+  "_id": "rec68OnLekXCMDwnz",
+  "_order": 11,
+  "cardText": "Quelques conseils pour adopter la bonne dynamique",
+  "diagnosticTopics": [
+   "JOB_SEARCH_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "Quelques conseils pour adopter la bonne dynamique :",
+  "expandedCardHeaderFeminine": "Quelques conseils pour adopter la bonne dynamique :",
+  "expandedCardItems": [
+   "Rendez-vous directement sur place avec votre CV, en matinée avant 11h30, sinon c'est le rush.",
+   "Entre avril et fin juillet, ainsi qu'au mois de septembre, les petites mains sont les bienvenues, vous avez toutes vos chances d'intéresser ! Évitez la saison basse par contre (décembre - avril) ...",
+   "Ce n'est pas parce que vous vous prenez plusieurs refus qu'il faut abandonner. L'autre jour, un recruteur nous disait : \"Franchement, vous faites 30 structures en 3 jours, vous êtes sûr de trouver !\"",
+   "Nous avons parlé avec des serveurs et ils sont unanimes: la façon dont vous vous habillerez est déterminante. Chemises (blanche, pas de t-shirt), pantalons (noir, pas de jean), chaussures \"chics\", rasé de près.",
+   "Prenez-vous un temps d'observation pour voir comment les serveurs de l'espace que vous visez sont habillés. Vous pourrez mieux adapter votre tenue. Par exemple pour savoir si vous pouvez mettre des baskets ou non.",
+   "Les serveurs nous ont dit qu'au début c'est normal de faire des erreurs d'organisation. Ce qu'ils vont remarquer c'est votre bonne volonté."
+  ],
+  "expandedCardItemsFeminine": [
+   "Rendez-vous directement sur place avec votre CV, en matinée avant 11h30, sinon c'est le rush.",
+   "Entre avril et fin juillet, ainsi qu'au mois de septembre, les petites mains sont les bienvenues, vous avez toutes vos chances d'intéresser ! Évitez la saison basse par contre (décembre - avril) ...",
+   "Ce n'est pas parce que vous vous prenez plusieurs refus qu'il faut abandonner. L'autre jour, un recruteur nous disait : \"Franchement, vous faites 30 structures en 3 jours, vous êtes sûre de trouver !\"",
+   "Nous avons parlé avec des serveurs et ils sont unanimes : la façon dont vous vous habillerez est déterminante. Chemises (blanche, pas de t-shirt), pantalons (noir, pas de jean) et chaussures \"chics\".",
+   "Prenez-vous un temps d'observation pour voir comment les serveurs de l'espace que vous visez sont habillés. Vous pourrez mieux adapter votre tenue. Par exemple pour savoir si vous pouvez mettre des baskets ou non.",
+   "Les serveurs nous ont dit qu'au début c'est normal de faire des erreurs d'organisation. Ce qu'ils vont remarquer c'est votre bonne volonté.",
+   "C'est possible d'arriver sans expérience et sans diplôme : il suffit d'arriver motivée et de montrer que vous en voulez ! Proposez-vous en tant que runner, c'est le meilleur poste pour se forger de l'expérience 😊",
+   "D'ailleurs, un serveur nous l'a dit : le manque d'expérience se voit direct ! Le mieux est d'être sincère, vous aurez plus de chances de gagner la confiance de votre recruteur et de valider votre période d'essai."
+  ],
+  "filters": [
+   "for-experience-in-domain",
+   "for-job-group(G1803)"
+  ],
+  "goal": "lire les conseils des recruteurs",
+  "id": "experienced-waiter",
+  "shortTitle": "Astuces service en restauration",
+  "strategyIds": [
+   "application-methods",
+   "application-methods-to-interview",
+   "presearch-methods",
+   "application-methods-to-interview-start",
+   "targeted-search-bravo",
+   "application-methods-bravo",
+   "targeted-search-covid",
+   "application-methods-covid",
+   "application-methods-undefined-project"
+  ],
+  "title": "Soignez votre présentation et rendez-vous directement sur place"
+ },
+ {
+  "_id": "rec5P0NGNsIPVQrcH",
+  "_order": 12,
+  "cardText": "Un bon ingénieur ne se résume plus à ses compétences techniques. Il doit aussi comprendre **le marketing, le management ou encore le commercial**. Suivez une formation pour vous y préparer.",
+  "diagnosticTopics": [
+   "JOB_OF_THE_FUTURE_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "2 formations en ligne pour enrichir vos compétences :\n\nUn bon ingénieur doit aussi comprendre le marketing, le management ou encore le commercial.\n",
+  "expandedCardItems": [
+   "Formation  : [\"encadrer et faire grandir\"](https://www.fun-mooc.fr/courses/course-v1:univnantes+31006+session01/about)",
+   "Vidéo: [\"De Dev junior à Leader\"](https://www.youtube.com/watch?v=n3zO78sOcCo) : Notre CTO partage ses convictions sur comment manager une équipe de développeurs"
+  ],
+  "filters": [
+   "for-job-group(H1102)"
+  ],
+  "goal": "développer des nouvelles compétences du métier",
+  "id": "manager",
+  "shortTitle": "Avenir",
+  "strategyIds": [
+   "presearch-methods",
+   "get-diploma",
+   "get-alternance",
+   "motivate-in-job",
+   "apply-in-unliked-job",
+   "application-methods-to-interview",
+   "application-methods-to-interview-start",
+   "targeted-search-start",
+   "targeted-search-bravo",
+   "application-methods-bravo",
+   "get-diploma-covid",
+   "targeted-search-covid",
+   "application-methods-covid"
+  ],
+  "title": "Anticipez l'avenir de votre profession"
+ },
+ {
+  "_id": "recZfPRMAiSXyvZyM",
+  "_order": 13,
+  "cardText": "Quelques conseils pour viser la bonne structure et réussir vos entretiens",
+  "diagnosticTopics": [
+   "JOB_SEARCH_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "Quelques conseils pour viser la bonne structure et réussir vos entretiens :",
+  "expandedCardItems": [
+   "Trouvez le bon type de structure pour vous : Association de service à la personne ? EHPAD ? Etablissement médical ? Prenez le temps de la réflexion.",
+   "Faites une liste des structures à proximité de chez vous et cochez-les chaque fois que vous les avez contactées.",
+   "Rendez-vous directement dans la structure avec votre CV, cela montrera votre débrouillardise, une vraie qualité pour s'occuper de personnes dépendantes.",
+   "Préparez-vous à cette question pour l'entretien : Pourquoi aimez-vous vous occuper des personnes âgées ?",
+   "Et préparez 3/4 éléments à dire pour répondre à la question \"Parlez-moi de vous\".",
+   "Le plus important, c'est d'être soi-même, et savoir s'adapter à la personnalité de la personne, il n'y a pas de \"bonne personnalité\".",
+   "Les personnes âgées apprécient par contre les rapports respectueux et hiérarchisés."
+  ],
+  "filters": [
+   "for-job(11573,11447,11453)",
+   "for-job-group(K1302)"
+  ],
+  "goal": "suivre les conseils des professionnels de votre métier",
+  "id": "adult-support",
+  "shortTitle": "Astuces assistance auprès d'adultes",
+  "strategyIds": [
+   "presearch-methods",
+   "application-methods-to-interview",
+   "get-alternance",
+   "apply-in-unliked-job",
+   "application-methods-to-interview-start",
+   "targeted-search-bravo",
+   "targeted-search-start",
+   "targeted-search-covid"
+  ],
+  "title": "Prenez les devants dans votre recherche"
+ },
+ {
+  "_id": "rect5TPhceQ9Nmvk8",
+  "_order": 14,
+  "cardText": "Créer de la confiance en entretien",
+  "diagnosticTopics": [
+   "JOB_SEARCH_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "5 conseils de parents pour créer de la confiance en entretien :",
+  "expandedCardHeaderFeminine": "5 conseils de parents pour créer de la confiance en entretien :",
+  "expandedCardItems": [
+   "Le dialogue est la clé pour créer de la confiance avec les parents. Préparez en avance un mot de présentation et réfléchissez à tout ce que vous voulez leur dire pour ne pas oublier.",
+   "Pour préparer vos entretiens : mettez-vous à la place des parents, qu'est-ce que vous voudriez savoir avant de confier vos enfants à une personne tierce ? Faites une liste.",
+   "Exprimez clairement ce que vous voulez, le plus sincèrement possible. L'entretien se passe au feeling, il faut que les parents apprennent à vous connaître.",
+   "Bannissez le \"comme vous voulez\" de vos entretiens et expliquez clairement vos préférences, ce que vous savez faire et ce que vous ne savez pas faire.",
+   "Être recommandé peut vous aider à sortir du lot, n'hésitez pas à recontacter vos anciens employeurs !",
+   "Et les petits plus pour vous démarquer (mais pas obligatoire) : Savoir parler une seconde langue, posséder le Brevet de secourisme, le BAFA, ... Mettez en avant vos petites formations !"
+  ],
+  "expandedCardItemsFeminine": [
+   "Le dialogue est la clé pour créer de la confiance avec les parents. Préparez en avance un mot de présentation et réfléchissez à tout ce que vous voulez leur dire pour ne pas oublier.",
+   "Pour préparer vos entretiens : mettez-vous à la place des parents, qu'est-ce que vous voudriez savoir avant de confier vos enfants à une personne tierce ? Faites une liste.",
+   "Exprimez clairement ce que vous voulez, le plus sincèrement possible. L'entretien se passe au feeling, il faut que les parents apprennent à vous connaître.",
+   "Bannissez le \"comme vous voulez\" de vos entretiens et expliquez clairement vos préférences, ce que vous savez faire et ce que vous ne savez pas faire.",
+   "Être recommandée peut vous aider à sortir du lot, n'hésitez pas à recontacter vos anciens employeurs !",
+   "Et les petits plus pour vous démarquer (mais pas obligatoire) : Savoir parler une seconde langue, posséder le Brevet de secourisme, le BAFA, ... Mettez en avant vos petites formations !"
+  ],
+  "filters": [
+   "for-job-group(K1303)"
+  ],
+  "goal": "savoir rassurer les parents",
+  "id": "child-support",
+  "shortTitle": "Astuces assistance auprès d'enfants",
+  "strategyIds": [
+   "application-methods",
+   "interview-success",
+   "apply-in-unliked-job",
+   "try-without-diploma",
+   "interview-success-start",
+   "targeted-search-start",
+   "interview-success-bravo",
+   "application-methods-bravo",
+   "application-methods-covid",
+   "application-methods-undefined-project"
+  ],
+  "title": "Osez vous présenter pour rassurer les parents"
+ },
+ {
+  "_id": "recYcUePMmvPcY2Ex",
+  "_order": 15,
+  "cardText": "Inscrivez-vous sur Maintenant pour être recruté sans CV",
+  "diagnosticTopics": [
+   "JOB_SEARCH_DIAGNOSTIC"
+  ],
+  "expandedCardItems": [
+   "Essayez [Maintenant](https://maintenant.pole-emploi.fr/front/candidats/home), un site de candidature sans CV.",
+   "C'est un service public qui vise à mettre les candidats en relation avec des employeurs directement pour trouver du travail rapidement.",
+   "N'oubliez pas que trouver du travail via quelqu'un que vous connaissez est beaucoup plus efficace que via des candidatures en ligne, selon les statistiques pour votre métier."
+  ],
+  "filters": [
+   "for-job-group(K1304, K1302, K1303, K1301)"
+  ],
+  "goal": "faire des candidatures simplifiées",
+  "id": "life-support",
+  "shortTitle": "Candidature rapide",
+  "strategyIds": [
+   "application-methods-to-interview",
+   "application-methods",
+   "application-methods-to-interview-start",
+   "application-methods-bravo",
+   "application-methods-covid",
+   "application-methods-undefined-project"
+  ],
+  "title": "Essayez un site pour être recruté sans CV"
+ },
+ {
+  "_id": "recWxmi5KvtsNKf6R",
+  "_order": 16,
+  "cardText": "Inscrivez-vous sur Maintenant pour être recruté sans CV",
+  "diagnosticTopics": [
+   "JOB_SEARCH_DIAGNOSTIC"
+  ],
+  "expandedCardItems": [
+   "Essayez [Maintenant](https://maintenant.pole-emploi.fr/front/candidats/home), un site de candidature sans CV.",
+   "C'est un service public qui vise à mettre les candidats en relation avec des employeurs directement pour trouver du travail rapidement.",
+   "N'oubliez pas que trouver du travail via quelqu'un que vous connaissez est beaucoup plus efficace que via des candidatures en ligne, selon les statistiques pour votre métier."
+  ],
+  "filters": [
+   "for-job-group(K2204)"
+  ],
+  "goal": "faire des candidatures simplifiées",
+  "id": "cleaning",
+  "shortTitle": "Candidature rapide",
+  "strategyIds": [
+   "application-methods-to-interview",
+   "application-methods",
+   "application-methods-to-interview-start",
+   "application-methods-bravo",
+   "application-methods-covid",
+   "application-methods-undefined-project"
+  ],
+  "title": "Inscrivez-vous sur Maintenant pour être recruté sans CV"
+ },
+ {
+  "_id": "recqXgkeH8W7CWqwd",
+  "_order": 17,
+  "cardText": "Les experts le disent, de plus en plus le métier de comptable va s'enrichir d'un **rôle de conseil**, suivez une formation pour vous préparer à ce changement",
+  "diagnosticTopics": [
+   "JOB_OF_THE_FUTURE_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "2 ressources pour vous préparer à l'avenir du métier :\n\nLes comptables nous disent que le métier s'enrichit d'un rôle de conseil\n",
+  "expandedCardItems": [
+   "Un [MOOC](https://www.coursera.org/learn/lavenir-de-la-decision) sur comment prendre des décisions et conseiller",
+   "[Des mini conférences](https://www.ted.com/playlists/278/talks_to_watch_when_you_have_a)  sur comment faire des choix et les assumer"
+  ],
+  "filters": [
+   "for-job-group(M1203)"
+  ],
+  "goal": "développer des nouvelles compétences du métier",
+  "id": "accounting",
+  "shortTitle": "Avenir",
+  "strategyIds": [
+   "presearch-methods",
+   "motivate-in-job",
+   "get-alternance",
+   "get-diploma",
+   "apply-in-unliked-job",
+   "application-methods-to-interview",
+   "application-methods-to-interview-start",
+   "targeted-search-start",
+   "targeted-search-bravo",
+   "application-methods-bravo",
+   "get-diploma-covid",
+   "targeted-search-covid",
+   "application-methods-covid"
+  ],
+  "title": "Anticipez l'avenir de votre profession"
+ },
+ {
+  "_id": "rec2ASR3EhH7K61Ny",
+  "_order": 18,
+  "cardText": "Le métier des RH évolue et de nouvelles compétences pourraient vous aider à grandir et évoluer dans votre carrière. Voici 2 compétences que vous pourriez acquérir :",
+  "diagnosticTopics": [
+   "JOB_OF_THE_FUTURE_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "Le métier des RH évolue et de nouvelles compétences pourraient vous aider à grandir et évoluer dans votre carrière. Voici 2 compétences que vous pourriez acquérir :",
+  "expandedCardItems": [
+   "**Le contrôle de gestion social** : savoir faire un peu de [data science pour faciliter les décisions RH](https://www.lebigdata.fr/rh-et-big-data). Pour vous aider à acquérir des bases en data science nous avons sélectionné un [cours en ligne](https://fr.coursera.org/specializations/jhu-data-science#courses).",
+   "**Le gestion de marque employeur** : savoir utiliser le marketing pour recruter et garder les meilleurs talents. Pour vous aider à acquérir quelques bases de marketing nous avons sélectionné pour vous une [formation en ligne sur le marking digital](https://learndigital.withgoogle.com/digitalactive)."
+  ],
+  "filters": [
+   "for-job-group(M1501)"
+  ],
+  "goal": "développer les nouvelles compétences pour ce métier",
+  "id": "hr-assistant",
+  "shortTitle": "Avenir",
+  "strategyIds": [
+   "presearch-methods",
+   "apply-in-unliked-job",
+   "get-diploma",
+   "get-alternance",
+   "motivate-in-job",
+   "application-methods-to-interview",
+   "application-methods-to-interview-start",
+   "application-methods-bravo",
+   "get-diploma-covid",
+   "application-methods-covid"
+  ],
+  "title": "Préparez votre évolution dans l'entreprise"
+ },
+ {
+  "_id": "rec448TOs9JSVykcL",
+  "_order": 19,
+  "cardText": "Les métiers des ressources humaines évoluent. Selon les DRH les deux grands enjeux sont aujourd'hui la transformation digitale et la gestion des talents.",
+  "diagnosticTopics": [
+   "JOB_OF_THE_FUTURE_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "3 compétences clés à acquérir :\n\nLes métiers des ressources humaines évoluent.\n",
+  "expandedCardItems": [
+   "Les DRH ont expliqué à Bob que les deux grands enjeux sont aujourd'hui la **transformation digitale** et la **gestion des talents**.",
+   "**Développer une vision stratégique** : l'objectif devient de prévenir et d'assurer l'évolution des métiers et des compétences.",
+   "**Savoir gérer un mode participatif et collaboratif** : Pour écouter, faire grandir et fidéliser les talents.",
+   "**Savoir s'adapter** : la gestion des talents demande de pouvoir adopter rapidement les nouvelles tendances RH, comme le marketing RH, et d'être force de proposition pour proposer, par exemple, en terme de politiques de rémunération."
+  ],
+  "filters": [
+   "for-job-group(M1502, M1503)"
+  ],
+  "goal": "développer les nouvelles compétences pour ce métier",
+  "id": "hr",
+  "shortTitle": "Avenir",
+  "strategyIds": [
+   "presearch-methods",
+   "apply-in-unliked-job",
+   "get-diploma",
+   "get-alternance",
+   "motivate-in-job",
+   "application-methods-to-interview",
+   "targeted-search-start",
+   "targeted-search-bravo",
+   "application-methods-bravo",
+   "get-diploma-covid",
+   "targeted-search-covid",
+   "application-methods-covid"
+  ],
+  "title": "Préparez-vous au futur des métiers RH"
+ },
+ {
+  "_id": "recBw4qiZE6tvroVm",
+  "_order": 20,
+  "cardText": "Voici 3 compétences à acquérir qui pourraient vous permettre de vous démarquer :",
+  "diagnosticTopics": [
+   "JOB_OF_THE_FUTURE_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "Voici 3 compétences à acquérir qui pourraient vous permettre de vous démarquer :",
+  "expandedCardItems": [
+   "Apprenez les bases d'une langue étrangère grâce à [des cours en ligne](https://www.duolingo.com/).",
+   "Apprenez des techniques de vente, par exemple, grâce à ce [MOOC](https://www.avomarc.be//mooc/techniques-de-vente).",
+   "Apprenez à maîtriser les bases de la gestion comptable grâce à [une conférence en ligne](https://www.youtube.com/watch?v=BWNKn2bI5wc)."
+  ],
+  "filters": [
+   "for-job-group(M1601)"
+  ],
+  "goal": "développer les nouvelles compétences pour ce métier",
+  "id": "receptionist",
+  "shortTitle": "Avenir",
+  "strategyIds": [
+   "presearch-methods",
+   "apply-in-unliked-job",
+   "get-diploma",
+   "get-alternance",
+   "motivate-in-job",
+   "application-methods-to-interview",
+   "targeted-search-start",
+   "targeted-search-bravo",
+   "application-methods-bravo",
+   "get-diploma-covid",
+   "targeted-search-covid",
+   "application-methods-covid"
+  ],
+  "title": "Obtenez de nouvelles compétences pour sortir du lot"
+ },
+ {
+  "_id": "recbAhrH11aEAFfW2",
+  "_order": 21,
+  "cardText": "Dans les TPE et PME les rôles liés aux opérations administratives deviennent de plus en plus polyvalent. C'est une super opportunité pour obtenir plus de responsabilité et acquérir de nouvelles compétences.\nVoici quelques compétences ou pistes à explorer :",
+  "diagnosticTopics": [
+   "JOB_OF_THE_FUTURE_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "Dans les TPE et PME les rôles liés aux opérations administratives deviennent de plus en plus polyvalents. C'est une super opportunité pour obtenir plus de responsabilités et acquérir de nouvelles compétences. Voici quelques compétences ou pistes à explorer :",
+  "expandedCardItems": [
+   "Suivez une [formation en ligne en marking digital](https://learndigital.withgoogle.com/digitalactive).",
+   "Apprenez à utiliser des logiciels pour faire du design graphique grâce à [des tutoriels](https://la-cascade.io/sketch-tutoriel_01/).",
+   "Apprenez quelques bases de code en suivant un [cours en ligne](https://mooc-francophone.com/cours/apprendre-a-coder-pour-les-vrais-debutants).",
+   "Apprenez des bases de data science grâce à un  [cours en ligne](https://analytics.google.com/analytics/academy/)."
+  ],
+  "filters": [
+   "for-job-group(M1602)"
+  ],
+  "goal": "maîtriser les nouveaux outils du métier",
+  "id": "admin",
+  "shortTitle": "Avenir",
+  "strategyIds": [
+   "presearch-methods",
+   "apply-in-unliked-job",
+   "get-diploma",
+   "get-alternance",
+   "motivate-in-job",
+   "application-methods-to-interview",
+   "application-methods-to-interview-start",
+   "application-methods-bravo",
+   "get-diploma-covid",
+   "application-methods-covid"
+  ],
+  "title": "Préparez votre évolution dans l'entreprise"
+ },
+ {
+  "_id": "rec2XiamOQLXDOQhG",
+  "_order": 22,
+  "cardText": "Une intro ou une **lettre de recommandations de votre ancien employeur**, ça n'est pas du piston mais la reconnaissance de vos qualités et de vos compétences.",
+  "diagnosticTopics": [
+   "JOB_SEARCH_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "5 idées pour vous aider à demander une lettre de recommandation :\n\nCe n'est pas du piston mais la reconnaissance de vos qualités et de vos compétences\n",
+  "expandedCardItems": [
+   "Contactez votre ancien supérieur direct qui sera le plus à même de vous recommander",
+   "Formulez votre demande simplement.",
+   "Assurez-vous de lui donner assez de contexte",
+   "Remerciez votre interlocuteur et n'oubliez pas de le tenir au courant",
+   "Pensez aussi à demander des recommandations sur les réseaux sociaux professionnels"
+  ],
+  "filters": [
+   "for-job-group(M1607, M1604)"
+  ],
+  "goal": "demander une lettre de recommandation",
+  "id": "secretary-recommendation",
+  "shortTitle": "Lettre de recommendation",
+  "strategyIds": [
+   "application-methods",
+   "try-without-diploma",
+   "apply-in-unliked-job",
+   "motivate-in-job",
+   "targeted-search",
+   "targeted-search-start",
+   "targeted-search-bravo",
+   "application-methods-bravo",
+   "targeted-search-covid",
+   "application-methods-covid",
+   "application-methods-undefined-project"
+  ],
+  "title": "Demandez une lettre de recommandation"
+ },
+ {
+  "_id": "receENAj3BJM2VWvZ",
+  "_order": 23,
+  "cardText": "Le marketing est un métier d'avenir mais qui bouge beaucoup !",
+  "diagnosticTopics": [
+   "JOB_OF_THE_FUTURE_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "6 compétences que vous devriez acquérir :\n\nLe marketing est un métier d'avenir mais qui bouge beaucoup !\n",
+  "expandedCardItems": [
+   "Apprenez à maîtriser les techniques du [marketing digital](https://learndigital.withgoogle.com/digitalactive)",
+   "Apprenez à [utiliser sketch](https://la-cascade.io/sketch-tutoriel_01/) pour pouvoir réaliser des infographies.",
+   "Apprenez à faire de [l'analyse des données](https://analytics.google.com/analytics/academy/).",
+   "Apprenez à maîtriser les techniques du [web marketing](https://www.emploi-store.fr/portail/services/cursusWebMarketing)",
+   "Apprenez les bases du [e-commerce](https://www.emploi-store.fr/portail/services/cursusECommerce)",
+   "Apprenez quelques bases de code. [MOOC](https://mooc-francophone.com/cours/apprendre-a-coder-pour-les-vrais-debutants)"
+  ],
+  "filters": [
+   "for-job-group(M1705)"
+  ],
+  "goal": "maîtriser les nouveaux outils du métier",
+  "id": "marketing",
+  "shortTitle": "Avenir",
+  "strategyIds": [
+   "presearch-methods",
+   "apply-in-unliked-job",
+   "get-diploma",
+   "get-alternance",
+   "motivate-in-job",
+   "application-methods-to-interview",
+   "application-methods-to-interview-start",
+   "targeted-search-start",
+   "targeted-search-bravo",
+   "application-methods-bravo",
+   "get-diploma-covid",
+   "targeted-search-covid",
+   "application-methods-covid"
+  ],
+  "title": "Préparez l'avenir grâce à de nouvelles compétences"
+ },
+ {
+  "_id": "recWcihZWJtL3PLpL",
+  "_order": 24,
+  "cardText": "Faites confiance aux développeurs de Bob, un bon **profil Github** peut faire la différence.",
+  "diagnosticTopics": [
+   "JOB_SEARCH_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "6 idées pour vous aider à réussir votre profil Github :\nLes développeurs de Bob disent que c'est ce qui fait la différence\n",
+  "expandedCardHeaderFeminine": "Faites confiance aux développeurs de Bob, un bon **profil Github** peut faire la différence.\n\nGitHub est un service en ligne qui permet à de nombreux développeurs de montrer leur code en open-source. Voici quelques idées pour vous aider à réussir votre profil Github :",
+  "expandedCardItems": [
+   "Sélectionnez les projets dont vous êtes le plus fier sur votre profil (pinned repositories).",
+   "Assurez-vous que votre profil est actif (un projet personnel peut vous aider).",
+   "Assurez-vous que votre page contribution est riche (popular repositories, repositories contributed to, etc).",
+   "Si votre travail est privé, vous pouvez tout de même afficher des statistiques anonymisées de vos contributions.",
+   "Une contribution, même modeste, à un projet OpenSource utilisé par votre futur employeur est un vrai plus.",
+   "Ajoutez un lien vers votre profil Github sur votre Linkedin."
+  ],
+  "expandedCardItemsFeminine": [
+   "Sélectionnez les projets dont vous êtes la plus fière sur votre profil (pinned repositories).",
+   "Assurez-vous que votre profil est actif (un projet personnel peut vous aider).",
+   "Assurez-vous que votre page contribution est riche (popular repositories, repositories contributed to, etc).",
+   "Si votre travail est privé, vous pouvez tout de même afficher des statistiques anonymisées de vos contributions.",
+   "Une contribution, même modeste, à un projet OpenSource utilisé par votre futur employeur est un vrai plus.",
+   "Ajoutez un lien vers votre profil Github sur votre Linkedin."
+  ],
+  "filters": [
+   "for-job-group(M1805)"
+  ],
+  "goal": "soigner son profil GitHub",
+  "id": "software",
+  "shortTitle": "Astuces de geeks",
+  "strategyIds": [
+   "presearch-methods",
+   "get-alternance",
+   "try-without-diploma",
+   "apply-in-unliked-job",
+   "application-methods-to-interview",
+   "application-methods-to-interview-start",
+   "application-methods-bravo",
+   "application-methods-covid"
+  ],
+  "title": "Vous êtes beaucoup plus qu'un CV"
+ },
+ {
+  "_id": "recC37DYTbLY4uY49",
+  "_order": 25,
+  "cardText": "Quelques conseils des recruteurs pour faire la différence :",
+  "diagnosticTopics": [
+   "JOB_SEARCH_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "Quelques conseils des recruteurs pour faire la différence :",
+  "expandedCardHeaderFeminine": "Quelques conseils des recruteurs pour faire la différence :",
+  "expandedCardItems": [
+   "Le recruteur d'une grande entreprise logistique nous l'a dit : cela paraît simple mais pour vous démarquer des autres candidats, il faut que vous montriez votre implication et votre sérieux.",
+   "Dans le secteur de la logistique, il y a beaucoup de candidats. Première étape pour sortir du lot : soignez votre CV. Il ne s'agit pas d'être un pro de l'art graphique mais un CV soigné montrera au recruteur que vous avez pris le temps de préparer votre candidature.",
+   "Soyez sincère sur votre CV car, parole de recruteur, toute incohérence se verra à l'entretien. L'important c'est moins votre expérience que le soin que vous apporterez à votre CV et votre lettre de motivation.",
+   "Dans votre lettre de motivation, si vous souhaitez vous démarquer de façon originale, faites quelques recherches sur l'entreprise et écrivez un ou deux éléments qui montrent que vous avez fait des recherches. L'essentiel est de montrer que vous vous êtes renseigné.",
+   "Pendant l'entretien, soyez curieux mais surtout donnez à voir votre bonne volonté.",
+   "Pendant la phase d'essai, ce qui sera déterminant c'est que vous montriez votre sérieux et que vous soyiez travailleur. D'après un recruteur, les connaissances \"techniques\" du magasinier comme du préparateur de commandes s'apprennent avec le temps, la base c'est d'être volontaire et de chercher à apprendre.",
+   "Pour être recruté dans ce type de métier, il vous faut avant tout miser sur votre attitude. Êtes-vous motivé pour effectuer cette activité ?"
+  ],
+  "expandedCardItemsFeminine": [
+   "Le recruteur d'une grande entreprise logistique nous l'a dit : cela paraît simple mais pour vous démarquer des autres candidats, il faut que vous montriez votre implication et votre sérieux.",
+   "Dans le secteur de la logistique, il y a beaucoup de candidats. Première étape pour sortir du lot : soignez votre CV. Il ne s'agit pas d'être une pro de l'art graphique mais un CV soigné montrera au recruteur que vous avez pris le temps de préparer votre candidature.",
+   "Soyez sincère sur votre CV car, parole de recruteur, toute incohérence se verra à l'entretien. L'important c'est moins votre expérience que le soin que vous apporterez à votre CV et votre lettre de motivation.",
+   "Dans votre lettre de motivation, si vous souhaitez vous démarquer de façon originale, faites quelques recherches sur l'entreprise et écrivez un ou deux éléments qui montrent que vous avez fait des recherches. L'essentiel est de montrer que vous vous êtes renseignée.",
+   "Pendant l'entretien, soyez curieuse mais surtout donnez à voir votre bonne volonté.",
+   "Pendant la phase d'essai, ce qui sera déterminant c'est que vous montriez votre sérieux et que vous soyiez travailleuse. D'après un recruteur, les connaissances \"techniques\" du magasinier comme du préparateur de commandes s'apprennent avec le temps, la base c'est d'être volontaire et de chercher à apprendre.",
+   "Pour être recrutée dans ce type de métier, il vous faut avant tout miser sur votre attitude. Êtes-vous motivée pour effectuer cette activité ?"
+  ],
+  "filters": [
+   "for-job-group(N1103)"
+  ],
+  "goal": "montrer son implication et son sérieux",
+  "id": "order-picker",
+  "shortTitle": "Astuces préparateur de commandes",
+  "strategyIds": [
+   "apply-in-unliked-job",
+   "try-without-diploma",
+   "application-methods-to-interview",
+   "application-methods",
+   "application-methods-to-interview-start",
+   "application-methods-bravo",
+   "application-methods-covid",
+   "application-methods-undefined-project"
+  ],
+  "title": "Soignez vos candidatures et montrez votre implication"
+ },
+ {
+  "_id": "recAGDtc8LunjiK52",
+  "_order": 26,
+  "cardText": "Quelques conseils des recruteurs pour faire la différence :",
+  "diagnosticTopics": [
+   "JOB_SEARCH_DIAGNOSTIC"
+  ],
+  "expandedCardHeader": "Quelques conseils des recruteurs pour faire la différence :",
+  "expandedCardHeaderFeminine": "Quelques conseils des recruteurs pour faire la différence :",
+  "expandedCardItems": [
+   "Le recruteur d'une grande entreprise de logistique nous l'a dit : cela paraît simple mais pour vous démarquer des autres candidats, il faut que vous montriez votre implication et votre sérieux.",
+   "Dans le secteur de la logistique, il y a beaucoup de candidats. Première étape pour sortir du lot : soignez votre CV. Il ne s'agit pas d'être un pro de l'art graphique mais un CV soigné montrera au recruteur que vous avez pris le temps de préparer votre candidature.",
+   "Soyez sincère sur votre CV car, parole de recruteur, toute incohérence se verra à l'entretien. L'important c'est moins votre expérience que le soin que vous apporterez à votre CV et votre lettre de motivation.",
+   "Dans votre lettre de motivation, si vous souhaitez vous démarquer de façon originale, faites quelques recherches sur l'entreprise et écrivez un ou deux éléments qui montrent que vous avez fait des recherches. L'essentiel est de montrer que vous vous êtes renseigné.",
+   "Pendant l'entretien, soyez curieux mais surtout donnez à voir votre bonne volonté.",
+   "Pendant la phase d'essai, ce qui sera déterminant c'est que vous montriez votre sérieux et que vous soyiez travailleur. En tant que manutentionnaire, vous pourrez apprendre les éléments techniques avec le temps, la base c'est d'être volontaire et de chercher à apprendre.",
+   "Pour être recruté dans ce type de métier, il vous faut avant tout miser sur votre attitude. Êtes-vous motivé pour effectuer cette activité ?"
+  ],
+  "expandedCardItemsFeminine": [
+   "Le recruteur d'une grande entreprise de logistique nous l'a dit : cela paraît simple mais pour vous démarquer des autres candidats, il faut que vous montriez votre implication et votre sérieux.",
+   "Dans le secteur de la logistique, il y a beaucoup de candidats. Première étape pour sortir du lot : soignez votre CV.  Il ne s'agit pas d'être une pro de l'art graphique mais un CV soigné montrera au recruteur que vous avez pris le temps de préparer votre candidature.",
+   "Soyez sincère sur votre CV car, parole de recruteur, toute incohérence se verra à l'entretien. L'important c'est moins votre expérience que le soin que vous apporterez à votre CV et votre lettre de motivation.",
+   "Dans votre lettre de motivation, si vous souhaitez vous démarquer de façon originale, faites quelques recherches sur l'entreprise et écrivez un ou deux éléments qui montrent que vous avez fait des recherches. L'essentiel est de montrer que vous vous êtes renseignée.",
+   "Pendant l'entretien, soyez curieuse mais surtout donnez à voir votre bonne volonté.",
+   "Pendant la phase d'essai, ce qui sera déterminant c'est que vous montriez votre sérieux et que vous soyiez travailleuse. En tant que manutentionnaire, vous pourrez apprendre les éléments techniques avec le temps, la base c'est d'être volontaire et de chercher à apprendre.",
+   "Pour être recrutée dans ce type de métier, il vous faut avant tout miser sur votre attitude. Êtes-vous motivée pour effectuer cette activité ?"
+  ],
+  "filters": [
+   "for-job-group(N1105)"
+  ],
+  "goal": "montrer son implication et son sérieux",
+  "id": "warehouse",
+  "shortTitle": "Astuces manutention manuelle de charges",
+  "strategyIds": [
+   "application-methods",
+   "application-methods-to-interview",
+   "try-without-diploma",
+   "apply-in-unliked-job",
+   "application-methods-to-interview-start",
+   "application-methods-bravo",
+   "application-methods-covid",
+   "application-methods-undefined-project"
+  ],
+  "title": "Soignez vos candidatures et montrez votre implication"
+ }
+]

@@ -7,34 +7,32 @@ Usage (assuming a fully configured awscli, and boto3 is available):
 """
 
 import argparse
-import json
 import logging
 import re
-import typing
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Optional
 
+from google.protobuf import json_format
 import requests
+
+from bob_emploi.common.python import proto
+from bob_emploi.frontend.api import monitoring_pb2
+
 try:
     # This module should never be called outside a lambda environment, where boto3 is by default.
-    import boto3
+    import boto3 as boto3  # pylint: disable=useless-import-alias
 except ModuleNotFoundError:
     from unittest import mock
     # For testing purposes.
     boto3 = mock.MagicMock()
 
 
-class MonitoredSite(TypedDict):
-    """Monitored Site class definition."""
-
-    frontVersion: str  # Front version of the monitored site.
-    serverVersion: str  # Server version of the monitored site.
-
-
 # TODO(cyrille): Consider getting from environement.
+# TODO(cyrille): Add a test to compare this with defined deployments.
 ALL_URLS = {
     'fr': 'https://www.bob-emploi.fr',
     'usa': 'https://us.hellobob.com',
     'uk': 'https://uk.hellobob.com',
+    'skillup': 'https://skillup.hellobob.com',
 }
 
 _HTML_VERSION_PATTERN = re.compile(r'(?<=meta property=version content=)[a-zA-Z0-9\.\-\_]*')
@@ -48,28 +46,27 @@ def retrieve_front_version(url: str) -> str:
     return str(_HTML_VERSION_PATTERN.findall(response.text).pop())
 
 
-def retrieve_server_version(url: str) -> str:
-    """Retrieves the server version."""
+def retrieve_server_info(url: str, site: Optional[monitoring_pb2.Site] = None) \
+        -> monitoring_pb2.Site:
+    """Retrieves the monintoring info from server."""
 
     response = requests.get(url + '/api/monitoring')
     response.raise_for_status()
-    json_response = response.json()
+    site = site or monitoring_pb2.Site()
 
-    try:
-        return typing.cast(str, json_response['serverVersion'])
-    except KeyError:
-        return '-'
+    json_format.ParseDict(response.json(), site)
+    return site
 
 
-def upload(monitoring_data: Dict[str, MonitoredSite]) -> None:
+def upload(monitoring_data: monitoring_pb2.Data) -> None:
     """Transforms the data into JSON and uploads it to S3."""
 
-    json_data = json.dumps(monitoring_data, indent=2)
+    json_data = json_format.MessageToJson(monitoring_data, indent=2)
     resource_s_3 = boto3.resource('s3')
     resource_s_3.Bucket('bob-monitoring').put_object(Key='data.json', Body=json_data)
 
 
-def main(string_args: Optional[List[str]] = None) -> None:
+def main(string_args: Optional[list[str]] = None) -> None:
     """Retrieves monitoring data and uploads the generated HTML file."""
 
     parser = argparse.ArgumentParser(
@@ -77,24 +74,22 @@ def main(string_args: Optional[List[str]] = None) -> None:
     parser.add_argument('--deployment', help='Deployment name.')
     args = parser.parse_args(string_args)
 
-    monitoring_data: Dict[str, MonitoredSite] = {}
-    monitored_urls = []
-    if args.deployment in ALL_URLS.keys():
+    data = monitoring_pb2.Data()
+    proto.set_date_now(data.computed_at)
+
+    monitored_urls: list[str] = []
+    if args.deployment in ALL_URLS:
         logging.info('Run monitoring for "%s"', args.deployment)
         monitored_urls = [ALL_URLS[args.deployment]]
     else:
         logging.info('Run monitoring for all deployments')
-        for deployment in ALL_URLS:
-            monitored_urls.append(ALL_URLS[deployment])
+        monitored_urls.extend(ALL_URLS.values())
 
     for url in monitored_urls:
-        current_url_monitoring_data: MonitoredSite = {
-            'frontVersion': retrieve_front_version(url),
-            'serverVersion': retrieve_server_version(url),
-        }
-        monitoring_data[url] = current_url_monitoring_data
+        retrieve_server_info(url, data.sites[url])
+        data.sites[url].front_version = retrieve_front_version(url)
 
-    upload(monitoring_data)
+    upload(data)
 
 
 def lambda_handler(*unused_args: Any, **unused_kwargs: Any) -> None:

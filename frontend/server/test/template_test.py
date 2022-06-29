@@ -15,6 +15,7 @@ from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 
 
 _FAKE_TRANSLATIONS_FILE = os.path.join(os.path.dirname(__file__), 'testdata/translations.json')
@@ -162,7 +163,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
     def test_url_encode(self) -> None:
         """Test URL encoding any var."""
 
-        self.scoring_project.user_profile.gender = user_pb2.MASCULINE
+        self.scoring_project.user_profile.gender = user_profile_pb2.MASCULINE
         self.project.target_job.masculine_name = 'Employé de ménage'
 
         link = self._populate_template(
@@ -224,7 +225,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.city.name = 'Le Mans'
         self.project.target_job.masculine_name = 'Steward'
         self.project.target_job.feminine_name = 'Hôtesse'
-        self.scoring_project.user_profile.gender = user_pb2.FEMININE
+        self.scoring_project.user_profile.gender = user_profile_pb2.FEMININE
 
         card_content = self._populate_template(
             'Cher maire %ofCity. Je vis %inCity depuis 3 ans et je cherche un '
@@ -250,7 +251,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
     def test_situation_presentation(self) -> None:
         """Present a jobseeker's situation."""
 
-        self.scoring_project.user_profile.gender = user_pb2.MASCULINE
+        self.scoring_project.user_profile.gender = user_profile_pb2.MASCULINE
         self.project.target_job.masculine_name = 'Steward'
         self.project.target_job.feminine_name = 'Hôtesse'
         self.project.seniority = project_pb2.SENIOR
@@ -262,7 +263,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
     def test_new_situation_presentation(self) -> None:
         """Present a jobseeker's situation."""
 
-        self.scoring_project.user_profile.gender = user_pb2.MASCULINE
+        self.scoring_project.user_profile.gender = user_profile_pb2.MASCULINE
         self.project.target_job.masculine_name = 'Steward'
         self.project.target_job.feminine_name = 'Hôtesse'
         self.project.seniority = project_pb2.SENIOR
@@ -271,7 +272,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             "J'ai commencé en tant que %jobName à 5% %expDurationAgo.")
         self.assertEqual("J'ai commencé en tant que steward à 5% il y a plus de 6 ans.", sentence)
 
-    @mock.patch(scoring.logging.__name__ + '.warning')
+    @mock.patch('logging.warning')
     def test_missing_variables(self, mock_warning: mock.MagicMock) -> None:
         """ Template still has some variable not replaced."""
 
@@ -288,7 +289,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
 
         self.assertEqual('Je suis steward en %random.', sentence)
 
-    @mock.patch(scoring.logging.__name__ + '.warning')
+    @mock.patch('logging.warning')
     def test_missing_titled_variables(self, mock_warning: mock.MagicMock) -> None:
         """ Template still has some variable not replaced, and it's title cased."""
 
@@ -305,7 +306,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
 
         self.assertEqual('Je suis %MasculineJbName.', sentence)
 
-    @mock.patch(scoring.logging.__name__ + '.warning')
+    @mock.patch('logging.warning')
     def test_url_encoding(self, mock_warning: mock.MagicMock) -> None:
         """ Template has URL encoding that might look like missing variables."""
 
@@ -326,7 +327,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
 
         self.project.target_job.masculine_name = 'Steward VIP'
         self.project.target_job.feminine_name = 'Hôtesse VIP'
-        self.scoring_project.user_profile.gender = user_pb2.FEMININE
+        self.scoring_project.user_profile.gender = user_profile_pb2.FEMININE
 
         sentence = self._populate_template(
             'Je suis %aJobName ! Je suis une %feminineJobName ! pas un %masculineJobName')
@@ -336,15 +337,15 @@ class PopulateProjectTemplateTest(unittest.TestCase):
     def test_job_english_presentation(self) -> None:
         """Present a job name."""
 
-        self.project.target_job.masculine_name = 'VIP Steward'
-        self.project.target_job.feminine_name = 'VIP Hostess'
-        self.scoring_project.user_profile.gender = user_pb2.FEMININE
+        self.project.target_job.masculine_name = 'Very Good Steward'
+        self.project.target_job.feminine_name = 'Very Good Hostess'
+        self.scoring_project.user_profile.gender = user_profile_pb2.FEMININE
         self.scoring_project.user_profile.locale = 'en'
 
         sentence = self._populate_template(
             'I am %aJobName! I am a %feminineJobName! not a %masculineJobName')
         self.assertEqual(
-            'I am a VIP Hostess! I am a VIP Hostess! not a VIP Steward', sentence)
+            'I am a Very Good Hostess! I am a Very Good Hostess! not a Very Good Steward', sentence)
 
     def test_in_domain_network_advice(self) -> None:
         """Var required for a network advice in a specific job group domain."""
@@ -391,7 +392,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             'whatILoveAbout': 'je suis intéressé par vos patisseries',
             'whatILoveAboutFeminine': 'je suis intéressée par vos patisseries',
         })
-        self.scoring_project.user_profile.gender = user_pb2.FEMININE
+        self.scoring_project.user_profile.gender = user_profile_pb2.FEMININE
         self.project.target_job.job_group.rome_id = 'Z9007'
 
         sentence = self._populate_template('Je voudrais rencontrer votre chef car %whatILoveAbout')
@@ -406,7 +407,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             '_id': 'Z9007',
             'whatILoveAbout': "j'adore vos patisseries"
         })
-        self.scoring_project.user_profile.gender = user_pb2.FEMININE
+        self.scoring_project.user_profile.gender = user_profile_pb2.FEMININE
         self.project.target_job.job_group.rome_id = 'Z9007'
 
         sentence = self._populate_template('Je voudrais rencontrer votre chef car %whatILoveAbout')
@@ -424,7 +425,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
     def test_feminine_user(self) -> None:
         """Add e to feminine users."""
 
-        self.scoring_project.user_profile.gender = user_pb2.FEMININE
+        self.scoring_project.user_profile.gender = user_profile_pb2.FEMININE
 
         sentence = self._populate_template('Hier, tu es allé%eFeminine au marché')
         self.assertEqual(sentence, 'Hier, tu es allée au marché')
@@ -432,7 +433,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
     def test_masculine_user(self) -> None:
         """Don't add e to not-feminine users."""
 
-        self.scoring_project.user_profile.gender = user_pb2.MASCULINE
+        self.scoring_project.user_profile.gender = user_profile_pb2.MASCULINE
 
         sentence = self._populate_template('Hier, tu es allé%eFeminine au marché')
         self.assertEqual(sentence, 'Hier, tu es allé au marché')
@@ -476,7 +477,11 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.created_at.FromDatetime(self.scoring_project.now)
 
         sentence = self._populate_template(
-            'Je cherche un emploi depuis %jobSearchLengthMonthsAtCreation mois')
+            'Je cherche un emploi depuis %jobSearchLengthAtCreation')
+        self.assertEqual('Je cherche un emploi depuis trois mois', sentence)
+
+        sentence = self._populate_template(
+            'Je cherche un emploi depuis %jobSearchLengthAtCreation')
         self.assertEqual('Je cherche un emploi depuis trois mois', sentence)
 
     @mock.patch('logging.warning')
@@ -487,7 +492,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.created_at.FromDatetime(self.scoring_project.now)
 
         sentence = self._populate_template(
-            'Je cherche un emploi depuis %jobSearchLengthMonthsAtCreation mois')
+            'Je cherche un emploi depuis %jobSearchLengthAtCreation')
         self.assertEqual('Je cherche un emploi depuis quelques mois', sentence)
         mock_warning.assert_called_once()
 
@@ -500,8 +505,8 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.created_at.FromDatetime(self.scoring_project.now)
 
         sentence = self._populate_template(
-            'Je cherche un emploi depuis %jobSearchLengthMonthsAtCreation mois')
-        self.assertEqual('Je cherche un emploi depuis quelques mois', sentence)
+            'Je cherche un emploi depuis %jobSearchLengthAtCreation')
+        self.assertEqual('Je cherche un emploi depuis plus de six mois', sentence)
 
         mock_exception.assert_not_called()
 
@@ -514,10 +519,22 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.scoring_project.user_profile.locale = 'en'
 
         sentence = self._populate_template(
-            "After %jobSearchLengthMonthsAtCreation months it's time to start looking")
+            "After %jobSearchLengthAtCreation it's time to start looking")
         self.assertEqual("After three months it's time to start looking", sentence)
 
-    @mock.patch(scoring.logging.__name__ + '.warning')
+    def test_job_search_length_month_english(self) -> None:
+        """Give the length of the user's search if one month in English."""
+
+        self.project.job_search_started_at.FromDatetime(
+            self.scoring_project.now - datetime.timedelta(days=30))
+        self.project.created_at.FromDatetime(self.scoring_project.now)
+        self.scoring_project.user_profile.locale = 'en'
+
+        sentence = self._populate_template(
+            "After %jobSearchLengthAtCreation it's time to start looking")
+        self.assertEqual("After one month it's time to start looking", sentence)
+
+    @mock.patch('logging.warning')
     def test_undefined_job_search_length_english(self, mock_warning: mock.MagicMock) -> None:
         """Put a placeholder and issue a warning for the length of the user's search in months."""
 
@@ -526,7 +543,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.scoring_project.user_profile.locale = 'en'
 
         sentence = self._populate_template(
-            "After %jobSearchLengthMonthsAtCreation months it's time to start looking")
+            "After %jobSearchLengthAtCreation it's time to start looking")
         self.assertEqual("After few months it's time to start looking", sentence)
         mock_warning.assert_called_once()
 
@@ -540,8 +557,8 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.scoring_project.user_profile.locale = 'en'
 
         sentence = self._populate_template(
-            "After %jobSearchLengthMonthsAtCreation months it's time to start looking")
-        self.assertEqual("After few months it's time to start looking", sentence)
+            "After %jobSearchLengthAtCreation it's time to start looking")
+        self.assertEqual("After more than six months it's time to start looking", sentence)
 
         mock_exception.assert_not_called()
 
@@ -719,6 +736,21 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             'Mon travail nécessite un Bac pro ou équivalent',
             self._populate_template('Mon travail nécessite %aRequiredDiploma'))
 
+    def test_translated_required_diploma(self) -> None:
+        """Give the translated diploma required for a given job."""
+
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'requirements': {
+                'diplomas': [{'name': 'GED'}],
+            },
+        })
+        self.project.target_job.job_group.rome_id = 'A1234'
+        self.scoring_project.user_profile.locale = 'en'
+        self.assertEqual(
+            'I need a GED or an equivalent diploma',
+            self._populate_template('I need %aRequiredDiploma'))
+
     def test_required_diplomas(self) -> None:
         """Give the diplomas required for a given job."""
 
@@ -733,7 +765,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         })
         self.project.target_job.job_group.rome_id = 'A1234'
         self.assertEqual(
-            'Mon travail nécessite un Bac pro, DUT ou équivalent',
+            'Mon travail nécessite un DUT ou équivalent',
             self._populate_template('Mon travail nécessite %aRequiredDiploma'))
 
     @mock.patch('logging.warning')
@@ -785,7 +817,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
     def test_gender(self) -> None:
         """Gives the gender."""
 
-        self.scoring_project.user_profile.gender = user_pb2.FEMININE
+        self.scoring_project.user_profile.gender = user_profile_pb2.FEMININE
         self.assertEqual(
             'https://www.bob-emploi.fr/orientation?gender=FEMININE',
             self._populate_template('https://www.bob-emploi.fr/orientation?gender=%gender'))

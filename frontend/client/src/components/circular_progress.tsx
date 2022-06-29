@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 import React, {useEffect, useState} from 'react'
 
 
@@ -83,12 +82,6 @@ const CircularProgress = (props: Props): React.ReactElement => {
       </svg>
     </div>
   </div>
-}
-CircularProgress.propTypes = {
-  periodMilliseconds: PropTypes.number,
-  size: PropTypes.number,
-  style: PropTypes.object,
-  thickness: PropTypes.number,
 }
 
 

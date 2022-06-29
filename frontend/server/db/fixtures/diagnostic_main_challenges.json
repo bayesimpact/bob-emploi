@@ -1,0 +1,149 @@
+[
+ {
+  "_id": "recW4mAhxdXlUARFn",
+  "_order": 0,
+  "achievementText": "Métier **identifié**",
+  "bobExplanation": "viser un métier précis augmente très fortement vos chances de trouver un emploi.",
+  "categoryId": "undefined-project",
+  "description": "Explorer de **nouvelles carrières**",
+  "descriptionAnswer": "Explorer de **nouvelles carrières**",
+  "emoji": "💡",
+  "filters": [
+   "for-no-clear-project"
+  ],
+  "interestingHighlight": "8",
+  "interestingText": "outils gratuits pour vous aider à choisir un métier",
+  "metricDetails": "Avoir un projet clair et bien défini est essentiel pour se lancer. C'est un excellent moyen de trouver de la motivation et de booster sa recherche.",
+  "metricNotReached": "Métier à choisir",
+  "metricReached": "Métier identifié",
+  "metricTitle": "Projet",
+  "opportunityHighlight": "7",
+  "opportunityText": "les secteurs qui recrutent en ce moment",
+  "order": 1
+ },
+ {
+  "_id": "recAD9Tpcdr4FYt38",
+  "_order": 1,
+  "achievementText": "Le métier **recrute**",
+  "bobExplanation": "vous visez un métier où il y a beaucoup de candidat·e·s pour le nombre de postes ouverts.",
+  "categoryId": "stuck-market",
+  "description": "Éviter la **concurrence**",
+  "descriptionAnswer": "Éviter la **concurrence**",
+  "emoji": "🚦",
+  "filters": [
+   "for-stressed-market(10/3)"
+  ],
+  "interestingHighlight": "+20%",
+  "interestingText": "changer de métier cible peut accélérer votre recherche",
+  "metricDetails": "Le marché du travail considère les offres d'emploi et les recrutements dans le département mais également les autres candidats qui peuvent être vos concurrents. Un \"bon marché\" pour vous est un marché où il y a plus d'opportunités d'emploi que de concurrents.",
+  "metricNotReached": "Forte concurrence",
+  "metricReached": "Marché qui recrute",
+  "metricTitle": "Concurrence",
+  "opportunityHighlight": "10%",
+  "opportunityText": "pourcentage des métiers avec peu de concurrence en France",
+  "order": 3,
+  "relevanceScoringModel": "relevance-market-stress"
+ },
+ {
+  "_id": "rec75lDdGxzDZpL63",
+  "_order": 2,
+  "achievementText": "Le métier vous **intéresse**",
+  "bobExplanation": "vous visez un métier à forte concurrence où seul·e·s les candidat·e·s passionné·e·s se démarquent des autres",
+  "categoryId": "find-what-you-like",
+  "description": "Réévaluer **mon intérêt** pour mon métier",
+  "descriptionAnswer": "Réévaluer **votre intérêt** pour votre métier",
+  "emoji": "❤",
+  "filters": [
+   "category-find-what-you-like"
+  ],
+  "interestingHighlight": "3 mois",
+  "interestingText": "temps passé en poste avant de savoir si un métier vous plaît",
+  "metricDetails": "Travailler dans un domaine qui vous motive est plus agréable mais également plus efficace. Les recruteurs le savent et la motivation est donc importante pour être recruté·e.",
+  "metricNotReached": "Intérêt à vérifier",
+  "metricReached": "Métier qui me plaît",
+  "metricTitle": "Motivation",
+  "opportunityHighlight": "+20%",
+  "opportunityText": "recherche plus efficace si le métier vous passionne",
+  "order": 4,
+  "relevanceScoringModel": "relevance-find-what-you-like"
+ },
+ {
+  "_id": "recpYmRr31zHn1q8e",
+  "_order": 3,
+  "achievementText": "Niveau de **formation requis**",
+  "bobExplanation": "selon mes statistiques, les recruteur·euse·s de votre métier exigent souvent un diplôme",
+  "categoryId": "missing-diploma",
+  "description": "Valider un **diplôme** ou me **former**",
+  "descriptionAnswer": "Valider un **diplôme** ou vous **former**",
+  "emoji": "🎓",
+  "filters": [
+   "category-missing-diploma"
+  ],
+  "interestingHighlight": "+58%",
+  "interestingText": "augmentation du salaire en moyenne avec un diplôme",
+  "metricDetails": "Une formation validée par une certification ou diplôme peut faire une grosse différence pour les recruteurs. C'est même obligatoire pour certains métiers.",
+  "metricNotReached": "Niveau à vérifier",
+  "metricReached": "Niveau recommandé",
+  "metricTitle": "Diplômes",
+  "opportunityHighlight": "3",
+  "opportunityText": "nombre de façons de vous former gratuitement",
+  "order": 6
+ },
+ {
+  "_id": "recax9snESeFsDtrA",
+  "_order": 4,
+  "achievementText": "Recherche **commencée**",
+  "bobExplanation": "démarrez maintenant une recherche active vous permettra de trouver un emploi rapidement.",
+  "categoryId": "start-your-search",
+  "description": "Me **lancer dans ma recherche**",
+  "descriptionAnswer": "Vous **lancer dans votre recherche**",
+  "emoji": "🔍",
+  "filters": [
+   "not-for-active-search"
+  ],
+  "interestingHighlight": "70%",
+  "interestingText": "recrutements via une candidature spontanée ou le réseau",
+  "metricDetails": "Commencer sa recherche d'emploi implique de regarder des informations sur le marché du travail et le métier cible. On peut commencer sa recherche par prendre contact avec quelqu'un, ou par définir son projet. Cela ne veut pas forcément dire envoyer des candidatures.",
+  "metricNotReached": "Recherche inactive",
+  "metricReached": "Recherche active",
+  "metricTitle": "Recherche",
+  "opportunityHighlight": "3",
+  "opportunityText": "méthodes pour faire appel à son réseau",
+  "order": 7
+ },
+ {
+  "_id": "recxPoEiinVK5PdJM",
+  "_order": 5,
+  "achievementText": "Bonnes méthodes de **recherche**",
+  "bobExplanation": "postuler à des offres en ligne n'est pas le canal le plus efficace pour votre métier.",
+  "categoryId": "enhance-methods-to-interview",
+  "description": "Améliorer mes **candidatures**",
+  "descriptionAnswer": "Améliorer vos **candidatures**",
+  "emoji": "🎯",
+  "filters": [
+   "not-for-many-interviews-per-month(1)",
+   "for-active-search"
+  ],
+  "interestingHighlight": "+55%",
+  "interestingText": "efficacité gagnée quand on fait appel à son réseau",
+  "metricDetails": "Préparer votre CV, trouver des offres d'emploi ou proposer une candidature, décrocher un entretien et enfin une proposition d'embauche.",
+  "metricNotReached": "Recherche à améliorer",
+  "metricReached": "Recherche efficace",
+  "metricTitle": "Méthodes de recherche",
+  "opportunityHighlight": "3",
+  "opportunityText": "méthodes pour faire appel à son réseau",
+  "order": 9,
+  "relevanceScoringModel": "relevance-enhance-methods"
+ },
+ {
+  "_id": "recjHZMXi8sBXg324",
+  "_order": 6,
+  "categoryId": "bravo",
+  "description": "Aucun défi majeur pour moi",
+  "interestingHighlight": "70%",
+  "interestingText": "recrutements via une candidature spontanée",
+  "opportunityHighlight": "8",
+  "opportunityText": "conseils pour vos candidatures et entretiens",
+  "order": 10
+ }
+]

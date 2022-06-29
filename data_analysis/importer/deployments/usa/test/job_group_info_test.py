@@ -19,10 +19,24 @@ class JobGroupInfoImporterTest(airtablemock.TestCase):
 
     def setUp(self) -> None:
         super().setUp()
+        job_group_info.translation.clear_cache()
         client = airtablemock.Airtable('appmy-test-base', 'my-test-api-key')
         client.create('soc2fap', {
             'O*NET-SOC Code': '11-1011',
             'FAP prefixes': ['L6Z', 'L4Z'],
+        })
+        client.create('skills_for_future', {
+            'name': 'Jugement et prise de décision',
+            'description': 'long description',
+            'soc_prefixes_us': '11-,11-10',
+        })
+        airtablemock.Airtable('appkEc8N0Bw4Uok43').create('tblQL7A5EgRJWhQFo', {
+            'string': 'Jugement et prise de décision',
+            'en': 'Judging & decision making',
+        })
+        airtablemock.Airtable('appkEc8N0Bw4Uok43').create('tblQL7A5EgRJWhQFo', {
+            'string': 'long description',
+            'en': 'long description in English',
         })
 
     def test_make_dicts(self) -> None:
@@ -37,6 +51,8 @@ class JobGroupInfoImporterTest(airtablemock.TestCase):
             soc_structure_xls=os.path.join(_TESTDATA_FOLDER, 'soc/soc_structure_2010.xls'),
             soc_fap_crosswalk_airtable='appmy-test-base:soc2fap',
             brookings_automation_risk_json=os.path.join(_TESTDATA_FOLDER, 'automation_risk.json'),
+            occupation_requirements_json=os.path.join(_TESTDATA_FOLDER, 'job_requirements.json'),
+            skills_for_future_airtable='appmy-test-base:skills_for_future',
         )
 
         self.assertGreater(len(collection), 10)
@@ -69,8 +85,18 @@ class JobGroupInfoImporterTest(airtablemock.TestCase):
             chief_executives.application_modes['L6Z83'].modes[0].mode)
         self.assertNotIn('nan', chief_executives.application_modes)
         self.assertEqual(32, chief_executives.automation_risk)
+        self.assertEqual('in your industry', chief_executives.in_domain)
+
+        self.assertEqual(
+            ["Master's degree, PhD, or higher", "Bachelor's degree"],
+            [ce.name for ce in chief_executives.requirements.diplomas])
+
+        self.assertEqual(
+            ['Judging & decision making'],
+            [s.name for s in chief_executives.skills_for_future])
 
         self.assertEqual(1, job_group_protos['41-9012'].automation_risk, msg='Fashion models')
+        self.assertFalse(job_group_protos['41-9012'].skills_for_future)
 
 
 if __name__ == '__main__':

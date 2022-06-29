@@ -1,51 +1,348 @@
 [
-  {
-      "_id" : "recieKJTssgtoDN6d",
-      "imageUrl" : "https://dl.airtable.com/N0Fe0uhdQL2m8WmUUlOX_Artboard%202%20Z.png",
-      "isReadyForEmail" : true,
-      "shortDescription" : "* prénom.nom@exemple.com\n* nom.prénom@exemple.com\n* p.nom@exemple.com\n* pnom@exemple.com\n* prénomnom@exemple.com\n* nomprénom@exemple.com\n* nom@exemple.com\n* prénom@exemple.com",
-      "link" : "http://www.blogdumoderateur.com/outil-trouver-mails-contacts-entreprise/",
-      "title" : "8 exemples de format d'adresse mail à tester",
-      "actionTemplateId" : "recieKJTssgtoDN6d"
-  },
-  {
-      "_id" : "recBKWIcaWhOBAnZy",
-      "imageUrl" : "https://dl.airtable.com/hlikJeAER9Kw8VwMqcxc_Artboard%202890.png",
-      "isReadyForEmail" : true,
-      "shortDescription" : "[Linkedin](https://www.linkedin.com/)\nPour trouver le nom de la personne en charge des ressources humaines ou du service qui vous intéressent.\n\n[Verify Email Address](http://www.verifyemailaddress.org/)\nPour vérifier que vous avez trouvé la bonne adresse avant de postuler.",
-      "link" : "http://www.blogdumoderateur.com/14-conseils-pour-optimiser-vos-candidatures-spontanees/",
-      "title" : "2 exemples d'outils pour vos candidatures spontanées",
-      "actionTemplateId" : "recBKWIcaWhOBAnZy"
-  },
-  {
-      "_id" : "reclxp8DgacIU0oNE",
-      "imageUrl" : "https://dl.airtable.com/cDsjHp1vQaepuQabp5Lw_Artboard%2090IO%20(1).png",
-      "isReadyForEmail" : true,
-      "shortDescription" : "Créez plusieurs versions de votre CV. Cela vous permettra de les combiner rapidement quand vous répondez à une nouvelle offre.",
-      "link" : "https://www.monster.fr/conseil-carriere/article/faut-il-un-seul-cv-ou-plusieurs",
-      "title" : "1 idée pour améliorer votre CV",
-      "actionTemplateId" : "reclxp8DgacIU0oNE"
-  },
-  {
-      "_id" : "reclK8s0whtE39OQR",
-      "imageUrl" : "https://dl.airtable.com/LxWa9aFZRaWE3wMn14Zq_Artboard%202%202%20.png",
-      "isReadyForEmail" : true,
-      "shortDescription" : "* Quelles sont les missions principales ?\n* Quelles sont les missions secondaires ?\n* Quelles sont les compétences absolument nécessaires ?\n* Quelles sont les compétences bonus ?\n* Quel est le type de personnalité recherché ?",
-      "link" : "https://openclassrooms.com/courses/decrypter-une-offre-et-valoriser-sa-candidature-france",
-      "title" : "5 exemples de questions à vous poser avant de postuler",
-      "actionTemplateId" : "reclK8s0whtE39OQR"
-  },
-  {
-      "_id" : "rec89xCdVZIRHZTtX",
-      "imageUrl" : "https://dl.airtable.com/rbMR4xdURiC7L1jzyfow_Artboard%2090IO.png",
-      "isReadyForEmail" : true,
-      "filters" : [
-          "for-old(50)",
-          "for-experienced(6)"
-      ],
-      "shortDescription" : "Faites un CV par compétences, le but est de valoriser vos compétences acquises dans un domaine précis et de clarifier la cohérence de votre CV.\nIl n'est donc par exemple pas nécessaire si vous avez un parcours linéaire ou si vous n'avez pas de trou dans votre CV.\n\nPour faire un bon CV par compétences, il faut être précis pour chaque compétence mentionnée. Pésentez chaque compétence concrètement et expliquez le comment. \nPour compléter votre CV, ajoutez vos expériences professionnelles en précisant simplement un résultat chiffré pour chaque expérience mais ne détaillez pas vos missions et compétences à nouveau.",
-      "link" : "http://www.carriereonline.com/e/le-cv-de-competences.html",
-      "title" : "1 idée pour améliorer votre CV",
-      "actionTemplateId" : "rec89xCdVZIRHZTtX"
-  }
+ {
+  "_id": "recfrMrKdqGfTGXHT",
+  "_order": 0,
+  "actionTemplateId": "recfrMrKdqGfTGXHT",
+  "imageUrl": "https://dl.airtable.com/kQ5BZIGPQemKUKRYbQVq_Artboard%202%20Z.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=ff2f6ad8d19d3e1c",
+  "isReadyForEmail": true,
+  "link": "https://www.youtube.com/watch?v=YCvmu901hdY",
+  "shortDescription": "* Savez-vous ce qui est prévu pour la suite de l'événement ?\n* Connaissez-vous l'organisateur depuis longtemps ?\n* Que pensez-vous de l'organisation ?\n* Qu'est-ce que cette conférence vous inspire pour votre activité ?\n* Comment avez-vous trouvé l'intervenant ?\n* Qu'avez-vous pensé des thèmes abordés ?\n* Comment avez-vous entendu parler de cet événement ?\n* Qu'est-ce qui vous a fait venir ?\n* Participez-vous souvent à ce genre d'événement ?",
+  "title": "9 questions pour lancer la conversation"
+ },
+ {
+  "_id": "recnRJutgi6QBlbUg",
+  "_order": 1,
+  "actionTemplateId": "recnRJutgi6QBlbUg",
+  "imageUrl": "https://dl.airtable.com/EQ4R0I4XRCGVsaCvpACy_Artboard%202%20U.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=7e5f1731dbc3b357",
+  "isReadyForEmail": true,
+  "link": "https://www.directemploi.com/actualite/emploi/2148/entretien-d-embauche-les-10-questions-les-plus-posees",
+  "shortDescription": "* Qu'est-ce qui vous intéresse le plus (le moins) dans le poste proposé ?\n* Comment voyez-vous l'évolution de votre profession ?\n* Pouvez-vous détailler telle expérience ? Les compétences développées ? Les résultats de vos actions ?\n* Dans quel contexte votre dernier contrat s'est-il terminé ?\n* Quels sont les obstacles que vous avez rencontrés dans vos missions ?\n* Qu'est-ce qui vous attire dans notre entreprise ?\n* Quelles sont vos prétentions salariales ?\n* Quels sont vos souhaits d'évolution ?\n* Quels sont vos points forts / faibles ?\n* Avez-vous d'autres propositions en cours ?",
+  "title": "10 questions à préparer avant l'entretien"
+ },
+ {
+  "_id": "recZwCs3vH3WygO0o",
+  "_order": 2,
+  "actionTemplateId": "recZwCs3vH3WygO0o",
+  "imageUrl": "https://dl.airtable.com/EQ4R0I4XRCGVsaCvpACy_Artboard%202%20U.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=7e5f1731dbc3b357",
+  "isReadyForEmail": true,
+  "link": "https://www.welcometothejungle.com/fr/articles/entretien-questions-preparer",
+  "shortDescription": "* \"Parlez-moi de vous\"\n* Pourquoi avoir postulé à ce poste et dans notre entreprise en particulier ?\n* Quelle est la réalisation professionnelle dont vous êtes le plus fier ?\n* Que mettriez-vous en place en arrivant à ce poste ?\n* Pourquoi devrions-nous vous embaucher ?\n* Quelles sont vos prétentions salariales ?\n* Avez-vous des questions ?",
+  "title": "7 questions fréquentes à préparer"
+ },
+ {
+  "_id": "rec3TBP5Ge7tNF4u8",
+  "_order": 3,
+  "actionTemplateId": "rec3TBP5Ge7tNF4u8",
+  "imageUrl": "https://dl.airtable.com/DLNEQdcqTSioGDMFgrYo_Screen%20Shot%202017-05-30%20at%2011.03.42.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=79e235231477b43e",
+  "isReadyForEmail": true,
+  "link": "http://blog.seekube.com/etudiant/20-questions-a-poser-au-recruteur-en-entretien-dembauche/",
+  "shortDescription": "* Quelles sont les qualités humaines des personnes qui s'intègrent bien dans votre entreprise ?\n* Quels sont les défis du service que je rejoindrais ?\n* Quelles sont les prochaines étapes du recrutement ?\n* Quand puis-je espérer une réponse ?",
+  "title": "5 questions à poser à un recruteur"
+ },
+ {
+  "_id": "recbTXdpR0toIcdfW",
+  "_order": 4,
+  "actionTemplateId": "recbTXdpR0toIcdfW",
+  "imageUrl": "https://dl.airtable.com/WGtPQgOeQUeaRZWkvCUg_Artboard%202%20U.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=8e2db322cdc52840",
+  "isReadyForEmail": true,
+  "link": "https://www.keljob.com/editorial/chercher-un-emploi/entretien-dembauche/detail/article/entretien-dembauche-les-7-details-qui-font-la-difference.html",
+  "shortDescription": "* Choisissez une tenue adaptée\n* Vérifiez votre itinéraire et prévoyez d'avoir 10 min d'avance\n* Prenez tous les documents nécessaires (CV, pièce d'identité, notes préparatoires)\n* Prenez aussi un cahier (propre !) et un crayon pour prendre des notes.\n* Juste avant l'entretien, mettez votre téléphone en mode silencieux.",
+  "title": "5 bonnes pratiques à adopter"
+ },
+ {
+  "_id": "reclK8s0whtE39OQR",
+  "_order": 5,
+  "actionTemplateId": "reclK8s0whtE39OQR",
+  "imageUrl": "https://dl.airtable.com/LxWa9aFZRaWE3wMn14Zq_Artboard%202%202%20.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=39c40cfa9965c243",
+  "isReadyForEmail": true,
+  "link": "https://openclassrooms.com/courses/decrypter-une-offre-et-valoriser-sa-candidature-france",
+  "shortDescription": "* Quelles sont les missions principales ?\n* Quelles sont les missions secondaires ?\n* Quelles sont les compétences absolument nécessaires ?\n* Quelles sont les compétences bonus ?\n* Quel est le type de personnalité recherché ?",
+  "title": "5 questions à vous poser avant de postuler"
+ },
+ {
+  "_id": "recieKJTssgtoDN6d",
+  "_order": 6,
+  "actionTemplateId": "recieKJTssgtoDN6d",
+  "imageUrl": "https://dl.airtable.com/N0Fe0uhdQL2m8WmUUlOX_Artboard%202%20Z.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=84bdaf088ea2a591",
+  "isReadyForEmail": true,
+  "link": "http://www.blogdumoderateur.com/outil-trouver-mails-contacts-entreprise/",
+  "shortDescription": "* prénom.nom@exemple.com\n* nom.prénom@exemple.com\n* p.nom@exemple.com\n* pnom@exemple.com\n* prénomnom@exemple.com\n* nomprénom@exemple.com\n* nom@exemple.com\n* prénom@exemple.com",
+  "title": "8 formats d'adresse mail à tester"
+ },
+ {
+  "_id": "recbCDFYzznVPeG9C",
+  "_order": 7,
+  "actionTemplateId": "recbCDFYzznVPeG9C",
+  "filters": [
+   "for-old(50)"
+  ],
+  "imageUrl": "https://dl.airtable.com/JzjMYuW0Q1WxHU1fqh4P_Artboard%202%20Z.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=8291e90ca24cc943",
+  "isReadyForEmail": true,
+  "link": "https://www.cadremploi.fr/editorial/conseils/conseils-candidature/detail/article/entretien-dembauche-les-atouts-des-seniors-que-les-autres-nont-pas.html",
+  "shortDescription": "Montrez que vous êtes\n* stable, vous ne serez pas dans la revendication immédiate d'un autre poste ou dans le zapping\n* expérimenté, vous pourrez partager avec l'équipe toutes les compétences que vous avez acquises auparavant\n* opérationnel, vous serez un plus pour l'équipe tout de suite car vous savez faire votre métier",
+  "title": "3 qualités à mettre en avant"
+ },
+ {
+  "_id": "recubhmiCDh8sAiFu",
+  "_order": 8,
+  "actionTemplateId": "recubhmiCDh8sAiFu",
+  "filters": [
+   "for-young(25)"
+  ],
+  "imageUrl": "https://dl.airtable.com/GzbP9xQRSWSR1Dz0NfNL_Artboard%202%20Z.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=c473804c63fa773a",
+  "isReadyForEmail": true,
+  "link": "https://www.youtube.com/watch?v=8IHWDDUv4Zk",
+  "shortDescription": "Montrez que vous êtes flexible, enthousiaste et que vous apprenez vite. Les recruteurs ne s'attendent pas à ce que vous sachiez tout faire en sortant de l'école mais ils veulent être sûrs que vous ayez de l'énergie et que vous sachiez apprendre vite. Quand on est jeune ce qu'il faut mettre en avant c'est son potentiel !",
+  "title": "3 qualités à mettre en avant"
+ },
+ {
+  "_id": "rec89xCdVZIRHZTtX",
+  "_order": 9,
+  "actionTemplateId": "rec89xCdVZIRHZTtX",
+  "filters": [
+   "for-old(50)",
+   "for-experienced(6)",
+   "for-frustrated(ATYPIC_PROFILE)"
+  ],
+  "imageUrl": "https://dl.airtable.com/rbMR4xdURiC7L1jzyfow_Artboard%2090IO.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=2c449c4001463516",
+  "isReadyForEmail": true,
+  "link": "http://www.carriereonline.com/e/le-cv-de-competences.html",
+  "shortDescription": "Faites un CV par compétences. Le but est de valoriser vos compétences acquises dans un domaine précis, pour correspondre à ce que le recruteur recherche. On est très nombreux à avoir un parcours atypique, donc le CV par compétences sert à donner une cohérence à votre profil.\nSi vous avez un parcours linéaire ou si vous n'avez pas de trou dans votre CV, les compétences peuvent figurer en plus petite partie. Mais pour les autres, c'est astucieux de les mettre bien en avant !\n\nPour faire un bon CV par compétences, il faut être précis pour chaque compétence mentionnée. Présentez chaque compétence concrètement et expliquez comment vous l'avez acquise.\nAjoutez une rubrique \"expériences professionnelles\" en précisant simplement un résultat chiffré pour chaque expérience. Il n'y a pas besoin de détailler vos missions et compétences pour chaque expérience.",
+  "title": "1 idée pour améliorer votre CV, surtout pour un parcours atypique"
+ },
+ {
+  "_id": "reclxp8DgacIU0oNE",
+  "_order": 10,
+  "actionTemplateId": "reclxp8DgacIU0oNE",
+  "imageUrl": "https://dl.airtable.com/cDsjHp1vQaepuQabp5Lw_Artboard%2090IO%20(1).png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=edcf02d91e23c47e",
+  "isReadyForEmail": true,
+  "link": "https://www.monster.fr/conseil-carriere/article/faut-il-un-seul-cv-ou-plusieurs",
+  "shortDescription": "Créez plusieurs versions de votre CV. Cela vous permettra de trier les éléments sur le volet quand vous répondez à une nouvelle offre, ou quand vous ciblez une structure avec une candidature spontanée. Chaque élément doit être pertinent au poste ; ce n'est pas votre biographie.",
+  "title": "1 idée pour améliorer votre CV"
+ },
+ {
+  "_id": "recCkPXDF0iuLxwwG",
+  "_order": 11,
+  "actionTemplateId": "recCkPXDF0iuLxwwG",
+  "imageUrl": "https://dl.airtable.com/3TKavdlsTqSkJaIEvuEn_Artboard%202890.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=a4ae858ec420f8be",
+  "isReadyForEmail": true,
+  "link": "https://laruche.wizbii.com/comment-fixer-objectifs-atteindre-travail/",
+  "shortDescription": "Donnez-vous un objectif clair et pas trop ambitieux. Par exemple : \"cette semaine je veux faire x candidatures\", \"cette semaine je vais à deux évènements\" ou \"cette semaine je vais contacter 3 personnes qui pourraient m'aider.\"",
+  "title": "1 idée pour garder votre moral au top"
+ },
+ {
+  "_id": "recrwNw9GFhFQ95D3",
+  "_order": 12,
+  "actionTemplateId": "recrwNw9GFhFQ95D3",
+  "imageUrl": "https://dl.airtable.com/3TKavdlsTqSkJaIEvuEn_Artboard%202890.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=a4ae858ec420f8be",
+  "isReadyForEmail": true,
+  "link": "https://www.ted.com/talks/diana_nyad_never_ever_give_up?language=fr",
+  "shortDescription": "Entourez-vous de personnes qui vous apportent un regard positif.\n- Dites à vos proches comment ils peuvent mieux vous aider. Par exemple, en évitant de vous critiquer.\n- Un·e ami·e qui se plaint beaucoup et qui vous tire vers le bas ? Ce n'est pas le bon moment de le·a voir.\n- Une activité ou un endroit où vous vous sentez bien ? C'est le moment d'y aller plus souvent pour vous baigner dans une ambiance positive.",
+  "title": "3 idées pour vous protéger pendant la recherche d'emploi"
+ },
+ {
+  "_id": "rec2qVLOT9ibcbGSZ",
+  "_order": 13,
+  "actionTemplateId": "rec2qVLOT9ibcbGSZ",
+  "imageUrl": "https://dl.airtable.com/3TKavdlsTqSkJaIEvuEn_Artboard%202890.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=a4ae858ec420f8be",
+  "isReadyForEmail": true,
+  "link": "https://www.youtube.com/watch?v=_DakEvdZWLk",
+  "shortDescription": "Observez vos émotions. Essayez de prendre du recul, et ne portez pas un regard trop dur sur vous.\n* Pendant quelques jours, observez les passages de tristesse, de colère, de peur, et de joie.\n* Dites-vous que quand une de ces émotions se manifeste c'est votre cerveau qui vous dit de réagir.\n* Vous avez le choix de réagir, d'accorder du temps à cette émotion. C'est la motivation.",
+  "title": "1 idée pour prendre soin de vous"
+ },
+ {
+  "_id": "recBvGSLHtxoaXSRt",
+  "_order": 14,
+  "actionTemplateId": "recBvGSLHtxoaXSRt",
+  "imageUrl": "https://dl.airtable.com/ZmRK77dpQHWZbXMsdfiv_Artboard%2090IO%20(2).png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=18fb354b20056025",
+  "isReadyForEmail": true,
+  "link": "http://www.frenchweb.fr/5-conseils-pour-que-lon-se-souvienne-de-vous-apres-un-evenement/198887",
+  "shortDescription": "Exemple 1 :\n\"Bonjour,\nJ'ai assisté à votre intervention lors du dernier [nom de l'évènement] mais je n'ai pas eu la chance de vous croiser en petit comité. J'ai trouvé votre point de vue sur [sujet] ainsi que votre profil très inspirants.\nÉtant à la recherche de mon prochain défi professionnel, j'aimerais beaucoup échanger avec vous pour bénéficier de vos conseils.\nAuriez-vous un moment à me consacrer ?\"\n\nExemple 2 :\n\"Bonjour,\nNous nous sommes rencontrés lors du dernier Meet-Up [nom du meetup] et avons échangé nos cartes de visite. Seriez-vous disponible pour échanger cette semaine ?\"",
+  "title": "2 mails à envoyer après un événement"
+ },
+ {
+  "_id": "reclUt1eptGzxmvM9",
+  "_order": 15,
+  "actionTemplateId": "reclUt1eptGzxmvM9",
+  "imageUrl": "https://dl.airtable.com/6H8ezkeIS8SL2pm9P4Uv_Artboard%202890.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=fbfd9c1394b94076",
+  "isReadyForEmail": true,
+  "link": "http://www.lexpress.fr/emploi/conseils-emploi/cinq-conseils-pour-utiliser-son-reseau-lors-d-une-recherche-d-emploi_1324008.html",
+  "shortDescription": "* Partager une actualité :\n\"J'ai vu que (partager une actualité de votre profession) cela m'a fait penser à vous.\n(ajouter un lien vers un article sur le sujet)\"\n\n* Partager un article :\n\"Je suis tombé(e) sur cet article qui je pense pourra vous intéresser.\n(ajouter un lien vers l'article)\"\n\n* Partager un événement :\n\"(entreprise/organisation) organise une conférence sur (sujet).\nJ'ai pensé que cet évènement pourrait t'intéresser.\nJ'espère que nous pourrons nous y croiser.\"",
+  "title": "3 idées pour donner le change à votre réseau"
+ },
+ {
+  "_id": "recSYtXKj36DC9yLb",
+  "_order": 16,
+  "actionTemplateId": "recSYtXKj36DC9yLb",
+  "imageUrl": "https://dl.airtable.com/6H8ezkeIS8SL2pm9P4Uv_Artboard%202890.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=fbfd9c1394b94076",
+  "isReadyForEmail": true,
+  "link": "https://laruche.wizbii.com/comment-fixer-objectifs-atteindre-travail",
+  "shortDescription": "* Fixez-vous des objectifs précis et réalisables\n* Fixez-vous des objectifs mesurables\n* Organisez votre mois, puis votre semaine, puis votre journée\n* Faites-en un peu chaque jour\n* Visualisez vos objectifs : projetez-vous dans votre ambition",
+  "title": "5 idées pour bien organiser vos démarches"
+ },
+ {
+  "_id": "recOgOKlLWLkgUoMk",
+  "_order": 17,
+  "actionTemplateId": "recOgOKlLWLkgUoMk",
+  "imageUrl": "https://dl.airtable.com/WC0yq6dSbSoTyL3lSisO_Artboard%2090IO%20(3).png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=524734bc1180f8e2",
+  "isReadyForEmail": true,
+  "link": "http://www.lexpress.fr/emploi/conseils-emploi/lettre-de-remerciement-apres-un-entretien-d-embauche_1609017.html",
+  "shortDescription": "Exemple 1 :\n\"Je tenais à vous remercier du temps que vous m' avez consacré lors de notre entretien du (date).\tNotre rendez-vous m'a permis de mieux connaître votre entreprise (nom de l'entreprise) et vos attentes. Les missions que vous m'avez décrites m'ont confirmées mon vif intérêt. J'espère pouvoir mettre très prochainement mon expérience et mon savoir-faire au service de (projet qui a été évoqué en entretien). \"\n\nExemple 2 :\n\"Je vous remercie d'avoir pris le temps de me recevoir. Les qualités et compétences que vous m'avez évoquées, (listes des qualités/compétences), me confortent dans mon aptitude à remplir pleinement cette fonction.\nJe serais réellement ravi(e) de faire partie de votre équipe et de contribuer aux succès de (nom de l'entreprise).\nJe reste à votre disposition pour toutes informations complémentaires.\"\n\nExemple 3 :\n\"Je tenais à vous remercier pour notre entretien du (date). Il m'a permis d'affiner ma connaissance de votre entreprise et de comprendre les missions principales du poste : (Listez les missions). Ces missions correspondent tout à fait à mes compétences et sont autant d'arguments pour confirmer ma motivation. Je serais ravi(e) de contribuer au développement de (nom de l'entreprise) au sein de vos équipes.\nDans l'attente d'un nouvel échange, je reste à votre disposition pour toutes informations complémentaires.\"",
+  "title": "3 modèles de mails de remerciement"
+ },
+ {
+  "_id": "recbOMC6vNln4sAek",
+  "_order": 18,
+  "actionTemplateId": "recbOMC6vNln4sAek",
+  "imageUrl": "https://dl.airtable.com/QLl0ZXVWRqv0IitQ3erU_Artboard%202890.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=1160bbf30fffbc29",
+  "isReadyForEmail": true,
+  "link": "http://www.letudiant.fr/jobsstages/nos-conseils/le-banc-d-essai-des-sites-d-offres-d-emploi-19762.html",
+  "shortDescription": "[Box My Job](https://boxmyjob.com)\nPour stocker les offres que vous trouvez sur différents portails d'offres.\n\n[Job board Finder](https://www.jobboardfinder.net/fr/)\nPour trouver d'autres portails d'offres spécialisés.\n\n[Open Classrooms](https://openclassrooms.com/courses/decrypter-une-offre-et-valoriser-sa-candidature-france) Cours complet et cas pratiques pour savoir décrypter une offre.",
+  "title": "3 outils pour vous aider à organiser les offres"
+ },
+ {
+  "_id": "recvbdzGhx0pdzxWy",
+  "_order": 19,
+  "actionTemplateId": "recvbdzGhx0pdzxWy",
+  "imageUrl": "https://dl.airtable.com/EBe5o4qeTl6ggKbJFrxB_Artboard%202890.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=a34192b5abb145f0",
+  "isReadyForEmail": true,
+  "link": "https://www.assoconnect.com/articles/9373-8-plateformes-pour-trouver-des-benevoles",
+  "shortDescription": "[Tous Bénévoles](http://www.tousbenevoles.org/)\nPour trouver des missions bénévoles.\n\n[France Bénévolat](https://www.francebenevolat.org/benevoles)\nPour trouver des missions bénévoles.",
+  "title": "2 sites pour trouver des missions bénévoles"
+ },
+ {
+  "_id": "recMJKwFHVaVL6Zbe",
+  "_order": 20,
+  "actionTemplateId": "recMJKwFHVaVL6Zbe",
+  "imageUrl": "https://dl.airtable.com/sje16MimRkGdNiYqpmhL_Artboard%202890.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=59ddf0bddf9aaf08",
+  "isReadyForEmail": true,
+  "link": "https://www.workuper.com/ressources/proposer-ses-competences-benevolement-avec-pro-bono-lab",
+  "shortDescription": "[Pro Bono Lab](http://probonolab.org/association/missions-probono)\nPour mettre vos compétences au service d'une association.\n\n[Passerelles et Compétences](https://www.passerellesetcompetences.org/missions)\nPour trouver une association et faire du bénévolat de compétences.",
+  "title": "2 sites pour trouver des missions pro-bono"
+ },
+ {
+  "_id": "recBUEjBVKRyTTnfe",
+  "_order": 21,
+  "actionTemplateId": "recBUEjBVKRyTTnfe",
+  "imageUrl": "https://dl.airtable.com/sZjwKcNhR7m8IJYBLNwd_Artboard%2090IO%20(4).png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=0acc15c23cdc7d1c",
+  "isReadyForEmail": true,
+  "link": "http://www.aidesalemploi.fr/",
+  "shortDescription": "[Aides à l'emploi](http://www.aidesalemploi.fr/)\nVous permet de trouver plus d'associations pour vous aider dans votre recherche.",
+  "title": "1 site pour trouver quelqu'un pour vous aider"
+ },
+ {
+  "_id": "recZ7Jz1fFyeCmFqG",
+  "_order": 22,
+  "actionTemplateId": "recZ7Jz1fFyeCmFqG",
+  "imageUrl": "https://dl.airtable.com/azMSkLhSymr9J0IurvAW_Artboard%202890.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=71af2c876d4c06dd",
+  "isReadyForEmail": true,
+  "link": "http://www.emploi-store.fr/portail/centredinteret/preparersacandidature",
+  "shortDescription": "[Open Classrooms](https://openclassrooms.com/courses/decrypter-une-offre-et-valoriser-sa-candidature-france)\nCours complet et cas pratiques pour faire la différence dans vos candidatures.\n\n[CV Designr](https://cvdesignr.com/fr/) Pour bien présenter et organiser votre CV.\n\n[Memo](https://memo.pole-emploi.fr/?utm_medium=jobboard&utm_source=emploistore&utm_campaign=pe)\nPour organiser le suivi de vos candidatures et de vos relances.\n\n[Tilkee](https://www.tilkee.fr/envoi-cv/)\nPour suivre la consultation de votre CV par les recruteurs.\n\n[Box My Job](https://boxmyjob.com/)\nPour sauvegarder les offres que vous trouvez en ligne et suivre l'avancée de vos candidatures.",
+  "title": "5 ressources pour vos candidatures"
+ },
+ {
+  "_id": "recxJzkNcxszgkI4g",
+  "_order": 23,
+  "actionTemplateId": "recxJzkNcxszgkI4g",
+  "imageUrl": "https://dl.airtable.com/azMSkLhSymr9J0IurvAW_Artboard%202890.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=71af2c876d4c06dd",
+  "isReadyForEmail": true,
+  "link": "https://www.welcometothejungle.com/fr/articles/erreurs-eviter-cv",
+  "shortDescription": "Vérifiez les erreurs les plus répandues avant d'envoyer une candidature sur laquelle vous avez passé du temps.",
+  "title": "8 erreurs sur le CV à éviter"
+ },
+ {
+  "_id": "recwADC71N3uWO6kv",
+  "_order": 24,
+  "actionTemplateId": "recwADC71N3uWO6kv",
+  "imageUrl": "https://dl.airtable.com/krN1PbCUQOa9bmKeeA2H_Artboard%202890.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=43d004bb6c129e35",
+  "isReadyForEmail": true,
+  "link": "http://www.emploi-store.fr/portail/centredinteret/trouverunemploi/reussirLEntretien",
+  "shortDescription": "[MOOC](https://www.emploi-store.fr/portail/services/reussirLEntretienDEmbauche)\nPour réussir l'entretien d'embauche.\n\n[Open Classrooms](https://openclassrooms.com/courses/preparer-son-entretien-de-recrutement-france)\nPour suivre un cours complet sur comment vous préparer à l'entretien.\n\n[Entretien Virtuel](https://www.emploi-store.fr/portail/services/entretienVirtuel)\nPour passer un entretien virtuel.",
+  "title": "3 outils pour préparer vos entretiens"
+ },
+ {
+  "_id": "recBKWIcaWhOBAnZy",
+  "_order": 25,
+  "actionTemplateId": "recBKWIcaWhOBAnZy",
+  "imageUrl": "https://dl.airtable.com/hlikJeAER9Kw8VwMqcxc_Artboard%202890.png?ts=1654096508&userId=usrAYnaclItYD1OmC&cs=cee14ddd3afcc473",
+  "isReadyForEmail": true,
+  "link": "http://www.blogdumoderateur.com/14-conseils-pour-optimiser-vos-candidatures-spontanees/",
+  "shortDescription": "[Linkedin](https://www.linkedin.com/)\nPour trouver le nom de la personne en charge des ressources humaines ou du service qui vous intéresse.\n\n[Verify Email Address](https://www.verifyemailaddress.org/fr/)\nPour vérifier que vous avez trouvé la bonne adresse avant de postuler.",
+  "title": "2 outils pour vos candidatures spontanées"
+ },
+ {
+  "_id": "recbybMJMmMnf6MfR",
+  "_order": 26,
+  "actionTemplateId": "recbybMJMmMnf6MfR",
+  "link": "https://www.youtube.com/watch?v=eit0eUH62HY&index=1&list=PLk48-5An7EI4Mx4OTvuXVC0zU43hqf1D7",
+  "shortDescription": "L'Adie, une association qui aide des personnes éloignées du marché du travail et du système bancaire à créer leur entreprise, propose une série de vidéos très utiles pour réfléchir à la création de son entreprise.\n\n[Cliquez ici pour regarder la série de 9 mini vidéo](https://www.youtube.com/watch?v=eit0eUH62HY&index=1&list=PLk48-5An7EI4Mx4OTvuXVC0zU43hqf1D7)",
+  "title": "9 vidéos pour réfléchir à votre projet"
+ },
+ {
+  "_id": "recR6qwFtulCXDJhj",
+  "_order": 27,
+  "actionTemplateId": "recR6qwFtulCXDJhj",
+  "link": "http://dessinetoiunemploi.com/quand-et-comment-relancer-le-recruteur/",
+  "shortDescription": "L'auteur du blog \"Dessine-toi un emploi\" s'est inspiré de son expérience en marketing pour élaborer une méthode de relance efficace.\n[Vous pouvez lire son article sur quand et comment relancer les recruteurs ici.](http://dessinetoiunemploi.com/quand-et-comment-relancer-le-recruteur/)\n\nBonne lecture 🙂",
+  "title": "1 super article pour savoir quand et comment relancer"
+ },
+ {
+  "_id": "recMZvvFHcnVL3iS7",
+  "_order": 28,
+  "actionTemplateId": "recMZvvFHcnVL3iS7",
+  "filters": [
+   "for-long-term-mom"
+  ],
+  "link": "https://www.observatoire-qvt.com/charte-de-la-parentalite/les-signataires/",
+  "shortDescription": "Plus de 600 entreprises en France se sont engagées à proposer aux salariés-parents un environnement mieux adapté aux responsabilités familiales.\nVous pouvez consulter [la liste ici](https://www.observatoire-qvt.com/charte-de-la-parentalite/les-signataires/)",
+  "title": "Plus de 600 entreprises qui s'engagent à bien accueillir les parents"
+ },
+ {
+  "_id": "recX26gSThOuDGTFC",
+  "_order": 29,
+  "actionTemplateId": "recX26gSThOuDGTFC",
+  "link": "https://www.orientation-pour-tous.fr/",
+  "shortDescription": "[Tuto.com](http://aide.tuto.com/parcours-pro/faites-financer-votre-parcours-pro)\nPour suivre tous types de formations dans le domaine du numérique.",
+  "title": "1 ressource de formation en ligne avec possibilité de financement"
+ },
+ {
+  "_id": "recfXxBuyLhCykKST",
+  "_order": 30,
+  "actionTemplateId": "recfXxBuyLhCykKST",
+  "link": "https://www.francenum.gouv.fr/comprendre-le-numerique/digital-duel-test-de-competences-numeriques",
+  "shortDescription": "[Pix](https://pix.fr/)\nÉvaluez, développez et certifiez vos compétences numériques.",
+  "title": "1 site pour tester vos compétences numériques"
+ },
+ {
+  "_id": "recj7sdSiJeJT71zF",
+  "_order": 31,
+  "actionTemplateId": "recj7sdSiJeJT71zF",
+  "link": "https://www.orientation-pour-tous.fr/tutoriel/je-veux-decouvrir-les-metiers/je-veux-decouvrir-des-metiers-en-fonction-de-mes-centres-d-interet/",
+  "shortDescription": "Voir la [vidéo](https://www.ted.com/talks/scott_dinsmore_how_to_find_work_you_love?rel=0&yt:cc=on&language=fr)",
+  "title": "1 autre vidéo pour trouver un métier que l'on aime"
+ },
+ {
+  "_id": "recLc48oiItNAiPP7",
+  "_order": 32,
+  "actionTemplateId": "recLc48oiItNAiPP7",
+  "link": "https://www.orientation-pour-tous.fr/tutoriel/je-veux-decouvrir-les-metiers/je-veux-decouvrir-des-metiers-en-fonction-de-mes-centres-d-interet/",
+  "shortDescription": "* [Change ma vie](https://changemavie.com/) Podcast pour trouver un métier que vous aimez\n* [Generation XX](https://www.generationxx.fr/) Podcast de conversations avec des femmes inspirantes sur leur parcours\n* [Wake-Up](https://www.wake-up.io/cours-audio/#metiers?utm_medium=email&utm_source=chronique&utm_campaign=podcast&utm_content=biblio) Cours à écouter pour trouver un métier adapté à votre personnalité",
+  "title": "2 podcasts sur la connaissance de soi"
+ },
+ {
+  "_id": "recPtn35mN5p2FFe9",
+  "_order": 33,
+  "actionTemplateId": "recPtn35mN5p2FFe9",
+  "link": "http://www.letudiant.fr/jobsstages/nos-conseils/le-banc-d-essai-des-sites-d-offres-d-emploi-19762.html",
+  "shortDescription": "50 sites d'emploi, ou jobboards, en banc d'essai",
+  "title": "1 site pour comparer les jobboards"
+ },
+ {
+  "_id": "recHOTEgtwOJLDO2L",
+  "_order": 34,
+  "actionTemplateId": "recHOTEgtwOJLDO2L",
+  "link": "https://www.manpowergroup.fr/journee-droit-femmes-parite-metier-cliche-right-management/",
+  "shortDescription": "[Les Couilles sur la Table] (https://www.binge.audio/lentreprise-ce-monde-dhommes/) Une enquête à écouter sur les dynamiques sociales de ces industries/ Dans ce podcast, on parle du recrutement féminin dans le monde de la logistique et du transport. Ce n'est plus la loi du plus fort physiquement, mais la loi de celles et ceux qui savent mieux s'adapter à leur environnement.",
+  "title": "1 podcast à écouter pour vous positionner dans vos candidatures"
+ }
 ]

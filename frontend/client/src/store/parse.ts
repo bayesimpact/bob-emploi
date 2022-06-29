@@ -12,13 +12,14 @@ type ArrayMode = keyof typeof flattenArray
 
 
 function createParsedValueFlattener(flatten: (values: readonly string[]) => string):
-((values: string|null|undefined|string[]) => string|undefined) {
-  return (values: string|null|undefined|string[]): string|undefined => {
+((values: string|null|undefined|(string|null)[]) => string|undefined) {
+  return (values: string|null|undefined|(string|null)[]): string|undefined => {
     if (typeof values === 'string') {
       return values
     }
     if (values) {
-      return flatten(values)
+      return flatten(values.filter(
+        (value: string|null): value is string => typeof value === 'string'))
     }
   }
 }
@@ -43,12 +44,26 @@ interface Location {
 }
 
 
+function removeAmpersandDoubleEncodingInString(search?: string): string {
+  if (!search || !/&amp;/.test(search)) {
+    return search || ''
+  }
+  return search.replace(/&amp;/g, '&')
+}
+
+
 function removeAmpersandDoubleEncoding(location: Location): string|undefined {
   const {hash, pathname, search} = location
-  if (search && /&amp;/.test(search)) {
-    return pathname + search.replace(/&amp;/g, '&') + hash
+  const fixedSearch = removeAmpersandDoubleEncodingInString(search)
+  if (search !== fixedSearch) {
+    return pathname + removeAmpersandDoubleEncodingInString(search) + hash
   }
 }
 
 
-export {parseQueryString, parsedValueFlattener, removeAmpersandDoubleEncoding}
+export {
+  parseQueryString,
+  parsedValueFlattener,
+  removeAmpersandDoubleEncoding,
+  removeAmpersandDoubleEncodingInString,
+}

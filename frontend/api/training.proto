@@ -11,7 +11,7 @@ message Training {
   string name = 1;
 
   // Url where the training is available.
-  string url = 2;
+  string url = 2 [(string_format) = URL_FORMAT];
 
   // Name of the city in which the training site is.
   string city_name = 3;
@@ -35,4 +35,14 @@ message Training {
 
 message Trainings {
   repeated Training trainings = 1;
+
+  TrainingAgency vocational_rehabilitation_agency = 2;
+}
+
+message TrainingAgency {
+  // URL of the agency's website.
+  string url = 1 [(string_format) = URL_FORMAT];
+
+  // ID of the region (state in the US) for which the agency is responsible.
+  string region_id = 2;
 }

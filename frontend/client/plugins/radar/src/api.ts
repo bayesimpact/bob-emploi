@@ -15,6 +15,9 @@ export const getUserInfo = (dossierId: string): Promise<UserInfo> =>
 export const getCounselorInfo = (): Promise<CounselorInfo> =>
   getJson('/auth/api/sso/user/current')
 
+export const getCounselorStructures = (): Promise<CounselorStructures> =>
+  getJson('/auth/api/sso/user/current/structures')
+
 export const getPolicies = (dossierId: string): Promise<readonly PolicyInfo[]> =>
   getJson(`/policies/api/basePolicyInstance/parDossier/exceptGrtWithPacea?recordId=${dossierId}`)
 // Create a task in the young person's dossier in i-milo.

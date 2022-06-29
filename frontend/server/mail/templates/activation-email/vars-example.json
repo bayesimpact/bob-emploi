@@ -1,0 +1,31 @@
+{
+  "actions": [
+    {
+      "title": "trouver un métier",
+      "url": "https://jobflix.app"
+    },
+    {
+      "title": "regarder des vidéos",
+      "url": "https://www.bob-emploi.fr/actions/videos"
+    }
+  ],
+  "areEmailsAnswerRead": true,
+  "baseUrl": "https://www.bob-emploi.fr",
+  "changeEmailSettingsUrl": "https://www.bob-emploi.fr/settings",
+  "coachingEmailFrequency": "EMAIL_ONCE_A_MONTH",
+  "date": "20 décembre 2018",
+  "firstName": "Agnès",
+  "firstTeamMember": "Tabitha",
+  "gender": "FEMININE",
+  "isActionPlanCompleted": true,
+  "isCoachingEnabled": "True",
+  "loginUrl": "https://www.bob-emploi.fr/login",
+  "numActions": 2,
+  "numberTeamMembers": "10",
+  "numberUsers": "270 000",
+  "ofJob": "d'ingénieure nucléaire",
+  "productLogoUrl": "https://t.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
+  "productName": "Bob",
+  "teamMembers": "Paul, John, Pascal, Sil, Cyrille, Flo, Nicolas, Florian, Lillie",
+  "viralityTemplate": "https://www.bob-emploi.fr"
+}

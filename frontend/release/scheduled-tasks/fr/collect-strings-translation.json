@@ -19,7 +19,7 @@
         },
         "PlatformVersion": "LATEST",
         "TaskCount": 1,
-        "TaskDefinitionArn": "arn:aws:ecs:eu-west-3:951168128976:task-definition/bob-data-importer"
+        "TaskDefinitionArn": "arn:aws:ecs:eu-west-3:951168128976:task-definition/bob-fr-data-importer"
       },
       "Id": "collect",
       "Input": {

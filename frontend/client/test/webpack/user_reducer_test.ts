@@ -1,6 +1,6 @@
 import {config, expect} from 'chai'
 import userReducer from 'store/user_reducer'
-import {ReplaceStrategyAction} from 'store/actions'
+import type {ReplaceStrategyAction} from 'store/actions'
 
 config.truncateThreshold = 0
 

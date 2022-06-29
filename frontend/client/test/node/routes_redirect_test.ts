@@ -1,11 +1,11 @@
 import {expect} from 'chai'
+import type {Rewrite} from 'connect-history-api-fallback'
 import RandExp from 'randexp'
 
 import getDevServer from '../../cfg/dev_server'
 
 import {AUX_PAGES, handler} from '../../release/lambdas/aux_pages_redirect'
-// TODO(cyrille): Consider testing with other deployments.
-import cloudfront from '../../release/cloudfront/fr.json'
+import cloudformation from '../../release/cloudformation/main_template.json'
 
 
 interface LambdaAtEdgeRequest {
@@ -14,12 +14,9 @@ interface LambdaAtEdgeRequest {
 
 
 interface CloudFrontCacheBehavior {
-  LambdaFunctionAssociations?: {
-    Items?: readonly {
-      LambdaFunctionARN: string
-    }[]
-    Quantity: number
-  }
+  LambdaFunctionAssociations?: readonly {
+    LambdaFunctionARN: {Ref: string}
+  }[]
   PathPattern?: string
 }
 
@@ -34,51 +31,48 @@ function computeUriRedirect(uri: string): string {
   return calledUri
 }
 
+const cloudfront = cloudformation.Resources.CloudfrontDistribution.Properties.DistributionConfig
 // Select the CloudFront cache behavior for a given URL.
 function selectCloudfrontBehavior(url: string): CloudFrontCacheBehavior {
-  const matchBehavior = cloudfront.CacheBehaviors.Items.find((behavior: CloudFrontCacheBehavior) =>
+  const matchBehavior = cloudfront.CacheBehaviors.find((behavior: CloudFrontCacheBehavior) =>
     behavior.PathPattern && new RegExp(behavior.PathPattern.replace(/\*/, '.*')).test(url))
   return matchBehavior || cloudfront.DefaultCacheBehavior
 }
 
-interface BehaviorWithLambdaFunctions extends CloudFrontCacheBehavior {
-  LambdaFunctionAssociations: CloudFrontCacheBehavior['LambdaFunctionAssociations'] & {
-    Items: readonly {LambdaFunctionARN: string}[]
-  }
-}
 
+const cacheBehaviors: readonly CloudFrontCacheBehavior[] = cloudfront.CacheBehaviors
+// The ARN of the lambda Aux Pages Redirect.
+const auxPagesLambdaRef = 'LambdaAuxPageRedirect'
+const matchAllPatternString = '/.*/'
 
-const cacheBehaviors: readonly CloudFrontCacheBehavior[] = cloudfront.CacheBehaviors.Items
-// The URN of the lambda Aux Pages Redirect.
-const auxPagesLambda = cacheBehaviors.
-  filter((b: CloudFrontCacheBehavior): b is BehaviorWithLambdaFunctions =>
-    !!(b.LambdaFunctionAssociations && b.LambdaFunctionAssociations.Items)).
-  map(({LambdaFunctionAssociations}: BehaviorWithLambdaFunctions) =>
-    LambdaFunctionAssociations.Items[0].LambdaFunctionARN).
-  find((lambda: string): boolean => lambda.includes('bob-aux-pages-redirect'))
+describe('aux-pages-redirect lambda function', () => {
+  let devRedirects: readonly (Rewrite & {to: string})[] = []
+  before(async () => {
+    const {historyApiFallback: {rewrites}} = await getDevServer()
+    devRedirects = rewrites
+  })
 
-describe('aux-pages-redirect lambda function', async (): Promise<void> => {
   it('should not touch the landing page', (): void => {
     expect(computeUriRedirect('/')).to.equal('/')
   })
 
-  const {historyApiFallback: {rewrites: devRedirects}} = await getDevServer()
-  for (const {from, to} of devRedirects) {
-    if (!from || !to) {
-      continue
+  it('redirects URL examples to the proper client endpoint', (): void => {
+    expect(devRedirects).not.to.be.empty
+    for (const {from, to} of devRedirects) {
+      if (!from || !to || from.toString() === matchAllPatternString) {
+        continue
+      }
+      const urlExample = new RandExp(from).gen()
+      expect(computeUriRedirect(urlExample), `${urlExample} => ${to}`).to.equal(to)
     }
-    const urlExample = new RandExp(from).gen()
-    it(`redirects "${urlExample}" to the client endpoint "${to}"`, (): void => {
-      expect(computeUriRedirect(urlExample)).to.equal(to)
-    })
-  }
+  })
 
   for (const {redirect, urlTest} of AUX_PAGES) {
     const urlExample = new RandExp(urlTest).gen()
     it(`redirects "${urlExample}" to "${redirect}" and the client knows about it`, (): void => {
       const matchingEndpoints: string[] = []
       for (const {from, to} of devRedirects) {
-        if (to && from && from.test(urlExample)) {
+        if (to && from && from.toString() !== matchAllPatternString && from.test(urlExample)) {
           const name = to.slice(1).split('.')[0]
           matchingEndpoints.push(name)
         }
@@ -91,20 +85,22 @@ describe('aux-pages-redirect lambda function', async (): Promise<void> => {
 
   // CloudFront => aux_pages_redirect lambda.
 
-  for (const {LambdaFunctionAssociations, PathPattern} of cloudfront.CacheBehaviors.Items) {
-    if (!LambdaFunctionAssociations || !LambdaFunctionAssociations.Items) {
+  for (const {LambdaFunctionAssociations, PathPattern} of cacheBehaviors) {
+    if (!LambdaFunctionAssociations) {
       continue
     }
-    if (!LambdaFunctionAssociations.Items[0].LambdaFunctionARN.includes(
-      'bob-aux-pages-redirect')) {
+    if (LambdaFunctionAssociations[0].LambdaFunctionARN.Ref !== auxPagesLambdaRef) {
+      continue
+    }
+    if (!PathPattern) {
       continue
     }
     const urlExample = new RandExp(PathPattern.replace(/\*/, '.*')).gen()
     it(`redirects "${urlExample}" in Cloudfront to a client endpoint`, (): void => {
-      if (!LambdaFunctionAssociations || !LambdaFunctionAssociations.Items) {
+      if (!LambdaFunctionAssociations) {
         return
       }
-      expect(LambdaFunctionAssociations.Items[0].LambdaFunctionARN).to.equal(auxPagesLambda)
+      expect(LambdaFunctionAssociations[0].LambdaFunctionARN.Ref).to.equal(auxPagesLambdaRef)
       const redirected = computeUriRedirect(urlExample)
       expect(redirected).to.be.ok
       expect(redirected).not.to.equal('/')
@@ -127,11 +123,9 @@ describe('aux-pages-redirect lambda function', async (): Promise<void> => {
       continue
     }
     it(`redirects "${urlExample}" to "${redirect}" and CloudFront knows about it`, (): void => {
-      expect(auxPagesLambda).to.be.ok
-      const {LambdaFunctionAssociations: associations} = selectCloudfrontBehavior(urlExample)
-      const lambdas = (associations && associations.Items || []).
-        map(({LambdaFunctionARN}) => LambdaFunctionARN)
-      expect(lambdas, JSON.stringify(lambdas)).to.include(auxPagesLambda)
+      const {LambdaFunctionAssociations: associations = []} = selectCloudfrontBehavior(urlExample)
+      const lambdas = associations.map(({LambdaFunctionARN: {Ref}}) => Ref)
+      expect(lambdas, JSON.stringify(lambdas)).to.include(auxPagesLambdaRef)
     })
   }
 })

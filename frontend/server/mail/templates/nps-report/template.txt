@@ -1,1 +1,0 @@
-[http://6u2u.mjt.lu/tplimg/6u2u/b/0h1x/sl3jh.png]Hi,A blast to send email notifications including daily actions to users has justended. We sent {{var:count}} email(s).Errors during the blast:{% for error in var:errors %}{{ error }}{% endfor %}BobIf you received this email and you are not an admin of Bob, pleasecontact support@bob-emploi.fr to signal the bug.

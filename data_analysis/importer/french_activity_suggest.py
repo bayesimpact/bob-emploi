@@ -12,7 +12,7 @@ import json
 import os
 import time
 import typing
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from algoliasearch import search_client
 from algoliasearch import helpers
@@ -22,7 +22,7 @@ from bob_emploi.data_analysis.lib import cleaned_data
 
 
 def prepare_activities(data_folder: str = 'data', stats_filename: Optional[str] = None) \
-        -> List[Dict[str, Any]]:
+        -> list[dict[str, Any]]:
     """Prepare activities for upload to Algolia.
 
     Args:
@@ -51,7 +51,7 @@ def prepare_activities(data_folder: str = 'data', stats_filename: Optional[str] 
     activities['naf'] = activities.index
 
     return typing.cast(
-        List[Dict[str, Any]],
+        list[dict[str, Any]],
         activities[['objectID', 'naf', 'name', 'hiring']].to_dict(orient='records'))
 
 
@@ -71,7 +71,7 @@ def upload(batch_size: int = 5000) -> None:
         tmp_activities_index.set_settings(activities_index.get_settings())
         # TODO(pascal): Add synonyms if we start having some.
         for start in range(0, len(suggestions), batch_size):
-            tmp_activities_index.add_objects(suggestions[start:start + batch_size])
+            tmp_activities_index.save_objects(suggestions[start:start + batch_size])
 
         # OK we're ready finally replace the index.
         client.move_index(tmp_index_name, index_name)

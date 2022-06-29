@@ -1,0 +1,11 @@
+{
+  config: {
+    areaSuggest: 'CITY',
+    hasOCR: false,
+    hasUpskillingCoaching: false,
+    trainingLinkTemplate: 'https://nationalcareers.service.gov.uk/find-a-course/page?searchTerm={{jobName}}&distance=30%20miles&town={{cityName}}&orderByValue=Relevance&startDate=Anytime&courseType=&courseHours=&courseStudyTime=&filterA=true&page=1&D=1&coordinates={{longitude}}%7C{{latitude}}&campaignCode=',
+    trainingPartner: 'national-careers',
+    // TODO(pascal): Clean up this if we decide we don't want to use it anymore.
+    useLMI4All: false,
+  },
+}

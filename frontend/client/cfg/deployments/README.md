@@ -22,4 +22,4 @@ bob-dc usa up -d frontend-dev
 If no deployment is specified, it defaults to the `fr` deployment.
 
 All deployments are built nightly, and pushed
-as docker image `bayesimpact/bob-emploi-frontend:branch-master-nightly`.
+as docker image `bayesimpact/bob-emploi-frontend:branch-main-nightly`.

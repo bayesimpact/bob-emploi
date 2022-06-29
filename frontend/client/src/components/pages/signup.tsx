@@ -1,14 +1,14 @@
-import PropTypes from 'prop-types'
-import React, {useCallback, useEffect, useLayoutEffect, useState} from 'react'
+import _uniqueId from 'lodash/uniqueId'
+import React, {useCallback, useEffect, useLayoutEffect, useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useDispatch, useSelector} from 'react-redux'
 import {useHistory, useLocation} from 'react-router'
 
-import {DispatchAllActions, RootState, closeLoginModal, loginUserFromToken, openLoginModal,
+import type {DispatchAllActions, RootState} from 'store/actions'
+import {closeLoginModal, loginUserFromToken, openLoginModal,
   openRegistrationModal} from 'store/actions'
 import {parseQueryString} from 'store/parse'
 
-import Trans from 'components/i18n_trans'
 import {LoginButton, LoginMethods} from 'components/login'
 import isMobileVersion from 'store/mobile'
 import ModalCloseButton from 'components/modal_close_button'
@@ -76,6 +76,8 @@ const SignUpPageBase = (): React.ReactElement => {
     dispatch(closeLoginModal())
   }, [dispatch])
 
+  const titleId = useMemo(_uniqueId, [])
+
   if (isMobileVersion) {
     const containerStyle = {
       alignItems: 'center',
@@ -91,8 +93,9 @@ const SignUpPageBase = (): React.ReactElement => {
     }
     return <div style={containerStyle}>
       {canCloseModal ? <ModalCloseButton
-        style={closeButtonStyle} onClick={handleClick} /> : null}
-      <LoginMethods forwardLocation={state?.pathname || '/'} onFinish={handleClick} />
+        style={closeButtonStyle} onClick={handleClick} aria-describedby={titleId} /> : null}
+      <LoginMethods
+        forwardLocation={state?.pathname || '/'} onFinish={handleClick} titleId={titleId} />
     </div>
   }
   return <WaitingPage />
@@ -116,6 +119,7 @@ const closeStyle: React.CSSProperties = {
 const textBannerStyle: React.CSSProperties = {
   fontSize: 18,
   fontStyle: 'italic',
+  margin: 0,
   padding: isMobileVersion ? 20 : '33px 32px 35px',
 }
 
@@ -145,31 +149,32 @@ const SignUpBannerBase = (props: BannerProps): React.ReactElement|null => {
     ...(isMobileVersion ? {width: 'calc(100vw - 40px)'} : {}),
   }
 
+  const titleId = useMemo(_uniqueId, [])
+
+  if (!config.isLoginEnabled) {
+    return null
+  }
+
   if (!isShown) {
     // TODO(pascal): Add a transition when hiding the banner.
     return null
   }
 
   return <aside style={bannerStyle}>
-    <ModalCloseButton onClick={handleClose} style={closeStyle} />
+    <ModalCloseButton onClick={handleClose} style={closeStyle} aria-describedby={titleId} />
     {isMobileVersion ? null :
       <img src={bobHeadImage} alt="" style={{marginLeft: 32, width: 56}} />}
-    {isMobileVersion ? <Trans style={textBannerStyle} parent="span">
-
-      Pensez à sauvegarder votre progression
-    </Trans> : <Trans style={textBannerStyle} parent="span">
-      Pensez à créer votre compte pour sauvegarder votre progression
-    </Trans>}
+    <p style={textBannerStyle} id={titleId}>
+      {isMobileVersion ?
+        t('Pensez à sauvegarder votre progression') :
+        t('Pensez à créer votre compte pour sauvegarder votre progression')}
+    </p>
     <span style={{flex: 1}}></span>
     <LoginButton
       type="navigation" isRound={true} visualElement="diagnostic">
       {t('Créer mon compte')}
     </LoginButton>
   </aside>
-}
-SignUpBannerBase.propTypes = {
-  onClose: PropTypes.func,
-  style: PropTypes.object,
 }
 const SignUpBanner = React.memo(SignUpBannerBase)
 

@@ -1,7 +1,8 @@
 import i18n from 'i18next'
 
 import {forwardCancellation} from 'store/promise'
-import {HTTPRequest, HTTPResponse, cleanHtmlError, hasErrorStatus} from 'store/http'
+import type {HTTPRequest, HTTPResponse} from 'store/http'
+import {cleanHtmlError, hasErrorStatus} from 'store/http'
 
 async function handleJsonResponse<T>(response: HTTPResponse): Promise<T> {
   // Errors are in HTML, not JSON.
@@ -16,6 +17,8 @@ Promise<HTTPResponse> => {
   const controller = isCancelable ? new AbortController() : {abort: () => void 0, signal: undefined}
   return forwardCancellation(
     fetch(path, {
+      // TODO(pascal): Re-enable cookies from the client but probably not on all URLs. They were
+      // removed in da1a8acd089d97163b54bfe70b87e348da484205 but we are now going to use them.
       credentials: 'omit',
       ...request,
       headers: {
@@ -170,6 +173,10 @@ function userCountsGet(): Promise<bayes.bob.UsersCount> {
   return getJson('/api/usage/stats')
 }
 
+function logoutPost(): Promise<unknown> {
+  return postJson('/api/user/logout', undefined)
+}
+
 function markUsedAndRetrievePost(userId: string, authToken: string): Promise<bayes.bob.User> {
   return postJson(`/api/app/use/${userId}`, undefined, {authToken, isExpectingResponse: true})
 }
@@ -186,6 +193,10 @@ Promise<bayes.bob.QuickDiagnostic> {
   const path = projectId ? `/api/user/${userId}/update-and-quick-diagnostic/project/${projectId}` :
     `/api/user/${userId}/update-and-quick-diagnostic`
   return postJson(path, data, {authToken, isExpectingResponse: true})
+}
+
+function projectComputeActionsPost(user: bayes.bob.User): Promise<bayes.bob.Actions> {
+  return postJson('/api/project/compute-actions', user, {isExpectingResponse: true})
 }
 
 function projectComputeAdvicesPost(user: bayes.bob.User): Promise<bayes.bob.Advices> {
@@ -221,6 +232,19 @@ function advicePost(
   return postJson(
     `/api/user/${userId}/project/${projectId}/advice/${adviceId}`, advice,
     {authToken, isExpectingResponse: true})
+}
+
+function actionPost(
+  {userId}: bayes.bob.User, {projectId}: bayes.bob.Project, {actionId}: bayes.bob.Action,
+  action: bayes.bob.Action, authToken: string): Promise<bayes.bob.Action> {
+  return postJson(
+    `/api/user/${userId}/project/${projectId}/action/${actionId}`, action,
+    {authToken, isExpectingResponse: true})
+}
+
+function listUserEmailsGet(
+  {userId}: bayes.bob.User, authToken: string): Promise<bayes.bob.Campaigns> {
+  return getJson(`/api/user/${userId}/emails`, authToken)
 }
 
 function sendEmailPost(
@@ -317,7 +341,25 @@ async function upskillingSectionsMoreJobPost(
   return jobs || []
 }
 
+function upskillingSaveUser(user: bayes.bob.User): Promise<unknown> {
+  return postJson('/api/upskilling/user', user)
+}
+
+function feedbackVolunteeringSend(email: string, topic: string): Promise<unknown|string> {
+  return fetch(`/api/feedback/volunteer/${topic}?email=${email}`)
+}
+
+function actionPlanEmailPost(userId: string, projectId: string, authToken: string):
+Promise<unknown> {
+  return postJson(`/api/user/${userId}/project/${projectId}/send-action-plan`, undefined, {
+    authToken,
+    isExpectingResponse: true,
+  })
+}
+
 export {
+  actionPlanEmailPost,
+  actionPost,
   advicePost,
   adviceTipsGet,
   aliUserDataPost,
@@ -331,10 +373,13 @@ export {
   getJson,
   jobRequirementsGet,
   jobsGet,
+  listUserEmailsGet,
+  logoutPost,
   markUsedAndRetrievePost,
   migrateUserToAdvisorPost,
   onboardingDiagnosePost,
   postJson,
+  projectComputeActionsPost,
   projectComputeAdvicesPost,
   projectDiagnosePost,
   projectLaborStatsPost,
@@ -347,6 +392,8 @@ export {
   strategyDelete,
   strategyPost,
   supportTicketPost,
+  feedbackVolunteeringSend,
+  upskillingSaveUser,
   upskillingSectionsMoreJobPost,
   upskillingSectionsPost,
   userAuthenticate,

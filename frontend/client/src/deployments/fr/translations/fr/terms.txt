@@ -1,0 +1,244 @@
+### Préambule
+
+**{{productName}} est une plate-forme indépendante développée par l'association {{orgName}}. L'objectif du projet et le fonctionnement de l'association sont dédiés à l'intérêt général. Les contenus du site et de la plate-forme sont mis à disposition en licence Creative Commons. Le Code Source du logiciel est mis à disposition en logiciel libre.**
+
+**L'algorithme développé par l'association analyse des données du marché du travail ainsi que des millions de parcours de recherche d'emploi afin de permettre à chacun de bénéficier des bons conseils au bon moment de façon personnalisée. Les données utilisées par l'algorithme ne seront jamais utilisées pour un autre usage que d'améliorer les recommandations du site et de l'application. Elles resteront sous le contrôle de leurs usagers. Elles ne seront ni utilisées commercialement, ni cédées à des tiers.**
+
+## 1. Définitions
+
+« {{productName}} » ou « LE SERVICE » correspond à une plate-forme qui propose des conseils et actions  à des usagers en recherche d'emploi en fonction de leur profil.
+
+Pour faire fonctionner cette plate-forme, {{productName}} exploite des bases de données du marché du travail, de millions de parcours de recherche d'emploi, de formations, d'annonces et d'usage (ci-après « LES INFORMATIONS »).
+
+L'association « {{orgName}} » est le développeur et l'hébergeur de la plate-forme est OVH.
+
+Les « usagers » sont les personnes qui utilisent la plate-forme.
+
+Le service est accessible sur « LE SITE » à l'adresse : {{canonicalUrl}}
+
+## 2. Validité et acceptation
+
+Ces conditions générales sont communiquées à chaque usager qui en prend connaissance et qui l'accepte en utilisant la plate-forme, ainsi qu'en cochant une case manifestant son acceptation lors de la création de son compte.
+
+Les présentes conditions sont accessibles à tout moment sur le site.
+
+Elles régissent les relations entre les usagers et {{productName}} dans le cadre de l'utilisation du service.
+
+Les usagers reconnaissent avoir le droit d'exploiter le service.
+
+L'utilisation du service et l'exploitation des informations implique leur acceptation entière et sans réserve. Leur non-acceptation entraîne la renonciation à l'utilisation du service ainsi qu'à l'exploitation des informations.
+
+## 3. Champ d'application
+
+Le présent contrat régit exclusivement l'usage de {{productName}} par les usagers.
+
+Cette prestation est effectuée par {{orgName}} gratuitement et sans autre contrepartie que le respect des présentes conditions d'utilisation.
+
+L'exécution des formations n'est pas régie par le présent contrat.
+
+La responsabilité de {{orgName}} se limite exclusivement à faciliter l'accès à la plate-forme.
+
+FORMATIONS. Les usagers font leur affaire des circonstances relatives au déroulement des formations qu'ils choisissent. {{orgName}} n'est pas responsable de leur exécution. {{orgName}} n'est pas un organisme de formation. {{orgName}} ne fournit pas de services de formations. {{orgName}} exclut toute responsabilité sur ces points dans les limites autorisées par la loi.
+
+ANNONCES D'EMPLOI. Les usagers font leur affaire des circonstances relatives au déroulement des annonces d'emploi auxquelles ils choisissent de répondre. {{orgName}} n'est pas responsable de leur exécution. {{orgName}} n'est pas un organisme de travail temporaire, ni de portage salarial. {{orgName}} exclut toute responsabilité sur ces points dans les limites autorisées par la loi.
+
+## 4. Description du service
+
+{{productName}} est une plate-forme indépendante développée par l'association {{orgName}}. L'algorithme de {{productName}} analyse des données du marché du travail ainsi que des millions de parcours de recherche d'emploi afin de permettre à chacun de bénéficier des bons conseils au bon moment de façon personnalisée.
+
+#### 4.1. Obtenir un plan d'action sur mesure
+{{productName}} étudie le profil de l'usager et le marché du travail actuel pour l'aider à identifier comment booster sa recherche d'emploi.
+
+#### 4.2. Recevoir des nouveaux conseils chaque jour
+Tous les jours, des actions concrètes sont proposées aux usagers pour avancer sur leur plan d'action.
+
+
+#### 4.3. Découvrir de nouveaux métiers à son image
+L'algorithme de {{productName}} apprend au contact des usagers. En utilisant l'application ils améliorent la pertinence des recommandations qui seront faites pour eux.
+
+
+## 5. Usage de {{productName}}
+
+### 5.1. Utilisation de {{productName}}
+Dans le cadre de leur utilisation de la plate-forme, les usagers s'engagent à respecter les lois et règlements en vigueur et à ne pas porter atteinte aux droits de tiers ou à l'ordre public.
+
+Les usagers sont seuls responsables du bon accomplissement de toutes les formalités notamment administratives, fiscales, sociales et de tous les paiements de cotisations, taxes ou impôts de toutes natures qui leur incombent pour pouvoir effectuer les actions proposées sur {{productName}}. Concernant les formations présentées, il est de leur seule responsabilité d'obtenir les diplômes, brevets, licences, accréditations, équipements et autorisations qui seraient nécessaires à ces formations. La responsabilité de {{orgName}} ne pourra en aucun cas être engagée à ce titre.
+
+Les usagers reconnaissent avoir pris connaissance des caractéristiques et contraintes, notamment techniques, de la plate-forme. Il sont seuls responsables de son utilisation. Les usagers sont informés et acceptent que la mise en œuvre de la plate-forme nécessite une connexion à internet dont ils sont seuls responsables, et que la qualité du service puisse en dépendre directement.
+
+Les usagers sont également seuls responsables des relations qu'ils pourront nouer avec les responsables des services, notamment les formations, auxquels ils feront appel en suivant les suggestions de la plate-forme. Ils sont également seuls responsables des relations qu'ils pourront nouer avec les responsables des offres d'emploi auxquelles ils choisiront de répondre.
+
+Le cas échéant, il est de la responsabilité des usagers de conclure des accords de confidentialité, de non-concurrence ou de respecter le secret professionnel quand cela est nécessaire pour qu'ils puissent exploiter des facilités ou des services proposés sur la plate-forme. La responsabilité de {{productName}} ne pourra en aucun cas être engagée à ce titre.
+
+Les usagers s'engagent à faire un usage strictement personnel de {{productName}}. Ils s'interdisent en conséquence de céder, concéder ou transférer tout ou partie de leurs droits ou obligations au titre des présentes à un tiers, de quelque manière que ce soit.
+
+Les usagers s'interdisent également tout référencement, scan, aspiration, etc. des informations de {{productName}}.
+
+Le cas échéant, les usagers s'engagent à fournir à {{orgName}} toutes les informations nécessaires à la bonne exécution de {{productName}}.
+
+Plus généralement, les usagers s'engagent à coopérer activement avec {{productName}} en vue de la bonne exécution des présentes conditions.
+
+La consultation des formations est un service gratuit pour les usagers, sous réserve de la création d'un compte.
+
+### 5.2. Les comptes usagers
+Les usagers ne peuvent avoir qu'un unique compte {{productName}}. Ils sont entièrement et pleinement responsables de l'activité de leur compte {{productName}}, de sa confidentialité, ainsi que de la licéité des actions pour lesquelles il est utilisé.
+
+Les comptes {{productName}} sont protégés par un mot de passe choisi par l'usager. {{productName}} s'engage à ne pas révéler ce mot de passe à des tiers. Les usagers sont entièrement et pleinement responsable de la sécurité de leur compte à cet égard. Ils s'engagent notamment à communiquer le plus rapidement possible à {{orgName}} toute utilisation non autorisée qui en serait faite.
+
+Les usagers s'engagent à fournir des informations exactes, à jour et complètes au moment de la procédure d'enregistrement. Ils s'engagent également à les mettre à jour au fur et à mesure de leur évolution.
+
+{{orgName}} se réserve le droit de suspendre ou de supprimer ad nutum tout compte usager à tout moment et pour toute raison, notamment pour avoir créé plusieurs comptes, pour avoir transmis de fausses informations, pour avoir laissé des informations obsolètes, ou pour exploiter un compte à des fins illicites.
+
+Les usagers peuvent également créer un compte en se connectant à leurs « comptes tiers » ouverts auprès de certains sites tiers de réseaux sociaux, notamment Facebook et Google, via la plate-forme {{productName}}. Les fonctionnalités de {{productName}} permettent de lier leur compte {{productName}} à des comptes tiers, soit en fournissant les informations de connexion, ou en autorisant {{productName}} à accéder au compte tiers, conformément aux conditions qui régissent leur utilisation. En procédant de la sorte, l'usager doit être autorisé à divulguer les informations de connexion de son compte tiers et ne peut engager {{productName}} à payer des frais ni à se soumettre aux restrictions d'utilisation imposées par le fournisseur de ce compte tiers. En autorisant {{productName}} à accéder à un compte tiers, l'usager reconnaît que {{productName}} aura accès, rendra disponible et conservera les contenus et les données personnelles de ce compte pour que ceux-ci soient exploitables par {{productName}}. Tous ces contenus de ce compte exploités par la plate-forme seront considérés comme des contenus au sens des présentes conditions. Toutes les données personnelles de compte exploitées par {{productName}} seront considérées comme des données personnelles au sens des présentes conditions. La résiliation ou l'inaccessibilité du compte tiers peut entraîner l'indisponibilité des contenus et des données qui en sont issus pour {{productName}}. La connexion entre le compte {{productName}} et le compte tiers peut être désactivée à tout moment. La relation des usagers avec les comptes tiers est exclusivement régie par les accords qui les unissent, et {{productName}} décline toute responsabilité à cet égard.
+
+### 5.3. Gratuité de l'usage de {{productName}}
+L'usage de la plate-forme {{productName}} est gratuit.
+
+## 6. Responsabilités et garanties
+
+### 6.1. Absence de responsabilité au regard des formations
+
+{{orgName}} exclut toute responsabilité concernant le respect par les usagers des accords ou obligations passés avec des tiers, ainsi que de la législation ou de la réglementation en vigueur.
+
+{{orgName}} n'assure ni ne garantit la mise à disposition des formations ou leur exécution pour le compte de l'usager. {{orgName}} ne s'engage qu'à les diffuser dans les meilleurs conditions rendues possibles par le service. {{orgName}} n'est et ne sera engagé par aucun accord supplémentaire passé avec les formateurs.
+
+
+{{orgName}} n'assure ni ne garantit le résultat des réponses aux offres d'emplois qui seront proposées aux usagers. {{orgName}} ne s'engage qu'à les diffuser dans les meilleures conditions rendues possibles par le service. {{orgName}} n'est et ne sera engagé par aucun accord ultérieurement passé avec les employeurs.
+
+### 6.2. Absence de responsabilité au regard du fonctionnement de {{productName}}
+
+{{productName}} ne peut garantir que son service ne subira aucune interruption. {{productName}} s'engage à fournir son service avec diligence et selon les règles de l'art, étant précisé qu'il ne s'agit que d'une obligation de moyens, à l'exclusion de toute obligation de résultat, ce que les usagers reconnaissent et acceptent expressément. {{productName}} ne saurait être tenu responsable des difficultés ou impossibilités momentanées d'accès à la plate-forme qui auraient pour origine des circonstances qui lui sont extérieures, la force majeure, ou encore qui seraient dues à des perturbations des réseaux de télécommunication.
+
+{{productName}} ne peut garantir les usagers en cas de perte éventuelle des informations de leur compte. Il appartient aux usagers de sauvegarder une copie de leurs informations. Ils ne peuvent prétendre à aucun dédommagement en raison de quelque perte de données que ce soit.
+
+La plate-forme est fournie en l'état. {{productName}} ne peut garantir aux usagers qu'elle soit totalement exempte d'erreurs, de vices, de défauts. La plate-forme est développée de façon standardisée pour l'ensemble des usagers. Elle n'est nullement conçue pour s'adapter à leurs contraintes personnelles.
+
+En tout état de cause, la responsabilité susceptible d'être encourue par {{productName}} serait expressément limitée aux seuls dommages directs avérés subis par les usagers.
+
+{{productName}} se réserve expressément la faculté d'interrompre momentanément l'accès à son service pour des raisons de maintenance.
+
+### 6.3. Comportements interdits
+
+Au-delà des autres interdictions prévues dans les présentes conditions, les usagers s'engagent à utiliser la plate-forme de façon vertueuse. Ils s'interdisent notamment d'utiliser la plate-forme aux fins suivantes :
+l'exercice d'activités illégales, frauduleuses ou portant atteinte aux droits ou à la sécurité des tiers ;
+l'atteinte à l'ordre public ou la violation des lois et règlements en vigueur ;
+l'intrusion dans le système informatique d'un tiers ou toute activité de nature à nuire, contrôler, interférer, ou intercepter tout ou partie du système informatique d'un tiers, en violer l'intégrité ou la sécurité ;
+l'envoi d'emails ou de sollicitations commerciales non sollicités ;
+les manipulations destinées à améliorer le référencement d'un site tiers ;
+l'aide ou l'incitation, sous quelque forme et de quelque manière que ce soit, à un ou plusieurs des actes et activités décrits ci-dessus ;
+et plus généralement toute pratique détournant le service à des fins autres que celles pour lesquelles il a été conçu.
+
+Les usagers s'engagent à respecter la continuité de service de la plate-forme. Ils s'interdisent notamment :
+tous comportements de nature à interrompre, suspendre, ralentir ou empêcher la continuité du service ;
+toutes intrusions ou tentatives d'intrusion dans le service ;
+tous détournements des ressources système du service ;
+toutes actions de nature à imposer une charge disproportionnée sur les infrastructures du service ;
+toutes atteintes aux mesures de sécurité et d'authentification ;
+tous actes de nature à porter atteinte aux droits et intérêts financiers, commerciaux ou moraux de {{productName}} ou des usagers du service.
+
+Les usagers s'engagent à respecter la valeur de la plate-forme. Ils s'interdisent de monnayer, vendre ou concéder tout ou partie de l'accès à la plate-forme.
+
+### 6.4. Garantie des usagers envers Bayes Impact France
+
+Les usagers garantissent {{orgName}} contre toutes plaintes, réclamations, actions, revendications quelconque que {{orgName}} pourrait subir du fait de la violation par eux de l'une quelconque de leurs obligations ou garanties aux termes des présentes conditions générales.
+
+Les usagers s'engagent à indemniser {{orgName}} de tout préjudice subi et à payer tous les frais, charges, condamnations supportés de ce fait.
+
+Les usagers renoncent à tous recours envers {{orgName}} pour tout dommage (matériels, corporels, immatériels consécutifs ou non) subis à l'occasion de l'exécution ou de la non-exécution d'une formation.
+
+## 7. Liens vers d'autres sites
+
+{{productName}} peut proposer des liens vers des sites internet de tiers. Les sites liés ne sont pas sous le contrôle de {{orgName}} qui n'est pas responsable de leur contenu et n'offre aucune garantie à leur égard. Il appartient aux usagers de faire toutes les vérifications nécessaires ou opportunes avant de procéder à une quelconque transaction avec l'un de ces tiers.
+
+## 8. Notification et retrait de contenus illicites
+
+{{productName}} permet aux usagers de notifier les contenus ou les comportements illicites en envoyant un email à {{notifyEmailAddress}}.
+
+{{orgName}} s'efforcera raisonnablement de retirer le contenu illicite, ou de supprimer les comptes délictueux, dans les meilleurs délais et dans le cadre de la loi existante.
+
+## 9. Licence et propriété intellectuelle
+
+Les usagers reconnaissent expressément la propriété de {{orgName}} sur l'ensemble de la plate-forme, et notamment sur les systèmes, logiciels, structures, infrastructures, bases de données et contenus de toute nature (textes, images, visuels, musiques, logos, marques, base de données, etc.) qui sont exploités par {{orgName}} pour le service et sont protégés par les droits d'auteur, les droits de propriété intellectuelle, les droits de propriété industrielle ou les droits des producteurs de bases de données en vigueur.
+
+Mais les contenus du site et de la plateforme sont mis à disposition en licence Creative Commons. Le Code Source du logiciel est mis à disposition en logiciel libre.
+
+Les usagers s'interdisent de copier et de détourner à leurs fins ou à celles de tiers le concept, les technologies ou tout autre élément de la plate-forme. Tous désassemblages, décompilations, décryptages, extractions, réutilisations, copies et plus généralement, tous actes de reproduction, représentation, diffusion et utilisation de l'un quelconque de ces éléments, en tout ou partie, sans l'autorisation de {{orgName}} sont strictement interdits et pourront faire l'objet de poursuites judiciaires.
+
+{{orgName}} ne revendique aucune propriété sur les éventuels contenus mis en ligne par les usagers sur la plate-forme, ni sur leurs données personnelles. En revanche, mais pour les seuls besoins du fonctionnement de {{productName}} et de sa promotion, les usagers concèdent expressément à {{orgName}} et à ses affiliés le droit irrévocable de les rendre disponibles, et de librement les utiliser, copier, publier, traduire et diffuser sans autre forme d'accord supplémentaire, sur quelque support et sous quelque forme que ce soit. Ils autorisent également {{orgName}} à concéder ce droit à des partenaires dans les mêmes conditions et pour les mêmes finalités.
+
+## 10. Données personnelles
+
+L'association {{orgName}} est soucieuse de la protection des données personnelles. Elle s'engage à respecter le meilleur niveau de protection en conformité avec la réglementation Informatique et Libertés.
+
+Le responsable du traitement est l'association {{orgName}}.
+
+Afin de proposer le service, {{orgName}} recueille des données personnelles sur les usagers, notamment : e-mail, nom facultatif, prénom, pseudonyme, données de connexion, et plus généralement toute donnée les concernant et ayant un caractère personnel au sens de la législation en vigueur et qui est collectée par l'intermédiaire du service. Ces données sont également conservées à des fins de sécurité dans le cadre des obligations légales et réglementaires. Elles ne seront ni cédées à des tiers, ni exploitées à des fins commerciales.
+
+Les usagers acceptent de communiquer leurs données personnelles afin de permettre l'exploitation du service. Ils acceptent notamment d'être contactés pour recevoir des informations de {{productName}} et de ses partenaires à propos de la plate-forme.
+
+Les usagers disposent à tout moment d'un droit d'accès, de rectification et de suppression des données les concernant par e-mail : {{dataPrivacyEmailAddress}}
+
+Les usagers peuvent se désinscrire de {{productName}} à tout moment, en adressant une demande à cet effet à : {{unsusbscribeEmailAddress}}
+
+La désinscription est effective immédiatement, et sera effective dès que le processus informatique de suppression sera achevé, ce qui peut prendre plusieurs semaines. Elle entraîne la suppression automatique du compte de l'usager.
+
+Afin de garantir au mieux la protection des données personnelles de ses usagers, l'association {{orgName}} est dotée d'un Correspondant Informatique et Libertés.
+
+## 11. Dispositions générales
+
+Au cas où des dispositions des présentes conditions seraient déclarées invalides ou inapplicables, les autres resteraient en vigueur et de plein effet.
+
+{{orgName}} aura le droit de céder, transmettre, sous-traiter ou déléguer des droits, des devoirs ou des obligations au titre des présentes conditions.
+
+Les usagers conviennent que ni les présentes conditions, ni l'usage du service ne créent de société ou d'entreprise commune, de contrat de travail ou de mandat entre eux et {{orgName}}.
+
+Dans l'hypothèse d'une traduction des présentes conditions dans une ou plusieurs langues, la langue d'interprétation sera la langue française en cas de contradiction ou de contestation sur la signification d'un terme ou d'une disposition.
+
+Les présentes conditions sont souscrites pour une durée indéterminée.
+
+## 12. Modification
+
+{{orgName}} se réserve le droit de modifier les présentes conditions générales à tout moment, y compris en ce qui concerne les frais d'utilisation ainsi que les éléments relatifs aux données personnelles.
+
+Les usagers seront informés de ces modifications par tout moyen utile, dont notamment la publication sur {{productName}}.
+
+La date de mise à jour sera toujours indiquée en haut et en bas des présentes conditions.
+
+L'utilisation du service après que l'affichage d'une modification sur {{productName}} implique l'acceptation pleine et entière des présentes conditions modifiées.
+
+La seule façon de refuser l'acceptation d'une modification des présentes conditions est de cesser d'utiliser {{productName}}.
+
+L'usager qui n'accepte pas les conditions générales modifiées doit se désinscrire du service.
+
+Tout usager qui a recours au service postérieurement à l'entrée en vigueur des conditions générales modifiées est réputé avoir accepté ces modifications.
+
+## 13. Litiges
+
+{{orgName}} se réserve le droit de prendre toute mesure appropriée en cas de manquement par les usagers aux présentes conditions, ou d'infraction aux lois et règlements en vigueur, et notamment :
+•         suspendre ou résilier l'accès au service ;
+•         supprimer tout contenu ou formation mis en ligne sur le site ;
+•         publier tout message d'information utile ;
+•         avertir toute autorité concernée ;
+•         engager toute action judiciaire.
+
+L'utilisation du service est soumise à la loi française.
+
+En cas de litige, les tribunaux du ressort de Paris sont seuls compétents.
+
+Préalablement à tout recours au juge arbitral ou étatique, les usagers s'obligent à négocier avec {{orgName}} dans un esprit de loyauté et de bonne foi un accord amiable en cas de survenance de tout conflit relatif à la plate-forme ou aux présentes conditions, y compris portant sur leur validité.
+
+Les usagers souhaitant mettre en œuvre le processus de négociation devront en informer {{orgName}} par lettre recommandée avec accusé de réception en indiquant les éléments du conflit. Une réunion au minimum sera alors organisée entre les usagers et {{orgName}}. Si, au terme d'un délai de six mois, les usagers et {{orgName}} ne parvenaient pas à s'entendre, le différend sera soumis à la juridiction compétente désignée ci-dessus. Le cours de la prescription sera suspendu à compter de la mise en œuvre du processus de négociation soit la date de réception de l'acte d'information envoyé par lettre recommandée avec accusé de réception. La suspension du cours de la prescription prendra fin à la date de la signature du procès-verbal de conciliation ou de non-conciliation. En cas de refus des usagers ou de {{orgName}} de signer ledit procès-verbal, l'autre partie peut prendre acte de ce refus en l'informant qu'à défaut de réaction de sa part dans un délai d'un mois, la saisine du juge compétent sera possible. Durant tout le processus de négociation et jusqu'à son issue, les usagers s'interdisent d'exercer toute action en justice contre {{orgName}} pour le conflit objet de la négociation.
+
+## 14. Coordonnées du responsable et de l'hébergeur
+
+{{productName}} est édité par l'association {{orgName}}
+Le responsable de la publication est : Paul DUAN
+Adresse : 16 rue du Caire, 75002, Paris
+Téléphone : 06 65 14 73 87
+Contact mail : {{contactEmailAddress}}
+
+{{productName}} est hébergé par la société OVH, située à 2 rue Kellermann, 59100, Roubaix, téléphone 09 72 10 10 07.
+
+## 15. Date
+
+Les présentes conditions générales sont entrées en vigueur le : {{publishedDate}}

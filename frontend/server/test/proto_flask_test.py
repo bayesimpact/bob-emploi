@@ -28,7 +28,7 @@ class DecoratorTestCase(unittest.TestCase):
         with app.test_request_context(method='POST',
                                       data='{"name": "A1234"}',
                                       content_type='application/json'):
-            self.assertEqual('{\n  "name": "A1234"\n}', _func())
+            self.assertEqual('{\n  "name": "A1234"\n}', _func().get_data(as_text=True))
 
     def test_proto_api_wrong_return(self) -> None:
         """Check that @flask_api enforces the type of the return value."""
@@ -161,8 +161,8 @@ class DecoratorTestCase(unittest.TestCase):
         with app.test_request_context(method='POST',
                                       data='CgVBMTIzNA==',
                                       content_type='application/x-protobuf-base64'):
-            self.assertEqual(
-                '{\n  "name": "A1234"\n}', _func())  # pylint: disable=no-value-for-parameter
+            response = _func()  # pylint: disable=no-value-for-parameter
+            self.assertEqual('{\n  "name": "A1234"\n}', response.get_data(as_text=True))
 
     def test_proto_api_wire_format_input_errors(self) -> None:
         """Errors with wire format for input of @flask_api."""
@@ -197,7 +197,7 @@ class DecoratorTestCase(unittest.TestCase):
                                       headers=[('Accept', '*/*')],
                                       content_type='application/json'):
             self.assertEqual(
-                '{\n  "name": "A1234"\n}', _func())  # pylint: disable=no-value-for-parameter
+                '{\n  "name": "A1234"\n}', _func().get_data(as_text=True))  # pylint: disable=no-value-for-parameter
 
 
 if __name__ == '__main__':

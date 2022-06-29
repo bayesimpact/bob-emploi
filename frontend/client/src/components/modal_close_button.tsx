@@ -1,5 +1,4 @@
 import CloseIcon from 'mdi-react/CloseIcon'
-import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
 import {useTranslation} from 'react-i18next'
@@ -12,6 +11,7 @@ import {SmoothTransitions} from 'components/theme'
 
 
 interface ButtonProps {
+  ['aria-describedby']?: string
   onClick: () => void
   shouldCloseOnEscape?: boolean
   style?: RadiumCSSProperties
@@ -20,11 +20,11 @@ interface ButtonProps {
 
 
 const ModalCloseButton = (props: ButtonProps): React.ReactElement => {
-  const {t} = useTranslation()
+  const {t} = useTranslation('components')
   const {shouldCloseOnEscape, onClick, style, ...otherProps} = props
   const closeButtonStyle: RadiumCSSProperties = useMemo((): RadiumCSSProperties => ({
     ':hover': {
-      backgroundColor: colors.SLATE,
+      backgroundColor: colors.MODAL_CLOSE_BACKGROUND_HOVER,
     },
     'alignItems': 'center',
     'backgroundColor': colors.CHARCOAL_GREY,
@@ -48,14 +48,9 @@ const ModalCloseButton = (props: ButtonProps): React.ReactElement => {
   const [radiumProps] = useRadium<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
     {style: closeButtonStyle})
   useKeyListener('Escape', shouldCloseOnEscape ? onClick : undefined, undefined, 'keydown')
-  return <button {...otherProps} {...radiumProps} onClick={onClick}>
-    <CloseIcon size={19} aria-label={t('Fermer')} />
+  return <button {...otherProps} {...radiumProps} onClick={onClick} type="button">
+    <CloseIcon size={19} aria-label={t('Fermer')} role="img" />
   </button>
-}
-ModalCloseButton.propTypes = {
-  onClick: PropTypes.func.isRequired,
-  shouldCloseOnEscape: PropTypes.bool,
-  style: PropTypes.object,
 }
 
 

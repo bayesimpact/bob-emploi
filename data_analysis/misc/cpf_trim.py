@@ -14,13 +14,13 @@ docker-compose run --rm data-analysis-prepare \
 import argparse
 import csv
 import json
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, TextIO
+from typing import Any, Iterable, Iterator, Optional, Sequence, TextIO
 
 import tqdm
 
 
-def _load_trainings(filename: str) -> Iterator[Dict[str, Any]]:
-    with open(filename, 'rt') as open_file:
+def _load_trainings(filename: str) -> Iterator[dict[str, Any]]:
+    with open(filename, 'rt', encoding='utf-8') as open_file:
         for line in open_file:
             if not line.startswith('{'):
                 continue
@@ -30,7 +30,7 @@ def _load_trainings(filename: str) -> Iterator[Dict[str, Any]]:
             yield json.loads(line)
 
 
-def _flatten_on(root: Dict[str, Any], fields: Sequence[str]) -> Iterator[Dict[str, Any]]:
+def _flatten_on(root: dict[str, Any], fields: Sequence[str]) -> Iterator[dict[str, Any]]:
     if not fields or fields[0] not in root:
         yield root
         return
@@ -42,7 +42,7 @@ def _flatten_on(root: Dict[str, Any], fields: Sequence[str]) -> Iterator[Dict[st
             yield root
             return
         for flattened in _flatten_on(root[field], other_fields):
-            yield dict(root, **{field: flattened})
+            yield root | {field: flattened}
         return
 
     if not isinstance(root[field], list):
@@ -50,14 +50,14 @@ def _flatten_on(root: Dict[str, Any], fields: Sequence[str]) -> Iterator[Dict[st
         return
 
     if not root[field]:
-        yield dict(root, **{field: None})
+        yield root | {field: None}
         return
 
     for value in root[field]:
-        yield dict(root, **{field: value})
+        yield root | {field: value}
 
 
-def _flatten_trainings(field: str, trainings: Iterator[Dict[str, Any]]) -> Iterator[Dict[str, Any]]:
+def _flatten_trainings(field: str, trainings: Iterator[dict[str, Any]]) -> Iterator[dict[str, Any]]:
     field_parts = field.split('.') if field else []
     for training in trainings:
         yield from _flatten_on(training, field_parts)
@@ -71,14 +71,14 @@ def _get_nested_value(root: Any, fields: Sequence[str]) -> Any:
     return _get_nested_value(root[fields[0]], fields[1:])
 
 
-def _project_training(training: Dict[str, Any], fields: Iterable[str]) -> Dict[str, Any]:
+def _project_training(training: dict[str, Any], fields: Iterable[str]) -> dict[str, Any]:
     return {
         field: _get_nested_value(training, field.split('.'))
         for field in fields
     }
 
 
-def main(string_args: Optional[List[str]] = None, out: Optional[TextIO] = None) -> None:
+def main(string_args: Optional[list[str]] = None, out: Optional[TextIO] = None) -> None:
     """Trim CPF trainings."""
 
     parser = argparse.ArgumentParser()
@@ -98,7 +98,7 @@ def main(string_args: Optional[List[str]] = None, out: Optional[TextIO] = None) 
 
     fieldnames = args.fields.split(',')
     flatten_trainings = _flatten_trainings(args.flatten, _load_trainings(args.in_json))
-    with open(args.out_csv, 'w') as out_file:
+    with open(args.out_csv, 'w', encoding='utf-8') as out_file:
         writer = csv.DictWriter(out_file, fieldnames=fieldnames)
         writer.writeheader()
 

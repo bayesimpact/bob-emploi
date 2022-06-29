@@ -1,7 +1,8 @@
 import React, {useCallback, useState} from 'react'
 import {useDispatch} from 'react-redux'
 
-import {DispatchAllActions, displayToasterMessage} from 'store/actions'
+import type {DispatchAllActions} from 'store/actions'
+import {displayToasterMessage} from 'store/actions'
 
 import BookmarkletInstallation from 'components/bookmarklet_installation'
 import Button from 'components/button'
@@ -98,7 +99,7 @@ const ImiloIntegrationPageBase = (): React.ReactElement => {
     try {
       return JSON.parse(userJson.replace(/ObjectId\(("[\da-f]+")\)/, '$1'))
     } catch (error) {
-      dispatch(displayToasterMessage(error.toString()))
+      dispatch(displayToasterMessage((error as Error).toString()))
       return null
     }
   }, [dispatch, userJson])

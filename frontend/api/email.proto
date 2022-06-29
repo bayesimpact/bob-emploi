@@ -3,6 +3,8 @@ syntax = "proto3";
 package bayes.bob;
 option go_package="bayes.org/bob_emploi/frontend/api/email";
 
+import "google/protobuf/timestamp.proto";
+
 import "bob_emploi/frontend/api/options.proto";
 
 message Campaign {
@@ -12,4 +14,72 @@ message Campaign {
   // A scoring model to determine the priority of an email campaign compared to
   // others. The default priority is 2.
   string scoring_model = 2 [(string_format) = SCORING_MODEL_ID];
+}
+
+// Description of an email we sent to the user.
+message EmailSent {
+  // When the user was sent.
+  google.protobuf.Timestamp sent_at = 1 [(field_usage) = APP_ONLY];
+
+  // ID of the MailJet template that was used.
+  string mailjet_template = 2;
+
+  // An internal ID used to identify campaigns, e.g. "no-network".
+  string campaign_id = 3;
+
+  // Message ID on MailJet.
+  int64 mailjet_message_id = 4 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  google.protobuf.Timestamp last_status_checked_at = 5;
+
+  EmailSentStatus status = 6;
+
+  // Number of days (truncated) between sent_at and last_status_checked_at.
+  int32 last_status_checked_after_days = 7;
+
+  // Subject of the email (actually of the template) that was sent.
+  string subject = 8;
+
+  // Whether this email was considered coaching when it was sent.
+  bool is_coaching = 9;
+}
+
+// Status of email sent. This relies only on the mailjet API and is named
+// accordingly. See Status in https://dev.mailjet.com/email-api/v3/message/.
+enum EmailSentStatus {
+  EMAIL_SENT_UNKNOWN = 0;
+  EMAIL_SENT_QUEUED = 1;
+  EMAIL_SENT_SENT = 2;
+  EMAIL_SENT_OPENED = 3;
+  EMAIL_SENT_CLICKED = 4;
+  EMAIL_SENT_BOUNCE = 5;
+  EMAIL_SENT_SPAM = 6;
+  EMAIL_SENT_UNSUB = 7;
+  EMAIL_SENT_BLOCKED = 8;
+  EMAIL_SENT_HARDBOUNCED = 9;
+  EMAIL_SENT_SOFTBOUNCED = 10;
+  EMAIL_SENT_DEFERRED = 11;
+}
+
+message EmailHistory {
+  // The emails that were sent to the user.
+  repeated EmailSent emails_sent = 19;
+}
+
+enum EmailFrequency {
+  UNKNOWN_EMAIL_FREQUENCY = 0;
+
+  // Do not send any email.
+  EMAIL_NONE = 1;
+
+  // Send email once a month.
+  EMAIL_ONCE_A_MONTH = 2;
+
+  // Send all the email you can!
+  EMAIL_MAXIMUM = 10;
+}
+
+message Campaigns {
+  // List of campaigns in the form of fake sent emails.
+  repeated EmailSent campaigns = 1;
 }

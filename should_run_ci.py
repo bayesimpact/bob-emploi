@@ -28,7 +28,7 @@ class _Skip(typing.NamedTuple):
     # The folder to check for changes, when there's no Bazel.
     fallback_folders: tuple[str, ...]
 
-    def has_changes_for(self, diff: set[str]) -> bool:
+    def has_changes_for(self, diff: set[str], with_bazel: bool = True) -> bool:
         """Whether the target has changed sources.
 
         Falls back to checking the folder if Bazel is not available.
@@ -37,7 +37,7 @@ class _Skip(typing.NamedTuple):
         # TODO(cyrille): Handle when diff has deleted files.
         logging.info('Checking %s target for diffed files...', self.bazel_target)
         has_bazel_succeeded = False
-        if shutil.which('bazel'):
+        if with_bazel and shutil.which('bazel'):
             try:
                 required_srcs = _bazel_query_files(
                     f'kind("source file", deps(//.circleci:{self.bazel_target})) '
@@ -179,16 +179,21 @@ def _is_ancestor(ancestor: str, descendant: str) -> bool:
         return False
 
 
+def _get_best_merge_base(this_sha1: str) -> str:
+    """Find the most recent commit that was in default branch (considered as green)."""
+
+    merge_base = _run('git', 'merge-base', this_sha1, 'origin/HEAD')
+    if merge_base == this_sha1:
+        # This sha is in origin/HEAD, let's compare to its parent.
+        return f'{merge_base}^'
+    return merge_base
+
+
 def _get_last_green(this_sha1: str, project_slug: Optional[str], token: Optional[str]) -> str:
     """Determine a base on which we assume everything was properly built."""
 
     if not token or not project_slug:
-        # Find the most recent commit that was in default branch (considered as green).
-        merge_base = _run('git', 'merge-base', this_sha1, 'origin/HEAD')
-        if merge_base == this_sha1:
-            # This sha is in origin/HEAD, let's compare to its parent.
-            return f'{merge_base}^'
-        return merge_base
+        return _get_best_merge_base(this_sha1)
     pipelines: _PaginatedQuery[_Pipeline] = \
         _PaginatedQuery(_PIPELINE_QUERY.format(project_slug=project_slug), token)
     for pipeline in pipelines:
@@ -199,7 +204,8 @@ def _get_last_green(this_sha1: str, project_slug: Optional[str], token: Optional
             _PaginatedQuery(_WORKFLOW_QUERY.format(pipeline_id=pipeline['id']), token)
         if all(workflow['status'] == 'success' for workflow in workflows):
             return sha1
-    raise ValueError('No green ancestor found.')
+    logging.error('No green ancestor found, falling back to merge-base.')
+    return _get_best_merge_base(this_sha1)
 
 
 def _check_is_at_tip(sha: str, branch: str) -> None:
@@ -221,12 +227,14 @@ def _check_is_at_tip(sha: str, branch: str) -> None:
 
 
 class _Arguments(typing.Protocol):
-    repo: str
-    ref: str
     branch: Optional[str]
+    force: Optional[str]
+    ref: str
+    repo: str
     skip_only: Iterable[str]
     tag: Optional[str]
     token: Optional[str]
+    use_bazel: bool
 
 
 def find_diff_files(sha: str, repo: Optional[str], token: Optional[str]) -> set[str]:
@@ -255,6 +263,9 @@ def main() -> None:
     parser.add_argument(
         '--skip-only', choices=all_skips, help='The targets we want to test for.', action='append')
     parser.add_argument('--force', help='The targets we want to force (i.e. never skip)')
+    parser.add_argument(
+        '--no-bazel', action='store_false', dest='use_bazel',
+        help='Whether you do not want to use Bazel for diff checking.')
     args: _Arguments = parser.parse_args()
     if args.tag or args.branch == 'main':
         logging.info('Do not skip any part of CI for "%s"', args.tag or args.branch)
@@ -275,7 +286,9 @@ def main() -> None:
         _check_is_at_tip(sha, args.branch)
     diff_files = find_diff_files(sha, args.repo, args.token)
     to_skip = {
-        skip for skip in args.skip_only if not _SKIP_CONFIG[skip].has_changes_for(diff_files)}
+        skip
+        for skip in args.skip_only
+        if not _SKIP_CONFIG[skip].has_changes_for(diff_files, with_bazel=args.use_bazel)}
     if args.branch and args.branch.endswith('fix-persist'):
         logging.info('Testing the CI runs well when frontend is skipped.')
         to_skip |= {'frontend', 'frontend-client', 'frontend-server'}

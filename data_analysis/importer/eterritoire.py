@@ -1,13 +1,11 @@
 """Importer for e-Territoire URLs into MongoDB."""
 
-from typing import Dict, List
-
 import requests
 
 from bob_emploi.data_analysis.lib import mongo
 
 
-def get_cities_dicts() -> List[Dict[str, str]]:
+def get_cities_dicts() -> list[dict[str, str]]:
     """Download e-Territoire URLs from their website and prepare them.
 
     Returns:

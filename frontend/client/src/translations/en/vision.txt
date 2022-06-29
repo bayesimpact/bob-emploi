@@ -1,0 +1,12 @@
+**Our mission:**
+To build citizen-led public services that create a more fair and inclusive future for society.
+
+**Why citizen-led public services?**
+
+Right now, at a time when public services are increasingly vulnerable to disruption by private service companies, we think that citizen entrepreneurs who share in the values of public service should join together with governments, so that we can launch a new generation of public services built by and for citizens. Bayes Impact formed a 501(c)3 non-profit organization in 2014 to do just that. We promote citizen-led public services by building and scaling tech-driven solutions in partnership with the public sector, and by helping other citizen entrepreneurs bring their ideas to life.
+
+**How does this relate to {{productName}}?**
+
+In 2014, Bayes Impact embarked on a journey to build our own example of a citizen-led public service: {{productName}}. {{productName}} is an AI career coach that is freely available in France, the United Kingdom, and the United States. Our aim with {{productName}} is to make personalized career coaching available at scale, helping job seekers to assess and improve their employability with data-driven advice.
+
+Since launching in France, {{productName}} has helped more than 300,000 job seekers with resume advice, interview tips, job boards, cover letter examples, and clear, actionable steps to getting a better job.

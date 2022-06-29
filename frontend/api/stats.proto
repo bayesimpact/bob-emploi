@@ -66,9 +66,20 @@ message PassionLevelCount {
   int32 count = 2;
 }
 
-message Monitoring {
-  // Version of current server
-  string server_version = 1;
+// The date at which a campaign was last sent.
+message SentEmailDate {
+
+  string campaign_id = 1;
+
+  google.protobuf.Timestamp last_sent = 2;
+}
+
+// The date at which a collection was last imported.
+message MetaCollection {
+
+  string collection = 1;
+
+  google.protobuf.Timestamp updated_at = 2;
 }
 
 enum SearchLengthCategory {
@@ -82,4 +93,22 @@ enum SearchLengthCategory {
 
   // Search length over a year.
   LONG_SEARCH_LENGTH = 3;
+}
+
+// An action the user may do to face on of Bob's challenges.
+message ChallengeAction {
+  // A unique identifier for this action.
+  string action_id = 1;
+
+  // For each challenge for which this action is relevant, gives the score of this action.
+  // The scores are relative to a given challenge, e.g. if we have the following scores:
+  //
+  //              action-1      action-2
+  //  challenge-1    1              3
+  //  challenge-2    10             2
+  //
+  // Then action-2 is considered 3 times as important as action-1 for challenge-1
+  // and action-1 is considered 5 times as important as action-2 for challenge-2.
+  // But action-1 is not necessarily 10 times as important for challenge-2 than for challenge-1.
+  map<string, uint32> score_by_challenge = 2;
 }

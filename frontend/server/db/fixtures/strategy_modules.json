@@ -1,0 +1,619 @@
+[
+ {
+  "_id": "recBDDQ0dDJCWLbUt",
+  "_order": 0,
+  "actionIds": [
+   "follow-up-article",
+   "follow-up-examples",
+   "understand-job-offer",
+   "improve-resume",
+   "check-resume-mistakes",
+   "motivation-email-websites",
+   "online-salons",
+   "find-a-jobboard",
+   "motivation-email-examples",
+   "connect-recruiter"
+  ],
+  "categoryIds": [
+   "stuck-market"
+  ],
+  "descriptionSpeech": "La plus belle candidature au monde ne fera pas forcément la différence. Je vous conseille plutôt de changer de **ville** ou de **métier**.\n\nMais si vous voulez postuler dans ce métier, **revoir** certains éléments de vos candidatures peut augmenter vos chances.\n\nPuisque la concurrence est **rude**, c'est important que votre candidature soit **au top**.",
+  "descriptionTemplate": "Trouvez des idées pour vos CV & lettres de motivation",
+  "headerTemplate": "La plus belle candidature au monde ne fera pas forcément la différence. Je vous conseille plutôt de changer de **ville** ou de **métier**.\n\nMais si vous voulez postuler dans ce métier, **revoir** certains éléments de vos candidatures peut augmenter vos chances.\n\nPuisque la concurrence est **rude**, c'est important que votre candidature soit **au top**.",
+  "infinitiveTitle": "Obtenir plus d'entretiens",
+  "strategyId": "application-methods",
+  "title": "Améliorez vos candidatures",
+  "triggerScoringModel": "constant(0.15)"
+ },
+ {
+  "_id": "recEelFMmKqzOkdFj",
+  "_order": 1,
+  "actionIds": [
+   "follow-up-article",
+   "follow-up-examples",
+   "understand-job-offer",
+   "improve-resume",
+   "check-resume-mistakes",
+   "motivation-email-websites",
+   "online-salons",
+   "find-a-jobboard",
+   "motivation-email-examples",
+   "connect-recruiter"
+  ],
+  "categoryIds": [
+   "bravo"
+  ],
+  "descriptionSpeech": "J'ai analysé votre profil et le marché du travail, et je trouve que beaucoup de voyants sont au vert.\n\nPour décrocher un emploi, je vous recommande de passer en revue chacune de vos candidatures et de vérifier de bien mettre en valeur vos atouts.\n\nL'objectif : obtenir plus d'entretiens.",
+  "descriptionTemplate": "Vérifiez qu'il n'y a rien à améliorer sur vos CV & lettres de motivation",
+  "headerTemplate": "J'ai analysé votre profil et le marché du travail, et je trouve que beaucoup de voyants sont au vert.\n\nPour décrocher un emploi, je vous recommande de passer en revue chacune de vos candidatures et de vérifier de bien mettre en valeur vos atouts.\n\nL'objectif : obtenir plus d'entretiens.",
+  "infinitiveTitle": "Obtenir plus d'entretiens",
+  "strategyId": "application-methods-bravo",
+  "title": "Faites des candidatures qui sortent du lot",
+  "triggerScoringModel": "strategy-for-frustrated(RESUME, AGE_DISCRIMINATION, SEX_DISCRIMINATION)"
+ },
+ {
+  "_id": "recHKxB2EQhrvR0Il",
+  "_order": 2,
+  "actionIds": [
+   "follow-up-article",
+   "follow-up-examples",
+   "understand-job-offer",
+   "improve-resume",
+   "check-resume-mistakes",
+   "motivation-email-websites",
+   "online-salons",
+   "find-a-jobboard",
+   "motivation-email-examples",
+   "connect-recruiter"
+  ],
+  "categoryIds": [
+   "covid-risk"
+  ],
+  "descriptionSpeech": "La plus belle candidature au monde ne fera pas forcément la différence. Je vous conseille plutôt de changer de **ville** ou de **métier**.\n\nMais si vous voulez postuler dans ce métier, **revoir** certains éléments de vos candidatures peut augmenter vos chances.\n\nPuisque la situation du au COVID est **rude**, c'est important que votre candidature soit **au top**.",
+  "descriptionTemplate": "Trouvez des idées pour vos CV & lettres de motivation",
+  "headerTemplate": "La plus belle candidature au monde ne fera pas forcément la différence. Je vous conseille plutôt de changer de **ville** ou de **métier**.\n\nMais si vous voulez postuler dans ce métier, **revoir** certains éléments de vos candidatures peut augmenter vos chances.\n\nPuisque la situation du au COVID est **rude**, c'est important que votre candidature soit **au top**.",
+  "infinitiveTitle": "Obtenir plus d'entretiens",
+  "strategyId": "application-methods-covid",
+  "title": "Faites des candidatures qui sortent du lot",
+  "triggerScoringModel": "constant(0.15)"
+ },
+ {
+  "_id": "rec3aeGJo2LhxsY6a",
+  "_order": 3,
+  "actionIds": [
+   "follow-up-article",
+   "follow-up-examples",
+   "understand-job-offer",
+   "improve-resume",
+   "check-resume-mistakes",
+   "motivation-email-websites",
+   "online-salons",
+   "find-a-jobboard",
+   "motivation-email-examples",
+   "connect-recruiter"
+  ],
+  "categoryIds": [
+   "enhance-methods-to-interview"
+  ],
+  "descriptionSpeech": "J'ai analysé votre profil et le marché du travail, et je trouve que beaucoup de voyants sont au vert.\n\nJ'ai vérifié, et vous êtes dans le top 10% des personnes sur Bob en qui j'ai confiance pour trouver un poste bientôt.\n\nC'est le bon moment pour améliorer chacune de vos candidatures et bien mettre en valeur vos atouts.\n\nL'objectif : un ou même plusieurs entretiens qui mènent à des propositions de travail.",
+  "descriptionTemplate": "Trouvez des idées pour vos CV & lettres de motivation",
+  "headerTemplate": "J'ai analysé votre profil et le marché du travail, et je trouve que beaucoup de voyants sont au vert.\n\nJ'ai vérifié, et vous êtes dans le top 10% des personnes sur Bob en qui j'ai confiance pour trouver un poste bientôt.\n\nC'est le bon moment pour améliorer chacune de vos candidatures et bien mettre en valeur vos atouts.\n\nL'objectif : un ou même plusieurs entretiens qui mènent à des propositions de travail.",
+  "infinitiveTitle": "Obtenir plus d'entretiens",
+  "strategyId": "application-methods-to-interview",
+  "title": "Améliorez vos candidatures",
+  "triggerScoringModel": "constant(0.75)"
+ },
+ {
+  "_id": "recVo5FqpyM919k40",
+  "_order": 4,
+  "actionIds": [
+   "follow-up-article",
+   "follow-up-examples",
+   "understand-job-offer",
+   "improve-resume",
+   "check-resume-mistakes",
+   "motivation-email-websites",
+   "online-salons",
+   "find-a-jobboard",
+   "motivation-email-examples",
+   "connect-recruiter"
+  ],
+  "categoryIds": [
+   "start-your-search"
+  ],
+  "descriptionSpeech": "C'est normal d'avoir du mal à commencer.\n\nPostuler auprès de gens que l'on ne connaît pas peut être intimidant.\n\nLe plus important, c'est de faire quelques candidatures **soignées**. Une bonne candidature **ciblée à l'employeur** en vaut 20 sans personnalité.\n\nDonc, c'est normal que cela prenne du temps, en allant petite étape par petite étape.",
+  "descriptionTemplate": "Faites votre CV, votre lettre de motivation, et trouvez des offres d'emploi",
+  "headerTemplate": "C'est normal d'avoir du mal à commencer.\n\nPostuler auprès de gens que l'on ne connaît pas peut être intimidant.\n\nLe plus important, c'est de faire quelques candidatures **soignées**. Une bonne candidature **ciblée à l'employeur** en vaut 20 sans personnalité.\n\nDonc, c'est normal que cela prenne du temps, en allant petite étape par petite étape.",
+  "infinitiveTitle": "Obtenir plus d'entretiens",
+  "strategyId": "application-methods-to-interview-start",
+  "title": "Préparez vos candidatures",
+  "triggerScoringModel": "constant(0.75)"
+ },
+ {
+  "_id": "recZQjfya0QeRYcyB",
+  "_order": 5,
+  "actionIds": [
+   "follow-up-article",
+   "follow-up-examples",
+   "understand-job-offer",
+   "improve-resume",
+   "check-resume-mistakes",
+   "motivation-email-websites",
+   "online-salons",
+   "find-a-jobboard",
+   "motivation-email-examples",
+   "connect-recruiter"
+  ],
+  "categoryIds": [
+   "undefined-project"
+  ],
+  "descriptionSpeech": "J'ai analysé votre profil et je vous conseille plutôt de cibler un métier pour focaliser votre recherche.\n\nMais lorsque vous postulez aux offres que vous trouvez intéressantes, je vous recommande de passer en revue vos candidatures et de bien mettre en valeur vos atouts.\n\nL'objectif : gagner plus d'entretiens.",
+  "descriptionTemplate": "Trouvez des idées pour vos CV & lettres de motivation",
+  "headerTemplate": "J'ai analysé votre profil et je vous conseille plutôt de cibler un métier pour focaliser votre recherche.\n\nMais lorsque vous postulez aux offres que vous trouvez intéressantes, je vous recommande de passer en revue vos candidatures et de bien mettre en valeur vos atouts.\n\nL'objectif : gagner plus d'entretiens.",
+  "infinitiveTitle": "Obtenir plus d'entretiens",
+  "strategyId": "application-methods-undefined-project",
+  "title": "Améliorez vos candidatures",
+  "triggerScoringModel": "constant(0.15)"
+ },
+ {
+  "_id": "recsm7KRusXoosZvj",
+  "_order": 6,
+  "actionIds": [
+   "motivation-email-reminder",
+   "spontaneous-application",
+   "find-a-jobboard",
+   "better-job-in-group",
+   "commute",
+   "create-your-company",
+   "other-work-env",
+   "online-salons",
+   "association-help",
+   "network-application"
+  ],
+  "categoryIds": [
+   "find-what-you-like"
+  ],
+  "descriptionSpeech": "Vous avez peut-être envie de tenter votre chance même si ce métier ne vous intéresse pas spécialement.\n\nComme vous serez en **concurrence** avec des personnes qui sont plus motivées que vous, cela risque d'être plus **difficile** de trouver un emploi.\n\nToutefois, j'ai des idées qui peuvent vous aider à améliorer vos candidatures.",
+  "descriptionTemplate": "Faites votre CV, votre lettre de motivation, et trouvez des offres d'emploi",
+  "headerTemplate": "Vous avez peut-être envie de tenter votre chance même si ce métier ne vous intéresse pas spécialement.\n\nComme vous serez en **concurrence** avec des personnes qui sont plus motivées que vous, cela risque d'être plus **difficile** de trouver un emploi.\n\nToutefois, j'ai des idées qui peuvent vous aider à améliorer vos candidatures.",
+  "infinitiveTitle": "Continuer sur le chemin",
+  "strategyId": "apply-in-unliked-job",
+  "title": "Faites des candidatures qui sortent du lot",
+  "triggerScoringModel": "constant(0.45)"
+ },
+ {
+  "_id": "recCl8hmUvmRO97qL",
+  "_order": 7,
+  "actionIds": [
+   "body-language",
+   "find-work-you-love-video",
+   "never-giveup",
+   "association-help",
+   "volunteer",
+   "stay-motivated-tips",
+   "stay-positive"
+  ],
+  "categoryIds": [
+   "enhance-methods-to-interview"
+  ],
+  "descriptionSpeech": "La recherche d'emploi n'est pas facile. C'est une période pleine de défis durant laquelle c'est important de préserver son équilibre de vie et son moral.\n\nMais c'est dur d'avoir du recul quand on est à court d'argent et quand on a soif d'avancer.\n\nAvec le stress, on oublie vite que l'employeur a besoin de vous autant que vous avez besoin de lui.\n\nMême les jours où vous n'avancez pas, il est important de prendre soin de vous et de garder le moral.\n\nDans cette stratégie je vous ai préparé des méthodes pour vivre la période de recherche d'emploi autrement.",
+  "descriptionTemplate": "Trouvez des gens, des associations et des activités pour vous motiver",
+  "headerTemplate": "La recherche d'emploi n'est pas facile. C'est une période pleine de défis durant laquelle c'est important de préserver son équilibre de vie et son moral.\n\nMais c'est dur d'avoir du recul quand on est à court d'argent et quand on a soif d'avancer.\n\nAvec le stress, on oublie vite que l'employeur a besoin de vous autant que vous avez besoin de lui.\n\nMême les jours où vous n'avancez pas, il est important de prendre soin de vous et de garder le moral.\n\nDans cette stratégie je vous ai préparé des méthodes pour vivre la période de recherche d'emploi autrement.",
+  "infinitiveTitle": "Garder la confiance en soi",
+  "strategyId": "confidence-boost",
+  "title": "Trouvez les clefs de votre motivation",
+  "triggerScoringModel": "constant(0.3)"
+ },
+ {
+  "_id": "recGT0RXaZThuFYL7",
+  "_order": 8,
+  "actionIds": [
+   "alternance",
+   "spontaneous-application",
+   "follow-up-article",
+   "apprenticeship"
+  ],
+  "categoryIds": [
+   "missing-diploma"
+  ],
+  "descriptionSpeech": "Les contrats en alternance sont **efficaces** pour trouver un emploi.\n\nQuelques mois après la fin de leur alternance, on rencontre **6 alternants sur 10** qui sont **en poste**.\n\nC'est donc plus efficace que de faire une formation \"dans le vide\", sans **mettre en pratique** ses nouvelles compétences en même temps chez un employeur.\n\nComme les recruteurs demandent en général %aRequiredDiploma pour le métier %ofJobName, faire une alternance pourrait être une **bonne méthode** pour l'obtenir.",
+  "descriptionTemplate": "Suivez nos étapes pour trouver une alternance",
+  "headerTemplate": "Les contrats en alternance sont **efficaces** pour trouver un emploi.\n\nQuelques mois après la fin de leur alternance, on rencontre **6 alternants sur 10** qui sont **en poste**.\n\nC'est donc plus efficace que de faire une formation \"dans le vide\", sans **mettre en pratique** ses nouvelles compétences en même temps chez un employeur.\n\nComme les recruteurs demandent en général %aRequiredDiploma pour le métier %ofJobName, faire une alternance pourrait être une **bonne méthode** pour l'obtenir.",
+  "infinitiveTitle": "Trouver un emploi grâce à l'alternance",
+  "strategyId": "get-alternance",
+  "title": "Trouvez un poste en alternance",
+  "triggerScoringModel": "strategy-get-alternance"
+ },
+ {
+  "_id": "recx6AwUqb0jgOlQi",
+  "_order": 9,
+  "actionIds": [
+   "training",
+   "vae",
+   "skill-for-future",
+   "association-help",
+   "short-training",
+   "skills-assessment"
+  ],
+  "categoryIds": [
+   "missing-diploma"
+  ],
+  "descriptionSpeech": "J'ai regardé les **statistiques** pour votre métier, et j'ai vu que les recruteurs demandent en général **%aRequiredDiploma** pour le métier %ofJobName.\n\nC'est plutôt une bonne nouvelle. Les métiers qui demandent un diplôme permettent de **gagner plus** d'argent.\n\nPour les métiers qui demandent un diplôme, le risque d'être **au chômage** plus tard est plus **faible**. 😊\n\nEn France, la formation ou la validation d'expérience professionnelle par un diplôme est un **droit**. Profitez-en pour faire avancer votre carrière.",
+  "descriptionTemplate": "Trouvez des formations ou des validations de compétences",
+  "headerTemplate": "J'ai regardé les **statistiques** pour votre métier, et j'ai vu que les recruteurs demandent en général **%aRequiredDiploma** pour le métier %ofJobName.\n\nC'est plutôt une bonne nouvelle. Les métiers qui demandent un diplôme permettent de **gagner plus** d'argent.\n\nPour les métiers qui demandent un diplôme, le risque d'être **au chômage** plus tard est plus **faible**. 😊\n\nEn France, la formation ou la validation d'expérience professionnelle par un diplôme est un **droit**. Profitez-en pour faire avancer votre carrière.",
+  "infinitiveTitle": "Obtenir un diplôme",
+  "strategyId": "get-diploma",
+  "title": "Obtenez le diplôme recherché par les recruteurs",
+  "triggerScoringModel": "constant(0.9)"
+ },
+ {
+  "_id": "recHyzOzkKHKVa25m",
+  "_order": 10,
+  "actionIds": [
+   "training",
+   "vae",
+   "skill-for-future",
+   "association-help",
+   "short-training",
+   "skills-assessment"
+  ],
+  "categoryIds": [
+   "covid-risk"
+  ],
+  "descriptionSpeech": "Ce temps où l'économie fonctionne au ralenti peut être l'occasion de suivre une formation ou un cours en ligne.\n\nPour les métiers qui demandent un diplôme, le risque d'être **au chômage** plus tard est plus **faible**. 😊\n\nEn France, la formation ou la validation d'expérience professionnelle par un diplôme est un **droit**. Profitez-en pour faire avancer votre carrière.",
+  "descriptionTemplate": "Formez-vous à des compétences recherchées par les employeurs",
+  "headerTemplate": "Ce temps où l'économie fonctionne au ralenti peut être l'occasion de suivre une formation ou un cours en ligne.\n\nPour les métiers qui demandent un diplôme, le risque d'être **au chômage** plus tard est plus **faible**. 😊\n\nEn France, la formation ou la validation d'expérience professionnelle par un diplôme est un **droit**. Profitez-en pour faire avancer votre carrière.",
+  "infinitiveTitle": "Obtenir un diplôme",
+  "strategyId": "get-diploma-covid",
+  "title": "Formez-vous pour vous faire remarquer",
+  "triggerScoringModel": "constant(0.6)"
+ },
+ {
+  "_id": "recnyW2QloK77NrhG",
+  "_order": 11,
+  "actionIds": [
+   "body-language",
+   "prepare-interview-questions",
+   "prepare-interview-answers",
+   "interview-good-impression",
+   "thank-after-interview",
+   "show-motivation-in-interview"
+  ],
+  "categoryIds": [
+   "enhance-methods-to-interview"
+  ],
+  "descriptionSpeech": "Je vous ai donné cette stratégie pour vous préparer à des entretiens.\n\nParce que je suis convaincu que vous allez en obtenir plus quand vous mettrez en œuvre les stratégies précédentes.\n\nCette stratégie vous aidera à vous démarquer des autres candidats invités en entretien.",
+  "descriptionTemplate": "Découvrez des astuces pour réussir un entretien",
+  "headerTemplate": "Je vous ai donné cette stratégie pour vous préparer à des entretiens.\n\nParce que je suis convaincu que vous allez en obtenir plus quand vous mettrez en œuvre les stratégies précédentes.\n\nCette stratégie vous aidera à vous démarquer des autres candidats invités en entretien.",
+  "infinitiveTitle": "Se démarquer des autres candidats",
+  "strategyId": "interview-success",
+  "title": "Réussissez vos entretiens",
+  "triggerScoringModel": "strategy-interview-success"
+ },
+ {
+  "_id": "recxb1liwwSxa3r5v",
+  "_order": 12,
+  "actionIds": [
+   "body-language",
+   "prepare-interview-questions",
+   "prepare-interview-answers",
+   "interview-good-impression",
+   "thank-after-interview",
+   "show-motivation-in-interview"
+  ],
+  "categoryIds": [
+   "bravo"
+  ],
+  "descriptionSpeech": "Obtenir des entretiens, c'est le meilleur signe que vos candidatures sont bonnes et que vous ciblez bien des structures qui recherchent vos compétences.\n\nCette stratégie vous aidera à être encore plus efficace dans vos entretiens. L'objectif : vous démarquer des autres candidats invités en entretien.",
+  "descriptionTemplate": "Trouvez des astuces qui peuvent faire la différence en entretien",
+  "headerTemplate": "Obtenir des entretiens, c'est le meilleur signe que vos candidatures sont bonnes et que vous ciblez bien des structures qui recherchent vos compétences.\n\nCette stratégie vous aidera à être encore plus efficace dans vos entretiens. L'objectif : vous démarquer des autres candidats invités en entretien.",
+  "infinitiveTitle": "Se démarquer des autres candidats",
+  "strategyId": "interview-success-bravo",
+  "title": "Réussissez vos entretiens",
+  "triggerScoringModel": "strategy-for-frustrated(INTERVIEW)"
+ },
+ {
+  "_id": "recutYL0AXE3Ka88B",
+  "_order": 13,
+  "actionIds": [
+   "body-language",
+   "prepare-interview-questions",
+   "prepare-interview-answers",
+   "interview-good-impression",
+   "thank-after-interview",
+   "show-motivation-in-interview"
+  ],
+  "categoryIds": [
+   "start-your-search"
+  ],
+  "descriptionSpeech": "Ce n'est peut être pas pour tout de suite, mais une fois que vous aurez envoyé une ou deux candidatures, n'hésitez pas à vous lancer dans la **préparation des entretiens**.\n\nLes recruteurs ont autant besoin de **vous** que vous avez besoin **d'eux**. À vous de choisir avec **qui** vous voulez vraiment travailler.",
+  "descriptionTemplate": "Trouvez des astuces pour vos entretiens à venir",
+  "headerTemplate": "Ce n'est peut être pas pour tout de suite, mais une fois que vous aurez envoyé une ou deux candidatures, n'hésitez pas à vous lancer dans la **préparation des entretiens**.\n\nLes recruteurs ont autant besoin de **vous** que vous avez besoin **d'eux**. À vous de choisir avec **qui** vous voulez vraiment travailler.",
+  "infinitiveTitle": "Se démarquer des autres candidats",
+  "strategyId": "interview-success-start",
+  "title": "Réussissez vos entretiens",
+  "triggerScoringModel": "constant(0.3)"
+ },
+ {
+  "_id": "recEoXEOkuZTFgEVE",
+  "_order": 14,
+  "actionIds": [
+   "never-giveup",
+   "set-objectives",
+   "body-language",
+   "association-help",
+   "follow-up-article",
+   "find-work-you-love-video",
+   "volunteer",
+   "stay-positive"
+  ],
+  "categoryIds": [
+   "bravo"
+  ],
+  "descriptionSpeech": "Vous avez un **super profil** et vous cherchez dans un métier où il y a des **opportunités**.\n\nEn fait, quand j'analyse les chances de trouver un emploi bientôt, vous êtes dans le top **10%** 🙂\n\nLa recherche d'emploi est une période pleine de défis durant laquelle c'est important de préserver son équilibre de vie et son moral.\n\nC'est dur d'avoir du recul quand on est à court d'argent et quand on a soif d'avancer. Mon conseil d'avis extérieur : **gardez le cap** !\n\nJe vous ai préparé quelques méthodes pour **bien vivre** la recherche d'emploi.",
+  "descriptionTemplate": "Trouvez des gens, des associations et des activités qui peuvent vous encourager",
+  "headerTemplate": "Vous avez un **super profil** et vous cherchez dans un métier où il y a des **opportunités**.\n\nEn fait, quand j'analyse les chances de trouver un emploi bientôt, vous êtes dans le top **10%** 🙂\n\nLa recherche d'emploi est une période pleine de défis durant laquelle c'est important de préserver son équilibre de vie et son moral.\n\nC'est dur d'avoir du recul quand on est à court d'argent et quand on a soif d'avancer. Mon conseil d'avis extérieur : **gardez le cap** !\n\nJe vous ai préparé quelques méthodes pour **bien vivre** la recherche d'emploi.",
+  "infinitiveTitle": "Continuer la recherche",
+  "strategyId": "keep-going",
+  "title": "Gardez le cap pour votre recherche",
+  "triggerScoringModel": "constant(0.6)"
+ },
+ {
+  "_id": "rec4iQPY6Zs0997u0",
+  "_order": 15,
+  "actionIds": [
+   "life-balance",
+   "set-objectives",
+   "never-giveup",
+   "association-help",
+   "volunteer",
+   "stay-positive"
+  ],
+  "categoryIds": [
+   "start-your-search"
+  ],
+  "descriptionSpeech": "Visez les **micro-progrès**.\n\nOuvrir un document pour créer votre CV, c'est une étape. Écrire vos coordonnées dessus, c'en est une autre. Bravo, vous avez déjà réussi deux étapes.\n\nContacter un ami pour lui dire que vous cherchez un nouvel emploi, c'est déjà **beaucoup mieux que rien** sur une journée.\n\nFaire une **pause** en vous offrant une activité qui vous fait plaisir est absolument nécessaire !\n\nDe plus, c'est tout à fait cohérent avec la recherche d'emploi, qui est aussi la **recherche de soi**.\n\nFaites-vous confiance.",
+  "descriptionTemplate": "Trouvez des gens, des associations et des activités qui peuvent vous aider à vous lancer",
+  "headerTemplate": "Visez les **micro-progrès**.\n\nOuvrir un document pour créer votre CV, c'est une étape. Écrire vos coordonnées dessus, c'en est une autre. Bravo, vous avez déjà réussi deux étapes.\n\nContacter un ami pour lui dire que vous cherchez un nouvel emploi, c'est déjà **beaucoup mieux que rien** sur une journée.\n\nFaire une **pause** en vous offrant une activité qui vous fait plaisir est absolument nécessaire !\n\nDe plus, c'est tout à fait cohérent avec la recherche d'emploi, qui est aussi la **recherche de soi**.\n\nFaites-vous confiance.",
+  "strategyId": "life-balance",
+  "title": "Gardez un bon équilibre de recherche d'emploi",
+  "triggerScoringModel": "constant(0.45)"
+ },
+ {
+  "_id": "rec9M0Ii6swUCtVAj",
+  "_order": 16,
+  "actionIds": [
+   "reorient-to-close-job",
+   "jobflix",
+   "explore-other-jobs",
+   "immersion",
+   "better-job-in-group",
+   "volunteer",
+   "find-work-you-love-video",
+   "explore-assess",
+   "trust-the-process",
+   "identify-strengths",
+   "personality-test",
+   "find-right-job",
+   "finding-work"
+  ],
+  "categoryIds": [
+   "find-what-you-like",
+   "stuck-market",
+   "undefined-project"
+  ],
+  "descriptionSpeech": "Selon mes analyses vous êtes à un moment de votre recherche où **réfléchir à votre projet** pourrait vous apporter beaucoup.\n\nJ'ai fait des recherches pour vous, et je sais que trouver un métier qui vous **passionne** augmentera vos chances d'être embauché%eFeminine.\n\nJe vous recommande aussi cette stratégie parce que je pense que vous avez le droit de vous **épanouir** dans ce que vous faites.",
+  "descriptionTemplate": "Trouvez des idées de métiers, notamment ceux qui recrutent beaucoup",
+  "headerTemplate": "Selon mes analyses vous êtes à un moment de votre recherche où **réfléchir à votre projet** pourrait vous apporter beaucoup.\n\nJ'ai fait des recherches pour vous, et je sais que trouver un métier qui vous **passionne** augmentera vos chances d'être embauché%eFeminine.\n\nJe vous recommande aussi cette stratégie parce que je pense que vous avez le droit de vous **épanouir** dans ce que vous faites.",
+  "infinitiveTitle": "Trouver un métier passionnant",
+  "strategyId": "likeable-job",
+  "title": "Trouvez un projet qui vous plaît vraiment",
+  "triggerScoringModel": "strategy-likeable-job"
+ },
+ {
+  "_id": "recAll9p8cFmVAKfj",
+  "_order": 17,
+  "actionIds": [
+   "body-language",
+   "network-application",
+   "keep-spirit-up"
+  ],
+  "categoryIds": [
+   "find-what-you-like"
+  ],
+  "descriptionSpeech": "Selon les **recruteurs** que j'ai rencontrés, un manque de motivation peut se **voir** en entretien et vous coûter la place.\n\nVotre manque de motivation n'est peut-être que **passager** ou uniquement lié à votre **confiance en vous**.\n\nCette stratégie va vous aider à vous **motiver** pour ce métier et vous donner toutes vos chances pour vos candidatures.",
+  "descriptionTemplate": "Trouvez des gens qui peuvent vous aider à vous orienter, et découvrez comment prendre contact",
+  "headerTemplate": "Selon les **recruteurs** que j'ai rencontrés, un manque de motivation peut se **voir** en entretien et vous coûter la place.\n\nVotre manque de motivation n'est peut-être que **passager** ou uniquement lié à votre **confiance en vous**.\n\nCette stratégie va vous aider à vous **motiver** pour ce métier et vous donner toutes vos chances pour vos candidatures.",
+  "infinitiveTitle": "Trouver plus de motivation",
+  "strategyId": "motivate-in-job",
+  "title": "Trouvez plus de motivation pour votre projet actuel",
+  "triggerScoringModel": "constant(0.9)"
+ },
+ {
+  "_id": "recjMj2EOkR0vMfVs",
+  "_order": 18,
+  "actionIds": [
+   "relocate",
+   "explore-other-jobs",
+   "reorient-jobbing",
+   "reorient-to-close-job"
+  ],
+  "categoryIds": [
+   "stuck-market"
+  ],
+  "descriptionSpeech": "C'est statistiquement **difficile** de trouver un emploi dans votre métier en ce moment.\n\nSelon mes informations, la principale cause est le marché de l'emploi **bouché**. Je crains que vos efforts ne donnent pas de résultats.\n\nJe sais que **changer de métier** ou **déménager** n'est jamais évident, mais je vous donne cette stratégie parce que je n'ai pas envie que vous restiez trop longtemps à chercher sans résultat.",
+  "descriptionTemplate": "Découvrez de nouveaux métiers et des départements qui recrutent",
+  "headerTemplate": "C'est statistiquement **difficile** de trouver un emploi dans votre métier en ce moment.\n\nSelon mes informations, la principale cause est le marché de l'emploi **bouché**. Je crains que vos efforts ne donnent pas de résultats.\n\nJe sais que **changer de métier** ou **déménager** n'est jamais évident, mais je vous donne cette stratégie parce que je n'ai pas envie que vous restiez trop longtemps à chercher sans résultat.",
+  "infinitiveTitle": "Trouver d'autres voies",
+  "strategyId": "other-leads",
+  "title": "Trouvez d'autres opportunités",
+  "triggerScoringModel": "constant(0.9)"
+ },
+ {
+  "_id": "recfFkHzCYFdXvLx2",
+  "_order": 19,
+  "actionIds": [
+   "relocate",
+   "explore-other-jobs",
+   "reorient-jobbing",
+   "reorient-to-close-job"
+  ],
+  "categoryIds": [
+   "covid-risk"
+  ],
+  "descriptionSpeech": "C'est statistiquement **difficile** de trouver un emploi dans votre métier en ce moment.\n\nSelon mes informations, la principale cause est la crise liée au COVID-19. Je crains que vos efforts ne donnent pas de résultats.\n\nJe sais que **changer de métier** ou **déménager** n'est jamais évident, mais je vous donne cette stratégie parce que je n'ai pas envie que vous restiez trop longtemps à chercher sans résultat.",
+  "descriptionTemplate": "Découvrez des métiers qui sont moins affectés par le COVID",
+  "headerTemplate": "C'est statistiquement **difficile** de trouver un emploi dans votre métier en ce moment.\n\nSelon mes informations, la principale cause est la crise liée au COVID-19. Je crains que vos efforts ne donnent pas de résultats.\n\nJe sais que **changer de métier** ou **déménager** n'est jamais évident, mais je vous donne cette stratégie parce que je n'ai pas envie que vous restiez trop longtemps à chercher sans résultat.",
+  "infinitiveTitle": "Trouver d'autres voies",
+  "strategyId": "other-leads-covid",
+  "title": "Trouvez d'autres opportunités",
+  "triggerScoringModel": "constant(1.2)"
+ },
+ {
+  "_id": "recfDYRe997LRpErD",
+  "_order": 20,
+  "actionIds": [
+   "association-help",
+   "create-your-company",
+   "events",
+   "find-a-jobboard",
+   "immersion",
+   "network-application",
+   "volunteer",
+   "spontaneous-application",
+   "skill-for-future",
+   "vae",
+   "skills-assessment"
+  ],
+  "categoryIds": [
+   "stuck-market"
+  ],
+  "descriptionSpeech": "Le contexte est **très difficile**. Je vous recommande plutôt de changer de métier ou de ville.\n\nSi vous voulez rester dans ce métier malgré la **concurrence**, répondre aux offres ne suffira probablement pas.\n\nLe premier réflexe en recherche d'emploi est de regarder les annonces d'emploi en espérant trouver **l'offre parfaite**.\n\nMais quand la concurrence est **rude**, je sais que ce n'est pas la méthode qui marche le mieux.\n\nCette stratégie vous permet de découvrir des emplois qui ne sont **jamais publiés**.\n\nC'est pour vous aider à obtenir plus de réponses et trouver un travail **plus vite**.",
+  "descriptionTemplate": "Trouvez les opportunités qui ne sont jamais publiées (plus de 70% des embauches)",
+  "headerTemplate": "Le contexte est **très difficile**. Je vous recommande plutôt de changer de métier ou de ville.\n\nSi vous voulez rester dans ce métier malgré la **concurrence**, répondre aux offres ne suffira probablement pas.\n\nLe premier réflexe en recherche d'emploi est de regarder les annonces d'emploi en espérant trouver **l'offre parfaite**.\n\nMais quand la concurrence est **rude**, je sais que ce n'est pas la méthode qui marche le mieux.\n\nCette stratégie vous permet de découvrir des emplois qui ne sont **jamais publiés**.\n\nC'est pour vous aider à obtenir plus de réponses et trouver un travail **plus vite**.",
+  "infinitiveTitle": "Agir de manière proactive",
+  "strategyId": "presearch-methods",
+  "title": "Organisez votre recherche",
+  "triggerScoringModel": "constant(0.3)"
+ },
+ {
+  "_id": "recKpNXBAQtgBEOkD",
+  "_order": 21,
+  "actionIds": [
+   "better-job-in-group",
+   "commute",
+   "other-work-env",
+   "find-work-you-love-video",
+   "spontaneous-application",
+   "online-salons",
+   "association-help",
+   "network-application",
+   "find-a-jobboard"
+  ],
+  "categoryIds": [
+   "enhance-methods-to-interview"
+  ],
+  "descriptionSpeech": "La plupart des personnes qui travaillent comme %jobName %inCity trouvent un poste grâce à **%anApplicationMode**.\n\nPourtant, j'ai noté que vous répondez à beaucoup d'offres d'emploi. Après %jobSearchLengthAtCreation, il est temps d'essayer **autre chose**.\n\nJe pense que vous pourriez obtenir **plus d'entretiens** en changeant de méthodes de recherche.\n\nCette stratégie vous aidera à mieux **cibler** vos démarches pour gagner du temps et **garder le moral**.",
+  "descriptionTemplate": "Trouvez les opportunités qui ne sont jamais publiées (plus de 70% des embauches)",
+  "headerTemplate": "La plupart des personnes qui travaillent comme %jobName %inCity trouvent un poste grâce à **%anApplicationMode**.\n\nPourtant, j'ai noté que vous répondez à beaucoup d'offres d'emploi. Après %jobSearchLengthAtCreation, il est temps d'essayer **autre chose**.\n\nJe pense que vous pourriez obtenir **plus d'entretiens** en changeant de méthodes de recherche.\n\nCette stratégie vous aidera à mieux **cibler** vos démarches pour gagner du temps et **garder le moral**.",
+  "infinitiveTitle": "Mieux cibler la recherche",
+  "strategyId": "targeted-search",
+  "title": "Changez votre méthode de recherche",
+  "triggerScoringModel": "constant(1.2)"
+ },
+ {
+  "_id": "recfN8XoepITuc3WU",
+  "_order": 22,
+  "actionIds": [
+   "better-job-in-group",
+   "commute",
+   "other-work-env",
+   "find-work-you-love-video",
+   "spontaneous-application",
+   "online-salons",
+   "association-help",
+   "network-application",
+   "find-a-jobboard"
+  ],
+  "categoryIds": [
+   "bravo"
+  ],
+  "descriptionSpeech": "La plupart des personnes qui travaillent comme %jobName %inCity trouvent un poste grâce à **%anApplicationMode**.\n\nAprès %jobSearchLengthAtCreation, il est temps de vérifier que c'est par cette méthode-là que vous postulez le plus.\n\nJe pense que vous pourriez obtenir **plus d'entretiens** en vous assurant de privilégier cette méthode de recherche.\n\nCette méthode vous aidera à toujours **cibler** vos démarches pour gagner du temps.",
+  "descriptionTemplate": "Trouvez les opportunités qui ne sont jamais publiées (plus de 70% des embauches)",
+  "headerTemplate": "La plupart des personnes qui travaillent comme %jobName %inCity trouvent un poste grâce à **%anApplicationMode**.\n\nAprès %jobSearchLengthAtCreation, il est temps de vérifier que c'est par cette méthode-là que vous postulez le plus.\n\nJe pense que vous pourriez obtenir **plus d'entretiens** en vous assurant de privilégier cette méthode de recherche.\n\nCette méthode vous aidera à toujours **cibler** vos démarches pour gagner du temps.",
+  "infinitiveTitle": "Mieux cibler la recherche",
+  "strategyId": "targeted-search-bravo",
+  "title": "Postulez de façon stratégique",
+  "triggerScoringModel": "strategy-for-frustrated(ATYPIC_PROFILE, NO_OFFERS, NO_OFFER_ANSWERS, TIME_MANAGEMENT, EXPERIENCE)"
+ },
+ {
+  "_id": "reccIvkoug2MOmXh4",
+  "_order": 23,
+  "actionIds": [
+   "better-job-in-group",
+   "commute",
+   "other-work-env",
+   "find-work-you-love-video",
+   "spontaneous-application",
+   "online-salons",
+   "association-help",
+   "network-application",
+   "find-a-jobboard"
+  ],
+  "categoryIds": [
+   "covid-risk"
+  ],
+  "descriptionSpeech": "La plupart des personnes qui travaillent comme %jobName %inCity trouvent un poste grâce à **%anApplicationMode**.\n\nPrivilégier cette méthode vous permettra d'être plus efficace.",
+  "descriptionTemplate": "Trouvez les opportunités qui ne sont jamais publiées (plus de 70% des embauches)",
+  "headerTemplate": "La plupart des personnes qui travaillent comme %jobName %inCity trouvent un poste grâce à **%anApplicationMode**.\n\nPrivilégier cette méthode vous permettra d'être plus efficace.",
+  "infinitiveTitle": "Mieux cibler la recherche",
+  "strategyId": "targeted-search-covid",
+  "title": "Changez votre méthode de recherche",
+  "triggerScoringModel": "constant(0.3)"
+ },
+ {
+  "_id": "rec1Ri6LKo7qslkJ2",
+  "_order": 24,
+  "actionIds": [
+   "better-job-in-group",
+   "commute",
+   "other-work-env",
+   "find-work-you-love-video",
+   "spontaneous-application",
+   "online-salons",
+   "association-help",
+   "network-application",
+   "find-a-jobboard"
+  ],
+  "categoryIds": [
+   "start-your-search"
+  ],
+  "descriptionSpeech": "Le fait que vous n'ayez pas encore commencé votre recherche est une **opportunité**.\n\nNe faites pas la même erreur que la plupart des gens en vous **précipitant** sur les offres d'emploi !\n\nUne bonne recherche d'emploi commence avec vous : de quoi avez-vous **envie** ? Où vous voyez-vous dans un an ?\n\nVous renseigner sur les **méthodes** les plus efficaces pour trouver le poste recherché peut vous faire gagner beaucoup de **temps**.\n\nPar exemple, pour le métier **%ofJobName**, la plupart des gens trouvent un emploi grâce à **%anApplicationMode**.\n\nCette information peut vous aider à organiser votre recherche d'emploi.",
+  "descriptionTemplate": "Trouvez des informations sur votre recherche d'emploi pour bien vous lancer",
+  "headerTemplate": "Le fait que vous n'ayez pas encore commencé votre recherche est une **opportunité**.\n\nNe faites pas la même erreur que la plupart des gens en vous **précipitant** sur les offres d'emploi !\n\nUne bonne recherche d'emploi commence avec vous : de quoi avez-vous **envie** ? Où vous voyez-vous dans un an ?\n\nVous renseigner sur les **méthodes** les plus efficaces pour trouver le poste recherché peut vous faire gagner beaucoup de **temps**.\n\nPar exemple, pour le métier **%ofJobName**, la plupart des gens trouvent un emploi grâce à **%anApplicationMode**.\n\nCette information peut vous aider à organiser votre recherche d'emploi.",
+  "infinitiveTitle": "Mieux cibler la recherche",
+  "strategyId": "targeted-search-start",
+  "title": "Préparez votre recherche d'emploi",
+  "triggerScoringModel": "constant(0.9)"
+ },
+ {
+  "_id": "recXmKO5KdnNOqGh0",
+  "_order": 25,
+  "actionIds": [
+   "reorient-jobbing",
+   "reorient-to-close-job",
+   "online-salons",
+   "follow-up-article"
+  ],
+  "categoryIds": [
+   "missing-diploma"
+  ],
+  "descriptionSpeech": "Je vous conseille plutôt d'obtenir un **diplôme**. Cela vous fera passer la première phase de recrutement.\n\nMais je connais des gens compétents dans beaucoup de métiers qui se sont formés **autrement** que par les voies classiques.\n\nC'est possible, même si cela peut prendre plus de **temps** d'accéder aux postes mieux payés.",
+  "descriptionTemplate": "Trouvez des méthodes pour combler un diplôme manquant sur votre CV",
+  "headerTemplate": "Je vous conseille plutôt d'obtenir un **diplôme**. Cela vous fera passer la première phase de recrutement.\n\nMais je connais des gens compétents dans beaucoup de métiers qui se sont formés **autrement** que par les voies classiques.\n\nC'est possible, même si cela peut prendre plus de **temps** d'accéder aux postes mieux payés.",
+  "infinitiveTitle": "Booster la recherche",
+  "strategyId": "try-without-diploma",
+  "title": "Essayez de vous faire recruter sans diplôme",
+  "triggerScoringModel": "strategy-try-without-diploma"
+ }
+]

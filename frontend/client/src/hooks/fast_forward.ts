@@ -1,3 +1,4 @@
+import type H from 'history'
 import {useCallback, useEffect} from 'react'
 import {useHistory} from 'react-router-dom'
 
@@ -133,7 +134,7 @@ class MobileFastForwardListener {
  */
 const useFastForward = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onForward?: () => void|boolean, dependencies: readonly any[] = [], to?: string,
+  onForward?: () => void|boolean, dependencies: readonly any[] = [], to?: H.LocationDescriptor,
 ): void => {
   const history = useHistory()
   const handleForward = useCallback((): void|boolean => {

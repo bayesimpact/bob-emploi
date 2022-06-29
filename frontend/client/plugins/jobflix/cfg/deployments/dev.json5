@@ -1,3 +1,5 @@
 {
-  googleUAID: 'G-BBGGW1EK5S',
+  config: {
+    googleUAID: 'G-BBGGW1EK5S',
+  },
 }

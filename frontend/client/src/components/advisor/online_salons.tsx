@@ -1,5 +1,4 @@
-import {TFunction} from 'i18next'
-import PropTypes from 'prop-types'
+import type {TFunction} from 'i18next'
 import React, {useMemo} from 'react'
 
 import {getDateString, inCityPrefix} from 'store/french'
@@ -10,15 +9,19 @@ import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
 import {RadiumExternalLink} from 'components/radium'
 import StringJoiner from 'components/string_joiner'
-import Picto from 'images/advices/picto-online-salons.svg'
 import poleEmploiLogo from 'images/ple-emploi-ico.png'
 
-import {CardProps, ExpandableAction, MethodSuggestionList, useAdviceData} from './base'
+import type {CardProps} from './base'
+import {ExpandableAction, MethodSuggestionList, useAdviceData} from './base'
 
 
 const daysBetween = (date1: Date, date2: Date): number =>
   (date2.getTime() - date1.getTime()) / 86_400_000
 
+
+const noMarginStyle: React.CSSProperties = {
+  margin: 0,
+}
 
 interface LocationProps {
   departementId?: string
@@ -31,11 +34,6 @@ const LocationBase: React.FC<LocationProps> = (props: LocationProps): React.Reac
   return <React.Fragment>
     {prefix}<strong>{name}</strong>{departementId ? ` (${departementId})` : ''}
   </React.Fragment>
-}
-LocationBase.propTypes = {
-  departementId: PropTypes.string,
-  name: PropTypes.string.isRequired,
-  prefix: PropTypes.string.isRequired,
 }
 const Location = React.memo(LocationBase)
 
@@ -57,7 +55,7 @@ const OnlineSalonsMethod: React.FC<CardProps> = (props: CardProps): React.ReactE
   }
 
   // TODO(cyrille): Remove reference to Pôle emploi if we ever find other salons.
-  const footer = <Trans parent={null} t={t}>
+  const footer = <Trans parent="p" t={t} style={noMarginStyle}>
     <img src={poleEmploiLogo} style={{height: 40, marginLeft: 20}} alt="" />
     Voir tous les salons sur <ExternalLink
       href="https://salonenligne.pole-emploi.fr/candidat/voirtouslessalons"
@@ -80,19 +78,6 @@ const OnlineSalonsMethod: React.FC<CardProps> = (props: CardProps): React.ReactE
       {...salon} key={`salon-${index}`}
       {...{handleExplore, t, userCityId, userRegionId}} />)}
   </MethodSuggestionList>
-}
-OnlineSalonsMethod.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-  profile: PropTypes.shape({
-    gender: PropTypes.oneOf(['FEMININE', 'MASCULINE']),
-  }).isRequired,
-  project: PropTypes.shape({
-    city: PropTypes.shape({
-      cityId: PropTypes.string,
-      regionId: PropTypes.string,
-    }),
-  }).isRequired,
-  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(OnlineSalonsMethod)
 
@@ -155,16 +140,16 @@ LocationProps|null => {
   }
   if (areaType === 'REGION') {
     const {regionName: name = '', regionPrefix: prefix = ''} = city
-    return {...{name, prefix}}
+    return {name, prefix}
   }
   if (areaType === 'DEPARTEMENT') {
     const {departementId = '', departementName: name = '', departementPrefix: prefix = ''} = city
-    return {...{departementId, name, prefix}}
+    return {departementId, name, prefix}
   }
   if (areaType === 'CITY') {
     const {departementId = '', name: cityName = ''} = city
     const {cityName: name, prefix} = inCityPrefix(cityName, t)
-    return {...{departementId, name, prefix}}
+    return {departementId, name, prefix}
   }
   return null
 }
@@ -265,30 +250,7 @@ const SalonBase: React.FC<SalonProps> = (props: SalonProps): React.ReactElement|
     </div>
   </ExpandableAction>
 }
-SalonBase.propTypes = {
-  applicationEndDate: PropTypes.string,
-  applicationStartDate: PropTypes.string,
-  domain: PropTypes.string,
-  handleExplore: PropTypes.func,
-  jobGroupIds: PropTypes.arrayOf(PropTypes.string.isRequired),
-  locations: PropTypes.arrayOf(PropTypes.shape({
-    areaType: PropTypes.string,
-    city: PropTypes.shape({
-      cityId: PropTypes.string.isRequired,
-      departementId: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-    }),
-  }).isRequired),
-  offerCount: PropTypes.number,
-  startDate: PropTypes.string,
-  style: PropTypes.object,
-  t: PropTypes.func.isRequired,
-  title: PropTypes.string.isRequired,
-  url: PropTypes.string.isRequired,
-  userCityId: PropTypes.string,
-  userRegionId: PropTypes.string,
-}
 const Salon = React.memo(SalonBase)
 
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName: 'headsetMic' as const}

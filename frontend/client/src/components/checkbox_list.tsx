@@ -1,5 +1,4 @@
 import _without from 'lodash/without'
-import PropTypes from 'prop-types'
 import React, {useCallback, useMemo} from 'react'
 
 import isMobileVersion from 'store/mobile'
@@ -71,17 +70,6 @@ const CheckboxList = <T extends string = string>(props: Props<T>): React.ReactEl
         isSelected={isSelected} onClick={handleChange} value={option.value} />
     })}
   </div>
-}
-CheckboxList.propTypes = {
-  onChange: PropTypes.func.isRequired,
-  // The sorted list of selectable options.
-  options: PropTypes.arrayOf(PropTypes.shape({
-    name: PropTypes.node.isRequired,
-    value: PropTypes.string,
-  })),
-  selectedCheckboxStyle: PropTypes.object,
-  style: PropTypes.object,
-  values: PropTypes.arrayOf(PropTypes.string),
 }
 
 

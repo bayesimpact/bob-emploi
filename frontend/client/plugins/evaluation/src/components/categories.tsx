@@ -1,14 +1,14 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 import _keyBy from 'lodash/keyBy'
 import _pick from 'lodash/pick'
 import _sortBy from 'lodash/sortBy'
 import _uniqueId from 'lodash/uniqueId'
-import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import ReactDragList from 'react-drag-list'
 import {useTranslation} from 'react-i18next'
 import {useSelector} from 'react-redux'
-import ReactSelect, {InputActionMeta} from 'react-select'
+import type {InputActionMeta} from 'react-select'
+import ReactSelect from 'react-select'
 import {Link} from 'react-router-dom'
 
 import {useAsynceffect, useSafeDispatch} from 'store/promise'
@@ -21,8 +21,8 @@ import UpDownIcon from 'components/up_down_icon'
 
 import {EVAL_PAGE} from '../routes'
 
-import {DispatchAllEvalActions, EvalRootState, getEvalFiltersUseCases,
-  getUseCaseDistribution} from '../store/actions'
+import type {DispatchAllEvalActions, EvalRootState} from '../store/actions'
+import {getEvalFiltersUseCases, getUseCaseDistribution} from '../store/actions'
 import {getUseCaseTitle} from '../store/eval'
 
 
@@ -142,7 +142,8 @@ const FilterBase = (props: FilterProps): React.ReactElement => {
     <span style={filterStyle(change)}>{filter}</span>
     <button
       onClick={handleFilterChange}
-      style={changeStyle(change)}>
+      style={changeStyle(change)}
+      type="button">
       {change === 'removed' ? '+' : '-'}
     </button>
   </div>
@@ -233,15 +234,10 @@ const FiltersBase = (props: FiltersProps): React.ReactElement => {
       <input
         value={inputValue} onBlur={toggleInput} onChange={handleInputChange} ref={inputRef} />
     </form> :
-      <button onClick={toggleInput} style={filterElementStyle}>
+      <button onClick={toggleInput} style={filterElementStyle} type="button">
         <span style={changeStyle('removed')}>+</span>
       </button>}
   </React.Fragment>
-}
-FiltersBase.propTypes = {
-  children: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
-  initial: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
-  onChange: PropTypes.func,
 }
 const Filters = React.memo(FiltersBase)
 
@@ -324,7 +320,7 @@ const BobThinkStatsBase = (props: BobThinkStatsProps): React.ReactElement => {
   const showUseCases = useCallback(() => setAreUseCasesShown(true), [])
   const hideUseCases = useCallback(() => setAreUseCasesShown(false), [])
 
-  const [tooltipId] = useState(_uniqueId)
+  const tooltipId = useMemo(_uniqueId, [])
 
   const firstLinkRef = useRef<HTMLAnchorElement>(null)
   const [shouldFocusOnFirstLink, setShouldFocusOnFirstLink] = useState(false)
@@ -393,55 +389,36 @@ const BobThinkStatsBase = (props: BobThinkStatsProps): React.ReactElement => {
         <GrowingNumber number={mainChallengePercentage} />%
       </ComparedValue>
     </span>
-    {examples.length ? <span
-      onMouseEnter={showUseCases}
-      onMouseLeave={hideUseCases}
-      onFocus={handleUseCasesFocus}
-      style={useCasesSpanStyle}
+    {examples.length ?
       // Interactivity is handled specifically to show the tooltip: no real interactions on this
       // element.
-      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-      tabIndex={0}
-      aria-describedby={tooltipId}
-      ref={useCasesRef}>
-      Use Cases
-      {areUseCasesShown ? <div style={useCasesContainerStyle} id={tooltipId}>
-        {examples.map(({useCaseId, poolName, title, userData}, index): React.ReactNode =>
-          <div key={useCaseId} style={{margin: 5}} ><Link
-            ref={index ? undefined : firstLinkRef}
-            style={{whiteSpace: 'nowrap'}}
-            onBlur={handleLinkBlur}
-            onFocus={stopFocusBubbling}
-            target="_blank" to={`${EVAL_PAGE}/${poolName}/${useCaseId}`}>
-            {getUseCaseTitle(t, title, userData)}
-          </Link></div>)}
-      </div> : null}
-    </span> :
+      // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+      <span
+        onMouseEnter={showUseCases}
+        onMouseLeave={hideUseCases}
+        onFocus={handleUseCasesFocus}
+        style={useCasesSpanStyle}
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+        tabIndex={0}
+        aria-describedby={tooltipId}
+        ref={useCasesRef}>
+        Use Cases
+        {areUseCasesShown ? <div style={useCasesContainerStyle} id={tooltipId}>
+          {examples.map(({useCaseId, poolName, title, userData}, index): React.ReactNode =>
+            <div key={useCaseId} style={{margin: 5}} ><Link
+              ref={index ? undefined : firstLinkRef}
+              style={{whiteSpace: 'nowrap'}}
+              onBlur={handleLinkBlur}
+              onFocus={stopFocusBubbling}
+              target="_blank" to={`${EVAL_PAGE}/${poolName}/${useCaseId}`}>
+              {getUseCaseTitle(t, title, userData)}
+            </Link></div>)}
+        </div> : null}
+      </span> :
       <span style={noUseCasesStyle}>
         No Use Cases
       </span>}
   </div>
-}
-BobThinkStatsBase.propTypes = {
-  categoryId: PropTypes.string.isRequired,
-  count: PropTypes.number,
-  examples: PropTypes.arrayOf(PropTypes.shape({
-    useCaseId: PropTypes.string.isRequired,
-  }).isRequired),
-  filters: PropTypes.arrayOf(PropTypes.string.isRequired),
-  // TODO(cyrille): Add other fields once we compare them.
-  initial: PropTypes.shape({
-    count: PropTypes.number,
-    filters: PropTypes.arrayOf(PropTypes.string.isRequired),
-    order: PropTypes.number,
-    totalCount: PropTypes.number.isRequired,
-  }),
-  isEmptyThink: PropTypes.bool,
-  onChange: PropTypes.func,
-  order: PropTypes.number,
-  style: PropTypes.object,
-  t: PropTypes.func.isRequired,
-  totalCount: PropTypes.number.isRequired,
 }
 const BobThinkStats = React.memo(BobThinkStatsBase)
 
@@ -464,12 +441,6 @@ const ComparedValueBase = (props: ComparedValueProps): React.ReactElement => {
     {isNew || old === value ? null :
       <UpDownIcon style={{color}} icon="menu" isUp={isUp} />}
   </div>
-}
-ComparedValueBase.propTypes = {
-  children: PropTypes.node,
-  isHigherUp: PropTypes.bool,
-  old: PropTypes.number,
-  value: PropTypes.number.isRequired,
 }
 const ComparedValue = React.memo(ComparedValueBase)
 
@@ -623,7 +594,6 @@ React.ReactElement|null => {
   )
 
   const handleDrag = useCallback(
-    // eslint-disable-next-line @typescript-eslint/ban-types
     (unusedEvent: unknown, mainChallenges: readonly object[]): void => {
       setMainChallenges((mainChallenges as readonly ValidMainChallenge[]).
         map((mainChallenge: ValidMainChallenge, index: number): ValidMainChallenge =>
@@ -635,7 +605,6 @@ React.ReactElement|null => {
     [],
   )
 
-  // eslint-disable-next-line @typescript-eslint/ban-types
   const renderStats = useCallback((row: object, index: number): React.ReactElement => {
     const mainChallenge = row as ValidMainChallenge
     return <BobThinkStatsIndexed
@@ -668,7 +637,7 @@ React.ReactElement|null => {
       <Input
         placeholder="Nouvelle catégorie" value={newMainChallenge}
         style={{backgroundColor: '#fff', maxWidth: 220}}
-        onChange={setNewMainChallenge} />
+        onChange={setNewMainChallenge} name="category" />
       <Button
         disabled={!newMainChallenge} onClick={addMainChallenge}
         type="navigation" style={{margin: 20}}>
@@ -678,17 +647,14 @@ React.ReactElement|null => {
     <form onSubmit={recompute}>
       Nombre de cas à évaluer
       <Input
-        style={{margin: '0 10px 0', width: 50}}
+        style={{margin: '0 10px 0', width: 50}} type="number"
         value={maxCount.toString()}
-        onChange={handleMaxCountChange} />
+        onChange={handleMaxCountChange} name="number" />
       <Button
         onClick={recompute} type="validation" style={{marginTop: 20}} disabled={!maxCount}>
         Recalculer</Button>
     </form>
   </div>
-}
-MainChallengesDistributionBase.propTypes = {
-  style: PropTypes.object,
 }
 const MainChallengesDistribution = React.memo(MainChallengesDistributionBase)
 

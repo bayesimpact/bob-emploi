@@ -1,20 +1,26 @@
 import {parse} from 'query-string'
-import React, {Suspense, useCallback, useMemo, useState} from 'react'
+import React, {Suspense, useCallback, useMemo, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import ReactDOM from 'react-dom'
 
 import {cleanHtmlError, hasErrorStatus} from 'store/http'
-import {LocalizableString, init as i18nInit, localizeOptions, prepareT} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {init as i18nInit, localizeOptions, prepareT,
+  prepareT as prepareTNoExtract} from 'store/i18n'
 import isMobileVersion from 'store/mobile'
 
-import logoProductImage from 'deployment/bob-logo.svg'
+import logoProductImage from 'deployment/bob-logo.svg?fill=%23fff'
 
 import Button from 'components/button'
-import CheckboxList from 'components/checkbox_list'
-import FieldSet from 'components/field_set'
+import {OneField} from 'components/field_set'
 import Trans from 'components/i18n_trans'
+import type {Inputable} from 'components/input'
+import Input from 'components/input'
+import LikertGrid from 'components/likert_grid'
+import RadioButton from 'components/radio_button'
 import RadioGroup from 'components/radio_group'
 import {ShareModal} from 'components/share'
+import Textarea from 'components/textarea'
 import {MIN_CONTENT_PADDING} from 'components/theme'
 import {Routes} from 'components/url'
 import WaitingPage from 'components/pages/waiting'
@@ -29,6 +35,7 @@ import 'styles/App.css'
 i18nInit()
 
 
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-constraint
 interface LocalizableOption<T extends unknown> {
   name: LocalizableString
   value: T
@@ -124,26 +131,75 @@ const bobHasHelpedOptions = [
 ] as const
 
 
-const bobFeaturesThatHelpedOptions = [
-  {name: prepareT("Le diagnostic m'a été utile"), value: 'DIAGNOSTIC'},
-  {name: prepareT('Utiliser plus le bouche à oreille'), value: 'NETWORK'},
-  {name: prepareT('Utiliser plus les candidatures spontanées'), value: 'SPONTANEOUS'},
-  {name: prepareT('Des astuces pour mon CV et lettre de motivation'), value: 'RESUME_TIPS'},
-  {name: prepareT('Des astuces pour les entretiens'), value: 'INTERVIEW_TIPS'},
+const opinionAnswers = [
+  {name: prepareT("Pas du tout d'accord"), value: 1},
+  {name: prepareTNoExtract(''), value: 2},
+  {name: prepareT('Neutre'), value: 3},
+  {name: prepareTNoExtract(''), value: 4},
+  {name: prepareT("Tout à fait d'accord"), value: 5},
+] as const
+
+const opinionQuestions = [
   {
+    id: 'personalizedAdviceScore',
     name: prepareT(
-      "{{productName}} m'a poussé·e à changer de stratégie",
-      {context: '', productName: config.productName},
+      "{{productName}} m'a donné des conseils personnalisés sur la façon d'améliorer ma " +
+        "recherche d'emploi.",
+      {productName: config.productName},
     ),
-    value: 'STRATEGY_CHANGE',
+  },
+  {
+    id: 'newIdeasScore',
+    name: prepareT(
+      "{{productName}} m'a donné de nouvelles idées sur ce que je dois faire dans ma " +
+        "recherche d'emploi.",
+      {productName: config.productName},
+    ),
+  },
+  {
+    id: 'usefulResourceScore',
+    name: prepareT(
+      "{{productName}} m'a fourni des ressources et des informations utiles.",
+      {productName: config.productName},
+    ),
+  },
+  {
+    id: 'helpsPlanScore',
+    // i18next-extract-mark-context-next-line ["", "FEMININE", "MASCULINE"]
+    name: prepareT(
+      "{{productName}} m'a aidé·e à planifier ma recherche d'emploi.",
+      {productName: config.productName},
+    ),
+  },
+  {
+    id: 'motivationScore',
+    // i18next-extract-mark-context-next-line ["", "FEMININE", "MASCULINE"]
+    name: prepareT(
+      "{{productName}} m'a aidé·e à garder ma motivation et à me sentir soutenu·e",
+      {productName: config.productName},
+    ),
+  },
+  {
+    id: 'improveSelfConfidenceScore',
+    // i18next-extract-mark-context-next-line ["", "FEMININE", "MASCULINE"]
+    name: prepareT(
+      "{{productName}} m'a aidé·e à avoir plus confiance en moi",
+      {productName: config.productName},
+    ),
+  },
+  {
+    id: 'newFromCoachingEmailsScore',
+    name: prepareT(
+      "Les emails de coaching que j'ai reçus m'ont donné de nouvelles idées à essayer dans ma " +
+      "recherche d'emploi."),
   },
 ] as const
+
 
 
 interface Params {
   page?: PageType
   params: {
-    // eslint-disable-next-line  camelcase
     can_tutoie?: string
     employed?: 'True'|'False'
     gender?: bayes.bob.Gender
@@ -194,11 +250,19 @@ const pageStyle: React.CSSProperties = {
 const optionalChildStyle: React.CSSProperties = {
   marginRight: 20,
 }
+const paragraphStyle: React.CSSProperties = {
+  marginBottom: 20,
+}
+const textareaStyle: React.CSSProperties = {
+  minHeight: 200,
+  width: '100%',
+}
+
+type ES = bayes.bob.EmploymentStatus
+type ScoreField = {[F in keyof ES]: ES[F] extends number|undefined ? F : never}[keyof ES] & string
 
 
 const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
-  const [bobFeaturesThatHelped, setBobFeaturesThatHelped] =
-    useState<readonly bayes.bob.UsefulFeature[]>([])
   const [bobHasHelped, setBobHasHelped] = useState('')
   const [isNewJob, setIsNewJob] = useState<bayes.OptionalBool|undefined>(undefined)
   const [isJobInDifferentSector, setIsJobInDifferentSector] =
@@ -211,6 +275,7 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
     useState<bayes.OptionalBool|undefined>(undefined)
   const [hasBeenPromoted, setHasBeenPromoted] =
     useState<bayes.OptionalBool|undefined>(undefined)
+  const [opinions, setOpinions] = useState<bayes.bob.EmploymentStatus>({})
   const [seeking, setSeeking] = useState(initialSeeking)
   const [situation, setSituation] = useState('')
   const [isFormSent, setIsFormSent] = useState(false)
@@ -218,6 +283,12 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
   const [isSendingUpdate, setIsSendingUpdate] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string|undefined>(undefined)
   const {t, t: translate} = useTranslation('statusUpdate')
+  const updateOpinionScore = useCallback(
+    (field: ScoreField, newValue: number) =>
+      setOpinions(status => ({...status, [field]: newValue})),
+    [setOpinions],
+  )
+  const [feedback, setFeedback] = useState('')
 
   const handleUpdateResponse = useCallback(async (response: Response): Promise<void> => {
     setIsSendingUpdate(false)
@@ -238,8 +309,9 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
     setErrorMessage(undefined)
     setIsSendingUpdate(true)
     const newStatus: bayes.bob.EmploymentStatus = {
-      bobFeaturesThatHelped,
+      ...opinions,
       bobHasHelped,
+      feedback,
       hasBeenPromoted,
       hasGreaterRole,
       hasSalaryIncreased,
@@ -256,8 +328,9 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
       method: 'post',
     })
     handleUpdateResponse(updateResponse)
-  }, [bobFeaturesThatHelped, bobHasHelped, handleUpdateResponse, hasBeenPromoted, hasGreaterRole,
-    hasSalaryIncreased, newJobContractType, seeking, situation, isNewJob, isJobInDifferentSector])
+  }, [bobHasHelped, feedback, handleUpdateResponse, hasBeenPromoted, hasGreaterRole,
+    hasSalaryIncreased, newJobContractType, seeking, situation, isNewJob, isJobInDifferentSector,
+    opinions])
   const {headerText, seekingOptions, situationOptions} = FORM_OPTIONS[page || 'mise-a-jour']
   const {gender, employed: wasAlreadyEmployed} = params
   const localizedSeekingOptions = useMemo(
@@ -278,24 +351,30 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
     (): readonly Option<string>[] => localizeOptions(t, bobHasHelpedOptions, {context: gender}),
     [gender, t],
   )
-  const localizedFeatureThatHelpedOptions = useMemo(
-    (): readonly Option<bayes.bob.UsefulFeature>[] =>
-      localizeOptions(t, bobFeaturesThatHelpedOptions, {
-        context: gender, productName: config.productName,
-      }),
-    [gender, t],
-  )
   const localizedOptionalBoolOptions = useMemo(
     (): readonly Option<bayes.OptionalBool>[] =>
       localizeOptions(t, optionalBoolOptions),
     [t],
   )
+  const translatedOpinionAnswers = useMemo(() => localizeOptions(t, opinionAnswers), [t])
+  const translatedOpinionQuestions = useMemo(
+    () => localizeOptions(t, opinionQuestions, {context: gender}),
+    [gender, t],
+  )
+  const hasCustomSituation = !!situation &&
+    !localizedSituationOptions.some(({value}) => value === situation)
+  const [isSituationInputFocused, setIsSituationInputFocused] = useState(false)
+  const handleSituationInputFocus = useCallback(() => setIsSituationInputFocused(true), [])
+  const handleSituationInputBlur = useCallback(() => setIsSituationInputFocused(false), [])
+  const situationInputRef = useRef<Inputable>(null)
+  const handleCustomSituationClick = useCallback(() => {
+    situationInputRef.current?.focus()
+  }, [])
 
   if (!page) {
     return <Trans style={pageStyle} t={t}>Page introuvable</Trans>
   }
   const isEmployedAndStoppedSeeking = seeking === 'STOP_SEEKING' && situation === 'WORKING'
-  const isHowProductHelpedQuestionShown = bobHasHelped && /YES/.test(bobHasHelped)
   if (isFormSent) {
     return <div style={{...containerStyle, ...pageStyle}}>
       {t('Merci pour ces informations\u00A0!')}
@@ -332,12 +411,12 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
       </a>
     </header>
     <div style={containerStyle}>
-      <div style={{fontSize: 16, margin: '40px 0 20px', maxWidth: 500}}>
+      <div style={{fontSize: 16, margin: '40px 0 20px', maxWidth: 640}}>
         {translate(...headerText)}
       </div>
-      <div style={{maxWidth: 500}}>
+      <div style={{maxWidth: 640}}>
         {seekingOptions.length ?
-          <FieldSet
+          <OneField
             label={t("Êtes-vous toujours à la recherche d'un emploi\u00A0?")}
             isValidated={isValidated} isValid={!!seeking}>
             <RadioGroup<bayes.bob.SeekingStatus>
@@ -345,18 +424,29 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
               style={{flexDirection: 'column'}}
               options={localizedSeekingOptions}
               value={seeking} />
-          </FieldSet> : null}
-        <FieldSet
+          </OneField> : null}
+        <OneField
           label={t("Quelle est votre situation aujourd'hui\u00A0?")}
           isValidated={isValidated} isValid={!!situation}>
           <RadioGroup<string>
             onChange={setSituation}
             style={{flexDirection: 'column'}}
             options={localizedSituationOptions}
-            value={situation} />
-        </FieldSet>
+            value={situation}>
+            <span style={{alignItems: 'center', display: 'flex'}}>
+              <RadioButton
+                isSelected={hasCustomSituation || isSituationInputFocused}
+                onClick={handleCustomSituationClick} />
+              <Input
+                value={hasCustomSituation ? situation : ''} onChange={setSituation}
+                placeholder={t('décrire moi-même')} name="situation"
+                onFocus={handleSituationInputFocus} onBlur={handleSituationInputBlur}
+                ref={situationInputRef} style={{marginLeft: 10, maxWidth: 400}} />
+            </span>
+          </RadioGroup>
+        </OneField>
         {isEmployedAndStoppedSeeking ? <React.Fragment>
-          <FieldSet
+          <OneField
             label={t('Est-ce un nouvel emploi\u00A0?')}
             isValidated={isValidated} isValid={!!isNewJob}>
             <RadioGroup<bayes.OptionalBool>
@@ -364,8 +454,8 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
               options={localizedOptionalBoolOptions}
               value={isNewJob}
               childStyle={optionalChildStyle} />
-          </FieldSet>
-          <FieldSet
+          </OneField>
+          <OneField
             // TODO(cyrille): Consider limiting to people who ever had a job
             // (kind !== FIND_A_FIRST_JOB).
             label={t('Vos responsabilités ont-elles évolué depuis votre dernier emploi\u00A0?')}
@@ -375,9 +465,9 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
               options={localizedOptionalBoolOptions}
               value={hasGreaterRole}
               childStyle={optionalChildStyle} />
-          </FieldSet>
+          </OneField>
         </React.Fragment> : null}
-        {isEmployedAndStoppedSeeking && isNewJob === 'TRUE' ? <FieldSet
+        {isEmployedAndStoppedSeeking && isNewJob === 'TRUE' ? <OneField
           label={t('Quel type de contrat avez-vous décroché\u00A0?')}
           isValidated={isValidated} isValid={!!newJobContractType}>
           <RadioGroup<bayes.bob.EmploymentType>
@@ -385,9 +475,9 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
             style={{flexDirection: 'column'}}
             options={localizedContractTypeOptions}
             value={newJobContractType} />
-        </FieldSet> : null}
+        </OneField> : null}
         {isEmployedAndStoppedSeeking && wasAlreadyEmployed === 'True' ? <React.Fragment>
-          <FieldSet
+          <OneField
             label={t('Avez-vous reçu une promotion\u00A0?')}
             isValidated={isValidated} isValid={!!hasBeenPromoted}>
             <RadioGroup<bayes.OptionalBool>
@@ -395,8 +485,8 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
               options={localizedOptionalBoolOptions}
               value={hasBeenPromoted}
               childStyle={optionalChildStyle} />
-          </FieldSet>
-          <FieldSet
+          </OneField>
+          <OneField
             label={t('Avez-vous reçu une augmentation salariale\u00A0?')}
             isValidated={isValidated} isValid={!!hasSalaryIncreased}>
             <RadioGroup<bayes.OptionalBool>
@@ -404,9 +494,9 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
               options={localizedOptionalBoolOptions}
               value={hasSalaryIncreased}
               childStyle={optionalChildStyle} />
-          </FieldSet>
+          </OneField>
         </React.Fragment> : null}
-        {isEmployedAndStoppedSeeking && isNewJob === 'TRUE' ? <FieldSet
+        {isEmployedAndStoppedSeeking && isNewJob === 'TRUE' ? <OneField
           label={t('Votre nouvel emploi est-il dans un secteur différent du précédent\u00A0?')}
           isValidated={isValidated} isValid={!!isJobInDifferentSector}>
           <RadioGroup<bayes.OptionalBool>
@@ -414,8 +504,8 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
             options={localizedOptionalBoolOptions}
             value={isJobInDifferentSector}
             childStyle={optionalChildStyle} />
-        </FieldSet> : null}
-        <FieldSet
+        </OneField> : null}
+        <OneField
           label={t(
             '{{productName}} vous a-t-il apporté un plus dans votre recherche\u00A0?',
             {productName: config.productName},
@@ -426,19 +516,25 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
             style={{flexDirection: 'column'}}
             options={localizedBobHasHelpedOptions}
             value={bobHasHelped} />
-        </FieldSet>
-        {isHowProductHelpedQuestionShown ? <FieldSet
+        </OneField>
+        <section style={paragraphStyle}>
+          <p style={{margin: '0 0 11px'}}>{t(
+            "Dans quelle mesure êtes-vous d'accord ou non avec les affirmations suivantes\u00A0:",
+          )}</p>
+          <LikertGrid
+            scale={translatedOpinionAnswers} questions={translatedOpinionQuestions}
+            values={opinions} onChange={updateOpinionScore} isShownAsGrid={!isMobileVersion} />
+        </section>
+        <OneField
           label={t(
-            'Comment {{productName}} vous a-t-il aidé·e\u00A0?',
-            {context: gender, productName: config.productName},
+            'Y a-t-il autre chose que vous aimeriez partager avec nous au sujet de votre ' +
+            'expérience avec {{productName}}\u00A0?',
+            {productName: config.productName},
           )}>
-          <CheckboxList<bayes.bob.UsefulFeature>
-            options={localizedFeatureThatHelpedOptions}
-            values={bobFeaturesThatHelped}
-            onChange={setBobFeaturesThatHelped}
-          />
-          {/* TODO(pascal): Add a freeform text for "other feature that helped." */}
-        </FieldSet> : null}
+          <Textarea
+            placeholder={t('Saisissez un commentaire ici')}
+            value={feedback} onChange={setFeedback} style={textareaStyle} />
+        </OneField>
       </div>
       <div style={{textAlign: 'center'}}>
         <Button

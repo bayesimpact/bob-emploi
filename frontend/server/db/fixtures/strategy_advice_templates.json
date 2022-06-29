@@ -1,0 +1,1675 @@
+[
+ {
+  "_id": "recWwbxlAA3n3rnn3",
+  "_order": 0,
+  "adviceId": "driving-license-written",
+  "strategyId": "application-methods",
+  "teaserTemplate": "Passer le code"
+ },
+ {
+  "_id": "recHY7kCMJpDlVNcK",
+  "_order": 1,
+  "adviceId": "body-language",
+  "strategyId": "application-methods",
+  "teaserTemplate": "Développer sa confiance en soi"
+ },
+ {
+  "_id": "recsThuxr3oibQHQr",
+  "_order": 2,
+  "adviceId": "driving-license-euro",
+  "strategyId": "application-methods",
+  "teaserTemplate": "Passer le permis pour un euro"
+ },
+ {
+  "_id": "rec0kTsPH3ewaQ5oA",
+  "_order": 3,
+  "adviceId": "follow-up",
+  "strategyId": "application-methods",
+  "teaserTemplate": "Utiliser des idées de Bob pour relancer un recruteur"
+ },
+ {
+  "_id": "recDqizUu7dggiBz8",
+  "_order": 4,
+  "adviceId": "improve-interview",
+  "strategyId": "application-methods",
+  "teaserTemplate": "Voir des exemples de qualités à mettre en avant en entretien"
+ },
+ {
+  "_id": "recG9i8DPLNRHrPDu",
+  "_order": 5,
+  "adviceId": "fresh-resume",
+  "strategyId": "application-methods",
+  "teaserTemplate": "Créer un CV qui répond aux attentes du recruteur"
+ },
+ {
+  "_id": "recCxiam0SVHOWC5F",
+  "_order": 6,
+  "adviceId": "online-salons",
+  "strategyId": "application-methods",
+  "teaserTemplate": "Postuler via des salons en ligne"
+ },
+ {
+  "_id": "rec7pJfice1r6TTEP",
+  "_order": 7,
+  "adviceId": "wow-baker",
+  "strategyId": "application-methods",
+  "teaserTemplate": "Adopter les astuces de boulangers"
+ },
+ {
+  "_id": "recEK97AR2C4qVDpD",
+  "_order": 8,
+  "adviceId": "wow-hairdresser",
+  "strategyId": "application-methods",
+  "teaserTemplate": "Adopter les astuces de coiffeurs"
+ },
+ {
+  "_id": "recNqLQKEOFqJgCv1",
+  "_order": 9,
+  "adviceId": "senior",
+  "strategyId": "application-methods",
+  "teaserTemplate": "Faire de son âge un atout"
+ },
+ {
+  "_id": "rechnrzvuKzONJ9Yf",
+  "_order": 10,
+  "adviceId": "motivation-email",
+  "strategyId": "application-methods",
+  "teaserTemplate": "Écrire un mail ou lettre de motivation qui sort du lot"
+ },
+ {
+  "_id": "recUXtnwZhg2uV1ec",
+  "_order": 11,
+  "adviceId": "improve-resume",
+  "strategyId": "application-methods",
+  "teaserTemplate": "Adapter son CV en fonction des attentes du recruteur"
+ },
+ {
+  "_id": "recklJPd0zTfrIqSM",
+  "_order": 12,
+  "adviceId": "needs-for-handicap",
+  "strategyId": "application-methods",
+  "teaserTemplate": "Aider l'employeur à comprendre son handicap"
+ },
+ {
+  "_id": "recF1jg9UguoHcI4q",
+  "_order": 13,
+  "adviceId": "long-term-mom",
+  "strategyId": "application-methods",
+  "teaserTemplate": "Faire de son expérience de maman un atout"
+ },
+ {
+  "_id": "recp1FmwekKhOmhcj",
+  "_order": 14,
+  "adviceId": "driving-license-low-income",
+  "strategyId": "application-methods",
+  "teaserTemplate": "Passer le permis"
+ },
+ {
+  "_id": "recrZs6dwLtoDWJyU",
+  "_order": 15,
+  "adviceId": "improve-resume",
+  "strategyId": "application-methods-bravo",
+  "teaserTemplate": "Adapter son CV en fonction des attentes du recruteur"
+ },
+ {
+  "_id": "rec9OTofkOMsTJLQy",
+  "_order": 16,
+  "adviceId": "fresh-resume",
+  "strategyId": "application-methods-bravo",
+  "teaserTemplate": "Créer un CV qui répond aux attentes du recruteur"
+ },
+ {
+  "_id": "recDj6r5s1T5YBQd9",
+  "_order": 17,
+  "adviceId": "long-term-mom",
+  "strategyId": "application-methods-bravo",
+  "teaserTemplate": "Faire de son expérience de maman un atout"
+ },
+ {
+  "_id": "rechFpX59TjaX0nSO",
+  "_order": 18,
+  "adviceId": "senior",
+  "strategyId": "application-methods-bravo",
+  "teaserTemplate": "Faire de son âge un atout"
+ },
+ {
+  "_id": "recLJGufs2mDKfmQc",
+  "_order": 19,
+  "adviceId": "motivation-email",
+  "strategyId": "application-methods-bravo",
+  "teaserTemplate": "Écrire un super mail ou lettre de motivation"
+ },
+ {
+  "_id": "recCl48V6LuStv8bf",
+  "_order": 20,
+  "adviceId": "find-a-jobboard",
+  "strategyId": "application-methods-bravo",
+  "teaserTemplate": "Trouver des offres d'emploi en ligne"
+ },
+ {
+  "_id": "recu90qpgnHMWfQk9",
+  "_order": 21,
+  "adviceId": "follow-up",
+  "strategyId": "application-methods-bravo",
+  "teaserTemplate": "Utiliser des idées de Bob pour relancer un recruteur"
+ },
+ {
+  "_id": "recV0wUFsIN88UM9I",
+  "_order": 22,
+  "adviceId": "driving-license-euro",
+  "strategyId": "application-methods-bravo",
+  "teaserTemplate": "Passer le permis pour un euro"
+ },
+ {
+  "_id": "recxleXZE5BceUgUC",
+  "_order": 23,
+  "adviceId": "driving-license-low-income",
+  "strategyId": "application-methods-bravo",
+  "teaserTemplate": "Passer le permis"
+ },
+ {
+  "_id": "reclmzgKMiQF8X6Io",
+  "_order": 24,
+  "adviceId": "driving-license-written",
+  "strategyId": "application-methods-bravo",
+  "teaserTemplate": "Passer le code"
+ },
+ {
+  "_id": "recVMKb557aFR3j8H",
+  "_order": 25,
+  "adviceId": "improve-resume",
+  "strategyId": "application-methods-covid",
+  "teaserTemplate": "Adapter son CV en fonction des attentes du recruteur"
+ },
+ {
+  "_id": "recGplfCjrx4f9OdA",
+  "_order": 26,
+  "adviceId": "motivation-email",
+  "strategyId": "application-methods-covid",
+  "teaserTemplate": "Écrire un mail ou lettre de motivation qui sort du lot"
+ },
+ {
+  "_id": "recypEwQ8tQawgQZj",
+  "_order": 27,
+  "adviceId": "follow-up",
+  "strategyId": "application-methods-covid",
+  "teaserTemplate": "Utiliser des idées de Bob pour relancer un recruteur"
+ },
+ {
+  "_id": "recl4SscAKem8HCip",
+  "_order": 28,
+  "adviceId": "senior",
+  "strategyId": "application-methods-covid",
+  "teaserTemplate": "Faire de son âge un atout"
+ },
+ {
+  "_id": "reco2zRK9KITXIE8V",
+  "_order": 29,
+  "adviceId": "online-salons",
+  "strategyId": "application-methods-covid",
+  "teaserTemplate": "Postuler via des salons en ligne"
+ },
+ {
+  "_id": "recAoggIJuuMYSLMc",
+  "_order": 30,
+  "adviceId": "wow-baker",
+  "strategyId": "application-methods-covid",
+  "teaserTemplate": "Adopter les astuces de boulangers"
+ },
+ {
+  "_id": "recBOcItlL99f6vuW",
+  "_order": 31,
+  "adviceId": "wow-hairdresser",
+  "strategyId": "application-methods-covid",
+  "teaserTemplate": "Adopter les astuces de coiffeurs"
+ },
+ {
+  "_id": "receUR64mXGMituKe",
+  "_order": 32,
+  "adviceId": "fresh-resume",
+  "strategyId": "application-methods-covid",
+  "teaserTemplate": "Créer un CV qui répond aux attentes du recruteur"
+ },
+ {
+  "_id": "recQ9cfa732RfOyuX",
+  "_order": 33,
+  "adviceId": "long-term-mom",
+  "strategyId": "application-methods-covid",
+  "teaserTemplate": "Faire de son expérience de maman un atout"
+ },
+ {
+  "_id": "rec0gHvnsDZQfxB40",
+  "_order": 34,
+  "adviceId": "improve-interview",
+  "strategyId": "application-methods-covid",
+  "teaserTemplate": "Voir des exemples de qualités à mettre en avant en entretien"
+ },
+ {
+  "_id": "recYNrT7mBL9RkhyT",
+  "_order": 35,
+  "adviceId": "body-language",
+  "strategyId": "application-methods-covid",
+  "teaserTemplate": "Développer sa confiance en soi"
+ },
+ {
+  "_id": "recTSnlhmLo9wP0bD",
+  "_order": 36,
+  "adviceId": "driving-license-euro",
+  "strategyId": "application-methods-covid",
+  "teaserTemplate": "Passer le permis pour un euro"
+ },
+ {
+  "_id": "recbcoIxRxfnDUrTI",
+  "_order": 37,
+  "adviceId": "driving-license-low-income",
+  "strategyId": "application-methods-covid",
+  "teaserTemplate": "Passer le permis"
+ },
+ {
+  "_id": "recIi01CWpahQ2scr",
+  "_order": 38,
+  "adviceId": "driving-license-written",
+  "strategyId": "application-methods-covid",
+  "teaserTemplate": "Passer le code"
+ },
+ {
+  "_id": "rec8mCsZ8mwtOJ6Ny",
+  "_order": 39,
+  "adviceId": "needs-for-handicap",
+  "strategyId": "application-methods-covid",
+  "teaserTemplate": "Aider l'employeur à comprendre son handicap"
+ },
+ {
+  "_id": "recHvXa0dFiqY7AeV",
+  "_order": 40,
+  "adviceId": "improve-resume",
+  "strategyId": "application-methods-to-interview",
+  "teaserTemplate": "Adapter votre CV en fonction des attentes du recruteur"
+ },
+ {
+  "_id": "rec7ntzHIlsta6dF3",
+  "_order": 41,
+  "adviceId": "motivation-email",
+  "strategyId": "application-methods-to-interview",
+  "teaserTemplate": "Écrire un mail ou lettre de motivation qui vous démarque des autres"
+ },
+ {
+  "_id": "recKbJ0Gsx9ZgHmXv",
+  "_order": 42,
+  "adviceId": "follow-up",
+  "strategyId": "application-methods-to-interview",
+  "teaserTemplate": "Utiliser des idées de Bob pour relancer un recruteur"
+ },
+ {
+  "_id": "rec3GSZO4akYWiE7i",
+  "_order": 43,
+  "adviceId": "senior",
+  "strategyId": "application-methods-to-interview",
+  "teaserTemplate": "Faire de votre âge un atout"
+ },
+ {
+  "_id": "rec3kTfFPxLabp9Q5",
+  "_order": 44,
+  "adviceId": "online-salons",
+  "strategyId": "application-methods-to-interview",
+  "teaserTemplate": "Postuler via des salons en ligne"
+ },
+ {
+  "_id": "recDjpF0hv00TvfiP",
+  "_order": 45,
+  "adviceId": "wow-baker",
+  "strategyId": "application-methods-to-interview",
+  "teaserTemplate": "Adopter les astuces de boulangers"
+ },
+ {
+  "_id": "recWfUw2K850H1uuT",
+  "_order": 46,
+  "adviceId": "wow-hairdresser",
+  "strategyId": "application-methods-to-interview",
+  "teaserTemplate": "Adopter les astuces de coiffeurs"
+ },
+ {
+  "_id": "rects90StH5GVusVg",
+  "_order": 47,
+  "adviceId": "fresh-resume",
+  "strategyId": "application-methods-to-interview",
+  "teaserTemplate": "Créer un CV qui répond aux attentes du recruteur"
+ },
+ {
+  "_id": "recrFLCuiVBuZZHlV",
+  "_order": 48,
+  "adviceId": "long-term-mom",
+  "strategyId": "application-methods-to-interview",
+  "teaserTemplate": "Faire de son expérience de maman un atout"
+ },
+ {
+  "_id": "rec1IsFx1aioNZyU2",
+  "_order": 49,
+  "adviceId": "body-language",
+  "strategyId": "application-methods-to-interview",
+  "teaserTemplate": "Développer sa confiance en soi"
+ },
+ {
+  "_id": "recCieJw0rKtOAcgH",
+  "_order": 50,
+  "adviceId": "driving-license-euro",
+  "strategyId": "application-methods-to-interview",
+  "teaserTemplate": "Passer le permis pour un euro"
+ },
+ {
+  "_id": "recmrj8XFyDX4sn91",
+  "_order": 51,
+  "adviceId": "driving-license-low-income",
+  "strategyId": "application-methods-to-interview",
+  "teaserTemplate": "Passer le permis"
+ },
+ {
+  "_id": "recZjMg63dNCbYLCZ",
+  "_order": 52,
+  "adviceId": "driving-license-written",
+  "strategyId": "application-methods-to-interview",
+  "teaserTemplate": "Passer le code"
+ },
+ {
+  "_id": "recFqoEHBSc2Q8VZA",
+  "_order": 53,
+  "adviceId": "needs-for-handicap",
+  "strategyId": "application-methods-to-interview",
+  "teaserTemplate": "Aider l'employeur à comprendre son handicap"
+ },
+ {
+  "_id": "recqQBxde3HxZp57p",
+  "_order": 54,
+  "adviceId": "fresh-resume",
+  "strategyId": "application-methods-to-interview-start",
+  "teaserTemplate": "Créer un CV qui répond aux attentes du recruteur"
+ },
+ {
+  "_id": "recBAOzX5J6KNrYZp",
+  "_order": 55,
+  "adviceId": "motivation-email",
+  "strategyId": "application-methods-to-interview-start",
+  "teaserTemplate": "Écrire un mail ou lettre de motivation qui vous démarque des autres"
+ },
+ {
+  "_id": "recKOOpsfsuxFKDvQ",
+  "_order": 56,
+  "adviceId": "senior",
+  "strategyId": "application-methods-to-interview-start",
+  "teaserTemplate": "Faire de votre âge un atout"
+ },
+ {
+  "_id": "recULgrN3jcTJ57Tc",
+  "_order": 57,
+  "adviceId": "online-salons",
+  "strategyId": "application-methods-to-interview-start",
+  "teaserTemplate": "Postuler via des salons en ligne"
+ },
+ {
+  "_id": "recFg4s54XfpRPhit",
+  "_order": 58,
+  "adviceId": "long-term-mom",
+  "strategyId": "application-methods-to-interview-start",
+  "teaserTemplate": "Faire de son expérience de maman un atout"
+ },
+ {
+  "_id": "recc0fE57HssDeGzI",
+  "_order": 59,
+  "adviceId": "find-a-jobboard",
+  "strategyId": "application-methods-to-interview-start",
+  "teaserTemplate": "Trouver des offres d'emploi en ligne"
+ },
+ {
+  "_id": "recFPpxIVWWHMrI3p",
+  "_order": 60,
+  "adviceId": "improve-resume",
+  "strategyId": "application-methods-to-interview-start",
+  "teaserTemplate": "Créer un CV qui répond aux attentes du recruteur"
+ },
+ {
+  "_id": "recPyTxKCw8OaiuMU",
+  "_order": 61,
+  "adviceId": "needs-for-handicap",
+  "strategyId": "application-methods-to-interview-start",
+  "teaserTemplate": "Aider l'employeur à comprendre son handicap"
+ },
+ {
+  "_id": "recspArmz2U3pqRPk",
+  "_order": 62,
+  "adviceId": "body-language",
+  "strategyId": "application-methods-undefined-project",
+  "teaserTemplate": "Développer sa confiance en soi"
+ },
+ {
+  "_id": "recZlSMfshtUmaHd6",
+  "_order": 63,
+  "adviceId": "driving-license-euro",
+  "strategyId": "application-methods-undefined-project",
+  "teaserTemplate": "Passer le permis pour un euro"
+ },
+ {
+  "_id": "rec0T6TvCvIYMBXPc",
+  "_order": 64,
+  "adviceId": "follow-up",
+  "strategyId": "application-methods-undefined-project",
+  "teaserTemplate": "Utiliser des idées de Bob pour relancer un recruteur"
+ },
+ {
+  "_id": "rec1UyL8ftgdXLqaS",
+  "_order": 65,
+  "adviceId": "improve-interview",
+  "strategyId": "application-methods-undefined-project",
+  "teaserTemplate": "Voir des exemples de qualités à mettre en avant en entretien"
+ },
+ {
+  "_id": "recCIVpgJIQSuCWOz",
+  "_order": 66,
+  "adviceId": "fresh-resume",
+  "strategyId": "application-methods-undefined-project",
+  "teaserTemplate": "Créer un CV qui répond aux attentes du recruteur"
+ },
+ {
+  "_id": "recEEwHLIc41zvv8Z",
+  "_order": 67,
+  "adviceId": "online-salons",
+  "strategyId": "application-methods-undefined-project",
+  "teaserTemplate": "Postuler via des salons en ligne"
+ },
+ {
+  "_id": "recFCAN4W122PQDaK",
+  "_order": 68,
+  "adviceId": "wow-hairdresser",
+  "strategyId": "application-methods-undefined-project",
+  "teaserTemplate": "Adopter les astuces de coiffeurs"
+ },
+ {
+  "_id": "recGycec0ZFHNB13A",
+  "_order": 69,
+  "adviceId": "wow-baker",
+  "strategyId": "application-methods-undefined-project",
+  "teaserTemplate": "Adopter les astuces de boulangers"
+ },
+ {
+  "_id": "recTXQNZt1ertN7sY",
+  "_order": 70,
+  "adviceId": "motivation-email",
+  "strategyId": "application-methods-undefined-project",
+  "teaserTemplate": "Écrire un mail ou lettre de motivation qui sort du lot"
+ },
+ {
+  "_id": "rec8hQaJt009gSGTe",
+  "_order": 71,
+  "adviceId": "senior",
+  "strategyId": "application-methods-undefined-project",
+  "teaserTemplate": "Faire de son âge un atout"
+ },
+ {
+  "_id": "rec9KkkPm4ugFhICX",
+  "_order": 72,
+  "adviceId": "improve-resume",
+  "strategyId": "application-methods-undefined-project",
+  "teaserTemplate": "Adapter son CV en fonction des attentes du recruteur"
+ },
+ {
+  "_id": "recanyEZRZ8hOx5eK",
+  "_order": 73,
+  "adviceId": "needs-for-handicap",
+  "strategyId": "application-methods-undefined-project",
+  "teaserTemplate": "Aider l'employeur à comprendre son handicap"
+ },
+ {
+  "_id": "reco5x5Wtvhd3043N",
+  "_order": 74,
+  "adviceId": "driving-license-low-income",
+  "strategyId": "application-methods-undefined-project",
+  "teaserTemplate": "Passer le permis"
+ },
+ {
+  "_id": "recwKf16ltKV5KQks",
+  "_order": 75,
+  "adviceId": "long-term-mom",
+  "strategyId": "application-methods-undefined-project",
+  "teaserTemplate": "Faire de son expérience de maman un atout"
+ },
+ {
+  "_id": "rectBk3GOhrlUt90S",
+  "_order": 76,
+  "adviceId": "driving-license-written",
+  "strategyId": "application-methods-undefined-project",
+  "teaserTemplate": "Passer le code"
+ },
+ {
+  "_id": "rec4ihcodMT7FLbJM",
+  "_order": 77,
+  "adviceId": "events",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Explorer les opportunités ouvertes par des évènements"
+ },
+ {
+  "_id": "recCz4VGVj73jZ2T7",
+  "_order": 78,
+  "adviceId": "association-help",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Rejoindre une association de recherche d'emploi"
+ },
+ {
+  "_id": "recuZazMoB5nWKSlh",
+  "_order": 79,
+  "adviceId": "long-term-mom",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Faire de son expérience de maman un atout"
+ },
+ {
+  "_id": "rec1CtUfGZVdfL3NT",
+  "_order": 80,
+  "adviceId": "create-your-company",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Se renseigner sur la création d'entreprise"
+ },
+ {
+  "_id": "recqLbtsw9moe0MQB",
+  "_order": 81,
+  "adviceId": "improve-resume",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Adapter votre CV en fonction des attentes du recruteur"
+ },
+ {
+  "_id": "recTtJXGBfIAvYisY",
+  "_order": 82,
+  "adviceId": "motivation-email",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Écrire un mail ou lettre de motivation qui vous démarque des autres 💌💁🏻‍♀️"
+ },
+ {
+  "_id": "rec5E9eJ02JGhRCgS",
+  "_order": 83,
+  "adviceId": "follow-up",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Utiliser des exemples de mails de relance"
+ },
+ {
+  "_id": "recUXURmuRCEs7XgI",
+  "_order": 84,
+  "adviceId": "online-salons",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Postuler via des salons en ligne"
+ },
+ {
+  "_id": "recHR1qIAbC2c0WWi",
+  "_order": 85,
+  "adviceId": "better-job-in-group",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Postuler dans des métiers similaires qui recrutent plus"
+ },
+ {
+  "_id": "rec6M01d5sR5Dk9G0",
+  "_order": 86,
+  "adviceId": "relocate",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Chercher dans un département qui a plus de chances de recruter"
+ },
+ {
+  "_id": "recuj8U4dRqfrFRf0",
+  "_order": 87,
+  "adviceId": "senior",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Faire de votre âge un atout"
+ },
+ {
+  "_id": "rec0hfAPPe39jBj7Q",
+  "_order": 88,
+  "adviceId": "wow-baker",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Adopter les astuces de boulangers"
+ },
+ {
+  "_id": "recwQFSXOgHMXCPeF",
+  "_order": 89,
+  "adviceId": "wow-hairdresser",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Adopter les astuces de coiffeurs"
+ },
+ {
+  "_id": "reckb3pBfKPgIKdV5",
+  "_order": 90,
+  "adviceId": "fresh-resume",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Créer un CV qui répond aux attentes du recruteur"
+ },
+ {
+  "_id": "recDjDaTiJ7LQS3po",
+  "_order": 91,
+  "adviceId": "other-work-env",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Voir la liste des secteurs où vous pouvez envisager de postuler"
+ },
+ {
+  "_id": "recDAwmGJSToYqUbR",
+  "_order": 92,
+  "adviceId": "network-application",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Discuter avec les personnes qui connaissent le milieu"
+ },
+ {
+  "_id": "receb4nqNVewcjNtC",
+  "_order": 93,
+  "adviceId": "civic-service",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Faire un service civique"
+ },
+ {
+  "_id": "recfJJ4jmOXtmmcwp",
+  "_order": 94,
+  "adviceId": "find-a-jobboard",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Trouver des offres d'emploi en ligne"
+ },
+ {
+  "_id": "recIa7BkCCscOFwLI",
+  "_order": 95,
+  "adviceId": "less-applications",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Comprendre pourquoi ses candidatures n'aboutissent pas"
+ },
+ {
+  "_id": "recZyAnehoXuQINdK",
+  "_order": 96,
+  "adviceId": "skill-for-future",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Acquérir des compétences d'avenir"
+ },
+ {
+  "_id": "recZ5taL8XmhNnecj",
+  "_order": 97,
+  "adviceId": "spontaneous-application",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Postuler avant qu'une offre soit publiée"
+ },
+ {
+  "_id": "reciY6Rb0fOd2LutM",
+  "_order": 98,
+  "adviceId": "vae",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Obtenir un diplôme grâce à vos années d'expérience"
+ },
+ {
+  "_id": "recigxgZOim7fV1Cx",
+  "_order": 99,
+  "adviceId": "commute",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Explorer les opportunités dans une ville où il y a plus d'offres d'emploi"
+ },
+ {
+  "_id": "rec13fxvBWhg6QT0W",
+  "_order": 100,
+  "adviceId": "driving-license-written",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Passer le code"
+ },
+ {
+  "_id": "recesroMurFOIE5P0",
+  "_order": 101,
+  "adviceId": "driving-license-euro",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Passer le permis pour un euro"
+ },
+ {
+  "_id": "recLaU9Lb3XQAfCWD",
+  "_order": 102,
+  "adviceId": "driving-license-low-income",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Passer le permis"
+ },
+ {
+  "_id": "rec9ctCr1etR723po",
+  "_order": 103,
+  "adviceId": "needs-for-handicap",
+  "strategyId": "apply-in-unliked-job",
+  "teaserTemplate": "Aider l'employeur à comprendre son handicap"
+ },
+ {
+  "_id": "recG3faeRQWypgLM0",
+  "_order": 104,
+  "adviceId": "association-help",
+  "strategyId": "confidence-boost",
+  "teaserTemplate": "Se faire accompagner par une association de recherche d'emploi"
+ },
+ {
+  "_id": "recJmelorLZWeD6T8",
+  "_order": 105,
+  "adviceId": "personality-test",
+  "strategyId": "confidence-boost",
+  "teaserTemplate": "Utiliser des tests de personnalité pour mieux connaître ses forces"
+ },
+ {
+  "_id": "recTKgChv3h5HlwGG",
+  "_order": 106,
+  "adviceId": "life-balance",
+  "strategyId": "confidence-boost",
+  "teaserTemplate": "Prendre du temps pour soi"
+ },
+ {
+  "_id": "rec17SzFF8suDYxxd",
+  "_order": 107,
+  "adviceId": "body-language",
+  "strategyId": "confidence-boost",
+  "teaserTemplate": "Développer sa confiance en soi"
+ },
+ {
+  "_id": "recHAzgmUOUCDB4jQ",
+  "_order": 108,
+  "adviceId": "reorient-jobbing",
+  "strategyId": "diploma-free-job",
+  "teaserTemplate": "Postuler dans un des métiers qui recrutent le plus dans son département"
+ },
+ {
+  "_id": "recMeOVMvoZorvRpH",
+  "_order": 109,
+  "adviceId": "reorient-to-close-job",
+  "strategyId": "diploma-free-job",
+  "teaserTemplate": "Trouver un métier dans le même domaine qui ne demande pas de diplôme"
+ },
+ {
+  "_id": "recpxe5NAC1jX9L8o",
+  "_order": 110,
+  "adviceId": "alternance",
+  "strategyId": "get-alternance",
+  "teaserTemplate": "Trouver une alternance"
+ },
+ {
+  "_id": "recQEVO8DB5OXemjj",
+  "_order": 111,
+  "adviceId": "spontaneous-application",
+  "strategyId": "get-alternance",
+  "teaserTemplate": "Postuler avant qu'une offre soit publiée"
+ },
+ {
+  "_id": "recyz080yGlkZ9VeU",
+  "_order": 112,
+  "adviceId": "follow-up",
+  "strategyId": "get-alternance",
+  "teaserTemplate": "Utiliser des exemples de mails de relance"
+ },
+ {
+  "_id": "rec1PdgkM0Zlj0ip0",
+  "_order": 113,
+  "adviceId": "other-work-env",
+  "strategyId": "get-alternance",
+  "teaserTemplate": "Chercher dans d'autres secteurs du métier"
+ },
+ {
+  "_id": "recRish5ZEPCCFWSp",
+  "_order": 114,
+  "adviceId": "training",
+  "strategyId": "get-diploma",
+  "teaserTemplate": "Trouver une formation"
+ },
+ {
+  "_id": "recqrdPM80kmoylNs",
+  "_order": 115,
+  "adviceId": "vae",
+  "strategyId": "get-diploma",
+  "teaserTemplate": "Obtenir un diplôme grâce à son expérience"
+ },
+ {
+  "_id": "recI6YMhatJdKDhgk",
+  "_order": 116,
+  "adviceId": "association-help",
+  "strategyId": "get-diploma",
+  "teaserTemplate": "Se faire accompagner par une association de recherche d'emploi"
+ },
+ {
+  "_id": "reckNOQO3roTqeYIf",
+  "_order": 117,
+  "adviceId": "skill-for-future",
+  "strategyId": "get-diploma",
+  "teaserTemplate": "Acquérir des compétences d'avenir"
+ },
+ {
+  "_id": "recllwSSz98nqfuRI",
+  "_order": 118,
+  "adviceId": "training",
+  "strategyId": "get-diploma-covid",
+  "teaserTemplate": "Trouver une formation"
+ },
+ {
+  "_id": "recX0eCEftXfINMTW",
+  "_order": 119,
+  "adviceId": "vae",
+  "strategyId": "get-diploma-covid",
+  "teaserTemplate": "Obtenir un diplôme grâce à son expérience"
+ },
+ {
+  "_id": "reczw0dfwlQlBuxou",
+  "_order": 120,
+  "adviceId": "skill-for-future",
+  "strategyId": "get-diploma-covid",
+  "teaserTemplate": "Acquérir des compétences d'avenir"
+ },
+ {
+  "_id": "recL373yKA8Nyedo4",
+  "_order": 121,
+  "adviceId": "association-help",
+  "strategyId": "get-diploma-covid",
+  "teaserTemplate": "Se faire accompagner par une association de recherche d'emploi"
+ },
+ {
+  "_id": "rec1zxL0mcw4ghxY5",
+  "_order": 122,
+  "adviceId": "improve-interview",
+  "strategyId": "interview-success",
+  "teaserTemplate": "Voir des exemples de qualités à mettre en avant en entretien"
+ },
+ {
+  "_id": "reccWDw64xM7RkE1b",
+  "_order": 123,
+  "adviceId": "body-language",
+  "strategyId": "interview-success",
+  "teaserTemplate": "Développer sa confiance en soi"
+ },
+ {
+  "_id": "reczg8CGOdGLf1r73",
+  "_order": 124,
+  "adviceId": "skill-for-future",
+  "strategyId": "interview-success",
+  "teaserTemplate": "En entretien, mettre en avant des compétences d'avenir"
+ },
+ {
+  "_id": "recVJZT8qqhGRM4WY",
+  "_order": 125,
+  "adviceId": "long-term-mom",
+  "strategyId": "interview-success",
+  "teaserTemplate": "En entretien, faire de son expérience de maman un atout"
+ },
+ {
+  "_id": "rec23OhwKUJkVRBKA",
+  "_order": 126,
+  "adviceId": "needs-for-handicap",
+  "strategyId": "interview-success",
+  "teaserTemplate": "Aider l'employeur à comprendre son handicap"
+ },
+ {
+  "_id": "rectfl9Rp4x2TZ4Np",
+  "_order": 127,
+  "adviceId": "improve-interview",
+  "strategyId": "interview-success-bravo",
+  "teaserTemplate": "Réviser les qualités à mettre en avant en entretien"
+ },
+ {
+  "_id": "rec8BSdb0xsOtMBq0",
+  "_order": 128,
+  "adviceId": "body-language",
+  "strategyId": "interview-success-bravo",
+  "teaserTemplate": "Développer sa confiance en soi"
+ },
+ {
+  "_id": "recmjzS0a0o4WD3QX",
+  "_order": 129,
+  "adviceId": "skill-for-future",
+  "strategyId": "interview-success-bravo",
+  "teaserTemplate": "En entretien, mettre en avant des compétences d'avenir"
+ },
+ {
+  "_id": "rec6II1otE71XeBp5",
+  "_order": 130,
+  "adviceId": "long-term-mom",
+  "strategyId": "interview-success-bravo",
+  "teaserTemplate": "En entretien, faire de son expérience de maman un atout"
+ },
+ {
+  "_id": "reckOT6nAvIkWTfKL",
+  "_order": 131,
+  "adviceId": "needs-for-handicap",
+  "strategyId": "interview-success-bravo",
+  "teaserTemplate": "Aider l'employeur à comprendre son handicap"
+ },
+ {
+  "_id": "recemjvYwONnp6Rkl",
+  "_order": 132,
+  "adviceId": "improve-interview",
+  "strategyId": "interview-success-start",
+  "teaserTemplate": "Réviser les qualités à mettre en avant en entretien"
+ },
+ {
+  "_id": "rec0F5R8efODnxBmx",
+  "_order": 133,
+  "adviceId": "body-language",
+  "strategyId": "interview-success-start",
+  "teaserTemplate": "Développer sa confiance en soi"
+ },
+ {
+  "_id": "recFXaC4W7GjuVr3j",
+  "_order": 134,
+  "adviceId": "skill-for-future",
+  "strategyId": "interview-success-start",
+  "teaserTemplate": "En entretien, mettre en avant des compétences d'avenir"
+ },
+ {
+  "_id": "rece8skEi2X5KdPkn",
+  "_order": 135,
+  "adviceId": "long-term-mom",
+  "strategyId": "interview-success-start",
+  "teaserTemplate": "En entretien, faire de son expérience de maman un atout"
+ },
+ {
+  "_id": "rectBxCZDe6acYcZy",
+  "_order": 136,
+  "adviceId": "needs-for-handicap",
+  "strategyId": "interview-success-start",
+  "teaserTemplate": "Aider l'employeur à comprendre son handicap"
+ },
+ {
+  "_id": "rec8axpaebtZtfGyf",
+  "_order": 137,
+  "adviceId": "association-help",
+  "strategyId": "keep-going",
+  "teaserTemplate": "Trouver un accompagnement humain"
+ },
+ {
+  "_id": "rec37aqjb5dEepVNS",
+  "_order": 138,
+  "adviceId": "life-balance",
+  "strategyId": "keep-going",
+  "teaserTemplate": "Prendre du temps pour soi"
+ },
+ {
+  "_id": "rec9OGmjprrz9DBcv",
+  "_order": 139,
+  "adviceId": "body-language",
+  "strategyId": "keep-going",
+  "teaserTemplate": "Développer sa confiance en soi"
+ },
+ {
+  "_id": "reciCV8WyXRSC9yBd",
+  "_order": 140,
+  "adviceId": "association-help",
+  "strategyId": "life-balance",
+  "teaserTemplate": "Se faire accompagner par une association de recherche d'emploi"
+ },
+ {
+  "_id": "recrNqqT4PKdb2pOI",
+  "_order": 141,
+  "adviceId": "life-balance",
+  "strategyId": "life-balance",
+  "teaserTemplate": "Trouver un équilibre entre vie privée et recherche d'emploi"
+ },
+ {
+  "_id": "recUQVx8Yyl6bLYVY",
+  "_order": 142,
+  "adviceId": "follow-up",
+  "strategyId": "life-balance",
+  "teaserTemplate": "Ne pas désespérer si l'on ne répond pas, relancer !"
+ },
+ {
+  "_id": "recyIhJR9vSlSPTuE",
+  "_order": 143,
+  "adviceId": "volunteer",
+  "strategyId": "likeable-job",
+  "teaserTemplate": "Faire du bénévolat pour essayer des rôles sans pression"
+ },
+ {
+  "_id": "recEp5eHm0TkrelCB",
+  "_order": 144,
+  "adviceId": "immersion",
+  "strategyId": "likeable-job",
+  "teaserTemplate": "Essayer des métiers avant de s'engager"
+ },
+ {
+  "_id": "recGxTfszI2OnM8gW",
+  "_order": 145,
+  "adviceId": "explore-other-jobs",
+  "strategyId": "likeable-job",
+  "teaserTemplate": "Définir son projet professionnel avant de regarder les offres d'emploi"
+ },
+ {
+  "_id": "recdCOc4it1NllONJ",
+  "_order": 146,
+  "adviceId": "personality-test",
+  "strategyId": "likeable-job",
+  "teaserTemplate": "Utiliser des tests de personnalité pour mieux connaître ses forces"
+ },
+ {
+  "_id": "recBbf5lCsCZNwFHX",
+  "_order": 147,
+  "adviceId": "reorient-to-close-job",
+  "strategyId": "likeable-job",
+  "teaserTemplate": "Regarder si un de ces métiers qui recrutent le plus pourrait vous plaire"
+ },
+ {
+  "_id": "rec01wsSX9VQ0oKeE",
+  "_order": 148,
+  "adviceId": "network-application",
+  "strategyId": "motivate-in-job",
+  "teaserTemplate": "Poser les bonnes questions aux personnes qui connaissent les milieux visés"
+ },
+ {
+  "_id": "recVkL9xlzd4uWxc0",
+  "_order": 149,
+  "adviceId": "immersion",
+  "strategyId": "motivate-in-job",
+  "teaserTemplate": "Faire une immersion pour vivre l'expérience du métier"
+ },
+ {
+  "_id": "reck0Seq3156a27Au",
+  "_order": 150,
+  "adviceId": "body-language",
+  "strategyId": "motivate-in-job",
+  "teaserTemplate": "Développer sa confiance en soi"
+ },
+ {
+  "_id": "rec4I0B6mtaTHjt2g",
+  "_order": 151,
+  "adviceId": "life-balance",
+  "strategyId": "motivate-in-job",
+  "teaserTemplate": "Prendre du temps pour soi"
+ },
+ {
+  "_id": "recX2q1ubKSoiCXwa",
+  "_order": 152,
+  "adviceId": "reorient-to-close-job",
+  "strategyId": "other-leads",
+  "teaserTemplate": "Voir les métiers proches où ça recrute plus"
+ },
+ {
+  "_id": "rec5RXUcUOpV1izF3",
+  "_order": 153,
+  "adviceId": "relocate",
+  "strategyId": "other-leads",
+  "teaserTemplate": "Trouver une opportunité dans un autre département qui recrute plus"
+ },
+ {
+  "_id": "rect2HMxoPUKXycsf",
+  "_order": 154,
+  "adviceId": "reorient-jobbing",
+  "strategyId": "other-leads",
+  "teaserTemplate": "Postuler dans un des métiers qui recrutent le plus dans son département"
+ },
+ {
+  "_id": "recGuoxdl4K8cgRV4",
+  "_order": 155,
+  "adviceId": "explore-other-jobs",
+  "strategyId": "other-leads",
+  "teaserTemplate": "Explorer d'autres métiers possibles"
+ },
+ {
+  "_id": "recKhDojHfww4a2f8",
+  "_order": 156,
+  "adviceId": "reorient-jobbing",
+  "strategyId": "other-leads-covid",
+  "teaserTemplate": "Postuler dans un des métiers qui recrutent le plus dans son département"
+ },
+ {
+  "_id": "recEiwqtEYmHW3U0s",
+  "_order": 157,
+  "adviceId": "explore-other-jobs",
+  "strategyId": "other-leads-covid",
+  "teaserTemplate": "Explorer d'autres métiers possibles"
+ },
+ {
+  "_id": "recadwM958HTsdXXL",
+  "_order": 158,
+  "adviceId": "reorient-to-close-job",
+  "strategyId": "other-leads-covid",
+  "teaserTemplate": "Voir les métiers proches où ça recrute plus"
+ },
+ {
+  "_id": "reciegPiBMRsYIb29",
+  "_order": 159,
+  "adviceId": "explore-safe-jobs",
+  "strategyId": "other-leads-covid",
+  "teaserTemplate": "Voir des métiers avec de bonnes perspectives"
+ },
+ {
+  "_id": "recifGepJ9hgIdcFD",
+  "_order": 160,
+  "adviceId": "other-work-env",
+  "strategyId": "presearch-methods",
+  "teaserTemplate": "Voir la liste des secteurs où vous pouvez envisager de postuler"
+ },
+ {
+  "_id": "reccGlwJi1HjuprsB",
+  "_order": 161,
+  "adviceId": "network-application",
+  "strategyId": "presearch-methods",
+  "teaserTemplate": "Discuter avec les personnes qui connaissent le milieu"
+ },
+ {
+  "_id": "recsBjIAvzKH9jAML",
+  "_order": 162,
+  "adviceId": "spontaneous-application",
+  "strategyId": "presearch-methods",
+  "teaserTemplate": "Postuler avant qu'une offre soit publiée"
+ },
+ {
+  "_id": "recnm3ckp6LOQYwJ3",
+  "_order": 163,
+  "adviceId": "civic-service",
+  "strategyId": "presearch-methods",
+  "teaserTemplate": "Faire un service civique"
+ },
+ {
+  "_id": "recVDU6yop4QqxFuS",
+  "_order": 164,
+  "adviceId": "volunteer",
+  "strategyId": "presearch-methods",
+  "teaserTemplate": "Faire du bénévolat"
+ },
+ {
+  "_id": "recqniPmvkMmT1YQ2",
+  "_order": 165,
+  "adviceId": "skill-for-future",
+  "strategyId": "presearch-methods",
+  "teaserTemplate": "Acquérir des compétences d'avenir"
+ },
+ {
+  "_id": "receU7Ty90HGOzVYd",
+  "_order": 166,
+  "adviceId": "less-applications",
+  "strategyId": "presearch-methods",
+  "teaserTemplate": "Comprendre pourquoi ses candidatures n'aboutissent pas"
+ },
+ {
+  "_id": "recPQJcuNrJAHOFhW",
+  "_order": 167,
+  "adviceId": "immersion",
+  "strategyId": "presearch-methods",
+  "teaserTemplate": "Faire une immersion en entreprise"
+ },
+ {
+  "_id": "rec58ncHeSbKBd5Gi",
+  "_order": 168,
+  "adviceId": "find-a-jobboard",
+  "strategyId": "presearch-methods",
+  "teaserTemplate": "Trouver des offres d'emploi en ligne"
+ },
+ {
+  "_id": "rec7XJzofVGQpeyoU",
+  "_order": 169,
+  "adviceId": "vae",
+  "strategyId": "presearch-methods",
+  "teaserTemplate": "Obtenir un diplôme grâce à vos années d'expérience"
+ },
+ {
+  "_id": "recFabdR0sVxQc7mG",
+  "_order": 170,
+  "adviceId": "association-help",
+  "strategyId": "presearch-methods",
+  "teaserTemplate": "Rejoindre une association de recherche d'emploi"
+ },
+ {
+  "_id": "recIo0w2G838eliIB",
+  "_order": 171,
+  "adviceId": "create-your-company",
+  "strategyId": "presearch-methods",
+  "teaserTemplate": "Se renseigner sur la création d'entreprise"
+ },
+ {
+  "_id": "recGShWOExeG82euo",
+  "_order": 172,
+  "adviceId": "events",
+  "strategyId": "presearch-methods",
+  "teaserTemplate": "Explorer les opportunités ouvertes par des évènements"
+ },
+ {
+  "_id": "recaJyrfA97m6j7ML",
+  "_order": 173,
+  "adviceId": "relocate",
+  "strategyId": "presearch-methods",
+  "teaserTemplate": "Trouver une opportunité dans un autre département qui recrute plus"
+ },
+ {
+  "_id": "recko8hPoOfOAdZOu",
+  "_order": 174,
+  "adviceId": "spontaneous-application",
+  "strategyId": "targeted-search",
+  "teaserTemplate": "Postuler %inAWorkplace qui recrute"
+ },
+ {
+  "_id": "recYa8lxAw0LH60co",
+  "_order": 175,
+  "adviceId": "relocate",
+  "strategyId": "targeted-search",
+  "teaserTemplate": "Trouver une opportunité dans un autre département qui recrute plus"
+ },
+ {
+  "_id": "recPVzIAJ718IJyNu",
+  "_order": 176,
+  "adviceId": "seasonal-relocate",
+  "strategyId": "targeted-search",
+  "teaserTemplate": "Cibler les emplois saisonniers qui recrutent beaucoup"
+ },
+ {
+  "_id": "recOnZT6g1NppBoaq",
+  "_order": 177,
+  "adviceId": "less-applications",
+  "strategyId": "targeted-search",
+  "teaserTemplate": "Postuler moins, postuler mieux"
+ },
+ {
+  "_id": "reciD8Fvk6iEaYAMi",
+  "_order": 178,
+  "adviceId": "commute",
+  "strategyId": "targeted-search",
+  "teaserTemplate": "Explorer les opportunités dans une ville où il y a plus d'offres d'emploi"
+ },
+ {
+  "_id": "recjaRogkcnQLUm8q",
+  "_order": 179,
+  "adviceId": "better-job-in-group",
+  "strategyId": "targeted-search",
+  "teaserTemplate": "Postuler dans des métiers similaires qui recrutent plus"
+ },
+ {
+  "_id": "recKV7hjgsz5Pyb1P",
+  "_order": 180,
+  "adviceId": "find-a-jobboard",
+  "strategyId": "targeted-search",
+  "teaserTemplate": "Trouver des offres d'emploi en ligne"
+ },
+ {
+  "_id": "recbm63s71npxlr6N",
+  "_order": 181,
+  "adviceId": "network-application",
+  "strategyId": "targeted-search",
+  "teaserTemplate": "Essayer de se faire embaucher via une connaissance"
+ },
+ {
+  "_id": "recheiakZgy48obn8",
+  "_order": 182,
+  "adviceId": "online-salons",
+  "strategyId": "targeted-search",
+  "teaserTemplate": "Postuler via des salons en ligne"
+ },
+ {
+  "_id": "recnWcGgmRoZ0s2hC",
+  "_order": 183,
+  "adviceId": "immersion",
+  "strategyId": "targeted-search",
+  "teaserTemplate": "Faire un mini-stage pour faire des contacts"
+ },
+ {
+  "_id": "recTOG0xfBuuT5rBP",
+  "_order": 184,
+  "adviceId": "other-work-env",
+  "strategyId": "targeted-search-bravo",
+  "teaserTemplate": "Voir la liste des secteurs où vous pouvez envisager de postuler"
+ },
+ {
+  "_id": "recjv6woSc08y7hbl",
+  "_order": 185,
+  "adviceId": "skill-for-future",
+  "strategyId": "targeted-search-bravo",
+  "teaserTemplate": "Acquérir des compétences d'avenir"
+ },
+ {
+  "_id": "rechrFim1iiEFwKEB",
+  "_order": 186,
+  "adviceId": "network-application",
+  "strategyId": "targeted-search-bravo",
+  "teaserTemplate": "Trouver un emploi via quelqu'un que l'on connaît"
+ },
+ {
+  "_id": "rect7yjgMMj2McFjU",
+  "_order": 187,
+  "adviceId": "spontaneous-application",
+  "strategyId": "targeted-search-bravo",
+  "teaserTemplate": "Faire des candidatures spontanées %inAWorkplace qui recrute"
+ },
+ {
+  "_id": "recI2j3U3Uu6a82RM",
+  "_order": 188,
+  "adviceId": "commute",
+  "strategyId": "targeted-search-bravo",
+  "teaserTemplate": "Explorer les opportunités dans une ville où il y a plus d'offres d'emploi"
+ },
+ {
+  "_id": "rec9yaOTHEj8DBl58",
+  "_order": 189,
+  "adviceId": "online-salons",
+  "strategyId": "targeted-search-bravo",
+  "teaserTemplate": "Postuler via des salons en ligne"
+ },
+ {
+  "_id": "rec1KBz41Kx3DbR9N",
+  "_order": 190,
+  "adviceId": "create-your-company",
+  "strategyId": "targeted-search-bravo",
+  "teaserTemplate": "Se renseigner sur la création d'entreprise"
+ },
+ {
+  "_id": "recdw00jtQ3svhTS1",
+  "_order": 191,
+  "adviceId": "events",
+  "strategyId": "targeted-search-bravo",
+  "teaserTemplate": "Explorer les opportunités ouvertes par des évènements"
+ },
+ {
+  "_id": "rec6yx5junxzC1igr",
+  "_order": 192,
+  "adviceId": "immersion",
+  "strategyId": "targeted-search-bravo",
+  "teaserTemplate": "Faire une immersion pour vivre l'expérience du métier"
+ },
+ {
+  "_id": "recd2k8M170m5DxWT",
+  "_order": 193,
+  "adviceId": "reorient-to-close-job",
+  "strategyId": "targeted-search-bravo",
+  "teaserTemplate": "Voir les métiers proches où ça recrute plus"
+ },
+ {
+  "_id": "recNRCYvo82CuX17H",
+  "_order": 194,
+  "adviceId": "seasonal-relocate",
+  "strategyId": "targeted-search-bravo",
+  "teaserTemplate": "Cibler les emplois saisonniers qui recrutent beaucoup"
+ },
+ {
+  "_id": "recX6nm2764ZiOe2n",
+  "_order": 195,
+  "adviceId": "better-job-in-group",
+  "strategyId": "targeted-search-bravo",
+  "teaserTemplate": "Postuler dans des métiers similaires qui recrutent plus"
+ },
+ {
+  "_id": "recBh2iWqM2iCBTlB",
+  "_order": 196,
+  "adviceId": "better-job-in-group",
+  "strategyId": "targeted-search-covid",
+  "teaserTemplate": "Postuler dans des métiers similaires qui recrutent plus"
+ },
+ {
+  "_id": "recG5TN8UysbUBRzC",
+  "_order": 197,
+  "adviceId": "relocate",
+  "strategyId": "targeted-search-covid",
+  "teaserTemplate": "Trouver une opportunité dans un autre département qui recrute plus"
+ },
+ {
+  "_id": "rech29BNDPwfBZXcV",
+  "_order": 198,
+  "adviceId": "other-work-env",
+  "strategyId": "targeted-search-covid",
+  "teaserTemplate": "Voir la liste des secteurs où vous pouvez envisager de postuler"
+ },
+ {
+  "_id": "recYAkDlYHzb3stmK",
+  "_order": 199,
+  "adviceId": "online-salons",
+  "strategyId": "targeted-search-covid",
+  "teaserTemplate": "Postuler via des salons en ligne"
+ },
+ {
+  "_id": "rec1DXlSy8wNZsgde",
+  "_order": 200,
+  "adviceId": "spontaneous-application",
+  "strategyId": "targeted-search-covid",
+  "teaserTemplate": "Faire des candidatures spontanées %inAWorkplace qui recrute"
+ },
+ {
+  "_id": "recDXXLTCyoSlK8J2",
+  "_order": 201,
+  "adviceId": "commute",
+  "strategyId": "targeted-search-covid",
+  "teaserTemplate": "Explorer les opportunités dans une ville où il y a plus d'offres d'emploi"
+ },
+ {
+  "_id": "recJg8dzieTysdLFk",
+  "_order": 202,
+  "adviceId": "events",
+  "strategyId": "targeted-search-covid",
+  "teaserTemplate": "Explorer les opportunités ouvertes par des évènements"
+ },
+ {
+  "_id": "recKObg6QJArhT4tb",
+  "_order": 203,
+  "adviceId": "reorient-to-close-job",
+  "strategyId": "targeted-search-covid",
+  "teaserTemplate": "Voir les métiers proches où ça recrute plus"
+ },
+ {
+  "_id": "recM8vnHlg07u89Ls",
+  "_order": 204,
+  "adviceId": "network-application",
+  "strategyId": "targeted-search-covid",
+  "teaserTemplate": "Trouver un emploi via quelqu'un que l'on connaît"
+ },
+ {
+  "_id": "recTdLynS3KMX0vnM",
+  "_order": 205,
+  "adviceId": "create-your-company",
+  "strategyId": "targeted-search-covid",
+  "teaserTemplate": "Se renseigner sur la création d'entreprise"
+ },
+ {
+  "_id": "recd1ctJhIAfuutFj",
+  "_order": 206,
+  "adviceId": "skill-for-future",
+  "strategyId": "targeted-search-covid",
+  "teaserTemplate": "Acquérir des compétences d'avenir"
+ },
+ {
+  "_id": "recs2D232LEs86060",
+  "_order": 207,
+  "adviceId": "seasonal-relocate",
+  "strategyId": "targeted-search-covid",
+  "teaserTemplate": "Cibler les emplois saisonniers qui recrutent beaucoup"
+ },
+ {
+  "_id": "recvfiJKPvb7yZ21T",
+  "_order": 208,
+  "adviceId": "immersion",
+  "strategyId": "targeted-search-covid",
+  "teaserTemplate": "Faire une immersion pour vivre l'expérience du métier"
+ },
+ {
+  "_id": "recxHUm2UYDi9JSAE",
+  "_order": 209,
+  "adviceId": "commute",
+  "strategyId": "targeted-search-start",
+  "teaserTemplate": "Explorer les opportunités dans une ville où il y a plus d'offres d'emploi"
+ },
+ {
+  "_id": "recxMXbsm3Nbf2JJy",
+  "_order": 210,
+  "adviceId": "spontaneous-application",
+  "strategyId": "targeted-search-start",
+  "teaserTemplate": "Postuler %inAWorkplace qui recrute"
+ },
+ {
+  "_id": "recpONZkDd3ZgN6x2",
+  "_order": 211,
+  "adviceId": "network-application",
+  "strategyId": "targeted-search-start",
+  "teaserTemplate": "Discuter avec les personnes qui connaissent le milieu"
+ },
+ {
+  "_id": "rec00ZT3wdYjHYk8p",
+  "_order": 212,
+  "adviceId": "vae",
+  "strategyId": "targeted-search-start",
+  "teaserTemplate": "Obtenir un diplôme grâce à ses années d'expérience"
+ },
+ {
+  "_id": "recUU9maz4vgF1xXT",
+  "_order": 213,
+  "adviceId": "association-help",
+  "strategyId": "targeted-search-start",
+  "teaserTemplate": "Rejoindre une association de recherche d'emploi"
+ },
+ {
+  "_id": "rec8xlEoLU7FwvuQE",
+  "_order": 214,
+  "adviceId": "skill-for-future",
+  "strategyId": "targeted-search-start",
+  "teaserTemplate": "Acquérir des compétences d'avenir"
+ },
+ {
+  "_id": "receNpzrCZpSQooop",
+  "_order": 215,
+  "adviceId": "other-work-env",
+  "strategyId": "targeted-search-start",
+  "teaserTemplate": "Voir la liste des secteurs où vous pouvez envisager de postuler"
+ },
+ {
+  "_id": "recQmlIUFUwphgUkc",
+  "_order": 216,
+  "adviceId": "personality-test",
+  "strategyId": "targeted-search-start",
+  "teaserTemplate": "Utiliser des tests de personnalité pour mieux connaître ses forces"
+ },
+ {
+  "_id": "recz5xQ5GwHPFmBaU",
+  "_order": 217,
+  "adviceId": "relocate",
+  "strategyId": "targeted-search-start",
+  "teaserTemplate": "Trouver une opportunité dans un autre département qui recrute plus"
+ },
+ {
+  "_id": "recYZqBd3YA9Hvzyl",
+  "_order": 218,
+  "adviceId": "spontaneous-application",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Postuler avant qu'une offre soit publiée"
+ },
+ {
+  "_id": "rec3BCf6FkQqDWqyH",
+  "_order": 219,
+  "adviceId": "network-application",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Essayer de se faire embaucher via une connaissance"
+ },
+ {
+  "_id": "recILyg3Z207dQVj4",
+  "_order": 220,
+  "adviceId": "events",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Explorer les opportunités ouvertes par des évènements"
+ },
+ {
+  "_id": "receKxI2fOYbX7Wct",
+  "_order": 221,
+  "adviceId": "less-applications",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Postuler moins, postuler mieux"
+ },
+ {
+  "_id": "recXZZghVdGdqKxgU",
+  "_order": 222,
+  "adviceId": "improve-interview",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Mettre en avant certaines qualités en entretien"
+ },
+ {
+  "_id": "rec03BegZPXbXxtpZ",
+  "_order": 223,
+  "adviceId": "improve-resume",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Adapter votre CV en fonction des attentes du recruteur"
+ },
+ {
+  "_id": "recChs98MScFDPRDW",
+  "_order": 224,
+  "adviceId": "fresh-resume",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Créer un CV qui répond aux attentes du recruteur"
+ },
+ {
+  "_id": "reclD48OikKi8kNil",
+  "_order": 225,
+  "adviceId": "find-a-jobboard",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Trouver des offres d'emploi en ligne"
+ },
+ {
+  "_id": "rec7VOnFfioVBIc2O",
+  "_order": 226,
+  "adviceId": "motivation-email",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Écrire un mail ou lettre de motivation qui vous démarque des autres"
+ },
+ {
+  "_id": "rec8P9aXwFHQCd64t",
+  "_order": 227,
+  "adviceId": "wow-baker",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Adopter les astuces de boulangers"
+ },
+ {
+  "_id": "rec4Eqv0dfFto7oCh",
+  "_order": 228,
+  "adviceId": "wow-hairdresser",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Adopter les astuces de coiffeurs"
+ },
+ {
+  "_id": "recrTrooECWg0nZLo",
+  "_order": 229,
+  "adviceId": "volunteer",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Faire du bénévolat"
+ },
+ {
+  "_id": "rec1YqmK5G2cCFdZG",
+  "_order": 230,
+  "adviceId": "senior",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Faire de son âge un atout"
+ },
+ {
+  "_id": "recURcY9fLiwvFVvp",
+  "_order": 231,
+  "adviceId": "long-term-mom",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Faire de son expérience de maman un atout"
+ },
+ {
+  "_id": "recX42tEqmJiww1lD",
+  "_order": 232,
+  "adviceId": "body-language",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Développer sa confiance en soi"
+ },
+ {
+  "_id": "rectWDcBR4rBcAIIt",
+  "_order": 233,
+  "adviceId": "follow-up",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Utiliser des exemples de mails de relance"
+ },
+ {
+  "_id": "recWSLbalAYG0dyXK",
+  "_order": 234,
+  "adviceId": "create-your-company",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Se renseigner sur la création d'entreprise"
+ },
+ {
+  "_id": "recw7iXtKNwVtLhJ1",
+  "_order": 235,
+  "adviceId": "online-salons",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Postuler via des salons en ligne"
+ },
+ {
+  "_id": "recFvezFM28rzKycQ",
+  "_order": 236,
+  "adviceId": "needs-for-handicap",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Aider l'employeur à comprendre son handicap"
+ },
+ {
+  "_id": "recYNbmw3GhvxlocI",
+  "_order": 237,
+  "adviceId": "immersion",
+  "strategyId": "try-without-diploma",
+  "teaserTemplate": "Faire une immersion en entreprise"
+ },
+ {
+  "_id": "recTSPC0xTZ7snUqU",
+  "_order": 238,
+  "adviceId": "jobflix",
+  "strategyId": "upskilling",
+  "teaserTemplate": "Utiliser l'explorateur de carrières pour trouver des idées de job"
+ }
+]

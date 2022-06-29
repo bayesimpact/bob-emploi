@@ -3,20 +3,21 @@
 import datetime
 import os
 from os import path
-import re
 import time
 import typing
-from typing import Any, Dict
 import unittest
 from unittest import mock
 
 import mongomock
 
-from bob_emploi.common.python import now
+from bob_emploi.common.python.test import nowmock
+from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import diagnostic_pb2
+from bob_emploi.frontend.api import features_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server import advisor
 from bob_emploi.frontend.server import i18n
 from bob_emploi.frontend.server import mongo
@@ -26,7 +27,6 @@ from bob_emploi.frontend.server.test import mailjetmock
 from bob_emploi.frontend.server.test import scoring_test
 
 
-_TEMPLATE_PATH = path.join(path.dirname(path.dirname(__file__)), 'mail/templates')
 _FAKE_TRANSLATIONS_FILE = path.join(path.dirname(__file__), 'testdata/translations.json')
 
 
@@ -35,24 +35,26 @@ class _BaseTestCase(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
         self.database = mongo.NoPiiMongoDatabase(mongomock.MongoClient().test)
-        self.database.action_templates.insert_one({
-            '_id': 'rec1CWahSiEtlwEHW',
-            'goal': 'Reorientation !',
-        })
         i18n.cache.clear()
 
         self.user = user_pb2.User(
-            features_enabled=user_pb2.Features(advisor=user_pb2.ACTIVE, workbench=user_pb2.ACTIVE),
-            profile=user_pb2.UserProfile(
-                name='Margaux', gender=user_pb2.FEMININE, email='margaux@example.fr',
+            features_enabled=features_pb2.Features(
+                advisor=features_pb2.ACTIVE, workbench=features_pb2.ACTIVE),
+            profile=user_profile_pb2.UserProfile(
+                name='Margaux', gender=user_profile_pb2.FEMININE, email='margaux@example.fr',
                 locale='fr@tu'))
         proto.CachedCollection.update_cache_version()
+
+
+class _ScoringModelMock:
+    def __init__(self) -> None:
+        self.score_and_explain = mock.MagicMock()
+        self.get_advice_override = mock.MagicMock()
 
 
 class MaybeAdviseTestCase(_BaseTestCase):
     """Unit tests for the maybe_advise function."""
 
-    @mailjetmock.patch()
     def test_no_advice_if_project_incomplete(self) -> None:
         """Test that the advice do not get populated when the project is marked as incomplete."""
 
@@ -61,9 +63,6 @@ class MaybeAdviseTestCase(_BaseTestCase):
 
         self.assertEqual(len(project.advices), 0)
 
-        self.assertFalse(mailjetmock.get_all_sent_messages())
-
-    @mailjetmock.patch()
     def test_missing_module(self) -> None:
         """Test that the advisor does not crash when a module is missing."""
 
@@ -75,10 +74,8 @@ class MaybeAdviseTestCase(_BaseTestCase):
 
         self.assertEqual(project_before, str(project))
 
-        self.assertFalse(mailjetmock.get_all_sent_messages())
-
-    @mock.patch(now.__name__ + '.get')
-    @mailjetmock.patch()
+    @nowmock.patch()
+    @mock.patch.dict(os.environ, {'BASE_URL': 'http://base.example.com/'})
     def test_find_all_pieces_of_advice(self, mock_now: mock.MagicMock) -> None:
         """Test that the advisor scores all advice modules."""
 
@@ -91,6 +88,23 @@ class MaybeAdviseTestCase(_BaseTestCase):
                 feminine_name='Hôtesse',
                 masculine_name='Steward',
             ),
+            actions=[
+                action_pb2.Action(
+                    action_id='be-happy',
+                    title='Be happy',
+                    status=action_pb2.ACTION_UNREAD,
+                ),
+                action_pb2.Action(
+                    action_id='dont-worry',
+                    title="Don't worry",
+                    status=action_pb2.ACTION_CURRENT,
+                ),
+                action_pb2.Action(
+                    action_id='sing-along',
+                    title='Sing along',
+                    status=action_pb2.ACTION_UNREAD,
+                ),
+            ],
         )
         self.database.advice_modules.insert_many([
             {
@@ -107,120 +121,97 @@ class MaybeAdviseTestCase(_BaseTestCase):
             },
         ])
 
-        advisor.maybe_advise(self.user, project, self.database, 'http://base.example.com')
-
+        advisor.maybe_advise(self.user, project, self.database)
         self.assertEqual(['spontaneous-application'], [a.advice_id for a in project.advices])
         self.assertEqual(project_pb2.ADVICE_RECOMMENDED, project.advices[0].status)
 
-        mails_sent = mailjetmock.get_all_sent_messages()
-        self.assertEqual(1, len(mails_sent), msg=mails_sent)
-        data = mails_sent[0].properties['Variables']
-        with open(path.join(_TEMPLATE_PATH, 'activation-email', 'vars.txt'), 'r') as vars_file:
-            template_vars = {v.strip() for v in vars_file if not v.startswith('#')}
-        self.assertFalse(
-            template_vars - set(data.keys()), msg='Some variables from the email are not given')
+    @mock.patch.dict(os.environ, {'BOB_DEPLOYMENT': 'usa'})
+    def test_generate_actions(self) -> None:
+        """Test that the advisor generates actions if the action_plan feature is active."""
 
-        self.assertEqual('10 juin 2018', data['date'])
-        self.assertEqual('Margaux', data['firstName'])
-        self.assertEqual('FEMININE', data['gender'])
-        self.assertEqual("d'hôtesse", data['ofJob'])
-        login_url = data.pop('loginUrl')
-        base_url = re.escape(f'http://base.example.com?userId={self.user.user_id}')
-        self.assertRegex(login_url, rf'^{base_url}&authToken=\d+\.[a-f0-9]+$')
-        email_settings_url = data.pop('changeEmailSettingsUrl')
-        base_url = re.escape(f'http://base.example.com/unsubscribe.html?user={self.user.user_id}')
-        self.assertRegex(
-            email_settings_url,
-            rf'^{base_url}&auth=\d+\.[a-f0-9]+&coachingEmailFrequency=UNKNOWN_EMAIL_FREQUENCY&'
-            r'hl=fr%40tu$')
-        self.assertEqual('', data['isCoachingEnabled'])
-        self.assertEqual('Bob', data['productName'])
-        self.assertEqual('https://www.bob-emploi.fr', data['baseUrl'])
-
-    @mock.patch.dict(os.environ, {'I18N_TRANSLATIONS_FILE': _FAKE_TRANSLATIONS_FILE})
-    @mock.patch(now.__name__ + '.get')
-    @mailjetmock.patch()
-    def test_activation_email_in_english(self, mock_now: mock.MagicMock) -> None:
-        """Test that the date is set in English in the activation email."""
-
-        mock_now.return_value = datetime.datetime(2018, 6, 10)
-
+        self.database.action_templates.insert_many([
+            {
+                'actionTemplateId': 'review-me',
+                'triggerScoringModel': 'constant(1)',
+                'tags': ['chrome-tool'],
+                'duration': 'FIFTEEN_TO_30_MIN',
+                'resourceUrl': 'https://bar',
+            },
+            {
+                'actionTemplateId': 'not-for-you',
+                'triggerScoringModel': 'constant(0)',
+            },
+            {
+                'actionTemplateId': 'finish-the-sprint',
+                'triggerScoringModel': 'constant(2)',
+            },
+        ])
+        self.database.translations.insert_many([
+            {'string': 'actionTemplates:review-me:title', 'en': 'Review me!'},
+            {'string': 'actionTemplates:review-me:short_description', 'en': 'Please review me now'},
+            {
+                'string': 'actionTemplates:review-me:short_description_FEMININE',
+                'en': 'Please review me now, Madam',
+            },
+            {'string': 'actionTemplates:tags:chrome-tool', 'en': 'Chrome Tool'},
+            {'string': 'actionTemplates:review-me:resource_url_usa', 'en': 'https://foo'},
+        ])
+        self.user.features_enabled.action_plan = features_pb2.ACTIVE
         self.user.profile.locale = 'en'
-        project = project_pb2.Project()
-        self.database.advice_modules.insert_one({
-            'adviceId': 'spontaneous-application',
-            'categories': ['first'],
-            'triggerScoringModel': 'constant(2)',
-            'isReadyForProd': True,
-        })
+        project = project_pb2.Project(
+            project_id='1234',
+            target_job=job_pb2.Job(
+                name='Steward/ Hôtesse',
+                feminine_name='Hôtesse',
+                masculine_name='Steward',
+            ),
+        )
 
-        advisor.maybe_advise(self.user, project, self.database, 'http://base.example.com')
+        advisor.maybe_advise(self.user, project, self.database)
 
-        mails_sent = mailjetmock.get_all_sent_messages()
-        self.assertEqual(1, len(mails_sent), msg=mails_sent)
-        data = mails_sent[0].properties['Variables']
+        self.assertEqual(['finish-the-sprint', 'review-me'], [a.action_id for a in project.actions])
+        review_me = project.actions[1]
+        self.assertEqual('Review me!', review_me.title)
+        self.assertEqual('Please review me now, Madam', review_me.short_description)
+        self.assertEqual(['Chrome Tool'], review_me.tags)
+        self.assertEqual(action_pb2.FIFTEEN_TO_30_MIN, review_me.duration)
+        self.assertEqual('https://foo', review_me.resource_url)
 
-        self.assertEqual('June 10 2018', data['date'])
-        self.assertIn('mailto:?body=Hi%2C%0A%0A', data['viralityTemplate'])
-        self.assertIn(
-            'subject=It+made+me+think+about+you%E2%80%A6', data['viralityTemplate'])
+    def test_all_action_modules(self) -> None:
+        """A user with all_modules enabled should get all actions."""
 
-    @mock.patch(now.__name__ + '.get')
-    @mailjetmock.patch()
-    def test_activation_email_in_english_uk(self, mock_now: mock.MagicMock) -> None:
-        """Test that the date is set in English for the UK in the activation email."""
+        self.database.action_templates.insert_many([
+            {
+                'actionTemplateId': 'not-for-you',
+                'triggerScoringModel': 'constant(0)',
+            },
+            {
+                'actionTemplateId': 'review-me',
+                'triggerScoringModel': 'constant(1)',
+                'tags': ['chrome-tool'],
+                'duration': 'FIFTEEN_TO_30_MIN',
+            },
+            {
+                'actionTemplateId': 'finish-the-sprint',
+                'triggerScoringModel': 'constant(2)',
+            },
+        ])
+        self.user.features_enabled.action_plan = features_pb2.ACTIVE
+        self.user.features_enabled.all_modules = True
+        project = project_pb2.Project(
+            project_id='1234',
+            target_job=job_pb2.Job(
+                name='Steward/ Hôtesse',
+                feminine_name='Hôtesse',
+                masculine_name='Steward',
+            ),
+        )
+        advisor.maybe_advise(self.user, project, self.database)
 
-        mock_now.return_value = datetime.datetime(2018, 6, 10)
+        self.assertEqual(
+            ['review-me', 'not-for-you', 'finish-the-sprint'],
+            [a.action_id for a in project.actions])
 
-        self.user.profile.locale = 'en_UK'
-        project = project_pb2.Project()
-        self.database.advice_modules.insert_one({
-            'adviceId': 'spontaneous-application',
-            'categories': ['first'],
-            'triggerScoringModel': 'constant(2)',
-            'isReadyForProd': True,
-        })
-
-        advisor.maybe_advise(self.user, project, self.database, 'http://base.example.com')
-
-        mails_sent = mailjetmock.get_all_sent_messages()
-        self.assertEqual(1, len(mails_sent), msg=mails_sent)
-        data = mails_sent[0].properties['Variables']
-
-        self.assertEqual('June 10 2018', data['date'])
-
-    @mock.patch(advisor.logging.__name__ + '.exception')
-    @mock.patch(now.__name__ + '.get')
-    @mailjetmock.patch()
-    def test_activation_email_in_spanish(
-            self, mock_now: mock.MagicMock, mock_logger: mock.MagicMock) -> None:
-        """Test that we log an error when sending the activation email in an unknown locale."""
-
-        mock_now.return_value = datetime.datetime(2018, 6, 10)
-
-        self.user.profile.locale = 'es'
-        project = project_pb2.Project()
-        self.database.advice_modules.insert_one({
-            'adviceId': 'spontaneous-application',
-            'categories': ['first'],
-            'triggerScoringModel': 'constant(2)',
-            'isReadyForProd': True,
-        })
-
-        advisor.maybe_advise(self.user, project, self.database, 'http://base.example.com')
-
-        mails_sent = mailjetmock.get_all_sent_messages()
-        self.assertEqual(1, len(mails_sent), msg=mails_sent)
-
-        mock_logger.assert_called()
-        for call_args in mock_logger.call_args_list:
-            error = call_args[0][0] % call_args[0][1:]
-            if 'Sending an email with an unknown locale: es' in error:
-                break
-        else:
-            self.fail(f'1234 was never logged as an error\n{mock_logger.call_args_list}')
-
-    @mailjetmock.patch()
     def test_missing_email_address(self) -> None:
         """Test that we do not send any email if we are missing the address."""
 
@@ -248,15 +239,11 @@ class MaybeAdviseTestCase(_BaseTestCase):
         ])
         self.user.profile.email = ''
 
-        advisor.maybe_advise(self.user, project, self.database, 'http://base.example.com')
+        advisor.maybe_advise(self.user, project, self.database)
 
         self.assertEqual(['spontaneous-application'], [a.advice_id for a in project.advices])
         self.assertEqual(project_pb2.ADVICE_RECOMMENDED, project.advices[0].status)
 
-        mails_sent = mailjetmock.get_all_sent_messages()
-        self.assertFalse(mails_sent)
-
-    @mailjetmock.patch()
     def test_redacted_email_address(self) -> None:
         """Test that we do not send any email if the email address is already redacted."""
 
@@ -284,13 +271,10 @@ class MaybeAdviseTestCase(_BaseTestCase):
         ])
         self.user.profile.email = 'REDACTED'
 
-        advisor.maybe_advise(self.user, project, self.database, 'http://base.example.com')
+        advisor.maybe_advise(self.user, project, self.database)
 
         self.assertEqual(['spontaneous-application'], [a.advice_id for a in project.advices])
         self.assertEqual(project_pb2.ADVICE_RECOMMENDED, project.advices[0].status)
-
-        mails_sent = mailjetmock.get_all_sent_messages()
-        self.assertFalse(mails_sent)
 
     def test_is_for_alpha_only(self) -> None:
         """Test that the advisor marks modules not ready for prod as alpha only."""
@@ -318,15 +302,14 @@ class MaybeAdviseTestCase(_BaseTestCase):
             },
         ])
 
-        advisor.maybe_advise(self.user, project, self.database, 'http://base.example.com')
+        advisor.maybe_advise(self.user, project, self.database)
 
         self.assertEqual(
             ['spontaneous-application', 'other-work-env'],
             [a.advice_id for a in project.advices])
         self.assertEqual([False, True], [a.is_for_alpha_only for a in project.advices])
 
-    @mock.patch(advisor.logging.__name__ + '.warning')
-    @mailjetmock.patch()
+    @mock.patch('logging.warning')
     def test_recommend_advice_none(self, mock_logger: mock.MagicMock) -> None:
         """Test that the advisor does not recommend anyting if all modules score 0."""
 
@@ -350,11 +333,8 @@ class MaybeAdviseTestCase(_BaseTestCase):
 
         self.assertFalse(project.advices)
 
-        self.assertFalse(mailjetmock.get_all_sent_messages())
-
         mock_logger.assert_called_once()
 
-    @mailjetmock.patch()
     def test_recommend_all_modules(self) -> None:
         """Test that all advice are recommended when all_modules is true even if incompatible."""
 
@@ -391,19 +371,16 @@ class MaybeAdviseTestCase(_BaseTestCase):
             ['spontaneous-application', 'other-work-env', 'new-advice'],
             [a.advice_id for a in project.advices])
 
-        self.assertEqual(1, len(mailjetmock.get_all_sent_messages()))
-
-    @mock.patch(advisor.scoring.scoring_base.__name__ + '.SCORING_MODELS', new_callable=dict)
-    @mailjetmock.patch()
-    def test_explained_advice(self, mock_scoring_models: Dict[str, Any]) -> None:
+    @mock.patch.dict(scoring.SCORING_MODELS, {
+        'constant(1)': _ScoringModelMock()
+    }, clear=True)
+    def test_explained_advice(self) -> None:
         """Test that the advisor gives explanations for the advices."""
 
-        mock_scoring_models['constant(1)'] = mock.MagicMock(spec=[
-            'get_advice_override',
-            'score_and_explain'])
-        mock_scoring_models['constant(1)'].score_and_explain.return_value = \
+        mock_scoring_model = typing.cast(_ScoringModelMock, scoring.SCORING_MODELS['constant(1)'])
+        mock_scoring_model.score_and_explain.return_value = \
             scoring.ExplainedScore(1, ['voilà pourquoi', 'explication genré%eFeminine'])
-        mock_scoring_models['constant(1)'].get_advice_override.return_value = None
+        mock_scoring_model.get_advice_override.return_value = None
 
         project = project_pb2.Project()
         self.database.advice_modules.insert_one({
@@ -412,7 +389,7 @@ class MaybeAdviseTestCase(_BaseTestCase):
             'triggerScoringModel': 'constant(1)',
             'isReadyForProd': True,
         })
-        self.user.profile.gender = user_pb2.FEMININE
+        self.user.profile.gender = user_profile_pb2.FEMININE
         advisor.maybe_advise(self.user, project, self.database)
 
         self.assertEqual(
@@ -421,9 +398,7 @@ class MaybeAdviseTestCase(_BaseTestCase):
         self.assertEqual(
             ['voilà pourquoi', 'explication genrée'],
             project.advices[0].explanations)
-        self.assertEqual(1, len(mailjetmock.get_all_sent_messages()))
 
-    @mailjetmock.patch()
     def test_incompatible_advice_modules(self) -> None:
         """Test that the advisor discard incompatible advice modules."""
 
@@ -459,28 +434,22 @@ class MaybeAdviseTestCase(_BaseTestCase):
         self.assertEqual(
             ['spontaneous-application', 'final-one'],
             [a.advice_id for a in project.advices])
-        self.assertEqual(1, len(mailjetmock.get_all_sent_messages()))
 
-    @mock.patch(advisor.scoring.scoring_base.__name__ + '.SCORING_MODELS', new_callable=dict)
-    @mock.patch(advisor.logging.__name__ + '.exception')
-    @mailjetmock.patch()
+    @mock.patch.dict(scoring.SCORING_MODELS, {
+        'constant(1)': _ScoringModelMock(),
+        'crash-me': _ScoringModelMock(),
+    }, clear=True)
+    @mock.patch('logging.exception')
     @mock.patch.dict(os.environ, {'I18N_TRANSLATIONS_FILE': _FAKE_TRANSLATIONS_FILE})
-    def test_module_crashes(
-            self, mock_logger: mock.MagicMock,
-            mock_scoring_models: Dict[str, Any]) -> None:
+    def test_module_crashes(self, mock_logger: mock.MagicMock) -> None:
         """Test that the advisor does not crash if one module does."""
 
-        mock_scoring_models['constant(1)'] = mock.MagicMock(spec=[
-            'get_advice_override',
-            'score_and_explain'])
-        mock_scoring_models['constant(1)'].score_and_explain.return_value = \
-            scoring.ExplainedScore(1, [])
-        mock_scoring_models['constant(1)'].get_advice_override.return_value = None
-        mock_scoring_models['crash-me'] = mock.MagicMock(spec=[
-            'get_advice_override',
-            'score_and_explain'])
-        mock_scoring_models['crash-me'].score_and_explain.side_effect = ValueError('ouch')
-        mock_scoring_models['crash-me'].get_advice_override.return_value = None
+        constant_1_model = typing.cast(_ScoringModelMock, scoring.SCORING_MODELS['constant(1)'])
+        constant_1_model.score_and_explain.return_value = scoring.ExplainedScore(1, [])
+        constant_1_model.get_advice_override.return_value = None
+        crash_me_model = typing.cast(_ScoringModelMock, advisor.scoring.SCORING_MODELS['crash-me'])
+        crash_me_model.score_and_explain.side_effect = ValueError('ouch')
+        crash_me_model.get_advice_override.return_value = None
 
         project = project_pb2.Project()
         self.database.advice_modules.insert_many([
@@ -502,22 +471,19 @@ class MaybeAdviseTestCase(_BaseTestCase):
         advisor.maybe_advise(self.user, project, self.database)
 
         self.assertEqual(['network'], [a.advice_id for a in project.advices])
-        self.assertEqual(1, len(mailjetmock.get_all_sent_messages()))
         mock_logger.assert_called_once()
         self.assertIn('REDACTED', mock_logger.call_args[0][0] % mock_logger.call_args[0][1:])
 
-    @mock.patch(advisor.scoring.scoring_base.__name__ + '.SCORING_MODELS', new_callable=dict)
-    @mailjetmock.patch()
-    def test_module_has_missing_data(self, mock_scoring_models: Dict[str, Any]) -> None:
+    @mock.patch.dict(scoring.SCORING_MODELS, {
+        'missing-data': _ScoringModelMock()
+    }, clear=True)
+    def test_module_has_missing_data(self) -> None:
         """A module fails because of missing data."""
 
-        mock_scoring_models['missing-data'] = mock.MagicMock(spec=[
-            'get_advice_override',
-            'score_and_explain'])
-        mock_scoring_models['missing-data'].get_advice_override.return_value = None
-        mock_scoring_models['missing-data'].score_and_explain.side_effect = \
-            advisor.scoring.NotEnoughDataException(
-                'Please, feed me data', fields={'field1', 'field2'}, reasons=['missing-diploma'])
+        mock_scoring_model = typing.cast(_ScoringModelMock, scoring.SCORING_MODELS['missing-data'])
+        mock_scoring_model.get_advice_override.return_value = None
+        mock_scoring_model.score_and_explain.side_effect = advisor.scoring.NotEnoughDataException(
+            'Please, feed me data', fields={'field1', 'field2'}, reasons=['missing-diploma'])
         self.database.advice_modules.insert_one({
             'advice_id': 'get-a-diploma',
             'triggerScoringModel': 'missing-data',
@@ -531,14 +497,16 @@ class MaybeAdviseTestCase(_BaseTestCase):
         self.assertEqual('get-a-diploma', advice.advice_id)
         self.assertAlmostEqual(.1, advice.num_stars)
 
-    @mock.patch(advisor.logging.__name__ + '.warning')
+    @mock.patch('logging.warning')
+    @mock.patch.dict(scoring.SCORING_MODELS, {
+        'very-long-to-respond': _ScoringModelMock(),
+    }, clear=True)
     def test_timeout_on_scoring(self, mock_warning: mock.MagicMock) -> None:
         """Check that we don't wait scoring models for ever."""
 
-        patcher = mock.patch(advisor.scoring.__name__ + '.get_scoring_model')
-        mock_get_scoring_model = patcher.start()
-        self.addCleanup(patcher.stop)
-        mock_get_scoring_model().score_and_explain.side_effect = lambda *unused_args: time.sleep(2)
+        mock_scoring_model = typing.cast(
+            _ScoringModelMock, scoring.SCORING_MODELS['very-long-to-respond'])
+        mock_scoring_model.score_and_explain.side_effect = lambda *unused_args: time.sleep(2)
         self.database.advice_modules.insert_one({
             'adviceId': 'crazy-advice',
             'categories': ['first'],
@@ -547,9 +515,9 @@ class MaybeAdviseTestCase(_BaseTestCase):
         })
 
         time_before_computing = time.time()
-        advisor.compute_advices_for_project(
-            self.user, project_pb2.Project(), self.database,
-            scoring_timeout_seconds=0.01)
+        scoring_project = scoring.ScoringProject(
+            project_pb2.Project(), self.user, self.database)
+        advisor.compute_advices_for_project(scoring_project, scoring_timeout_seconds=0.01)
         time_after_computing = time.time()
 
         self.assertLess(time_after_computing - time_before_computing, 1)

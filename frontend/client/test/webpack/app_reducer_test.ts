@@ -1,6 +1,6 @@
 import chai from 'chai'
 import {app} from 'store/app_reducer'
-import {DiagnoseOnboardingAction, GetAdviceTipsAction} from 'store/actions'
+import type {DiagnoseOnboardingAction, GetAdviceTipsAction} from 'store/actions'
 
 const expect = chai.expect
 

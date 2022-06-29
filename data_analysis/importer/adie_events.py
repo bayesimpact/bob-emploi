@@ -3,7 +3,7 @@
 
 import json
 import re
-from typing import Any, Dict, List
+from typing import Any
 
 from bob_emploi.data_analysis.lib import mongo
 
@@ -18,7 +18,7 @@ _FRENCH_MONTHS = {
 }
 
 
-def adie_events2dicts(events_json: str) -> List[Dict[str, Any]]:
+def adie_events2dicts(events_json: str) -> list[dict[str, Any]]:
     """Convert the scraped events of ADIE into our own Event format before Mongo import.
 
     Args:
@@ -28,7 +28,7 @@ def adie_events2dicts(events_json: str) -> List[Dict[str, Any]]:
         an iterable of dict with the JSON values of the Event proto.
     """
 
-    with open(events_json, 'rt') as events_file:
+    with open(events_json, 'rt', encoding='utf-8') as events_file:
         events = json.load(events_file)
     events_to_import = {}
 
@@ -49,7 +49,7 @@ def _parse_date(date: str) -> str:
     return f'{year:04d}-{month:02d}-{day:02d}'
 
 
-def _adie_event_to_proto(props: Dict[str, Any]) -> Dict[str, Any]:
+def _adie_event_to_proto(props: dict[str, Any]) -> dict[str, Any]:
     props['cityName'] = props['ville'].title()
     return {
         '_id': props['rdvGroupeId'],

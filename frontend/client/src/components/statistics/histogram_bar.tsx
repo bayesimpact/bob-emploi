@@ -40,6 +40,8 @@ const HistogramBar: React.FC<Props> = (props: Props): React.ReactElement => {
   const {height, isHighlighted, style, subtitle, title} = props
   // TODO(sil): Find a way to explain why a bar is highlighted.
   const containerStyle = useMemo((): React.CSSProperties => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ['WebkitPrintColorAdjust' as any]: 'exact',
     backgroundColor: isHighlighted ? colors.BOB_BLUE : transparentBlue,
     height,
     position: 'relative',

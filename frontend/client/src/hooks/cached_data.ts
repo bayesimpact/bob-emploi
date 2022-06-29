@@ -1,8 +1,8 @@
 import {useState} from 'react'
 import {useDispatch, useSelector} from 'react-redux'
-import {ThunkAction} from 'redux-thunk'
+import type {ThunkAction} from 'redux-thunk'
 
-import {AllActions, DispatchAllActions, RootState} from 'store/actions'
+import type {AllActions, DispatchAllActions, RootState} from 'store/actions'
 import {useAsynceffect} from 'store/promise'
 
 interface CachedData<DataType> {

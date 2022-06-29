@@ -3,7 +3,7 @@
 import datetime
 import unittest
 
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server.mail.test import campaign_helper
 
 
@@ -14,7 +14,7 @@ class DeleteOldUsersVarsTestCase(campaign_helper.CampaignTestBase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.user.profile.gender = user_pb2.FEMININE
+        self.user.profile.gender = user_profile_pb2.FEMININE
         self.user.profile.name = 'Nathalie'
 
     def test_basic(self) -> None:

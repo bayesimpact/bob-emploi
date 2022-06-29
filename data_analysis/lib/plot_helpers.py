@@ -1,14 +1,12 @@
 """Helper functions to make plots in notebooks prettier and more convenient."""
 
 import typing
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, Optional, Tuple
 
 import pandas
 
 if typing.TYPE_CHECKING:
-    import typing_extensions
-
-    class _MatplotlibPatch(typing_extensions.Protocol):
+    class _MatplotlibPatch(typing.Protocol):
         def get_height(self) -> float:
             """Get height of patch."""
 
@@ -21,9 +19,9 @@ if typing.TYPE_CHECKING:
         def get_y(self) -> float:
             """Get Y position of patch."""
 
-    class _MatplotlibAxesSubplot(typing_extensions.Protocol):
+    class _MatplotlibAxesSubplot(typing.Protocol):
         @property
-        def patches(self) -> List[_MatplotlibPatch]:
+        def patches(self) -> list[_MatplotlibPatch]:
             """List of patches."""
 
         def annotate(

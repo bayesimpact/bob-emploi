@@ -1,0 +1,236 @@
+### Preamble
+
+**{{productName}} is an independent platform developed by the association BAYES IMPACT. The objective and the functioning of the association are dedicated to the general interest. The contents of the site and the platform are made available under a Creative Commons license. The Source Code of the software is made available as free software.**
+
+**The algorithm developed by the association analyzes labor market data as well as millions of job search paths in order to allow everyone to benefit from the right advice. The data used by the algorithm will never be used for any other purpose than to improve the recommendations of the site and the application. They will remain under the control of their users. They will not be used commercially or transferred to third parties.**
+
+## 1. Definitions
+
+"{{productName}}" or "THE SERVICE" corresponds to a platform that offers ideas for interesting jobs, and adapted training.
+
+To operate this platform, {{productName}} operates databases of the labor market, millions of job search paths, training, advertisements and usage (hereinafter "THE INFORMATION ").
+
+The association "BAYES IMPACT FRANCE" is the developer and the host of the platform is OVH.
+
+The "users" are the people who use the platform.
+
+The service is accessible on "THE SITE" at the address: {{canonicalUrl}}
+
+## 2. Validity and acceptance
+
+These general conditions are communicated to each user who reads them and accepts them by using the platform, as well as by checking a box indicating their acceptance when creating their account.
+
+These conditions are accessible at any time on the site.
+
+They govern the relationship between users and {{productName}} within the framework of the use of the service.
+
+Users acknowledge that they have the right to use the service.
+The use of the service and the use of information implies their full and unreserved acceptance. Their non-acceptance entails the renunciation of the use of the service as well as the exploitation of the information.
+
+## 3. Scope
+
+This contract exclusively governs the use of {{productName}} by users.
+
+This service is provided by BAYES IMPACT FRANCE free of charge and without any other consideration than compliance with these conditions of use.
+
+The execution of training is not governed by this contract.
+
+The responsibility of BAYES IMPACT FRANCE is limited exclusively to facilitating access to the platform.
+
+TRAINING. The users are responsible for the circumstances relating to the conduct of the training courses they choose. BAYES IMPACT FRANCE is not responsible for their execution. BAYES IMPACT FRANCE is not a training organization. BAYES IMPACT FRANCE does not provide training services. BAYES IMPACT FRANCE excludes all liability on these points within the limits authorized by law.
+
+## 4. Description of service
+
+{{productName}} is an independent platform developed by the BAYES IMPACT association. The {{productName}} algorithm analyzes labor market data as well as millions of job search routes to ensure that everyone can benefit from the right advice.
+
+#### 4.1. Obtain a tailor-made action plan
+{{productName}} studies the current job market in the user's department to help them identify how to boost their job search.
+
+#### 4.2. Discover new professions in its image
+The {{productName}} algorithm learns from contact with users. By using the application they improve the relevance of the recommendations that will be made for them.
+
+## 5. Usage of {{productName}}
+
+### 5.1. Using {{productName}}
+As part of their use of the platform, users undertake to comply with the laws and regulations in force and not to infringe the rights of third parties or public order.
+
+
+Users are solely responsible for the proper accomplishment of all formalities including administrative, fiscal, social and all payments of contributions, taxes or duties of all kinds incumbent on them to be able to carry out the actions proposed on {{productName}}. Regarding the training presented, it is their sole responsibility to obtain the diplomas, certificates, licenses, accreditations, equipment and authorizations that would be necessary for this training. The responsibility of BAYES IMPACT FRANCE can in no case be engaged in this respect.
+
+Users acknowledge that they are aware of the characteristics and constraints, in particular technical, of the platform. They are solely responsible for its use. Users are informed and accept that the implementation of the platform requires an internet connection for which they are solely responsible, and that the quality of the service may depend directly on it.
+
+Users are also solely responsible for the relationships they may establish with the managers of the services, in particular the training courses, which they will use by following the suggestions of the platform.
+
+If necessary, it is the responsibility of users to conclude confidentiality agreements, non-competition or to respect professional secrecy when this is necessary so that they can exploit the facilities or services offered on the platform. The responsibility of {{productName}} can in no way be engaged in this respect.
+
+Users undertake to make strictly personal use of {{productName}}. They are therefore prohibited from assigning, conceding or transferring all or part of their rights or obligations hereunder to a third party, in any way whatsoever.
+
+Users also refrain from any referencing, scanning, aspiration, etc. {{productName}} information.
+
+If necessary, users agree to provide BAYES IMPACT FRANCE with all the information necessary for the proper performance of {{productName}}.
+
+More generally, users agree to cooperate actively with {{productName}} for the proper execution of these conditions.
+
+Consultation of training courses is a free service for users.
+
+### 5.2. User email addresses
+
+Users can only use one email address on {{productName}}. They are entirely and fully responsible for their activity on {{productName}}, its confidentiality, as well as its legality.
+
+Users agree to provide accurate, up-to-date and complete information at the time of the registration procedure. They also agree to update them as they evolve.
+
+BAYES IMPACT FRANCE reserves the right to suspend or delete ad nutum any user account at any time and for any reason, in particular for having used several emails, for having transmitted false information, for having left obsolete information, or for exploiting an account for illicit purposes.
+
+### 5.3. Free to use {{productName}}
+The use of the {{productName}} platform is free.
+
+## 6. Responsibilities and Warranties
+
+### 6.1. No responsibility for training
+
+BAYES IMPACT FRANCE excludes all liability concerning the respect by users of agreements or obligations made with third parties, as well as of the legislation or regulations in force.
+
+BAYES IMPACT FRANCE does not provide or guarantee the provision of training or their execution on behalf of the user. BAYES IMPACT FRANCE only undertakes to distribute them under the best conditions made possible by the service. BAYES IMPACT FRANCE is not and will not be bound by any additional agreement made with the trainers.
+
+BAYES IMPACT FRANCE does not ensure or guarantee the result of responses to job offers that will be offered to users. BAYES IMPACT FRANCE undertakes only to distribute them under the best conditions made possible by the service. BAYES IMPACT FRANCE is not and will not be bound by any subsequent agreement with employers.
+
+### 6.2. Absence of responsibility with regard to the operation of {{productName}}
+
+{{productName}} cannot guarantee that its service will not be interrupted. {{productName}} undertakes to provide its service with diligence and according to the rules of the art, it being specified that it is only an obligation of means, to the exclusion of any obligation of result, what users recognize and expressly accept. {{productName}} can not be held responsible for temporary difficulties or impossibilities of access to the platform which would have for origin of circumstances which are external to him, force majeure, or which would be due to disturbances of the telecommunication networks .
+
+{{productName}} cannot guarantee users in the event of possible loss of their account information. Users are responsible for saving a copy of their information. They cannot claim any compensation for any loss of data whatsoever.
+
+The platform is provided as is. {{productName}} cannot guarantee to users that it is totally free of errors, vices and defects. The platform is developed in a standardized way for all users. It is in no way designed to adapt to their personal constraints.
+
+In any event, the liability likely to be incurred by {{productName}} would be expressly limited to the sole proven direct damages suffered by users.
+
+{{productName}} expressly reserves the right to temporarily interrupt access to its service for maintenance reasons.
+
+### 6.3. Prohibited behaviors
+
+Beyond the other prohibitions provided for in these conditions, users undertake to use the platform in a virtuous manner. In particular, they are prohibited from using the platform for the following purposes:
+the exercise of illegal, fraudulent activities or activities that infringe the rights or the security of third parties;
+intrusion into a third party's computer system or any activity likely to harm, control, interfere with, or intercept all or part of a third party's computer system, violate its integrity or security;
+sending unsolicited emails or commercial solicitations;
+manipulations intended to improve the referencing of a third-party site;
+aiding or inciting, in any form or manner, one or more of the acts and activities described above;
+and more generally any practice diverting the service for purposes other than those for which it was designed.
+
+Users agree to respect the continuity of service of the platform. They are prohibited in particular:
+any behavior likely to interrupt, suspend, slow down or prevent the continuity of the service;
+any intrusions or attempted intrusions into the service;
+any misuse of the Service's system resources;
+any actions likely to impose a disproportionate burden on the service infrastructure;
+any breaches of security and authentication measures;
+any act likely to infringe the financial, commercial or moral rights and interests of {{productName}} or users of the service.
+
+Users agree to respect the value of the platform. They are prohibited from monetizing, selling or granting all or part of the access to the platform.
+
+### 6.4. User guarantee towards Bayes Impact France
+
+Users guarantee BAYES IMPACT FRANCE against all complaints, claims, actions, claims whatsoever that BAYES IMPACT FRANCE may suffer as a result of the breach by them of any of their obligations or guarantees under these general conditions.
+
+Users agree to indemnify BAYES IMPACT FRANCE for any damage suffered and to pay all costs, charges and convictions incurred as a result.
+
+Users waive all recourse to BAYES IMPACT FRANCE for any damage (material, bodily, consequential or non-material) suffered during the execution or non-execution of a training course.
+
+## 7. Links to other sites
+
+{{productName}} may provide links to third party websites. The linked sites are not under the control of BAYES IMPACT FRANCE, which is not responsible for their content and offers no guarantee with regard to them. It is up to users to make all necessary or appropriate verifications before proceeding with any transaction with one of these third parties.
+
+## 8. Notification and removal of illegal content
+
+{{productName}} allows users to notify infringing content or behavior by sending an email to attention{{emailSuffix}}.
+
+BAYES IMPACT FRANCE will make reasonable efforts to remove illegal content, or delete offending accounts, as soon as possible and within the framework of existing law.
+
+## 9. License and Intellectual Property
+
+Users expressly acknowledge the ownership of BAYES IMPACT FRANCE on the entire platform, and in particular on the systems, software, structures, infrastructures, databases and content of any kind (texts, images, visuals, music, logos , trademarks, database, etc.) which are operated by BAYES IMPACT FRANCE for the service and are protected by copyright, intellectual property rights, industrial property rights or the rights of database producers in force.
+
+But the contents of the site and the platform are made available under a Creative Commons license. The Source Code of the software is made available as free software.
+
+Users are prohibited from copying and misappropriating the concept, technologies or any other element of the platform for their own purposes or those of third parties. All disassembly, decompilation, decryption, extraction, reuse, copy and more generally, all acts of reproduction, representation, distribution and use of any of these elements, in whole or in part, without the authorization of BAYES IMPACT FRANCE are strictly prohibited and may be prosecuted.
+
+BAYES IMPACT FRANCE does not claim any ownership over any content posted by users on the platform, nor over their personal data. On the other hand, but for the sole purposes of the operation of {{productName}} and its promotion, users expressly grant BAYES IMPACT FRANCE and its affiliates the irrevocable right to make them available, and to freely use, copy, publish , translate and distribute without any other form of additional agreement, on any medium and in any form whatsoever. They also authorize BAYES IMPACT FRANCE to grant this right to partners under the same conditions and for the same purposes.
+
+## 10. Personal data
+
+The BAYES IMPACT FRANCE association is concerned about the protection of personal data. It undertakes to respect the best level of protection in accordance with the Data Protection regulations.
+
+The controller is the BAYES IMPACT FRANCE association.
+
+In order to offer the service, BAYES IMPACT FRANCE collects personal data on users, in particular: e-mail, optional name, first name, pseudonym, connection data, and more generally any data concerning them and having a personal character within the meaning of the legislation in force and which is collected through the service. This data is also kept for security purposes in the context of legal and regulatory obligations. They will not be transferred to third parties or used for commercial purposes.
+
+Users agree to communicate their personal data in order to allow the operation of the service. In particular, they agree to be contacted to receive information from {{productName}} and its partners about the platform.
+
+Users have the right to access, rectify and delete data concerning them at any time by e-mail: donnees{{emailSuffix}}
+
+Users can unsubscribe from {{productName}} at any time, by sending a request to this effect to: unsubscribe{{emailSuffix}}
+
+Unsubscribing is effective immediately, and will be effective as soon as the computer deletion process is completed, which may take several weeks. It leads to the automatic deletion of the user's account.
+
+In order to best guarantee the protection of the personal data of its users, the BAYES IMPACT FRANCE association has a Data Protection Correspondent.
+
+## 11. General provisions
+
+In the event that provisions of these conditions are declared invalid or unenforceable, the others will remain in full force and effect.
+
+BAYES IMPACT FRANCE will have the right to assign, transmit, subcontract or delegate rights, duties or obligations under these conditions.
+
+Users agree that neither these conditions nor the use of the service create a company or joint venture, an employment contract or a mandate between them and BAYES IMPACT FRANCE.
+
+In the event of a translation of these conditions into one or more languages, the language of interpretation will be the French language in the event of contradiction or dispute over the meaning of a term or provision.
+
+These conditions are subscribed for an indefinite period.
+
+## 12. Modification
+
+BAYES IMPACT FRANCE reserves the right to modify these general conditions at any time, including with regard to user fees as well as elements relating to personal data.
+
+Users will be informed of these changes by any useful means, including publication on {{productName}}.
+
+The date of update will always be indicated at the top and bottom of these conditions.
+
+The use of the service after the posting of a modification on {{productName}} implies full acceptance of these modified conditions.
+
+The only way to refuse acceptance of any modification to these Terms is to cease using {{productName}}.
+
+The user who does not accept the modified general conditions must unsubscribe from the service.
+
+Any user who uses the service after the entry into force of the modified general conditions is deemed to have accepted these modifications.
+
+## 13. Disputes
+
+BAYES IMPACT FRANCE reserves the right to take any appropriate measure in the event of breach by users of these conditions, or violation of the laws and regulations in force, and in particular:
+* suspend or terminate access to the service;
+* delete any content or training posted on the site;
+* publish any useful information message;
+* notify any relevant authority;
+* initiate any legal action.
+
+Use of the service is subject to French law.
+
+In the event of a dispute, the courts within the jurisdiction of Paris shall have exclusive jurisdiction.
+
+Prior to any recourse to the arbitration or state judge, users undertake to negotiate with BAYES IMPACT FRANCE in a spirit of loyalty and good faith an amicable agreement in the event of the occurrence of any conflict relating to the platform or these conditions, including their validity.
+
+Users wishing to implement the negotiation process must inform BAYES IMPACT FRANCE by registered letter with acknowledgment of receipt, indicating the elements of the conflict. At least one meeting will then be organized between the users and BAYES IMPACT FRANCE. If, at the end of a period of six months, the users and BAYES IMPACT FRANCE fail to reach an agreement, the dispute will be submitted to the competent jurisdiction designated above. The course of the prescription will be suspended from the implementation of the negotiation process, ie the date of receipt of the act of information sent by registered letter with acknowledgment of receipt. The suspension of the course of the prescription will end on the date of the signature of the minutes of conciliation or non-conciliation. In the event of refusal by users or BAYES IMPACT FRANCE to sign said report, the other party may take note of this refusal by informing it that in the absence of a reaction on its part within a period of one month, the referral to the competent judge will be possible. Throughout the negotiation process and until its outcome, users refrain from taking any legal action against BAYES IMPACT FRANCE for the conflict subject of the negotiation.
+
+## 14. Contact details of the manager and the host
+
+{{productName}} is published by the association BAYES IMPACT FRANCE
+
+The publication manager is: Paul DUAN
+
+Address: 24 boulevard Saint-Denis, 75010, Paris
+
+Telephone: 06 65 14 73 87
+
+Email contact: contact{{emailSuffix}}
+
+{{productName}} is hosted by OVH, located at 2 rue Kellermann, 59100, Roubaix, telephone 09 72 10 10 07.
+
+## 15. Date
+
+These general conditions entered into force on: {{date}}

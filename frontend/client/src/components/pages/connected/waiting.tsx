@@ -4,7 +4,6 @@ import EyeOffIcon from 'mdi-react/EyeOffIcon'
 import CheckCircleIcon from 'mdi-react/CheckCircleIcon'
 import HelpCircleIcon from 'mdi-react/HelpCircleIcon'
 import SyncCircleIcon from 'mdi-react/SyncCircleIcon'
-import PropTypes from 'prop-types'
 import React, {useEffect, useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useSelector} from 'react-redux'
@@ -13,11 +12,13 @@ import useFastForward from 'hooks/fast_forward'
 import useStayAtBottom, {scrollDown} from 'hooks/scroll'
 
 import Emoji from 'components/emoji'
-import {CoverImageWithText} from 'components/job_group_cover_image'
+import {CoverImageWithTitleAndText} from 'components/job_group_cover_image'
 import {FixedButtonNavigation} from 'components/navigation'
+import SkipToContent from 'components/skip_to_content'
 import {SmoothTransitions} from 'components/theme'
 
-import {DispatchAllActions, getDiagnosticMainChallenges, RootState} from 'store/actions'
+import type {DispatchAllActions, RootState} from 'store/actions'
+import {getDiagnosticMainChallenges} from 'store/actions'
 import {NO_CHALLENGE_CATEGORY_ID} from 'store/project'
 import {useAsynceffect, useSafeDispatch} from 'store/promise'
 
@@ -30,6 +31,8 @@ const STEP_WAITING_TIME_MILLISEC = 2000
 const mainChallengeContainerStyle: React.CSSProperties = {
   alignItems: 'center',
   display: 'flex',
+
+  flexDirection: 'row-reverse',
   justifyContent: 'center',
   width: 280,
 }
@@ -68,12 +71,14 @@ const mainChallengeTitleStyle: React.CSSProperties = {
   fontSize: 11,
   fontWeight: 'bold',
   lineHeight: '13px',
+  margin: 0,
   textTransform: 'uppercase',
 }
 const mainChallengeAnalysisBaseStyle: React.CSSProperties = {
   fontSize: 16,
   fontWeight: 'bold',
   lineHeight: '19px',
+  margin: 0,
 }
 
 const statusProps = {
@@ -154,6 +159,7 @@ interface MainChallengeItemProps {
 }
 const mainChallengeArrowStyle: React.CSSProperties = {
   ...mainChallengeContainerStyle,
+  flexDirection: 'row',
   justifyContent: 'flex-start',
   margin: '10px 0',
   paddingLeft: 16,
@@ -167,6 +173,7 @@ const MainChallengeItemBase = (props: MainChallengeItemProps): React.ReactElemen
 
   const [text, setText] = useState('')
   const [iconStatus, setIconStatus] = useState<Status>('loading')
+  const [iconText, setIconText] = useState('')
   const [isLoading, setLoading] = useState(true)
   const [isShown, setIsShown] = useState(false)
   useEffect(() => {
@@ -184,20 +191,24 @@ const MainChallengeItemBase = (props: MainChallengeItemProps): React.ReactElemen
     if (isLoading) {
       setText(t('Analyse en cours'))
       setIconStatus('loading')
+      setIconText(t("Critère en cours d'analyse"))
       return
     }
     if (relevance === 'RELEVANT_AND_GOOD') {
       setText(metricReached || '')
       setIconStatus('check')
+      setIconText(t('Critère pertinent et vérifié'))
       return
     }
     if (relevance === 'NEEDS_ATTENTION') {
       setText(metricNotReached || '')
       setIconStatus('warning')
+      setIconText(t("Critère nécessitant un point d'attention"))
       return
     }
     // Default case is NEUTRAL_RELEVANCE
     setText(t("Ne s'applique pas"))
+    setIconText(t('Critère non applicable'))
     setIconStatus('neutral')
   }, [isLoading, isWaiting, metricNotReached, metricReached, relevance, t])
 
@@ -207,26 +218,31 @@ const MainChallengeItemBase = (props: MainChallengeItemProps): React.ReactElemen
 
   const Icon = statusProps[iconStatus]?.icon || HelpCircleIcon
 
-  return <div style={{opacity: isShown ? 1 : 0, ...SmoothTransitions}}>
+  return <li style={{opacity: isShown ? 1 : 0, ...SmoothTransitions}}>
     <div style={mainChallengeContainerStyle}>
+      <div style={mainChallengeTextContainerStyle}>
+        <h2 style={mainChallengeTitleStyle}>{metricTitle}</h2>
+        <div aria-label={iconText}>
+          <p style={statusProps[iconStatus]?.analysisStyle}>
+            {text}
+          </p>
+        </div>
+      </div>
       <div style={mainChallengeImageContainerStyle}>
-        {emoji ? <Emoji size={22}>{emoji}</Emoji> : null}
+        {emoji ? <Emoji size={22} aria-hidden={true}>{emoji}</Emoji> : null}
         <div
           style={
             statusProps[iconStatus]?.iconBackgroundStyle ||
             statusProps.neutral.iconBackgroundStyle}>
           <Icon
+            aria-label={iconText} focusable={false} role="img"
             size={statusProps[iconStatus]?.iconSize || 22}
             style={statusProps[iconStatus]?.iconStyle || statusProps.neutral.iconStyle} />
         </div>
       </div>
-      <div style={mainChallengeTextContainerStyle}>
-        <div style={mainChallengeTitleStyle}>{metricTitle}</div>
-        <div style={statusProps[iconStatus]?.analysisStyle}>{text}</div>
-      </div>
     </div>
     {isLast ? null : <div style={mainChallengeArrowStyle}><img src={arrowDown} alt="" /></div>}
-  </div>
+  </li>
 }
 const MainChallengeItem = React.memo(MainChallengeItemBase)
 
@@ -270,6 +286,9 @@ const headerStyle: React.CSSProperties = {
   width: '100%',
 }
 
+const listStyle: React.CSSProperties = {
+  listStyleType: 'none',
+}
 const WaitingProjectPageBase = (props: WaitingProps): React.ReactElement => {
   const {onDone, project, style} = props
   const {city, targetJob} = project
@@ -356,32 +375,35 @@ const WaitingProjectPageBase = (props: WaitingProps): React.ReactElement => {
   }, [isScrollAtBottom, haveAllChallengesBeenLoaded])
 
   return <div style={containerStyle}>
-    <header style={headerStyle}>
-      <CoverImageWithText cityName={city?.name} style={{maxWidth: 325}} {...{targetJob}} />
+    <SkipToContent />
+    <header style={headerStyle} role="banner">
+      <CoverImageWithTitleAndText
+        cityName={city?.name} style={{maxWidth: 325}} {...{targetJob}} titleElement="h1" />
     </header>
-    {mainChallenges?.
-      map((mainChallenge: ValidMainChallenge, index: number): React.ReactElement =>
-        <MainChallengeItem
-          relevance={relevances?.[mainChallenge.categoryId]}
-          rawMainChallenge={mainChallenge}
-          isLast={index + 1 === mainChallenges.length}
-          isWaiting={index > loadingIndex}
-          key={`challenge-${mainChallenge.categoryId}`} />,
-      )}
-    <button
-      style={isScrollAtBottom || hasSeenItAll ? seeBelowButtonHiddenStyle : seeBelowButtonStyle}
-      onClick={scrollDown}>
-      <ChevronDownIcon aria-label={t('Voir plus bas')} />
-    </button>
-    {onDone ? <FixedButtonNavigation style={footerStyle} onClick={onDone}>
-      {t("Découvrir l'avis de {{productName}}", {productName: config.productName})}
-    </FixedButtonNavigation> : null}
+    <main role="main" id="main" tabIndex={-1}>
+      <ol style={listStyle} role="log">
+        {mainChallenges?.
+          map((mainChallenge: ValidMainChallenge, index: number): React.ReactElement =>
+            <MainChallengeItem
+              relevance={relevances?.[mainChallenge.categoryId]}
+              rawMainChallenge={mainChallenge}
+              isLast={index + 1 === mainChallenges.length}
+              isWaiting={index > loadingIndex}
+              key={`challenge-${mainChallenge.categoryId}`} />,
+          )}
+      </ol>
+      <button
+        style={isScrollAtBottom || hasSeenItAll ? seeBelowButtonHiddenStyle : seeBelowButtonStyle}
+        aria-hidden={isScrollAtBottom || hasSeenItAll}
+        tabIndex={isScrollAtBottom || hasSeenItAll ? -1 : 0}
+        onClick={scrollDown} type="button">
+        <ChevronDownIcon aria-label={t('Voir plus bas')} role="img" />
+      </button>
+      {onDone ? <FixedButtonNavigation style={footerStyle} onClick={onDone}>
+        {t("Découvrir l'avis de {{productName}}", {productName: config.productName})}
+      </FixedButtonNavigation> : null}
+    </main>
   </div>
-}
-WaitingProjectPageBase.propTypes = {
-  onDone: PropTypes.func,
-  project: PropTypes.object.isRequired,
-  style: PropTypes.object,
 }
 
 export default React.memo(WaitingProjectPageBase)

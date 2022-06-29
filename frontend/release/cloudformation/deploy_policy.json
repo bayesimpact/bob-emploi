@@ -1,0 +1,138 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Resources": {
+    "StackManipulationPolicy": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties": {
+        "Description": {
+          "Fn::Sub": "Allows to edit the stacks for \"${BayesProduct}\""
+        },
+        "Groups": [
+          {
+            "Ref": "IAMGroup"
+          }
+        ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "cloudformation:CreateChangeSet",
+                "cloudformation:DeleteChangeSet",
+                "cloudformation:DescribeChangeSet",
+                "cloudformation:DescribeStacks",
+                "cloudformation:ExecuteChangeSet",
+                "cloudformation:GetTemplate"
+              ],
+              "Resource": "*",
+              "Condition": {
+                "ForAnyValue:StringEquals": {
+                  "aws:ResourceTag/bayes:product": {
+                    "Ref": "BayesProduct"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "StackAssumedPolicy": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties": {
+        "Description": {
+          "Fn::Sub": "Allows to manipulate all resources as long as they are considered as part of a \"${BayesProduct}\" stack"
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "*",
+              "Resource": "*",
+              "Condition": {
+                "ForAnyValue:StringEquals": {
+                  "aws:ResourceTag/bayes:product": {
+                    "Ref": "BayesProduct"
+                  }
+                }
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ec2:DescribeSecurityGroups",
+                "ec2:DescribeSubnets",
+                "ec2:DescribeVpcs",
+                "ecs:DescribeClusters",
+                "ecs:DescribeServices",
+                "ecs:DescribeTaskDefinition",
+                "ecs:RegisterTaskDefinition",
+                "elasticloadbalancing:DescribeLoadBalancers",
+                "elasticloadbalancing:DescribeTargetGroups"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "iam:PassRole"
+              ],
+              "Condition": {
+                "ForAnyValue:StringEquals": {
+                  "iam:PassedToService": "ecs"
+                }
+              },
+              "Resource": [
+                "arn:aws:iam::951168128976:role/ecsEventsRole",
+                "arn:aws:iam::951168128976:role/*-ecsTaskExecutionRole-*"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "StackAssumedRole": {
+      "Type": "AWS::IAM::Role",
+      "DependsOn": "StackAssumedPolicy",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "cloudformation.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Description": "Give cloudformation the rights to update the stack elements.",
+        "ManagedPolicyArns": [
+          {
+            "Ref": "StackAssumedPolicy"
+          }
+        ],
+        "RoleName": {
+          "Fn::Sub": "${BayesProduct}-stack"
+        }
+      }
+    }
+  },
+  "Parameters": {
+    "BayesProduct": {
+      "Type": "String",
+      "Description": "The value for the bayes:product tag we want to allow changes on."
+    },
+    "IAMGroup": {
+      "Type": "String",
+      "Description": "The IAM group where we want to allow manipulation of the product stacks."
+    }
+  }
+}

@@ -2,12 +2,13 @@
 
 import os
 import typing
-from typing import Any, Dict, List
+from typing import Any
 import unittest
 from unittest import mock
 
 import airtablemock
 import mongomock
+import pymongo
 import requests
 import requests_mock
 
@@ -16,7 +17,7 @@ from bob_emploi.data_analysis.importer.test.testdata import test_pb2
 
 
 # The tqdm patch is there only to hide the progress bar during tests.
-@mock.patch(maintenance.tqdm.__name__ + '.tqdm', new=lambda iterable: iterable)
+@mock.patch('tqdm.tqdm', new=lambda iterable: iterable)
 @mock.patch.dict(os.environ, {}, clear=True)
 class ScoringModelCheckTestCase(unittest.TestCase):
     """Unit tests for the check_scoring_models method."""
@@ -44,6 +45,19 @@ class ScoringModelCheckTestCase(unittest.TestCase):
         """No problems with scoring models."""
 
         maintenance.check_scoring_models(self._db)
+        self.assertFalse(mock_logging_error.called, msg=mock_logging_error.call_args)
+
+    @mock.patch('logging.error')
+    def test_check_all_command_line(self, mock_logging_error: mock.MagicMock) -> None:
+        """No problems with scoring models using the commandline."""
+
+        with mongomock.patch(servers='bob-db'):
+            data_db = pymongo.MongoClient('mongodb://bob-db/data').get_database()
+            data_db.has_scoring_models.insert_one({'filters': ['for-women']})
+            maintenance.main([
+                '--check', 'scoring-models',
+                '--deployment', 'test', 'mongodb://bob-db/data', 'mongodb://bob-db/users',
+            ])
         self.assertFalse(mock_logging_error.called, msg=mock_logging_error.call_args)
 
     @mock.patch('logging.error')
@@ -77,8 +91,23 @@ class ScoringModelCheckTestCase(unittest.TestCase):
         self.assertIn('has_scoring_models', mock_logging_error.call_args[0])
         self.assertIn('culprit', mock_logging_error.call_args[0])
 
+    @mock.patch('logging.error')
+    def test_unknown_model_command_line(self, mock_logging_error: mock.MagicMock) -> None:
+        """A record has an unknown scoring model (using CLI)."""
 
-@mock.patch(maintenance.tqdm.__name__ + '.tqdm', new=lambda iterable: iterable)
+        with mongomock.patch(servers='bob-db'):
+            data_db = pymongo.MongoClient('mongodb://bob-db/data').get_database()
+            data_db.has_scoring_models.insert_one(
+                {'_id': 'culprit', 'filters': ['unknown-not-implemented']})
+            maintenance.main([
+                '--check', 'scoring-models',
+                '--deployment', 'test', 'mongodb://bob-db/data', 'mongodb://bob-db/users',
+            ])
+        self.assertIn('has_scoring_models', mock_logging_error.call_args[0])
+        self.assertIn('culprit', mock_logging_error.call_args[0])
+
+
+@mock.patch('tqdm.tqdm', new=lambda iterable: iterable)
 @mock.patch.dict(os.environ, {}, clear=True)
 class UrlCheckTestCase(unittest.TestCase):
     """Unit tests for the check_urls method."""
@@ -137,7 +166,9 @@ class UrlCheckTestCase(unittest.TestCase):
         self._db.has_url_link.insert_one({'link': 'htp:/www.google.fr/malformed.html'})
         maintenance.check_urls(self._db)
         mock_logging_error.assert_called_once()
-        self.assertIn('has_url_link', mock_logging_error.call_args[0])
+        self.assertIn(
+            'has_url_link',
+            mock_logging_error.call_args[0][0] % mock_logging_error.call_args[0][1:])
 
     @mock.patch('logging.error')
     @requests_mock.mock()
@@ -163,10 +194,11 @@ class UrlCheckTestCase(unittest.TestCase):
             '_id': 'link-to-missing', 'link': 'http://does-not-exist.com'})
         maintenance.check_urls(self._db)
         mock_logging_error.assert_called_once()
-        self.assertIn('has_url_link', mock_logging_error.call_args[0])
-        self.assertIn('link-to-missing', mock_logging_error.call_args[0])
-        self.assertIn(404, mock_logging_error.call_args[0])
-        self.assertIn('http://does-not-exist.com', mock_logging_error.call_args[0])
+        logging_error = mock_logging_error.call_args[0][0] % mock_logging_error.call_args[0][1:]
+        self.assertIn('has_url_link', logging_error)
+        self.assertIn('link-to-missing', logging_error)
+        self.assertIn('404', logging_error)
+        self.assertIn('http://does-not-exist.com', logging_error)
 
     @mock.patch('logging.error')
     @requests_mock.mock()
@@ -180,10 +212,11 @@ class UrlCheckTestCase(unittest.TestCase):
             '_id': 'timeout-link', 'link': 'https://www.gooooogle.com'})
         maintenance.check_urls(self._db)
         mock_logging_error.assert_called_once()
-        self.assertIn('has_url_link', mock_logging_error.call_args[0])
-        self.assertIn('timeout-link', mock_logging_error.call_args[0])
-        self.assertIn('ConnectTimeout', mock_logging_error.call_args[0])
-        self.assertIn('https://www.gooooogle.com', mock_logging_error.call_args[0])
+        logging_error = mock_logging_error.call_args[0][0] % mock_logging_error.call_args[0][1:]
+        self.assertIn('has_url_link', logging_error)
+        self.assertIn('timeout-link', logging_error)
+        self.assertIn('ConnectTimeout', logging_error)
+        self.assertIn('https://www.gooooogle.com', logging_error)
 
     @mock.patch('logging.error')
     @requests_mock.mock()
@@ -199,9 +232,51 @@ class UrlCheckTestCase(unittest.TestCase):
         maintenance.check_urls(self._db)
         self.assertFalse(mock_logging_error.called)
 
+    @mock.patch('logging.error')
+    @requests_mock.mock()
+    def test_url_in_translation(
+            self, mock_logging_error: mock.MagicMock,
+            mock_requests: 'requests_mock._RequestObjectProxy') -> None:
+        """Check URLs embedded in translaltions."""
 
-@mock.patch(maintenance.tqdm.__name__ + '.tqdm', new=lambda iterable: iterable)
-@mock.patch(maintenance.scoring_base.__name__ + '._TEMPLATE_VARIABLES', {'%known': lambda p: ''})
+        mock_requests.get('http://does-not-exist.com', status_code=404)
+        self._db.translations.insert_one({
+            'string': 'Look at this link: http://does-not-exist.com',
+            'origin': 'advisor.json',
+            'origin_id': 'line 123'})
+        maintenance.check_urls(self._db)
+        mock_logging_error.assert_called_once()
+        mock_logging_error.assert_called_once()
+        logging_error = mock_logging_error.call_args[0][0] % mock_logging_error.call_args[0][1:]
+        self.assertIn('advisor.json', logging_error)
+        self.assertIn('line 123', logging_error)
+        self.assertIn('HTTP Error 404', logging_error)
+        self.assertIn('http://does-not-exist.com', logging_error)
+
+    @mock.patch('logging.error')
+    @requests_mock.mock()
+    def test_url_in_client(
+            self, mock_logging_error: mock.MagicMock,
+            mock_requests: 'requests_mock._RequestObjectProxy') -> None:
+        """Check websites linked by URLs extracted from client."""
+
+        mock_requests.get('https://does-not-exist.com', status_code=404)
+        mock_requests.get('https://exists.com')
+        maintenance.check_urls(
+            self._db,
+            client_urls_json=os.path.join(
+                os.path.dirname(__file__), 'testdata', 'extracted_urls.json'))
+        mock_logging_error.assert_called_once()
+        mock_logging_error.assert_called_once()
+        logging_error = mock_logging_error.call_args[0][0] % mock_logging_error.call_args[0][1:]
+        self.assertIn('HTTP Error 404', logging_error)
+        self.assertIn('src/bob.ts', logging_error)
+        self.assertIn('https://does-not-exist.com', logging_error)
+
+
+@mock.patch('tqdm.tqdm', new=lambda iterable: iterable)
+@mock.patch(
+    maintenance.scoring.scoring_base.__name__ + '._TEMPLATE_VARIABLES', {'%known': lambda p: ''})
 @mock.patch.dict(os.environ, {}, clear=True)
 class TemplateVariablesCheckTestCase(airtablemock.TestCase):
     """Unit tests for the check_template_variables method."""
@@ -295,8 +370,9 @@ class TemplateVariablesCheckTestCase(airtablemock.TestCase):
         self.assertIn('AIRTABLE_API_KEY', mock_warning.call_args[0][0])
 
 
-@mock.patch(maintenance.tqdm.__name__ + '.tqdm', new=lambda iterable: iterable)
-@mock.patch(maintenance.scoring_base.__name__ + '._TEMPLATE_VARIABLES', {'%known': lambda p: ''})
+@mock.patch('tqdm.tqdm', new=lambda iterable: iterable)
+@mock.patch(
+    maintenance.scoring.scoring_base.__name__ + '._TEMPLATE_VARIABLES', {'%known': lambda p: ''})
 @mock.patch.dict(os.environ, {'AIRTABLE_API_KEY': 'key42'})
 class TemplateVariablesAirtableTestCase(TemplateVariablesCheckTestCase):
     """Tests for the airtable upload of template variables."""
@@ -306,7 +382,7 @@ class TemplateVariablesAirtableTestCase(TemplateVariablesCheckTestCase):
         self.client = airtablemock.Airtable('appXmyc7yYj0pOcae', 'key42')
         airtablemock.create_empty_table('appXmyc7yYj0pOcae', 'tblJYesuqUHrcISMe')
 
-    def _get_airtable_records(self) -> List[Dict[str, Any]]:
+    def _get_airtable_records(self) -> list[dict[str, Any]]:
         return list(self.client.iterate('tblJYesuqUHrcISMe'))
 
     def test_airtable_create(self) -> None:
@@ -321,7 +397,7 @@ class TemplateVariablesAirtableTestCase(TemplateVariablesCheckTestCase):
         records = self._get_airtable_records()
 
         self.assertEqual(1, len(records), msg=records)
-        record = typing.cast(Dict[str, str], records[0]['fields'])
+        record = typing.cast(dict[str, str], records[0]['fields'])
         self.assertEqual('%known', record.get('variable'))
         self.assertEqual('Using a %known variable', record.get('template'))
         self.assertEqual('has_template:using-known-variable:textTemplate', record.get('origin'))
@@ -356,13 +432,13 @@ class TemplateVariablesAirtableTestCase(TemplateVariablesCheckTestCase):
         records = self._get_airtable_records()
 
         self.assertEqual(1, len(records), msg=records)
-        record = typing.cast(Dict[str, str], records[0]['fields'])
+        record = typing.cast(dict[str, str], records[0]['fields'])
         self.assertEqual('%known', record.get('variable'))
         self.assertEqual('Using a %known variable with another template', record.get('template'))
         self.assertEqual('has_template:using-known-variable:textTemplate', record.get('origin'))
 
 
-@mock.patch(maintenance.tqdm.__name__ + '.tqdm', new=lambda iterable: iterable)
+@mock.patch('tqdm.tqdm', new=lambda iterable: iterable)
 @mock.patch.dict(os.environ, {}, clear=True)
 class TestParser(unittest.TestCase):
     """Testing the parser behavior."""

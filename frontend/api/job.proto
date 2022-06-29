@@ -374,6 +374,7 @@ message DurationEstimation {
 
 enum EmploymentType {
   option allow_alias = true;
+  option (is_enum_translatable) = true;
 
   UNDEFINED_EMPLOYMENT_TYPE = 0;
 
@@ -400,6 +401,12 @@ enum EmploymentType {
 
   // Alternance contract: part time working, part time studying.
   ALTERNANCE = 7;
+
+  // A full-time contract.
+  FULL_TIME_EMPLOYMENT = 8;
+
+  // A part-time contract.
+  PART_TIME_EMPLOYMENT = 9;
 }
 
 message JobRequirements {
@@ -489,6 +496,8 @@ message Diploma {
 }
 
 enum DegreeLevel {
+  option (is_enum_translatable) = true;
+
   UNKNOWN_DEGREE = 0;
 
   NO_DEGREE = 1;
@@ -515,7 +524,7 @@ enum DrivingLicense {
 // store dev API (ApplicationModes, yearly_avg_offers_per_10_candidates, last_week_offers
 // last_week_demand). The granularity is on a Job level (in contrast to most other data
 // that we have on the JobGroup level). We have one entry for each Job and each departement.
-// Next free Id: 15
+// Next free Id: 16
 message ImtLocalJobStats {
   // The city of the IMT data. Only departement will be set.
   FrenchCity city = 1;
@@ -547,6 +556,9 @@ message ImtLocalJobStats {
 
   // Estimated gross monthly salary for more experienced employees (35 years and older).
   SalaryEstimation senior_salary = 8;
+
+  // Estimated median salary for all employees.
+  SalaryEstimation median_salary = 15;
 
   // Whether hiring for this job only happens during active_months.
   bool seasonal = 9;

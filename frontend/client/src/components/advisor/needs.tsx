@@ -1,14 +1,14 @@
-import PropTypes from 'prop-types'
 import React from 'react'
 
-import {LocalizableString, prepareT} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {prepareT} from 'store/i18n'
 
 import ExternalLink from 'components/external_link'
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
-import Picto from 'images/advices/picto-needs.svg'
 
-import {ExpandableAction, HandyLink, MethodSuggestionList, CardProps} from './base'
+import type {CardProps} from './base'
+import {ExpandableAction, HandyLink, MethodSuggestionList} from './base'
 
 interface Tip {
   content: React.ReactElement
@@ -125,11 +125,7 @@ const Needs: React.FC<CardProps> = (props: CardProps) => {
       </ExpandableAction>)}
   </MethodSuggestionList>
 }
-Needs.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-  t: PropTypes.func.isRequired,
-}
 const ExpandedAdviceCardContent = React.memo(Needs)
 
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName: 'ruler' as const}

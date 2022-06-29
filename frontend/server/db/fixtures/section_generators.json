@@ -1,0 +1,56 @@
+[
+ {
+  "_id": "rec71cIOXdGUI7Lws",
+  "_order": 0,
+  "generator": "best-relative-local-score",
+  "id": "best-relative-local-score"
+ },
+ {
+  "_id": "recVGLggM9Rvdl0ME",
+  "_order": 1,
+  "generator": "best-local-market-score",
+  "id": "best-local-market-score"
+ },
+ {
+  "_id": "recGHeMeLK81ZJ3Xl",
+  "_order": 2,
+  "generator": "best-salaries",
+  "id": "best-salaries"
+ },
+ {
+  "_id": "rechqAkI5fuUHFJEW",
+  "_order": 3,
+  "generator": "random-sector",
+  "id": "random-sector_1"
+ },
+ {
+  "_id": "recSvOHEQNLQLWIDl",
+  "_order": 4,
+  "generator": "best-salaries-no-qualifications",
+  "id": "best-salaries-no-qualifications"
+ },
+ {
+  "_id": "recfioL8XuiXQ028F",
+  "_order": 5,
+  "generator": "best-salaries-low-qualifications",
+  "id": "best-salaries-low-qualifications"
+ },
+ {
+  "_id": "recBgozAG56GQ9BLt",
+  "_order": 6,
+  "generator": "random-sector",
+  "id": "random-sector_2"
+ },
+ {
+  "_id": "rec4y1n7Sj2NkrxhS",
+  "_order": 7,
+  "generator": "serendipity",
+  "id": "serendipity"
+ },
+ {
+  "_id": "recq5pjGdQ5vVIG4O",
+  "_order": 8,
+  "generator": "random-sector",
+  "id": "random-sector_3"
+ }
+]

@@ -70,6 +70,9 @@ message AuthRequest {
 
   // The new hashed version of the users password: sha1(email + password).
   string new_hashed_password = 14;
+
+  // Whether the authentication should be persisted in cookies.
+  bool is_persistent = 15;
 }
 
 message AuthUserData {
@@ -83,6 +86,8 @@ message AuthUserData {
   MaVoieInfo ma_voie = 5;
 
   SelfDiagnostic original_self_diagnostic = 6;
+
+  bool is_action_plan_enabled = 7;
 }
 
 message AuthResponse {
@@ -158,4 +163,13 @@ message AuthTokens {
 
   // An URL to reset the user's password.
   string reset_url = 13;
+
+  // A token to see coaching emails content.
+  string emails = 14;
+
+  // A token allowing to update one's answer to the First Followup Survey.
+  string ffs = 15;
+
+  // An URL to udpate the user's answer to the First Followup Survey.
+  string ffs_url = 16;
 }

@@ -52,7 +52,7 @@ def main(string_args: Optional[Sequence[str]] = None) -> None:
     translations = dict(_list_valid_translations(args.api_key))
 
     logging.info('Creating the translations file…')
-    with open(args.output, 'wt') as output_file:
+    with open(args.output, 'wt', encoding='utf-8') as output_file:
         json.dump(translations, output_file, ensure_ascii=False, sort_keys=True)
 
     logging.info('Downloaded %d strings.', len(translations))

@@ -1,10 +1,12 @@
 import CheckIcon from 'mdi-react/CheckIcon'
-import React from 'react'
+import React, {useMemo} from 'react'
 
 import {useHoverAndFocus} from 'components/radium'
-import useFocusableRefAs, {Focusable} from 'hooks/focus'
+import type {Focusable} from 'hooks/focus'
+import useFocusableRefAs from 'hooks/focus'
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  inputStyle?: React.CSSProperties
   isHovered?: boolean
   isSelected?: boolean
   size?: number
@@ -13,10 +15,11 @@ interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const Checkbox = (props: Props, ref: React.Ref<Focusable>): React.ReactElement => {
   const {isFocused, isHovered, ...handlers} = useHoverAndFocus(props)
-  const {isSelected, size = 20, style, isHovered: omittedIsHovered, ...otherProps} = props
+  const {inputStyle, isSelected, size = 20, style, isHovered: omittedIsHovered,
+    ...otherProps} = props
   const isHighlighted = isFocused || isHovered
 
-  const outerBoxStyle: React.CSSProperties = {
+  const outerBoxStyle = useMemo((): React.CSSProperties => ({
     alignItems: 'center',
     backgroundColor: isSelected ? colors.BOB_BLUE : '#fff',
     borderColor: isSelected ? colors.BOB_BLUE : (
@@ -33,7 +36,8 @@ const Checkbox = (props: Props, ref: React.Ref<Focusable>): React.ReactElement =
     justifyContent: 'center',
     position: 'absolute',
     width: size,
-  }
+    ...inputStyle,
+  }), [inputStyle, isHighlighted, isSelected, size])
   const containerStyle: React.CSSProperties = {
     cursor: 'pointer',
     display: 'inline-flex',
@@ -45,10 +49,12 @@ const Checkbox = (props: Props, ref: React.Ref<Focusable>): React.ReactElement =
   }
   return <button
     style={containerStyle} ref={useFocusableRefAs(ref)}
-    {...otherProps} {...handlers} role="checkbox"
+    {...otherProps} {...handlers} role="checkbox" type="button"
     aria-checked={isSelected}>
     <span style={outerBoxStyle}>
-      {isSelected ? <CheckIcon style={{fill: '#fff', width: 16}} /> : null}
+      {isSelected ?
+        <CheckIcon style={{fill: '#fff', width: 16}} aria-hidden={true} focusable={false} /> :
+        null}
     </span>
   </button>
 }

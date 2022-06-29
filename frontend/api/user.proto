@@ -5,10 +5,12 @@ import "google/protobuf/timestamp.proto";
 
 import "bob_emploi/frontend/api/boolean.proto";
 import "bob_emploi/frontend/api/diagnostic.proto";
-import "bob_emploi/frontend/api/geo.proto";
+import "bob_emploi/frontend/api/email.proto";
+import "bob_emploi/frontend/api/features.proto";
 import "bob_emploi/frontend/api/job.proto";
 import "bob_emploi/frontend/api/options.proto";
 import "bob_emploi/frontend/api/project.proto";
+import "bob_emploi/frontend/api/user_profile.proto";
 
 package bayes.bob;
 option go_package="bayes.org/bob_emploi/frontend/api/user";
@@ -78,13 +80,16 @@ message User {
   // and on the relevance of the given advices.
   NPSSurveyResponse net_promoter_score_survey_response = 15 [(field_usage) = USER_FEEDBACK];
 
+  // Response from the user to the first followup survey sent by email to get feedback.
+  FirstFollowupSurveyResponse first_followup_survey_response = 33 [(field_usage) = USER_FEEDBACK];
+
   // Revision of the user's data. This number should always be increasing, it
   // helps keep synchronized the client and the server versions of the user's
   // data. See http://go/bob:revision-design
   int32 revision = 18 [(field_usage) = APP_ONLY];
 
   // The emails that were sent to the user.
-  repeated EmailSent emails_sent = 19;
+  repeated EmailSent emails_sent = 19 [(field_usage) = APP_ONLY];
 
   // The employment survey responses.
   repeated EmploymentStatus employment_status = 20 [(field_usage) = USER_FEEDBACK];
@@ -131,7 +136,7 @@ message SupportTicket {
   string ticket_id = 1 [(field_usage) = PERSONAL_IDENTIFIER];
 
   // An expiration date for this ticket.
-  google.protobuf.Timestamp delete_after = 2;
+  google.protobuf.Timestamp delete_after = 2 [(field_usage) = APP_ONLY];
 }
 
 
@@ -139,118 +144,20 @@ message TrackingParameters {
   // A slug identifying the org, product or website that reffered the user to
   // Bob, e.g. "pole-emploi", "adie" or "bob-emploi" when it's auto-referral.
   // Originally in utm_source.
-  string source = 1;
+  string source = 1 [(field_usage) = APP_ONLY];
 
   // An ID identifying the medium that was originally used to reffer the user
   // to Bob, e.g. "link", "email". Originally in utm_medium.
-  string medium = 2;
+  string medium = 2 [(field_usage) = APP_ONLY];
 
   // The ID of the campaign if any. See https://airtable.com/tblpbiUqtvn3poeXd
   // for a full list of short codes. Originally in utm_campaign.
-  string campaign = 3;
+  string campaign = 3 [(field_usage) = APP_ONLY];
 
   // Value of the utm_content parameters the first time the user reached our
   // website. If it is not empty, it contains an ID that helps us track the
   // system that recommended the app to the user originally.
   string content = 4 [(field_usage) = PERSONAL_IDENTIFIER];
-}
-
-// Profile of a user, a job seeker.
-// Next IDs: 4, 6, 14, 30, 31.
-message UserProfile {
-  // Where the user is living.
-  // We wanted to distinguish where the user is living from where they search
-  // for a job, but we've simplified the onboarding.
-  // TODO(pascal): Clean up completely.
-  FrenchCity city = 1 [deprecated = true];
-
-  // The job, the user had just before being unemployed.
-  // We wanted to know the previous job of the user, but we simplified the onboarding.
-  // TODO(guillaume): Clean up completely.
-  Job latest_job = 3 [deprecated = true];
-
-  // The gender of the user, at least the one they prefer when we have to use a
-  // masculine or feminine grammatical form.
-  Gender gender = 5;
-
-  // User's email.
-  string email = 7 [(field_usage) = PERSONAL_IDENTIFIER];
-
-  // User's first name (e.g.: Stephan).
-  string name = 8 [(field_usage) = PERSONAL_IDENTIFIER];
-
-  // User's last name (e.g.: Corpet).
-  // DEPRECATED: We don't display it anywhere anymore, so no need to ask for it.
-  string last_name = 16 [(field_usage) = PERSONAL_IDENTIFIER, deprecated = true];
-
-  // User's year of birth.
-  uint32 year_of_birth = 9;
-
-  // Whether the user has a recognized handicaped.
-  bool has_handicap = 19;
-
-  // URL of a picture of the user.
-  string picture_url = 12 [(field_usage) = PERSONAL_IDENTIFIER];
-
-  // The current situation of the user (e.g.: Fresh graduate, lost job, etc...).
-  // TODO(pascal): Clean up old users and remove completly.
-  Situation situation = 10 [deprecated = true];
-
-  // The current family situation of the user (e.g.: single, with kids, etc.).
-  FamilySituation family_situation = 20;
-
-  // The users highest school degree.
-  DegreeLevel highest_degree = 18;
-
-  // User frustration reasons (e.g.: no offers, no answers, single parent, ...).
-  repeated Frustration frustrations = 32 [(list_format) = REPLACEABLE];
-
-  // User custom frustration reasons.
-  repeated string custom_frustrations = 22 [(list_format) = REPLACEABLE];
-
-  // The preferred salary unit of the user.
-  SalaryUnit preferred_salary_unit = 39 [(field_usage) = APP_ONLY];
-
-  // Whether the user opted-in to receive the newsletter.
-  bool is_newsletter_enabled = 11 [(field_usage) = APP_ONLY];
-
-  // Whether the user opted-in to receive a weekly summary of their activity.
-  bool is_weekly_summary_enabled = 13 [(field_usage) = APP_ONLY];
-
-  // Phone number of the user (only to call them to get more precise feedback).
-  string phone_number = 15 [(field_usage) = PERSONAL_IDENTIFIER];
-
-  // How the user is OK to give us feedback.
-  FeedbackMedium feedback_medium = 17 [(field_usage) = APP_ONLY];
-
-  // How did the user found out about the application.
-  UserOrigin origin = 21 [(field_usage) = APP_ONLY];
-
-  // The locale that the user prefers. E.g. "en", "nl", "fr", "fr@tu" (the tutoiement version of
-  // French).
-  string locale = 28 [(field_usage) = APP_ONLY];
-
-  // The driving licenses the user has.
-  repeated DrivingLicense driving_licenses = 24 [(list_format) = REPLACEABLE];
-
-  // Whether the user has the car driving license.
-  OptionalBool has_car_driving_license = 25;
-
-  // How frequent should we send coaching emails (aka focus emails).
-  EmailFrequency coaching_email_frequency = 26 [(field_usage) = APP_ONLY];
-
-  // Whether the user has completed their profile end to end.
-  // It can be used not to ask a question a second time when editing a project for instance.
-  // Do not rely on it for users before 2019-12.
-  bool has_completed_onboarding = 27 [(field_usage) = APP_ONLY];
-
-  // Set of languages on which we know the user's level. If a language is missing here, it means
-  // that we don't know its current level.
-  repeated LanguageKnowledge languages = 29;
-
-  // Whether the user is autonomous in their job search, and can apply without much help
-  // regarding how.
-  OptionalBool is_autonomous = 2;
 }
 
 // A lightweight message to reference a user.
@@ -300,315 +207,9 @@ message UnverifiedDataZone {
   string rome_id = 2;
 }
 
-// This message can only be modified server-side to decide to enable features
-// that are still in development or in test to some users. See
-// http://go/bob:feature-flags-design.
-//
-// Each feature flag should follow the guidelines:
-//  - Do not use is_ or has_ prefix, as this is by design a list of features
-//    where each field means "is this feature enabled".
-//  - The name is specific to the feature added.
-//  - The comment describes precisely what is being developped.
-//  - The comment includes the date for when this feature started to be
-//    implemented.
-// Next ID: 30
-message Features {
-  // Email notifications can be sent to any user that has checked some days
-  // in profile.email_days. The feature here is for users that we opted-in
-  // email notifications automatically. The name is a bit generic because of
-  // historical reasons (when we started, only the users that we opted-in were
-  // able to recieve notifications).
-  // Started: 2016-11-23.
-  bool email_notifications = 1;
-
-  // Ablation experiment for the "I did this action" button.
-
-  // In the Action Modal, make the "I did this" button discreet.
-  // Started: 2016-12-01.
-  // Stopped: 2016-12-08.
-  bool action_done_button_discreet = 7 [deprecated = true];
-
-  // Control group for the above experiment (regular green button shown).
-  // Started: 2016-12-01.
-  // Stopped: 2016-12-08.
-  bool action_done_button_control = 8 [deprecated = true];
-
-  // Whether we integrate La Bonne Boite results directly into our application.
-  // Started: 2016-12-06.
-  // Unused so stopped: 2017-10-25.
-  BinaryExperiment lbb_integration = 9 [deprecated = true];
-
-  // This is not really an experiment but rather a marker for users for which
-  // we have disabled all emailDays because they were not reading their emails.
-  bool auto_stop_emails = 13;
-
-  // Whether we show the "Advisor" UX to the user.
-  // Graduated for new users: 2016-01-23.
-  // All users after 2017-04-01 had it ACTIVE, and no users was in CONTROL. So
-  // in 2018-06 we reversed the logic and assigned all (old) users that were
-  // undefined to CONTROL and switched the new users not to have anything.
-  BinaryExperiment advisor = 14 [deprecated = true];
-
-  // Enable all alpha features (usually for devs and/or user tests).
-  bool alpha = 15;
-
-  // Enable specific Pôle Emploi counselor features.
-  bool pole_emploi = 20;
-
-  // Whether the user should receive the Net Promoter Score email.
-  // DEPRECATED: Use registered_at and sent_emails fields instead.
-  // TODO(pascal): Clean that up.
-  NPSEmailStatus net_promoter_score_email = 16 [deprecated = true];
-
-  // Whether we send advice by email to this user.
-  // All users after 2017-06-01 had it ACTIVE, and no users was in CONTROL. So
-  // in 2018-06 we reversed the logic and assigned all (old) users that were
-  // undefined to CONTROL and switched the new users to use undefined.
-  BinaryExperiment advisor_email = 17 [deprecated = true];
-
-  // Whether the user switched from mashup to advisor.
-  bool switched_from_mashup_to_advisor = 19;
-
-  // Whether the user will see all advices. We use this feature only as a debug tool to be able to
-  // see all advices at once. It will not be used for regular users.
-  bool all_modules = 21;
-
-  // Whether we show the new Assessment page.
-  // DEPRECATED: All users have it, since we're retiring the old bob score.
-  // TODO(cyrille): Clean it up.
-  BinaryExperiment assessment = 22 [deprecated = true];
-
-  // Whether to exclude this user when computing analytics.
-  bool exclude_from_analytics = 23;
-
-  // Whether we show the new Workbench flow. The user must select a list of
-  // advice card they want to work that arrive on their workbench.
-  // Started: 2017-11-27.
-  // Stopped: 2017-01-01. Dropped the experiment entirely but start the
-  // workbench again without any experiment.
-  BinaryExperiment workbench = 24 [deprecated = true];
-
-  // Users we want to follow on the long term.
-  bool follow_up_long_term = 25;
-
-  // Whether we show Bob as a talking person in the onboarding.
-  // Started 2018-01-29.
-  BinaryExperiment bob_talks = 26;
-
-  // Whether the user comes from #BobAction workflow. This is set when users in #BobAction click
-  // on the link "I don't want to help, I want to be helped".
-  // BinaryExperiment is needed to use the 'activate' GET parameter on landing page.
-  // Started 2018-04-27.
-  BinaryExperiment from_bob_action = 27;
-
-  // Whether the user cannot access all features before they get "Bob Points".
-  // Points can be earned by sharing, rating the app or exploring it. See the
-  // whole design at http://go/bob:points.
-  // Started: 2018-09-03
-  // Stopped: 2018-09-27. Dropped the experiment entirely, and abort gamification.
-  BinaryExperiment bob_points = 28 [deprecated = true];
-
-  // Whether the user comes from the unregistered experiment for quick diagnostic.
-  // Quick Diagnostic allows to get a diagnostic on local market without registering a user.
-  // Registered users who participated to the experiment before registering are tracked here.
-  // Tried for a little while but never fully launched.
-  // Stopped: 2018-03-12. Dropped the experiment entirely, and abort quick diagnostic.
-  BinaryExperiment quick_diagnostic = 29 [deprecated = false];
-
-  // Whether we show the UI with the first version of strategies. Note that the
-  // CONTROL users are actually past users to whom we would have shown the UI.
-  // Started: estimated 2019-01-30
-  // Stopped 2019-03-29: Now use only strat_two flag.
-  BinaryExperiment strat_one = 30 [deprecated = true];
-
-  // Whether we show the UI with the second version of strategies, including a
-  // clear Bob think. Note that the CONTROL users are actually past users to
-  // whom we would have shown the UI.
-  // TODO(pascal): Add a start date when ready.
-  BinaryExperiment strat_two = 31;
-
-  // Whether it's possible for the user to set their job as unknown in the project definition.
-  // Started: 2021-01-15 (for UK only).
-  bool job_unknown_disabled = 32;
-
-  // Whether we show the UI for self diagnostic at the end of the onboarding (ACTIVE), or near
-  // the beginning (CONTROL).
-  // Started: 2021-03-10
-  // Ended 2021-04-27: New users now have the diagnostic near the beginning.
-  BinaryExperiment late_self_diagnostic = 33;
-}
-
 message Notifications {
   // A notification for PE counselors that shows a kit to prepare info collectives.
   bool info_coll_kit = 1;
-}
-
-enum Gender {
-  UNKNOWN_GENDER = 0;
-
-  MASCULINE = 1;
-
-  FEMININE = 2;
-}
-
-// The current job search situation of a user.
-enum Situation {
-  UNKNOWN_SITUATION = 0;
-
-  // First time looking for a job, e.g. a student.
-  FIRST_TIME = 1;
-
-  // User lost or quit their job. This might be due to an ending contract.
-  LOST_QUIT = 2;
-
-  // User is currently in a training.
-  IN_TRAINING = 3;
-
-  // User is currently employed.
-  EMPLOYED = 5;
-}
-
-// Family situation of a user.
-enum FamilySituation {
-  UNKNOWN_FAMILY_SITUATION = 0;
-  SINGLE = 1;
-  IN_A_RELATIONSHIP = 2;
-  FAMILY_WITH_KIDS = 3;
-  // The suffix below is needed because of a conflict with frustration.
-  SINGLE_PARENT_SITUATION = 4;
-}
-
-// Next ID: 17
-enum Frustration {
-  UNKNOWN_JOB_SEARCH_FRUSTRATION = 0;
-
-  // User cannot find enough offers that fit their criteria.
-  NO_OFFERS = 1;
-
-  // User does not receive enough answers to their applications.
-  NO_OFFER_ANSWERS = 2;
-
-  // User has trouble to come up with a decent CV.
-  RESUME = 3;
-
-  // User struggles in interview situations.
-  INTERVIEW = 4;
-
-  // User struggles finding a training.
-  TRAINING = 5;
-
-  // User has problems to stay motivated.
-  MOTIVATION = 6;
-
-  // User has problems with general time management.
-  TIME_MANAGEMENT = 7;
-
-  // User is a single parent.
-  SINGLE_PARENT = 8 [deprecated = true];
-
-  // User is handicaped.
-  // DEPRECATED: Use has_handicap boolean in profile instead.
-  HANDICAPED = 9 [deprecated = true];
-
-  // The users profile does not fit what recruiters have in mind.
-  ATYPIC_PROFILE = 10;
-
-  // The user feels discriminated against because of their age.
-  AGE_DISCRIMINATION = 11;
-
-  // The user feels discriminated against because of their sex.
-  SEX_DISCRIMINATION = 12;
-
-  // The user experience does not fit what the recruiters expect.
-  // Added on 09/07/2017.
-  EXPERIENCE = 13;
-
-  // The user fell they lack self-confidence.
-  SELF_CONFIDENCE = 14;
-
-  // The user has difficulty to come back to work after a long absence as a stay-at-home parent.
-  // Added on 2018-10-16.
-  STAY_AT_HOME_PARENT = 15;
-
-  // The user feels discriminated against because of their race/ethnicity.
-  RACE_DISCRIMINATION = 16;
-
-  // The user has difficulties speaking/writing/understing the country's main language(s).
-  // Added on 2020-11-06.
-  LANGUAGE = 17;
-
-  // The user has qualifications obtained in another country that are not recognized properly.
-  // Added on 2020-11-06.
-  FOREIGN_QUALIFICATIONS = 18;
-
-  // The user has difficulties getting access to childcare.
-  CHILD_CARE = 19;
-}
-
-enum BinaryExperiment {
-  NOT_IN_EXPERIMENT = 0;
-
-  // The experiment is active for this user.
-  ACTIVE = 1;
-
-  // The user is in a control group: the experiment is not active.
-  CONTROL = 2;
-}
-
-enum FeedbackMedium {
-  UNKNOWN_FEEDBACL_MEDIUM = 0;
-
-  PHONE = 1;
-
-  ON_SITE = 2;
-
-  PHONE_OR_ON_SITE = 3;
-}
-
-enum UserOrigin {
-  UNKNOWN_ORIGIN = 0;
-
-  FROM_A_FRIEND = 1;
-
-  FROM_JOBSEEKER_GROUP = 2;
-
-  FROM_PE_WORKSHOP = 3;
-
-  FROM_PE_COUNSELOR = 4;
-
-  FROM_PRESS = 5;
-
-  FROM_WEBSITE = 6;
-
-  FROM_OTHER = 7;
-
-  // See http://www.pimms.org.
-  FROM_PIMMS = 8;
-}
-
-message LanguageKnowledge {
-  // Locale of the language (e.g. "fr", "fr-BE", "en", "nl").
-  string locale = 1;
-
-  // Whether the user has a good read/write knowledge of the language
-  // (at least B CEFRL level https://europass.cedefop.europa.eu/resources/european-language-levels-cefr).
-  OptionalBool has_written_knowledge = 2;
-
-  // Whether the user has a good listen/speak knowledge of the language
-  // (at least B CEFRL level https://europass.cedefop.europa.eu/resources/european-language-levels-cefr).
-  OptionalBool has_spoken_knowledge = 3;
-}
-
-// Status of the email sent to user to compute the Net Promoter Score.
-enum NPSEmailStatus {
-  // User was created before the NPS experiment was ever started.
-  BEFORE_NPS_EXPERIMENT = 0;
-
-  // User has been created recently and did not receive any NPS email yet.
-  NPS_EMAIL_PENDING = 1;
-
-  // We sent the NPS email to the user.
-  NPS_EMAIL_SENT = 2;
 }
 
 // Responses to the survey sent by email to user to compute the Net Promoter Score,
@@ -671,6 +272,41 @@ message NPSSurveyResponse {
   repeated string next_actions = 14;
 }
 
+message FirstFollowupSurveyResponse {
+  // The date and time at which the user has responded to the survey.
+  google.protobuf.Timestamp responded_at = 1;
+
+  // Whether the user has tried something new in their job search after using Bob.
+  bool has_tried_something_new = 2;
+
+  // How much the user learnt to meet their challenge (if any). 1 to 5 (0 means unknown).
+  int32 learn_to_meet_challenge_score = 3;
+
+  // How much the user got new ideas about what to do for their job search. 1 to 5 (0 means unknown).
+  int32 new_ideas_score = 4;
+
+  // How useful where the resources given. 1 to 5 (0 means unknown).
+  int32 useful_resource_score = 5;
+
+  // How much the user was helped to plan what to do. 1 to 5 (0 means unknown).
+  int32 helps_plan_score = 6;
+
+  // How much the user felt the content was personalized to them. 1 to 5 (0 means unknown).
+  int32 personalized_advice_score = 7;
+
+  // How much the user already knew what was needed (before Bob). 1 to 5 (0 means unknown).
+  // 5 means they already knew everything Bob told them.
+  int32 knew_own_need_score = 8;
+
+  // How useful the user found the action plan scheduling. 1 to 5 (0 means unknown).
+  int32 useful_schedule_score = 9;
+
+  string comment = 10;
+
+  // How much Bob helped improve the user's self-confidence. 1 to 5 (0 means unknown).
+  int32 improve_self_confidence_score = 11;
+}
+
 enum LocalMarketUserEstimate {
   // User did not answer.
   UNKNOWN_LOCAL_MARKET_ESTIMATE = 0;
@@ -703,54 +339,37 @@ message SetNPSCommentRequest {
   repeated string next_actions = 6;
 }
 
-// Description of an email we sent to the user.
-message EmailSent {
-  // When the user was sent.
-  google.protobuf.Timestamp sent_at = 1;
+message SetFFSCommentRequest {
+  // Free-form text answer about what the user liked or did not like in the app.
+  string comment = 1;
 
-  // ID of the MailJet template that was used.
-  string mailjet_template = 2;
+  // Whether the user has tried something new in their job search after using Bob.
+  OptionalBool has_tried_something_new = 2;
 
-  // An internal ID used to identify campaigns, e.g. "no-network".
-  string campaign_id = 3;
+  // How much the user learnt to meet their challenge (if any). 1 to 5 (0 means unknown).
+  int32 learn_to_meet_challenge_score = 3;
 
-  // Message ID on MailJet.
-  int64 mailjet_message_id = 4 [(field_usage) = PERSONAL_IDENTIFIER];
+  // How much the user got new ideas about what to do for their job search. 1 to 5 (0 means unknown).
+  int32 new_ideas_score = 4;
 
-  google.protobuf.Timestamp last_status_checked_at = 5;
+  // How useful where the resources given. 1 to 5 (0 means unknown).
+  int32 useful_resource_score = 5;
 
-  EmailSentStatus status = 6;
+  // How much the user was helped to plan what to do. 1 to 5 (0 means unknown).
+  int32 helps_plan_score = 6;
 
-  // Number of days (truncated) between sent_at and last_status_checked_at.
-  int32 last_status_checked_after_days = 7;
+  // How much the user felt the content was personalized to them. 1 to 5 (0 means unknown).
+  int32 personalized_advice_score = 7;
 
-  // Subject of the email (actually of the template) that was sent.
-  string subject = 8;
+  // How much the user already knew what was needed (before Bob). 1 to 5 (0 means unknown).
+  // 5 means they already knew everything Bob told them.
+  int32 knew_own_need_score = 8;
 
-  // Whether this email was considered coaching when it was sent.
-  bool is_coaching = 9;
-}
+  // How useful the user found the action plan scheduling. 1 to 5 (0 means unknown).
+  int32 useful_schedule_score = 9;
 
-// Status of email sent. This relies only on the mailjet API and is named
-// accordingly. See Status in https://dev.mailjet.com/email-api/v3/message/.
-enum EmailSentStatus {
-  EMAIL_SENT_UNKNOWN = 0;
-  EMAIL_SENT_QUEUED = 1;
-  EMAIL_SENT_SENT = 2;
-  EMAIL_SENT_OPENED = 3;
-  EMAIL_SENT_CLICKED = 4;
-  EMAIL_SENT_BOUNCE = 5;
-  EMAIL_SENT_SPAM = 6;
-  EMAIL_SENT_UNSUB = 7;
-  EMAIL_SENT_BLOCKED = 8;
-  EMAIL_SENT_HARDBOUNCED = 9;
-  EMAIL_SENT_SOFTBOUNCED = 10;
-  EMAIL_SENT_DEFERRED = 11;
-}
-
-message EmailHistory {
-  // The emails that were sent to the user.
-  repeated EmailSent emails_sent = 19;
+  // How much Bob helped improve the user's self-confidence. 1 to 5 (0 means unknown).
+  int32 improve_self_confidence_score = 10;
 }
 
 // Description of an employement survey response.
@@ -798,6 +417,32 @@ message EmploymentStatus {
   // was less personalized, 5 Bob was way less personalized.
   // This field was active from mid oct 2018 to mid jan 2019 and is not used anymore.
   int32 bob_relative_personalization = 8;
+
+  // How much Bob helped improve the user's self-confidence. 1 to 5 (0 means unknown).
+  int32 improve_self_confidence_score = 14;
+
+  // How much the user got new ideas about what to do for their job search. 1 to 5 (0 means unknown).
+  int32 new_ideas_score = 15;
+
+  // How useful where the resources given. 1 to 5 (0 means unknown).
+  int32 useful_resource_score = 16;
+
+  // How much the user was helped to plan what to do. 1 to 5 (0 means unknown).
+  int32 helps_plan_score = 17;
+
+  // How much the user felt the content was personalized to them. 1 to 5 (0 means unknown).
+  int32 personalized_advice_score = 18;
+
+  // How much the user felt the coaching emails brought new content for their job search.
+  // 1 to 5 (0 means unknown).
+  int32 new_from_coaching_emails_score = 19;
+
+  // User feels more motivated to continue their job search after using the product.
+  // 1 to 5 (0 means unknown).
+  int32 motivation_score = 20;
+
+  // Free form feedback.
+  string feedback = 21;
 }
 
 // Job seeker status.
@@ -850,10 +495,10 @@ message ClientSideMetrics {
   string amplitude_id = 1 [(field_usage) = PERSONAL_IDENTIFIER];
 
   // Duration of the user's first session.
-  uint32 first_session_duration_seconds = 2;
+  uint32 first_session_duration_seconds = 2 [(field_usage) = APP_ONLY];
 
   // Whether the first session is mobile.
-  OptionalBool is_first_session_mobile = 3;
+  OptionalBool is_first_session_mobile = 3 [(field_usage) = APP_ONLY];
 }
 
 message MaydayGrantee {
@@ -862,19 +507,6 @@ message MaydayGrantee {
 
   // ID of the helper that was match to have a coffee with this user.
   string coffee_helper_id = 2;
-}
-
-enum EmailFrequency {
-  UNKNOWN_EMAIL_FREQUENCY = 0;
-
-  // Do not send any email.
-  EMAIL_NONE = 1;
-
-  // Send email once a month.
-  EMAIL_ONCE_A_MONTH = 2;
-
-  // Send all the email you can!
-  EMAIL_MAXIMUM = 10;
 }
 
 message UserWithAdviceSelection {

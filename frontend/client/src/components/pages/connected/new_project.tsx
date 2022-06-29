@@ -5,12 +5,14 @@ import {useDispatch, useSelector} from 'react-redux'
 import {useHistory, useLocation, useParams} from 'react-router'
 import {Redirect} from 'react-router-dom'
 
-import {DispatchAllActions, RootState, editFirstProject, onboardingPage} from 'store/actions'
+import type {DispatchAllActions, RootState} from 'store/actions'
+import {editFirstProject, onboardingPage} from 'store/actions'
 import {flattenProject} from 'store/project'
 
 import isMobileVersion from 'store/mobile'
 import CircularProgress from 'components/circular_progress'
-import {PageWithNavigationBar, Scrollable} from 'components/navigation'
+import type {Scrollable} from 'components/navigation'
+import {PageWithNavigationBar} from 'components/navigation'
 import {NEW_PROJECT_ID, Routes} from 'components/url'
 import {useProjectOnboarding} from './profile/onboarding'
 

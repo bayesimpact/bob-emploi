@@ -17,6 +17,12 @@ extend google.protobuf.FieldOptions {
   ListFormat list_format = 50002;
 }
 
+extend google.protobuf.EnumOptions {
+  // Give more information about the format of an enum.
+  // Is true when the enum name(s) can be translated.
+  bool is_enum_translatable = 50003;
+}
+
 
 enum FieldUsage {
   // Many fields are not tagged, this is either because they have not been
@@ -28,8 +34,8 @@ enum FieldUsage {
   // A field that may uniquely identify a user.
   PERSONAL_IDENTIFIER = 1;
 
-  // A field that is only used for the app's UX or UI: it does not contain
-  // actual user data.
+  // A field that is only used for the app's UX or UI, or represents app usage from user: it does
+  // not contain actual user data.
   APP_ONLY = 2;
 
   // A field whose value is provided by the user as a feedback.
@@ -39,7 +45,6 @@ enum FieldUsage {
   ALGORITHM_RESULT = 4;
 }
 
-// TODO(cyrille): Add at least SCORING_MODEL and URL.
 enum StringFormat {
   // Many fields are not tagged, this is either because they have not been
   // tagged yet or because they do not have a specific format.
@@ -75,6 +80,12 @@ enum StringFormat {
 
   // A field whose value must stay on one line.
   SINGLE_LINER = 9;
+
+  // A field whose value is an ID that can be "translated" into human readable natural language.
+  TRANSLATABLE_ID = 10;
+
+  // A field whose value is a generator ID. See the list of available generators in apps/jobflix.py.
+  GENERATOR_ID = 11;
 }
 
 enum ListFormat {

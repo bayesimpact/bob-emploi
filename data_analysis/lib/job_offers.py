@@ -81,7 +81,7 @@ def iterate(
             fields.
     """
 
-    with open(colnames_txt) as colnames_lines:
+    with open(colnames_txt, encoding='utf-8') as colnames_lines:
         column_names = [line.strip() for line in colnames_lines]
     if required_fields and not required_fields < set(column_names):
         raise ValueError(f'Required fields are missing: {required_fields - set(column_names)}')

@@ -6,27 +6,24 @@ import os
 import re
 import sys
 import typing
-from typing import Any, Iterable, Optional, Pattern, Sequence, TextIO, Tuple
+from typing import Any, Iterable, Literal, Optional, Pattern, Sequence, Tuple, TypedDict
 
 import googleapiclient.discovery
 
 if typing.TYPE_CHECKING:
-    import typing_extensions
-    from typing_extensions import Literal
-
-    class _PlaylistItemResourceId(typing_extensions.TypedDict):
+    class _PlaylistItemResourceId(TypedDict):
         kind: Literal['youtube#video']
         videoId: str
 
-    class _Snippet(typing_extensions.TypedDict):
+    class _Snippet(TypedDict):
         resourceId: _PlaylistItemResourceId
         title: str
 
-    class _PlaylistItem(typing_extensions.TypedDict):
+    class _PlaylistItem(TypedDict):
         kind: Literal['youtube#playlistItem']
         snippet: _Snippet
 
-    class _Playlist(typing_extensions.TypedDict):
+    class _Playlist(TypedDict):
         id: str
         snippet: _Snippet
 
@@ -77,7 +74,7 @@ class YouTubeAPI:
                 yield playlist, item
 
 
-def main(out: TextIO, args: Optional[Sequence[str]] = None) -> None:
+def main(args: Optional[Sequence[str]] = None) -> None:
     """Download the title and video IDs of a YouTube channel."""
 
     parser = argparse.ArgumentParser(
@@ -95,7 +92,7 @@ def main(out: TextIO, args: Optional[Sequence[str]] = None) -> None:
     youtube = YouTubeAPI()
     all_items = youtube.list_all_items(
         flags.channel_id, re.compile(flags.filter_playlist_title, re.IGNORECASE))
-    writer = csv.writer(out, lineterminator='\n')
+    writer = csv.writer(sys.stdout, lineterminator='\n')
     writer.writerow(('Video ID', 'Title', 'URL'))
     for unused_playlist, item in all_items:
         video_id = item['snippet']['resourceId']['videoId']
@@ -103,4 +100,4 @@ def main(out: TextIO, args: Optional[Sequence[str]] = None) -> None:
 
 
 if __name__ == '__main__':
-    main(sys.stdout)
+    main()

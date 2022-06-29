@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "jsx": "react",
+    "lib": ["dom", "dom.iterable", "es6", "es2019"],
+    "module": "esNext",
+    "moduleResolution": "node",
+    "noEmit": true,
+    "noUnusedLocals": true,
+    "paths": {
+      "components/*": [
+        "src/components/*"
+      ],
+      "images/*": [
+        "src/images/*"
+      ],
+      "pages/*": [
+        "src/pages/*"
+      ],
+      "store/*": [
+        "src/store/*"
+      ],
+    },
+    "resolveJsonModule": true,
+    "strict": true,
+    "target": "esNext"
+  },
+  "include": [
+    "/tmp/bob_emploi/frontend/api/monitoring_pb.d.ts",
+    "custom.d.ts",
+    "cfg",
+    "src"
+  ],
+  "ts-node": {
+    "files": true
+  }
+}

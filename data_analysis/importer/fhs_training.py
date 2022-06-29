@@ -125,7 +125,7 @@ def main(fhs_folder: str, now: str, csv_output: str) -> None:
     # Estimation of the total # of job seekers in the FHS.
     total = 2522364
 
-    with open(csv_output, 'w') as csv_file:
+    with open(csv_output, 'w', encoding='utf-8') as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(_JobseekerCriteria._fields)
         for job_seeker in tqdm.tqdm(job_seekers, total=total):

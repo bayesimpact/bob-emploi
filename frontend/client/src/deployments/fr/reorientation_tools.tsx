@@ -4,18 +4,11 @@ import React from 'react'
 import ExternalLink from 'components/external_link'
 import Trans from 'components/i18n_trans'
 
+import type {Tool} from '../types/reorientation_tools'
 import afpaLogo from './afpa-ico.png'
 import capEmploiLogo from './cap-emploi-ico.png'
 import hanploiLogo from './hanploi-ico.jpg'
 import pixisLogo from './pixis-ico.png'
-
-export interface Tool {
-  description: string
-  from: React.ReactNode
-  logo: string
-  name: string
-  url: string
-}
 
 const linkInheritStyle = {
   color: 'inherit',
@@ -30,7 +23,7 @@ const getHandicapSpecificTools = (departementId?: string): readonly Tool[] => {
         'des Personnes Handicapées',
       logo: capEmploiLogo,
       name: 'Cap emploi',
-      url: departementId ? `https://www.capemploi-${departementId}.com` : 'https://www.agefiph.fr/annuaire',
+      url: departementId ? `https://www.capemploi-${departementId}.com` : 'https://www.agefiph.fr/annuaire', // checkURL
     },
     {
       description: 'experts en recrutement des personnes en situation de handicap',
@@ -43,7 +36,7 @@ const getHandicapSpecificTools = (departementId?: string): readonly Tool[] => {
       </Trans>,
       logo: hanploiLogo,
       name: 'Hanploi',
-      url: 'https://www.hanploi.com',
+      url: 'https://www.hanploi.com', // checkURL
     },
   ]
 
@@ -56,14 +49,14 @@ const _REORIENTATION_TOOLS: readonly Tool[] = [
     from: 'Pixis.co',
     logo: pixisLogo,
     name: 'Pixis',
-    url: 'https://pixis.co',
+    url: 'https://pixis.co', // checkURL
   },
   {
     description: "un questionnaire complet pour s'orienter.",
     from: 'Association pour la Formation Professionnelle des Adultes',
     logo: afpaLogo,
     name: 'Afpa',
-    url: 'https://www.afpa.fr/id-metiers',
+    url: 'https://www.afpa.fr/id-metiers', // checkURL
   },
 ]
 

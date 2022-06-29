@@ -4,5 +4,5 @@
   "ReplyEmail": "",
   "SenderEmail": "joanna@bob-emploi.fr",
   "SenderName": "Joanna de Bob",
-  "Subject": "{{var:firstName}}, votre compte Bob va bientôt expirer"
+  "Subject": "{{var:firstName}}, votre compte {{var:productName}} va bientôt expirer"
 }

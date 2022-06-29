@@ -25,7 +25,7 @@ You can try it out on a local instance:
 """
 
 import typing
-from typing import Any, Dict, List
+from typing import Any
 
 import pandas as pd
 
@@ -40,7 +40,7 @@ _MIN_JOB_OFFERS = 50
 
 def csv2dicts(
         *, market_score_csv: str, offers_csv: str,
-        rome_item_arborescence: str, referentiel_apellation_rome_csv: str) -> List[Dict[str, Any]]:
+        rome_item_arborescence: str, referentiel_apellation_rome_csv: str) -> list[dict[str, Any]]:
     """Import reorient jobbing data per month per departement in MongoDB.
 
     Args:
@@ -88,7 +88,7 @@ def csv2dicts(
 
     # Get market score and keep only jobs that have at least a market score
     # (offers per 10 candidates) of 4, as described here:
-    # https://github.com/bayesimpact/bob-emploi-internal/blob/master/data_analysis/notebooks/research/reorientation/reorient_market_stress_skilless.ipynb
+    # https://github.com/bayesimpact/bob-emploi-internal/blob/HEAD/data_analysis/notebooks/research/reorientation/reorient_market_stress_skilless.ipynb
     market_score = pd.read_csv(market_score_csv, dtype={'AREA_CODE': str})
     market_score.rename(columns={
         'AREA_CODE': 'departement_id',
@@ -135,7 +135,7 @@ def csv2dicts(
         .to_frame('departementJobStats')\
         .reset_index()
 
-    return typing.cast(List[Dict[str, Any]], jobbing_stats.to_dict(orient='records'))
+    return typing.cast(list[dict[str, Any]], jobbing_stats.to_dict(orient='records'))
 
 
 if __name__ == '__main__':

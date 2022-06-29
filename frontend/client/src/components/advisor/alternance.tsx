@@ -1,28 +1,33 @@
-import {TOptions} from 'i18next'
-import PropTypes from 'prop-types'
+import type {TOptions} from 'i18next'
 import React, {useMemo} from 'react'
+import {useTranslation} from 'react-i18next'
 
+import DataSource from 'components/data_source'
 import ExternalLink from 'components/external_link'
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
-import DataSource from 'components/data_source'
-import Picto from 'images/advices/picto-better-job-in-group.svg'
+import {getDiscoverAction, footer as footerData, simulatorLink, simulatorName,
+  specificExpendableAction, getSubtitle} from 'deployment/alternance'
 
-import {ActionWithHandyLink, CardProps, ExpandableAction, MethodSuggestionList} from './base'
+import type {CardProps} from './base'
+import {ActionWithHandyLink, ExpandableAction, HandyLink,
+  MethodSuggestionList} from './base'
 
-const HANDICAP_HIRING_LINK = 'https://www.agefiph.fr/articles/conseil-pratiques/pourquoi-recruter-une-personne-handicapee-5-bonnes-raisons'
+const HANDICAP_HIRING_LINK = 'https://www.agefiph.fr/articles/conseil-pratiques/pourquoi-recruter-une-personne-handicapee-5-bonnes-raisons' // checkURL
 
-const shortSourceMarginStyle = {
-  margin: '15px 0 0',
-}
 const argumentStyle = {
   borderLeft: `2px solid ${colors.MODAL_PROJECT_GREY}`,
   margin: '10px 0',
   paddingLeft: 10,
 }
 
+const shortSourceMarginStyle = {
+  margin: '15px 0 0',
+}
+
 const AlternanceMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
   const {handleExplore, profile: {gender, hasHandicap, yearOfBirth}, t} = props
+  const {t: translate} = useTranslation()
   const isYoung = yearOfBirth && (yearOfBirth >= new Date().getFullYear() - 30)
   const handleClick = useMemo(() => handleExplore('tip'), [handleExplore])
   const title = isYoung ?
@@ -33,38 +38,37 @@ const AlternanceMethod: React.FC<CardProps> = (props: CardProps): React.ReactEle
       <GrowingNumber number={4} /> étapes pour démarrer une recherche de contrat de
       professionalisation
     </Trans>
-  const subtitle = hasHandicap ? <Trans parent="span" t={t}>
-    En tant que travailleur handicapé, il n'y a pas de limite d'âge pour faire une
-    alternance. 53%* des personnes dans une situation proche de la vôtre ont décroché un CDI
-    à la fin d'un contrat de professionnalisation.
-    <DataSource style={shortSourceMarginStyle}>AGEFIPH 2017</DataSource>
-  </Trans> : <Trans parent="span" t={t}>
-    C'est une fois que l'on a obtenu un entretien chez un employeur que l'on sait exactement de quel
-    type de formation on aurait besoin, et dans quelle ville. Commencer par trouver l'entreprise,
-    plutôt que de chercher son centre de formation, augmente ses chances de réussir.
-  </Trans>
+  const {source: subtitleSource, text: subtitleText} = getSubtitle(hasHandicap) || {}
+  const subtitle = subtitleText ? <span>
+    {translate(...subtitleText)}
+    {subtitleSource ?
+      <DataSource style={shortSourceMarginStyle}>{subtitleSource}</DataSource> : null}
+  </span> : null
+  const discoverAction = getDiscoverAction(!!hasHandicap, !!isYoung)
   const tOptions = useMemo((): TOptions => ({context: gender}), [gender])
-  return <MethodSuggestionList title={title} headerContent={subtitle} isNotClickable={true}>
-    {hasHandicap ? <ActionWithHandyLink
+
+  const footer = footerData ? <HandyLink
+    linkIntro={translate(...footerData.intro)} href={footerData.url}>
+    {translate(...footerData.textUrl)}
+  </HandyLink> : null
+  return <MethodSuggestionList
+    title={title} headerContent={subtitle} isNotClickable={true} footer={footer}>
+    {discoverAction ? <ActionWithHandyLink
       onClick={handleClick}
-      linkName={t("Découvrir l'alternance")} linkIntro={t('Se renseigner\u00A0:')}
-      discoverUrl="https://www.service-public.fr/particuliers/vosdroits/F219">
-      {t("Contrat d'Apprentissage")}
-    </ActionWithHandyLink> : isYoung ? <ActionWithHandyLink
-      onClick={handleClick}
-      linkName={t("Découvrir l'alternance")} linkIntro={t('Se renseigner\u00A0:')}
-      discoverUrl="https://www.alternance.emploi.gouv.fr/portail_alternance/jcms/recleader_6113/decouvrir-l-alternance">
-      {t("Contrat d'Apprentissage ou Contrat de Professionalisation\u00A0?")}
-    </ActionWithHandyLink> : <ActionWithHandyLink
-      onClick={handleClick}
-      linkName={t('Voir les conditions')} linkIntro={t('Se renseigner\u00A0:')}
-      discoverUrl="https://www.pole-emploi.fr/employeur/le-contrat-de-professionnalisation-@/article.jspz?id=60624">
-      {t("Vérifier si c'est pour vous")}
-    </ActionWithHandyLink>}
+      linkName={translate(...discoverAction.name)} linkIntro={translate(...discoverAction.intro)}
+      discoverUrl={discoverAction.url}>
+      {discoverAction.text}
+    </ActionWithHandyLink> : null}
+    {specificExpendableAction ? <ExpandableAction
+      title={specificExpendableAction.title}
+      contentName={specificExpendableAction.more} onContentShown={handleClick}>
+      <ul>{specificExpendableAction.description.map((sentence, index) =>
+        <li key={index}>{sentence}</li>)}</ul>
+    </ExpandableAction> : null}
     <ActionWithHandyLink
       onClick={handleClick}
-      linkName={t("Portail de l'alternance")} linkIntro={t('Simulateur\u00A0:')}
-      discoverUrl="https://www.alternance.emploi.gouv.fr/portail_alternance/jcms/gc_5504/simulateur-employeur">
+      linkName={simulatorName} linkIntro={t('Simulateur\u00A0:')}
+      discoverUrl={simulatorLink}>
       {t('Simulez votre rémunération')}
     </ActionWithHandyLink>
     <ExpandableAction
@@ -115,15 +119,7 @@ const AlternanceMethod: React.FC<CardProps> = (props: CardProps): React.ReactEle
     </ExpandableAction>
   </MethodSuggestionList>
 }
-AlternanceMethod.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-  profile: PropTypes.shape({
-    hasHandicap: PropTypes.bool,
-    yearOfBirth: PropTypes.number.isRequired,
-  }).isRequired,
-  t: PropTypes.func.isRequired,
-}
 const ExpandedAdviceCardContent = React.memo(AlternanceMethod)
 
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName: 'magnifyingGlass' as const}

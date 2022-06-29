@@ -8,13 +8,16 @@ Usage :
         python /work/bob_emploi/frontend/server/asynchronous/test/monitor_test.py
 """
 
-from typing import Dict
+import datetime
+import json
+import re
 import unittest
 from unittest import mock
 
 import requests_mock
 
 from bob_emploi.data_analysis.monitoring import monitor
+from bob_emploi.frontend.api import monitoring_pb2
 
 
 @mock.patch(monitor.__name__ + '.boto3', new=mock.MagicMock())
@@ -25,15 +28,16 @@ class MonitoringTestCase(unittest.TestCase):
     def test_server_version(self, mock_requests: requests_mock.Mocker) -> None:
         """The server version is correctly extracted."""
 
-        mock_requests.get('https://www.bob-emploi.fr/api/monitoring', text='''
-{
-  "serverVersion": "server.version.fr"
-}
-''')
-        self.assertEqual(
-            monitor.retrieve_server_version('https://www.bob-emploi.fr'),
-            'server.version.fr'
-        )
+        mock_requests.get('https://www.bob-emploi.fr/api/monitoring', json={
+            'serverVersion': 'server.version.fr',
+            'lastSentEmail': {
+                'focus-spontaneous': '2021-08-31T12:00:00Z',
+            },
+        })
+        site = monitoring_pb2.Site(server_version='server.version.fr')
+        site.last_sent_email['focus-spontaneous'].FromDatetime(
+            datetime.datetime(2021, 8, 31, 12, 0, 0))
+        self.assertEqual(site, monitor.retrieve_server_info('https://www.bob-emploi.fr'))
 
     @requests_mock.mock()
     def test_front_version(self, mock_requests: requests_mock.Mocker) -> None:
@@ -64,30 +68,37 @@ class MonitoringTestCase(unittest.TestCase):
     def test_upload(self) -> None:
         """Test upload method."""
 
-        monitor_mock_data: Dict[str, monitor.MonitoredSite] = {
-            'http://www.bob-emploi.fr': {
-                'frontVersion': 'version 123',
-                'serverVersion': 'version server 123',
-            }
-        }
-        monitor.upload(monitor_mock_data)
+        data = monitoring_pb2.Data()
+        data.computed_at.FromDatetime(datetime.datetime(2021, 8, 31, 12, 0, 0))
+        fr_site = data.sites['http://www.bob-emploi.fr']
+        fr_site.front_version = 'version 123'
+        fr_site.server_version = 'version server 123'
+        fr_site.last_sent_email['focus-network'].FromDatetime(
+            datetime.datetime(2021, 8, 27, 11, 0, 0))
+        monitor.upload(data)
         monitor.boto3.resource.assert_called_with('s3')
         monitor.boto3.resource('s3').Bucket.assert_called_with('bob-monitoring')
         monitor.boto3.resource('s3').Bucket('bob-monitoring').\
             put_object.assert_called_with(Key='data.json', Body='''{
-  "http://www.bob-emploi.fr": {
-    "frontVersion": "version 123",
-    "serverVersion": "version server 123"
+  "computedAt": "2021-08-31T12:00:00Z",
+  "sites": {
+    "http://www.bob-emploi.fr": {
+      "frontVersion": "version 123",
+      "serverVersion": "version server 123",
+      "lastSentEmail": {
+        "focus-network": "2021-08-27T11:00:00Z"
+      }
+    }
   }
 }''')
 
     @requests_mock.mock()
-    @mock.patch(monitor.logging.__name__ + '.info')
-    def test_main(
+    @mock.patch('logging.info')
+    def test_main_one_deployment(
         self, mock_requests: requests_mock.Mocker,
         mock_info: mock.MagicMock,
     ) -> None:
-        """Test main."""
+        """Test main for a specific deployment."""
 
         mock_requests.get('https://www.bob-emploi.fr', text='''
 <meta property=version content=prod.fr.tag-2020-10-07_01>''')
@@ -99,6 +110,28 @@ class MonitoringTestCase(unittest.TestCase):
         monitor.main(['--deployment', 'fr'])
         mock_info.assert_called_with('Run monitoring for "%s"', 'fr')
         monitor.boto3.resource.assert_called_with('s3')
+
+    @requests_mock.mock()
+    @mock.patch('logging.info')
+    def test_main(
+        self, mock_requests: requests_mock.Mocker,
+        mock_info: mock.MagicMock,
+    ) -> None:
+        """Test main for all deployments."""
+
+        mock_requests.get(re.compile(r'^https://[^/]*/?$'), text='''
+<meta property=version content=prod.fr.tag-2020-10-07_01>''')
+        mock_requests.get(re.compile(r'^https://[^/]*/api/monitoring$'), text='''
+{
+  "serverVersion": "server.version.fr"
+}
+''')
+        monitor.main([])
+        mock_info.assert_called_with('Run monitoring for all deployments')
+        monitoring_data = json.loads(
+            monitor.boto3.resource('s3').Bucket().put_object.call_args[1]['Body'],
+        )
+        self.assertGreaterEqual(len(monitoring_data['sites']), 3, monitoring_data)
 
 
 if __name__ == '__main__':

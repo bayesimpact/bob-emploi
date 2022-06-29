@@ -9,7 +9,7 @@ import unidecode
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server import french
 from bob_emploi.frontend.server import geo
 from bob_emploi.frontend.server import i18n
@@ -95,7 +95,8 @@ def _in_departement(scoring_project: scoring_base.ScoringProject) -> str:
         return geo.get_in_a_departement_text(
             scoring_project.database,
             scoring_project.details.city.departement_id,
-            scoring_project.details.city)
+            locale=scoring_project.user_profile.locale,
+            city_hint=scoring_project.details.city)
     except KeyError:
         return scoring_project.translate_static_string('dans le département')
 
@@ -111,43 +112,28 @@ def _in_area_type(scoring_project: scoring_base.ScoringProject) -> str:
     return scoring_project.translate_static_string('dans le pays')
 
 
-def _job_name(scoring_project: scoring_base.ScoringProject) -> str:
+def _job_name(
+        scoring_project: scoring_base.ScoringProject,
+        forced_gender: 'user_profile_pb2.Gender.V' = user_profile_pb2.UNKNOWN_GENDER) -> str:
+    locale = scoring_project.user_profile.locale or 'fr'
+    gender = forced_gender or scoring_project.user_profile.gender
     return french.genderize_job(
-        scoring_project.details.target_job, scoring_project.user_profile.gender, is_lowercased=True)
+        scoring_project.details.target_job, gender, is_lowercased=locale.startswith('fr'))
 
 
-# Dynamic strings that are never used but here to help pybabel to extract those keys as strings to
-# translate.
-_DYNAMIC_STRINGS = (
-    i18n.make_translatable_string_with_context('1', 'AS_TEXT'),
-    i18n.make_translatable_string_with_context('2', 'AS_TEXT'),
-    i18n.make_translatable_string_with_context('3', 'AS_TEXT'),
-    i18n.make_translatable_string_with_context('4', 'AS_TEXT'),
-    i18n.make_translatable_string_with_context('5', 'AS_TEXT'),
-)
-
-
-def _job_search_length_months_at_creation(scoring_project: scoring_base.ScoringProject) -> str:
+def _job_search_length_at_creation(scoring_project: scoring_base.ScoringProject) -> str:
     count = round(scoring_project.get_search_length_at_creation())
-    if count < 0:
-        logging.warning(
-            'Trying to show negative job search length at creation:\n%s', str(scoring_project))
-        return scoring_project.translate_static_string('quelques')
-    count_as_str = scoring_project.translate_static_string(
-        str(count), context='AS_TEXT', can_log_exception=False)
-    if count_as_str == str(count):
-        return scoring_project.translate_static_string('quelques')
-    return count_as_str
+    return scoring_project.get_several_months_text(count)
 
 
 def _a_required_diploma(scoring_project: scoring_base.ScoringProject) -> str:
-    diplomas = ', '.join(
-        sorted(diploma.name for diploma in scoring_project.requirements().diplomas))
+    diplomas = scoring_project.requirements().diplomas
     if not diplomas:
         logging.warning(
             'Trying to show required diplomas when there are none.\n%s', str(scoring_project))
-        return 'un diplôme'
-    return f'un {diplomas} ou équivalent'
+        return scoring_project.translate_static_string('un diplôme')
+    return scoring_project.translate_static_string(
+        'un {diplomas} ou équivalent').format(diplomas=diplomas[0].name)
 
 
 def _postcode(scoring_project: scoring_base.ScoringProject) -> str:
@@ -157,7 +143,7 @@ def _postcode(scoring_project: scoring_base.ScoringProject) -> str:
 
 
 def _what_i_love_about(project: scoring_base.ScoringProject) -> str:
-    return project.user_profile.gender == user_pb2.FEMININE and \
+    return project.user_profile.gender == user_profile_pb2.FEMININE and \
         project.job_group_info().what_i_love_about_feminine or \
         project.job_group_info().what_i_love_about
 
@@ -197,7 +183,7 @@ scoring_base.register_template_variable(
 scoring_base.register_template_variable(
     '%eFeminine',
     lambda scoring_project: (
-        'e' if scoring_project.user_profile.gender == user_pb2.FEMININE else ''))
+        'e' if scoring_project.user_profile.gender == user_profile_pb2.FEMININE else ''))
 scoring_base.register_template_variable(
     '%expDurationAgo',
     lambda scoring_project: scoring_project.translate_static_string(
@@ -209,11 +195,10 @@ scoring_base.register_template_variable(
         scoring_project.details.seniority, ''))
 scoring_base.register_template_variable(
     '%feminineJobName',
-    lambda scoring_project: french.lower_first_letter(
-        scoring_project.details.target_job.feminine_name))
+    lambda scoring_project: _job_name(scoring_project, user_profile_pb2.FEMININE))
 scoring_base.register_template_variable(
     '%gender',
-    lambda scoring_project: user_pb2.Gender.Name(scoring_project.user_profile.gender))
+    lambda scoring_project: user_profile_pb2.Gender.Name(scoring_project.user_profile.gender))
 scoring_base.register_template_variable(
     '%inAreaType', _in_area_type)
 scoring_base.register_template_variable(
@@ -237,9 +222,9 @@ scoring_base.register_template_variable(
     '%jobId', lambda scoring_project: scoring_project.details.target_job.code_ogr)
 scoring_base.register_template_variable(
     '%jobName', _job_name)
-# This in only the **number** of months, use as '%jobSearchLengthMonthsAtCreation mois'.
+# This is a sentence using number of months: e.g. "3 months".
 scoring_base.register_template_variable(
-    '%jobSearchLengthMonthsAtCreation', _job_search_length_months_at_creation)
+    '%jobSearchLengthAtCreation', _job_search_length_at_creation)
 scoring_base.register_template_variable(
     '%language', lambda scoring_project: scoring_project.user_profile.locale[:2] or 'fr')
 scoring_base.register_template_variable(
@@ -257,8 +242,7 @@ scoring_base.register_template_variable(
     lambda scoring_project: scoring_project.job_group_info().like_your_workplace)
 scoring_base.register_template_variable(
     '%masculineJobName',
-    lambda scoring_project: french.lower_first_letter(
-        scoring_project.details.target_job.masculine_name))
+    lambda scoring_project: _job_name(scoring_project, user_profile_pb2.MASCULINE))
 scoring_base.register_template_variable(
     '%name', lambda scoring_project: scoring_project.user_profile.name)
 scoring_base.register_template_variable(

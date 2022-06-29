@@ -1,4 +1,5 @@
 {
-  productName: 'MILOrizons Dev',
-  typeformUrl: 'https://b4pjvgge4vu.typeform.com/to/VAj8bEvq',
+  config: {
+    typeformUrl: 'https://b4pjvgge4vu.typeform.com/to/VAj8bEvq',
+  },
 }

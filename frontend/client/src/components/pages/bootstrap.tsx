@@ -4,36 +4,39 @@ import {createBrowserHistory} from 'history'
 import _keyBy from 'lodash/keyBy'
 import ThumbDownIcon from 'mdi-react/ThumbDownIcon'
 import ThumbUpIcon from 'mdi-react/ThumbUpIcon'
-import PropTypes from 'prop-types'
 import React, {Suspense, useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import {hot} from 'react-hot-loader/root'
 import {useTranslation} from 'react-i18next'
 import {connect, Provider, useDispatch, useSelector} from 'react-redux'
 import {Redirect, Route, Switch, useLocation} from 'react-router'
-import {Action, createStore, applyMiddleware, combineReducers} from 'redux'
+import type {Action} from 'redux'
+import {createStore, applyMiddleware, combineReducers} from 'redux'
 import {composeWithDevTools} from 'redux-devtools-extension'
 import thunk from 'redux-thunk'
 
 import useMedia from 'hooks/media'
-import {BootstrapAction, BootstrapState, DispatchBootstrapActions, actionTypesToLog,
+import type {BootstrapAction, BootstrapState, DispatchBootstrapActions} from 'store/actions'
+import {actionTypesToLog,
   computeAdvicesForProject, convertFromProto, convertToProto, displayToasterMessage,
   sendAdviceFeedback, hideToasterMessageAction} from 'store/actions'
-import {ValidAdvice, getAdviceShortTitle, isValidAdvice} from 'store/advice'
+import type {ValidAdvice} from 'store/advice'
+import {getAdviceShortTitle, isValidAdvice} from 'store/advice'
 import createAmplitudeMiddleware from 'store/amplitude'
 import {app, asyncState} from 'store/app_reducer'
 import {inCityPrefix, lowerFirstLetter, maybeContractPrefix} from 'store/french'
 import {init as i18nInit} from 'store/i18n'
 import {Logger} from 'store/logging'
 import {useAsynceffect} from 'store/promise'
-import createSentryMiddleware from 'store/sentry'
+import createSentryEnhancer from 'store/sentry'
 import {addProjectIds} from 'store/user'
 
-import {AdvicePicto, ExplorerAdviceCard, ExplorerAdviceCardConfig} from 'components/advisor'
+import type {ExplorerAdviceCardConfig} from 'components/advisor'
+import {AdvicePicto, ExplorerAdviceCard} from 'components/advisor'
 import Button from 'components/button'
 import Checkbox from 'components/checkbox'
 import ExternalLink from 'components/external_link'
-import {Inputable} from 'components/input'
-import {Modal, ModalConfig} from 'components/modal'
+import type {Inputable} from 'components/input'
+import type {ModalConfig} from 'components/modal'
+import {Modal} from 'components/modal'
 import {useRadium} from 'components/radium'
 import Snackbar from 'components/snackbar'
 import Textarea from 'components/textarea'
@@ -198,13 +201,6 @@ const SelectionBase = (props: SelectionProps): React.ReactElement => {
     </div>
   </div>
 }
-SelectionBase.propTypes = {
-  advicesById: PropTypes.object.isRequired,
-  cachedSharedUrl: PropTypes.string,
-  selectedAdvices: PropTypes.object,
-  style: PropTypes.object.isRequired,
-  user: PropTypes.object.isRequired,
-}
 const Selection = React.memo(SelectionBase)
 
 
@@ -226,9 +222,6 @@ const ProfileSectionBase = ({profile}: ProfileSectionProps): React.ReactElement 
       {name} {lastName}
     </div>
   </div>
-}
-ProfileSectionBase.propTypes = {
-  profile: PropTypes.object.isRequired,
 }
 const ProfileSection = React.memo(ProfileSectionBase)
 
@@ -280,6 +273,9 @@ const BootstrapPageBase = (): React.ReactElement => {
 
   const [actualAdvices, setActualAdvices] = useState<readonly bayes.bob.Advice[]>([])
   useAsynceffect(async (checkIfCanceled): Promise<void> => {
+    if (!user.projects?.[0]?.targetJob && !user.projects?.[0]?.city) {
+      return
+    }
     const response = await dispatch(computeAdvicesForProject(user))
     if (!response || !response.advices || checkIfCanceled()) {
       return
@@ -474,6 +470,22 @@ interface CardProps extends Omit<ExplorerAdviceCardConfig, 'style' | 'onClick' |
   onThumbUp: (adviceId: string) => void
 }
 
+const buttonStyle = {
+  boxSizing: 'content-box',
+  display: 'flex',
+  padding: 15,
+} as const
+const thumbStyle = {
+  ':hover': {fill: colors.GREYISH_BROWN},
+  'fill': colors.COOL_GREY,
+  'width': 20,
+  ...SmoothTransitions,
+} as const
+const selectedThumbStyle = {
+  ...thumbStyle,
+  ':hover': {fill: colors.BOB_BLUE},
+  'fill': colors.BOB_BLUE,
+} as const
 
 const BootstrapAdviceCardBase = (props: CardProps): React.ReactElement => {
   const {advice: {adviceId}, isBad, isGood, isSelectable, isSelected, onChangeSelection,
@@ -495,33 +507,20 @@ const BootstrapAdviceCardBase = (props: CardProps): React.ReactElement => {
     if (!isSelectable) {
       return null
     }
-    const buttonStyle = {
-      cursor: 'pointer',
-      display: 'block',
-      padding: 15,
-    }
-    const thumbStyle = {
-      ':hover': {fill: colors.GREYISH_BROWN},
-      'fill': colors.COOL_GREY,
-      'width': 20,
-      ...SmoothTransitions,
-    }
-    const selectedThumbStyle = {
-      ...thumbStyle,
-      ':hover': {fill: colors.BOB_BLUE},
-      'fill': colors.BOB_BLUE,
-    }
     return <div style={{marginLeft: 10}}>
-      <button
+      <Checkbox
         style={buttonStyle} onClick={handleChangeSelection}
-        aria-label={isSelected ? t('Retirer de la sélection') : t('Ajouter à la sélection')}>
-        <Checkbox isSelected={isSelected} />
-      </button>
-      <button style={buttonStyle} onClick={handleThumbUp} aria-checked={isGood} role="checkbox">
+        aria-label={isSelected ? t('Retirer de la sélection') : t('Ajouter à la sélection')}
+        isSelected={isSelected} size={20} />
+      <button
+        style={buttonStyle} onClick={handleThumbUp} aria-checked={isGood} role="checkbox"
+        type="button">
         <HoverableThumbUpIcon
           style={isGood ? selectedThumbStyle : thumbStyle} aria-label={t("C'est un bon conseil")} />
       </button>
-      <button style={buttonStyle} onClick={handleThumbDown} aria-checked={isBad} role="checkbox">
+      <button
+        style={buttonStyle} onClick={handleThumbDown} aria-checked={isBad} role="checkbox"
+        type="button">
         <HoverableThumbDownIcon
           style={isBad ? selectedThumbStyle : thumbStyle}
           aria-label={t("C'est un mauvais conseil")} />
@@ -548,16 +547,6 @@ const BootstrapAdviceCardBase = (props: CardProps): React.ReactElement => {
     {selectButtons}
   </div>
 }
-BootstrapAdviceCardBase.propTypes = {
-  advice: PropTypes.object.isRequired,
-  isBad: PropTypes.bool,
-  isGood: PropTypes.bool,
-  isSelectable: PropTypes.bool,
-  isSelected: PropTypes.bool,
-  onChangeSelection: PropTypes.func.isRequired,
-  onThumbDown: PropTypes.func.isRequired,
-  onThumbUp: PropTypes.func.isRequired,
-}
 const BootstrapAdviceCard = React.memo(BootstrapAdviceCardBase)
 
 const history = createBrowserHistory()
@@ -569,8 +558,8 @@ const amplitudeMiddleware = createAmplitudeMiddleware(new Logger({
 }))
 // Enable devTools middleware.
 const finalCreateStore = composeWithDevTools(
-  // sentryMiddleware needs to be first to correctly catch exception down the line.
-  applyMiddleware(createSentryMiddleware(), thunk, amplitudeMiddleware, routerMiddleware(history)),
+  applyMiddleware(thunk, amplitudeMiddleware, routerMiddleware(history)),
+  createSentryEnhancer(),
 )(createStore)
 
 
@@ -658,7 +647,9 @@ const store = finalCreateStore(
     user: bootstrapUserReducer,
   }),
 )
+// eslint-disable-next-line unicorn/prefer-module
 if (module.hot) {
+  // eslint-disable-next-line unicorn/prefer-module
   module.hot.accept(['store/app_reducer'], async (): Promise<void> => {
     const nextAppReducerModule = await import('store/app_reducer')
     store.replaceReducer(combineReducers({
@@ -688,7 +679,9 @@ const fetchUserInput = async (hashString: string, dispatch: DispatchBootstrapAct
       await parseJsonAsync<InputUser>(hashString) :
       await dispatch(convertFromProto('userWithAdviceSelection', hashString))
   } catch (error) {
-    dispatch(displayToasterMessage(`${error.message} en parsant ${hashString}`))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const message = (error as Error).message || (error as any).toString()
+    dispatch(displayToasterMessage(`${message} en parsant ${hashString}`))
   }
 }
 
@@ -740,7 +733,7 @@ const UserConnectedPageBase = (): React.ReactElement => {
     <Route path={Routes.RESOURCES_PAGE} component={ResourcesPage} />
     {Object.entries(installationPage).map(([path, component]) =>
       <Route key={path} path={`${Routes.BOOTSTRAP_ROOT}${path}`} component={component} />)}
-    <Redirect to={Routes.RESOURCES_PAGE} />
+    <Route><Redirect to={Routes.RESOURCES_PAGE} /></Route>
   </Switch>
 }
 const UserConnectedPage = React.memo(UserConnectedPageBase)
@@ -758,4 +751,4 @@ const App = () => <Provider store={store}>
 
 
 
-export default hot(React.memo(App))
+export default React.memo(App)

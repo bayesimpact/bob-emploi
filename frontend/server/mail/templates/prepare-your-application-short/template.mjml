@@ -1,0 +1,29 @@
+<mjml owa="desktop" version="4.6.3">
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-text line-height="1.38">Bonjour {{var:firstName:"Rémi"}},</mj-text>
+        <mj-text line-height="1.38">J'espère que tout va bien pour vous.{%if var:hasInterviewFrustration%} Avez-vous réussi à décrocher quelques entretiens ?{%endif%} J'ai pensé à vous lorsque je me demandais comment attirer l'attention d'un recruteur avec une candidature, qu'elle soit spontanée ou non, et j'aimerais vous partager mes pensées.</mj-text>
+        <mj-text line-height="1.38">Le mieux est de commencer par trouver <strong>deux ou trois éléments clés</strong> spécifiques pour cette candidature, percutants, à développer dans votre lettre de motivation. Tournez ces points pour les rendre <strong>vendeurs</strong>, de manière à ce qu'ils suscitent la curiosité du recruteur, et qu'ils lui donnent envie de vous questionner de vive voix à leur sujet.</mj-text>
+        <mj-text line-height="1.38">Si vous avez encore beaucoup de choses à raconter, sur vous et vos expériences, ce que vous pourriez apporter à l'entreprise, votre intérêt…, gardez-en pour l'entretien, cette étape est là pour ça !</mj-text>
+        <mj-text line-height="1.38">Gardez en tête d'éviter certains pièges, comme :
+          <ul>
+            <li>recopier tout votre CV dans votre lettre de motivation</li>
+            <li>oublier de parler des interactions entre vous et l'entreprise lorsque vous parlez de vous</li>
+            <li>écrire une lettre trop longue (plus d'une page), au risque de désintéresser votre destinataire</li>
+          </ul>
+        </mj-text>
+        <mj-text line-height="1.38">Enfin, <strong>soignez bien chacune de vos candidatures</strong>, et, une fois le point final écrit, n'hésitez pas à proposer votre lettre de motivation à la relecture (auprès de votre conseiller Pôle Emploi par exemple, ou auprès de personnes qui peuvent vous aider), pour corriger les éventuelles fautes ou améliorer la mise en page.</mj-text>
+        <mj-text line-height="1.38">{%if var:hasSelfConfidenceFrustration%}Ne doutez pas de vous, vous avez un profil unique qui ne cherche qu'à se démarquer des autres. {%endif%}Je suis persuadée qu'en ajustant un peu votre candidature en ce sens, vous arriverez à décrocher un entretien.</mj-text>
+        <mj-text line-height="1.38">Si ça vous tente d'essayer de personnaliser votre candidature et que vous avez besoin d'un coup de pouce, n'hésitez pas à me contacter{%if var:advicePageUrl:""!=""%} ou à lire <a href="{{var:advicePageUrl}}">cette page</a> qui explique comment s'y prendre{%endif%}.</mj-text>
+        <mj-text line-height="1.38">En attendant, je vous souhaite bon courage pour votre recherche d'emploi et je reviens vers vous si j'ai d'autres idées.</mj-text>
+        <mj-text line-height="1.38">{{var:senderName}}</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-text font-size="11px" color="#55575d" line-height="2">Vous recevez cet email car vous êtes inscrit{%if var:gender:""=="FEMININE"%}e{%elseif var:gender:""=="MASCULINE"%}{%else%}·e{%endif%} sur <a href="{{var:baseUrl}}?utm_source=bob-emploi&amp;utm_medium=email" target="_blank">{{var:productName}}</a> et avez demandé des emails de coaching. <a href="{{var:changeEmailSettingsUrl}}" target="_blank">Cliquez ici</a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte {{var:productName}} en veille ? <a href="{{var:statusUpdateUrl}}" target="_blank">cliquez ici</a>.</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

@@ -2,16 +2,14 @@
 
 import collections
 import datetime
-from typing import Dict, Mapping
+from typing import Mapping
 
 from google.protobuf import json_format
 
-from bob_emploi.common.python import now
+from bob_emploi.common.python import proto
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import stats_pb2
 from bob_emploi.frontend.server import mongo
-
-_DB, _USER_DB, _ = mongo.get_connections_from_env()
 
 
 def _convert_date(date: str) -> datetime.datetime:
@@ -19,7 +17,7 @@ def _convert_date(date: str) -> datetime.datetime:
 
 
 def _create_passion_category_counts(
-        counts: Dict[str, int],
+        counts: dict[str, int],
         category: 'stats_pb2.SearchLengthCategory.V') -> stats_pb2.PassionLevelCategory:
     return stats_pb2.PassionLevelCategory(
         level_counts=([
@@ -32,7 +30,7 @@ def _create_passion_category_counts(
 class _FirstnameCounter:
 
     def __init__(self) -> None:
-        self._counts: Dict[str, int] = collections.defaultdict(int)
+        self._counts: dict[str, int] = collections.defaultdict(int)
 
     def increment(self, firstname: str) -> None:
         """Increment the count for a first name."""
@@ -60,7 +58,9 @@ class _FirstnameCounter:
 def main() -> None:
     """Aggregate users and populate user_count collection."""
 
-    aggregation = _USER_DB.user.aggregate([
+    stats_db, user_db, unused_eval_db = mongo.get_connections_from_env()
+
+    aggregation = user_db.user.aggregate([
         {'$match': {
             'featuresEnabled.excludeFromAnalytics': {'$ne': True},
         }},
@@ -77,14 +77,14 @@ def main() -> None:
         }}
     ])
 
-    job_group_counts: Dict[str, int] = collections.defaultdict(int)
-    dep_counts: Dict[str, int] = collections.defaultdict(int)
-    medium_search_interview_counts: Dict[str, int] = collections.defaultdict(int)
-    long_search_interview_counts: Dict[str, int] = collections.defaultdict(int)
-    weekly_application_counts: Dict[str, int] = collections.defaultdict(int)
-    short_search_passion_counts: Dict[str, int] = collections.defaultdict(int)
-    medium_search_passion_counts: Dict[str, int] = collections.defaultdict(int)
-    long_search_passion_counts: Dict[str, int] = collections.defaultdict(int)
+    job_group_counts: dict[str, int] = collections.defaultdict(int)
+    dep_counts: dict[str, int] = collections.defaultdict(int)
+    medium_search_interview_counts: dict[str, int] = collections.defaultdict(int)
+    long_search_interview_counts: dict[str, int] = collections.defaultdict(int)
+    weekly_application_counts: dict[str, int] = collections.defaultdict(int)
+    short_search_passion_counts: dict[str, int] = collections.defaultdict(int)
+    medium_search_passion_counts: dict[str, int] = collections.defaultdict(int)
+    long_search_passion_counts: dict[str, int] = collections.defaultdict(int)
     firstname_counts = _FirstnameCounter()
     last_id = None
     for user_info in aggregation:
@@ -134,10 +134,10 @@ def main() -> None:
         long_search_interview_counts=long_search_interview_counts,
         passion_level_counts=passion_level_counts,
         frequent_firstnames=firstname_counts.get_top())
-    user_counts.aggregated_at.FromDatetime(now.get())
-    user_counts.aggregated_at.nanos = 0
+    proto.set_date_now(user_counts.aggregated_at)
 
-    _DB.user_count.replace_one({'_id': ''}, json_format.MessageToDict(user_counts), upsert=True)
+    stats_db.user_count.replace_one(
+        {'_id': ''}, json_format.MessageToDict(user_counts), upsert=True)
 
 
 if __name__ == '__main__':

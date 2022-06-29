@@ -9,7 +9,7 @@ from bob_emploi.data_analysis.importer import offers_per_city
 from bob_emploi.frontend.api import commute_pb2
 
 
-@mock.patch(offers_per_city.tqdm.__name__ + '.tqdm', new=lambda iterable, **kwargs: iterable)
+@mock.patch('tqdm.tqdm', new=lambda iterable, **kwargs: iterable)
 class OffersPerCityTestCase(unittest.TestCase):
     """Unit tests for the tested module functions."""
 

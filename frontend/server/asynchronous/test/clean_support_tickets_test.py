@@ -4,23 +4,19 @@ import datetime
 import unittest
 from unittest import mock
 
-import mongomock
-
-from bob_emploi.common.python import now
+from bob_emploi.common.python.test import nowmock
 from bob_emploi.frontend.server.asynchronous import clean_support_tickets
+from bob_emploi.frontend.server.asynchronous.test import asynchronous_test_case
 
 
-@mock.patch(now.__name__ + '.get', new=lambda: datetime.datetime(2019, 10, 4))
+@nowmock.patch(new=lambda: datetime.datetime(2019, 10, 4))
 @mock.patch('logging.info')
-class CleanSupportTicketsTestCase(unittest.TestCase):
+class CleanSupportTicketsTestCase(asynchronous_test_case.TestCase):
     """Unit tests for the module."""
 
     def setUp(self) -> None:
         super().setUp()
-        self._db = mongomock.MongoClient().test
-        patcher = mock.patch(clean_support_tickets.__name__ + '._DB', new=self._db)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        self._db = self._user_db
 
     def test_user_with_old_ticket(self, mock_info: mock.MagicMock) -> None:
         """An old support ticket gets deleted."""

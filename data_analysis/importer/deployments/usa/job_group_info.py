@@ -1,16 +1,24 @@
 """Importer for US job groups info."""
 
+import json
 import os
 import typing
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from airtable import airtable
 import pandas as pd
 
+from bob_emploi.frontend.api import skill_pb2
+from bob_emploi.common.python import proto
+from bob_emploi.common.python.i18n import translation
+from bob_emploi.data_analysis.importer import airtable_to_protos
 from bob_emploi.data_analysis.lib import cleaned_data
 from bob_emploi.data_analysis.lib import market_score_derivatives
 from bob_emploi.data_analysis.lib import mongo
 from bob_emploi.data_analysis.lib import usa_cleaned_data
+
+
+_SKILL_18N_FIELDS = tuple(proto.list_translatable_fields(skill_pb2.Skill, name_field='json_name'))
 
 
 def _load_crosswalk_airtable(base_id: str, table: str, view: Optional[str] = None) -> pd.DataFrame:
@@ -28,8 +36,8 @@ def _load_crosswalk_airtable(base_id: str, table: str, view: Optional[str] = Non
             'https://airtable.com/account and set it in the AIRTABLE_API_KEY '
             'env var.')
     client = airtable.Airtable(base_id, api_key)
-    mappings: List[Tuple[str, str]] = []
-    errors: List[KeyError] = []
+    mappings: list[Tuple[str, str]] = []
+    errors: list[KeyError] = []
     for record in client.iterate(table, view=view):
         try:
             for fap_prefix in record['fields']['FAP prefixes']:
@@ -53,7 +61,9 @@ def make_dicts(
         soc_structure_xls: str,
         soc_fap_crosswalk_airtable: str,
         brookings_automation_risk_json: str,
-) -> List[Dict[str, Any]]:
+        occupation_requirements_json: str,
+        skills_for_future_airtable: Optional[str] = None,
+) -> list[dict[str, Any]]:
     """Prepare job info for MongoDB."""
 
     job_groups = usa_cleaned_data.us_soc2010_job_groups(filename=soc_definitions_xls)
@@ -116,8 +126,36 @@ def make_dicts(
     # Fill NaN with empty [].
     job_groups['admin1AreaScores'] = job_groups.admin1AreaScores.apply(
         lambda s: s if isinstance(s, list) else [])
+    job_groups['inDomain'] = 'in your industry'
 
-    return typing.cast(List[Dict[str, Any]], job_groups.to_dict('records'))
+    # Add occupation requirements from json file.
+    with open(occupation_requirements_json, encoding='utf-8') as job_requirements_file:
+        job_requirements_list = json.load(job_requirements_file)
+        job_requirements_dict = {
+            job_requirement.pop('_id'): job_requirement
+            for job_requirement in job_requirements_list}
+    job_groups['requirements'] = job_groups.index.map(job_requirements_dict)
+    # Replace NaN by empty dicts.
+    job_groups['requirements'] = job_groups.requirements.apply(
+        lambda r: r if isinstance(r, dict) else {})
+
+    # SkillsForFuture
+    skills_for_future_by_rome = airtable_to_protos.load_items_from_prefix(
+        'Skill', job_groups.index, skills_for_future_airtable, 'soc_prefixes_us')
+    if skills_for_future_by_rome:
+        with translation.Translator() as translator:
+            translated_skills_for_future_by_rome = {
+
+                rome_id: [
+                    skill | translator.ensure_translate_fields(
+                        skill, locale='en', fields=_SKILL_18N_FIELDS)
+                    for skill in skills
+                ]
+                for rome_id, skills in skills_for_future_by_rome.items()
+            }
+        job_groups['skillsForFuture'] = job_groups.index.map(translated_skills_for_future_by_rome)
+
+    return typing.cast(list[dict[str, Any]], job_groups.to_dict('records'))
 
 
 if __name__ == '__main__':

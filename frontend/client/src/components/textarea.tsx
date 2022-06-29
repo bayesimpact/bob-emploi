@@ -1,6 +1,6 @@
 import React, {useCallback, useImperativeHandle, useRef} from 'react'
 
-import {Inputable} from 'components/input'
+import type {Inputable} from 'components/input'
 
 
 type HTMLTextAreaProps = React.HTMLProps<HTMLTextAreaElement>

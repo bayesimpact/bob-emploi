@@ -7,7 +7,7 @@ from unittest import mock
 
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server import companies
 from bob_emploi.frontend.server.test import filters_test
 from bob_emploi.frontend.server.test import scoring_test
@@ -182,7 +182,7 @@ class SpontaneousApplicationScoringModelTestCase(scoring_test.ScoringModelTestBa
 
         persona = self._random_persona().clone()
         persona.project.diagnostic.category_id = 'bravo'
-        persona.user_profile.frustrations.append(user_pb2.NO_OFFERS)
+        persona.user_profile.frustrations.append(user_profile_pb2.NO_OFFERS)
         score = self._score_persona(persona)
 
         self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')

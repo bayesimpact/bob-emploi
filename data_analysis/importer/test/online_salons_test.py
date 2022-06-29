@@ -28,7 +28,7 @@ class OnlineSalonsImporterTestCase(airtablemock.TestCase):
     @mock.patch.dict(os.environ, {'AIRTABLE_API_KEY': 'apikey'})
     @mock.patch(online_salons.__name__ + '._REGIONS', new=[{'94': {'prefix': 'en '}}])
     @mock.patch(online_salons.__name__ + '.search_client')
-    @mock.patch(online_salons.logging.__name__ + '.warning')
+    @mock.patch('logging.warning')
     def test_json2dicts(self, mock_logging: mock.MagicMock, mock_algolia: mock.MagicMock) -> None:
         """Test basic usage of the json2dicts function."""
 

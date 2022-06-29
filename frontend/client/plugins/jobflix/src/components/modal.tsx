@@ -9,27 +9,37 @@ interface ModalProps extends React.ComponentProps<typeof Modal> {
 }
 
 const buttonStyle: RadiumCSSProperties = {
-  ':hover': {
-    backgroundColor: '#fff',
+  ':focus': {
+    boxShadow:
+    `0px 0px 0px 2px ${colors.MODAL_BACKGROUND}, 0px 0px 0px 5px ${colors.MODAL_CLOSE_BACKGROUND}`,
   },
-  'backgroundColor': '#fff',
+  ':hover': {
+    boxShadow:
+    `0px 0px 0px 2px ${colors.MODAL_BACKGROUND}, 0px 0px 0px 5px ${colors.MODAL_CLOSE_BACKGROUND}`,
+  },
+  'backgroundColor': colors.MODAL_CLOSE_BACKGROUND,
   'boxShadow': 'initial',
-  'color': colors.CHARCOAL_GREY,
+  'color': colors.MODAL_CLOSE_ICON,
   'transform': 'translate(50%, 50%)',
+  'transition': 'none',
 }
 const UpskillingModal = (props: ModalProps): React.ReactElement|null => {
-  const {children, onClose, style, ...otherProps} = props
+  const {children, onClose, skipFocusOnFirstElements = 0, style, ...otherProps} = props
   const modalStyle = useMemo((): React.CSSProperties => ({
-    backgroundColor: colors.PURPLISH_BROWN,
-    color: '#fff',
+    backgroundColor: colors.MODAL_BACKGROUND,
+    color: colors.TEXT,
     fontSize: 19,
     margin: '30px 20px',
     maxWidth: 600,
     padding: 50,
     ...style,
   }), [style])
-  return <Modal style={modalStyle} {...otherProps}>
-    <ModalCloseButton shouldCloseOnEscape={true} style={buttonStyle} onClick={onClose} />
+  return <Modal
+    style={modalStyle} skipFocusOnFirstElements={skipFocusOnFirstElements + 1}
+    {...otherProps}>
+    <ModalCloseButton
+      shouldCloseOnEscape={true} style={buttonStyle} onClick={onClose}
+      aria-describedby={otherProps['aria-labelledby']} />
     {children}
   </Modal>
 }

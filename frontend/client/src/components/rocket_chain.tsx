@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
 import rocketIcon from 'images/rocket.svg'
@@ -61,12 +60,6 @@ const RocketChain: React.FC<ChainProps> = (props: ChainProps): React.ReactElemen
       altText="" style={paleStyle} rocketIcon={blackRocketIcon}
       numRockets={MAX_NUMBER_ROCKETS - numFilledRockets} /> : null}
   </React.Fragment>
-}
-RocketChain.propTypes = {
-  areEmptyRocketsShown: PropTypes.bool,
-  numRockets: PropTypes.number,
-  numStars: PropTypes.number,
-  rocketHeight: PropTypes.number,
 }
 
 

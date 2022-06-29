@@ -1,31 +1,29 @@
 """Unit tests for the diagnostic part of bob_emploi.frontend.advisor module."""
 
-import os
-from typing import List
 import unittest
 from unittest import mock
 
 import mongomock
 
 from bob_emploi.frontend.api import diagnostic_pb2
+from bob_emploi.frontend.api import features_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server import diagnostic
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import proto
-from bob_emploi.frontend.server import scoring_base
+from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server.test import base_test
 
 # TODO(cyrille): Put quick-diagnostic tests in a different module.
 
-_FAKE_TRANSLATIONS_FILE = os.path.join(os.path.dirname(__file__), 'testdata/translations.json')
 
-
-class NeverEnoughDataScoringModel(scoring_base.ModelBase):
+class NeverEnoughDataScoringModel(scoring.ModelBase):
     """A scoring model that always throws a NotEnoughDataException."""
 
-    def score(self, project: scoring_base.ScoringProject) -> float:
-        raise scoring_base.NotEnoughDataException(fields={'projects.0'})
+    def score(self, project: scoring.ScoringProject) -> float:
+        raise scoring.NotEnoughDataException(fields={'projects.0'})
 
 
 class MaybeDiagnoseTestCase(unittest.TestCase):
@@ -54,8 +52,9 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         })
 
         self.user = user_pb2.User(
-            features_enabled=user_pb2.Features(advisor=user_pb2.ACTIVE, workbench=user_pb2.ACTIVE),
-            profile=user_pb2.UserProfile(name='Margaux', gender=user_pb2.FEMININE))
+            features_enabled=features_pb2.Features(
+                advisor=features_pb2.ACTIVE, workbench=features_pb2.ACTIVE),
+            profile=user_profile_pb2.UserProfile(name='Margaux', gender=user_profile_pb2.FEMININE))
         proto.CachedCollection.update_cache_version()
 
     def test_no_diagnostic_if_project_incomplete(self) -> None:
@@ -84,7 +83,7 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         """Compute a nice diagnostic with overall sentence."""
 
         project = project_pb2.Project()
-        self.user.profile.gender = user_pb2.FEMININE
+        self.user.profile.gender = user_profile_pb2.FEMININE
         self.user.profile.locale = 'fr'
         self.database.diagnostic_overall.insert_one({
             'categoryId': 'women',
@@ -104,7 +103,7 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         """Diagnostic overall uses translations."""
 
         project = project_pb2.Project()
-        self.user.profile.gender = user_pb2.FEMININE
+        self.user.profile.gender = user_profile_pb2.FEMININE
         self.user.profile.locale = 'fr@tu'
         self.database.diagnostic_overall.insert_one({
             'categoryId': 'women',
@@ -128,11 +127,44 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
             'Manque de précision dans ta recherche', project.diagnostic.overall_sentence)
         self.assertEqual('Tu devrais réfléchir à tes méthodes', project.diagnostic.text)
 
+    def test_translate_diagnostic_overall_using_key(self) -> None:
+        """Diagnostic overall uses keyed translations."""
+
+        project = project_pb2.Project()
+        self.user.profile.gender = user_profile_pb2.FEMININE
+        self.user.profile.locale = 'fr@tu'
+        self.database.diagnostic_overall.insert_one({
+            'categoryId': 'women',
+            'id': 'rec0123456789',
+            'filters': ['for-women'],
+            'score': 50,
+            'sentenceTemplate': 'Manque de précision dans votre recherche',
+            'textTemplate': 'Vous devriez réfléchir à vos méthodes',
+        })
+        self.database.translations.insert_many([
+            {
+                'string': 'diagnosticOverall:rec0123456789:sentence_template',
+                'fr@tu': 'You should check your methods',
+            },
+            {
+                'string': 'diagnosticOverall:rec0123456789:sentence_template_FEMININE',
+                'fr@tu': 'You should check your methods, woman!',
+            },
+            {
+                'string': 'diagnosticOverall:rec0123456789:text_template',
+                'fr@tu': 'Not enough precision in your search',
+            },
+        ])
+        self.assertTrue(diagnostic.maybe_diagnose(self.user, project, self.database))
+        self.assertEqual(
+            'You should check your methods, woman!', project.diagnostic.overall_sentence)
+        self.assertEqual('Not enough precision in your search', project.diagnostic.text)
+
     def test_templates_diagnostic_overall(self) -> None:
         """Diagnostic overall uses templates."""
 
         project = project_pb2.Project()
-        self.user.profile.gender = user_pb2.FEMININE
+        self.user.profile.gender = user_profile_pb2.FEMININE
         project.target_job.name = 'Directrice technique'
         self.database.diagnostic_overall.insert_one({
             'categoryId': 'women',
@@ -151,7 +183,7 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         """Get the overall sentence in order."""
 
         project = project_pb2.Project()
-        self.user.profile.gender = user_pb2.FEMININE
+        self.user.profile.gender = user_profile_pb2.FEMININE
         self.database.diagnostic_overall.insert_many([
             {
                 '_order': 1,
@@ -172,7 +204,7 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         """Get the overall sentence for a specific main challenge."""
 
         project = project_pb2.Project()
-        self.user.profile.gender = user_pb2.FEMININE
+        self.user.profile.gender = user_profile_pb2.FEMININE
         self.user.profile.locale = 'fr@tu'
         self.database.translations.insert_many([
             {
@@ -307,7 +339,7 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         """Compute the diagnostic main challenge for a project and use its genderized details."""
 
         project = project_pb2.Project()
-        self.user.profile.gender = user_pb2.MASCULINE
+        self.user.profile.gender = user_profile_pb2.MASCULINE
         self.database.diagnostic_main_challenges.drop()
         self.database.diagnostic_main_challenges.insert_one({
             'categoryId': 'everyone',
@@ -333,7 +365,7 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
 
         project = project_pb2.Project()
         project.original_self_diagnostic.category_id = 'bravo'
-        self.user.profile.gender = user_pb2.MASCULINE
+        self.user.profile.gender = user_profile_pb2.MASCULINE
         self.database.diagnostic_main_challenges.drop()
         self.database.diagnostic_main_challenges.insert_one({
             'categoryId': 'everyone',
@@ -524,7 +556,7 @@ class FindMainChallengeTests(base_test.ServerTestCase):
         assert main_challenge
         self.assertEqual('every-one-in-custom-db', main_challenge.category_id)
 
-    @mock.patch.dict(scoring_base.SCORING_MODELS, {'fake-scorer': NeverEnoughDataScoringModel()})
+    @mock.patch.dict(scoring.SCORING_MODELS, {'fake-scorer': NeverEnoughDataScoringModel()})
     def test_missing_fields(self) -> None:
         """Missing fields are set when main challenges raises NotEnoughDataException."""
 
@@ -540,7 +572,7 @@ class FindMainChallengeTests(base_test.ServerTestCase):
         # Only one main challenge.
         self.assertFalse(next(challenges_iterator, None))
 
-    @mock.patch.dict(scoring_base.SCORING_MODELS, {'fake-scorer': NeverEnoughDataScoringModel()})
+    @mock.patch.dict(scoring.SCORING_MODELS, {'fake-scorer': NeverEnoughDataScoringModel()})
     def test_fields_priority(self) -> None:
         """Missing fields have priority according to where they are wrt the main blocker."""
 
@@ -561,8 +593,8 @@ class FindMainChallengeTests(base_test.ServerTestCase):
                 'order': 2,
             },
         ])
-        main_challenges: List[diagnostic_pb2.DiagnosticMainChallenge] = []
-        missing_fields: List[List[user_pb2.MissingField]] = []
+        main_challenges: list[diagnostic_pb2.DiagnosticMainChallenge] = []
+        missing_fields: list[list[user_pb2.MissingField]] = []
         relevances = diagnostic.set_main_challenges_relevance(self.user, database=self._db)
         for main_challenge, fields in relevances:
             main_challenges.append(main_challenge)

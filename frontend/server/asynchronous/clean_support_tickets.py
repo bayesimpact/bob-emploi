@@ -2,18 +2,18 @@
 
 import argparse
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from bob_emploi.common.python import now
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.asynchronous import report
 
-_, _DB, _ = mongo.get_connections_from_env()
 
-
-def main(string_args: Optional[List[str]] = None) -> None:
+def main(string_args: Optional[list[str]] = None) -> None:
     """Clean all support tickets marked for deletion."""
+
+    user_db = mongo.get_connections_from_env().user_db
 
     parser = argparse.ArgumentParser(description='Clean support tickets from the database.')
     report.add_report_arguments(parser)
@@ -23,11 +23,11 @@ def main(string_args: Optional[List[str]] = None) -> None:
         return
 
     instant = proto.datetime_to_json_string(now.get())
-    result = _DB.user.update_many(
+    result = user_db.user.update_many(
         {},
         {'$pull': {'supportTickets': {'deleteAfter': {'$lt': instant}}}})
     logging.info('Removed deprecated support tickets for %d users.', result.modified_count)
-    clean_result = _DB.user.update_many(
+    clean_result = user_db.user.update_many(
         {'supportTickets': {'$size': 0}},
         {'$unset': {'supportTickets': ''}})
     if clean_result.matched_count:

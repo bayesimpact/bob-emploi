@@ -6,7 +6,8 @@ import rankThreeImage from 'images/rank-three-picto.svg'
 import rankTwoImage from 'images/rank-two-picto.svg'
 import rankZeroImage from 'images/rank-zero-picto.svg'
 
-import {LocalizableString, prepareT} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {prepareT} from 'store/i18n'
 import {colorToAlpha} from 'components/colors'
 
 

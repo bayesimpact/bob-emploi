@@ -1,4 +1,5 @@
 all: public
+#!/usr/bin/make
 # A Makefile to simplify the download and preparation of public datasets.
 
 public: geo imt dares rome crosswalks bmo stmt data/tous_benevoles.xml data/workup.json data/france-strategie/rapport_metiers_en_2022.pdf.txt
@@ -51,10 +52,10 @@ data/geo/insee_france_regions.tsv:
 
 data/geo/french_urban_entities.xls:
 	mkdir -p "$(@D)"
-	wget -O "$@.zip" 'https://www.insee.fr/fr/statistiques/fichier/2115018/UU2010%20au%2001-01-2018.zip'
+	wget -O "$@.zip" 'https://www.insee.fr/fr/statistiques/fichier/2115018/UU2010_au_01-01-2018.zip'
 	unzip "$@.zip" -d "$(@D)"
 	rm "$@.zip"
-	mv "$(@D)/UU2010 au 01-01-2018.xls" "$@"
+	mv "$(@D)/UU2010_au_01-01-2018.xls" "$@"
 
 data/geo/french_urban_areas.xls:
 	mkdir -p "$(@D)"
@@ -254,8 +255,14 @@ data/usa/onet_22_3 data/usa/onet_22_3/Occupation_Data.txt data/usa/onet_22_3/Car
 	mkdir -p "$(@D)"
 	wget -O "$@.zip" "https://www.onetcenter.org/dl_files/database/db_22_3_text.zip"
 	unzip "$@.zip" -d $(@D)
-	cd $(@D)/db_22_3_text ; for file in * ; do mv "$$file" $$(echo ../$$file | tr ' ' '_' | tr ',' '') ; done
+	cd $(@D)/db_22_3_text ; for file in * ; do mv "$$file" "$$(echo ../$$file | tr ' ' '_' | tr -d ',' )" ; done
 	rm -rf "$@.zip" "$(@D)/db_22_3_text"
+
+data/usa/job_requirements.json: data/usa/onet_22_3/Education_Training_and_Experience.txt
+	mkdir -p "$(@D)"
+	python bob_emploi/data_analysis/importer/deployments/usa/occupations_requirements.py \
+	--soc_job_requirements_csv 'data/usa/onet_22_3/Education_Training_and_Experience.txt' \
+	--to_json "$@"
 
 # A list of US States with their name, USPS codes (NV, TX, CA, ...),
 # and their FIPS codes (01, 02, 03, ...).
@@ -337,8 +344,17 @@ define get_geonames_ppl
 	rm "$(@D)/$1.txt"
 endef
 
-data/usa/geonames.txt, data/usa/geonames_admin.txt:
+data/usa/geonames.txt data/usa/geonames_admin.txt:
 	$(call get_geonames_ppl,US,2)
+
+# A list of US cities with their name, Zip codes (10020, 33133, …),
+# their USPS codes (AK, AL, NY, …), and their county  FIPS codes (005, 061, …).
+data/usa/cities_with_zip.txt:
+	mkdir -p "$(@D)"
+	wget -O "$@.zip" "https://download.geonames.org/export/zip/US.zip"
+	unzip "$@.zip" -d $(@D)
+	mv "$(@D)/US.txt" "$@"
+	rm "$@.zip"
 
 # O*NET-SOC2019/SOC 2018 (Standard Occupational Classification) job groups definitions.
 data/usa/soc/soc2018_definition.csv:
@@ -378,8 +394,17 @@ data/usa/automation-risk.json:
 	awk 'flag; /var occs =/{flag=1; next} /\]/{flag=0}' "$@.js" > "$@"
 	rm "$@.js"
 
+# Census data by zip code retrieved from census.gov API. You need to have an API KEY as an env variable.
+# Documentation can be found here: https://www.census.gov/data/developers/data-sets/acs-5year.html
+data/usa/population_by_zip_codes.txt:
+ifndef CENSUS_API_KEY
+	$(error CENSUS_API_KEY should be set. You can ask for one here: https://api.census.gov/data/key_signup.html)
+endif
+	mkdir -p "$(@D)"
+	wget -O "$@" 'https://api.census.gov/data/2019/acs/acs5/subject?get=NAME,group(S0101)&for=zip%20code%20tabulation%20area:*&key=$(CENSUS_API_KEY)'
+
 # Bob-UK datasets
-data/uk/geonames.txt, data/uk/geonames_admin.txt:
+data/uk/geonames.txt data/uk/geonames_admin.txt:
 	$(call get_geonames_ppl,GB,3)
 
 data/uk/local_authorities_2020.csv:
@@ -390,10 +415,19 @@ data/uk/local_authorities_2020.csv:
 data/uk/wards_counties_regions_local_authorities_2016.csv:
 	https://opendata.arcgis.com/datasets/e80726453fce4c4daee6d01646c5c039_0.csv
 
+data/uk/local_authorities_2016.csv: data/uk/wards_counties_regions_local_authorities_2016.csv
+	ln -s "$(notdir $<)" "$@"
+
 # UK SOC job titles and job group classification (SOC2010 version).
 data/uk/soc/soc2010.xls:
 	mkdir -p "$(@D)"
 	wget -O "$@" https://www.ons.gov.uk/file?uri=/methodology/classificationsandstandards/standardoccupationalclassificationsoc/soc2010/soc2010volume2thestructureandcodingindex/soc2010indexversion705june2018.xls
+
+# UK SOC unit groups descriptions (SOC2010 version).
+# This is the source of https://onsdigital.github.io/dp-classification-tools/standard-occupational-classification/ONS_SOC_occupation_coding_tool.html
+data/uk/soc/socDB.js:
+	mkdir -p "$(@D)"
+	wget -O "$@" https://github.com/ONSdigital/dp-classification-tools/raw/develop/standard-occupational-classification/data/socDB.js
 
 # UK SOC career changers matrix (based on the US O*NET one).
 data/uk/soc/career_changers_matrix.csv:
@@ -405,6 +439,15 @@ data/uk/employment_by_occupation_sept_2018.xls:
 	mkdir -p "$(@D)"
 	wget -O "$@" https://www.ons.gov.uk/file?uri=%2femploymentandlabourmarket%2fpeopleinwork%2femploymentandemployeetypes%2fdatasets%2femploymentbyoccupationemp04%2fapriltojune2018/emp04sep2018.xls
 
+# UK salaries by region from ONS. Annual files can be found here:
+# https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/regionbyoccupation4digitsoc2010ashetable15
+data/uk/salaries_by_region_2020.xlsx:
+	mkdir -p "$(@D)"
+	wget -O "$@.zip" https://www.ons.gov.uk/file?uri=%2femploymentandlabourmarket%2fpeopleinwork%2fearningsandworkinghours%2fdatasets%2fregionbyoccupation4digitsoc2010ashetable15%2f2020revised/table152020revised.zip
+	unzip "$@.zip" -d $(@D)
+	mv "$(@D)/Work Region Occupation SOC10 (4) Table 15.7a   Annual pay - Gross 2020.xls" "$@"
+	rm "$@.zip"
+
 # UK Probability of automation by occupation.
 data/uk/automation_probability.xls:
 	wget -O "$@" https://www.ons.gov.uk/file?uri=%2femploymentandlabourmarket%2fpeopleinwork%2femploymentandemployeetypes%2fdatasets%2fprobabilityofautomationinengland%2f2011and2017/automationreferencetables.xls
@@ -413,13 +456,55 @@ data/crosswalks/uk_SOC_2010_to_ISCO-08_mapping.xls:
 	mkdir -p "$(@D)"
 	wget -O "$@" https://www.ons.gov.uk/file?uri=/methodology/classificationsandstandards/standardoccupationalclassificationsoc/soc2010/ug201002soc2010toisco08v2_tcm77-283163.xls
 
+# Instructions to generate the data:
+# Download https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/143809/soi-cop-skilled-workers.pdf";
+# Extract an excel version of the document, using tools like https://www.pdf2go.com/fr/pdf-en-excel";
+# Copy/paste the needed data with the format soc - level - description in data/uk/diplomas.txt";
+# Upload the file in the s3 bucket.
+data/uk/diplomas.txt:
+	mkdir -p $(@D)
+	wget -O "$@" https://bob-open-data.s3.eu-west-3.amazonaws.com/uk/diplomas.txt
+
+data/uk/job_requirements.json: data/uk/diplomas.txt data/uk/soc/socDB.js
+	mkdir -p "$(@D)"
+	python bob_emploi/data_analysis/importer/deployments/uk/occupations_requirements.py \
+	--soc_job_requirements_csv 'data/uk/diplomas.txt' \
+	--soc_descriptions_js 'data/uk/soc/socDB.js' \
+	--to_json "$@"
+
 # TODO(cyrille): Rename to frontend_monitoring.zip.
+# TODO(cyrille): Use Bazel to include dependencies.
 data/monitoring.zip: needs-aws-default
 	mkdir -p "$(@D)"
 	$(eval TMPDIR := $(shell mktemp -d))
 	pip install --target "$(TMPDIR)" -r bob_emploi/data_analysis/monitoring/requirements.txt
+	mkdir -p "$(TMPDIR)/bob_emploi/frontend/api"
+	cp bob_emploi/frontend/api/monitoring_pb2.py "$(TMPDIR)/bob_emploi/frontend/api"
+	touch "$(TMPDIR)/bob_emploi/frontend/api/__init__.py"
 	cd "$(TMPDIR)" && zip -r "$(abspath $@)" ./*
 	rm -r "$(TMPDIR)"
 	cd bob_emploi/data_analysis/monitoring && zip -g "$(abspath $@)" ./*
-	# Push HTML file to s3.
-	aws s3 cp --acl public-read bob_emploi/data_analysis/monitoring/monitoring.html s3://bob-monitoring/index.html
+
+fixtures/%.json:
+	python bob_emploi/data_analysis/importer/import_status.py --run "$(basename $(@F))" --to_json="$@"
+
+airtable_fixtures: \
+	fixtures/action_templates.json \
+	fixtures/adie_testimonials.json \
+	fixtures/advice_modules.json \
+	fixtures/application_tips.json \
+	fixtures/associations.json \
+	fixtures/banks_one_euro_driving_license.json \
+	fixtures/challenge_actions.json \
+	fixtures/contact_lead.json \
+	fixtures/diagnostic_main_challenges.json \
+	fixtures/diagnostic_overall.json \
+	fixtures/diagnostic_responses.json \
+	fixtures/focus_emails.json \
+	fixtures/jobboards.json \
+	fixtures/schools_one_euro_driving_license.json \
+	fixtures/section_generators.json \
+	fixtures/specific_to_job_advice.json \
+	fixtures/strategy_advice_templates.json \
+	fixtures/strategy_modules.json \
+	fixtures/tip_templates.json

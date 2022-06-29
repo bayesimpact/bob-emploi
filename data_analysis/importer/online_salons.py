@@ -7,7 +7,7 @@ import logging
 import os
 import re
 import typing
-from typing import Any, Dict, List
+from typing import Any
 
 from algoliasearch import search_client
 
@@ -17,7 +17,7 @@ from bob_emploi.data_analysis.lib import mongo
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import online_salon_pb2
 
-_ALGOLIA_INDEX: List[search_client.SearchClient] = []
+_ALGOLIA_INDEX: list[search_client.SearchClient] = []
 
 _ALGOLIA_FIELD_TO_AREA_TYPE = {
     'cityId': 'CITY',
@@ -41,7 +41,7 @@ _AREA_TYPE_TO_LOCATION_ID_FIELD = {
 }
 
 # A cached dict of French regions with their prefix, keyed by ID.
-_REGIONS: List[Dict[str, Dict[str, str]]] = []
+_REGIONS: list[dict[str, dict[str, str]]] = []
 
 _FIELD_RENAMER = {
     'nombreOffres': 'offer_count',
@@ -68,7 +68,7 @@ def clear_algolia_index() -> None:
 
 def _get_region(
         french_regions_tsv: str, prefix_tsv: str,
-        region_id: str, default: Dict[str, str]) -> Dict[str, str]:
+        region_id: str, default: dict[str, str]) -> dict[str, str]:
     if not _REGIONS:
         _REGIONS.append(cleaned_data.french_regions(
             filename=french_regions_tsv,
@@ -77,8 +77,8 @@ def _get_region(
 
 
 def fetch_location(
-        french_regions_tsv: str, prefix_tsv: str, city: Dict[str, str],
-        is_exact: bool = False) -> Dict[str, Any]:
+        french_regions_tsv: str, prefix_tsv: str, city: dict[str, str],
+        is_exact: bool = False) -> dict[str, Any]:
     """Get a location using a search in Algolia.
 
     The input city should be of the form {city_field: search_value}, with exactly one given field.
@@ -95,7 +95,7 @@ def fetch_location(
             os.getenv('ALGOLIA_APP_ID', 'K6ACI9BKKT'),
             os.getenv('ALGOLIA_API_KEY', 'da4db0bf437e37d6d49cefcb8768c67a')).init_index('cities'))
     algolia_results = _ALGOLIA_INDEX[0].search(search_value, {'queryType': 'prefixNone'})
-    location: Dict[str, Any] = {}
+    location: dict[str, Any] = {}
     for result in algolia_results.get('hits', []):
         highlight_results = result.get('_highlightResult', {})
         fields_to_check = [search_key] if is_exact else highlight_results.keys()
@@ -118,7 +118,7 @@ def fetch_location(
     return location
 
 
-def _get_city(french_regions_tsv: str, prefix_tsv: str, localisation: str) -> List[Dict[str, Any]]:
+def _get_city(french_regions_tsv: str, prefix_tsv: str, localisation: str) -> list[dict[str, Any]]:
     location = fetch_location(french_regions_tsv, prefix_tsv, {'name': localisation})
     return [location] if location else []
 
@@ -145,11 +145,11 @@ class _OnlineSalonRule:
             raise ValueError(
                 f'Cannot make a rule on {geo_pb2.AreaType.Name(rule.location_kind)} level')
 
-    def generate_info(self, salon: Dict[str, str]) -> Dict[str, List[Any]]:
+    def generate_info(self, salon: dict[str, str]) -> dict[str, list[Any]]:
         """Takes a salon dict and outputs all the locations and/or job groups this rule can extract.
         """
 
-        added_fields: Dict[str, List[Any]] = collections.defaultdict(list)
+        added_fields: dict[str, list[Any]] = collections.defaultdict(list)
         for field in self._rule.fields:
             if field not in salon:
                 continue
@@ -170,7 +170,7 @@ class _OnlineSalonRule:
         return added_fields
 
 
-def _aggregate_rule_results(salon: Dict[str, Any], rules: List[_OnlineSalonRule]) -> Dict[str, Any]:
+def _aggregate_rule_results(salon: dict[str, Any], rules: list[_OnlineSalonRule]) -> dict[str, Any]:
     """Find all matching rules for salon, and add their info to it."""
 
     for rule in rules:
@@ -184,7 +184,7 @@ def _aggregate_rule_results(salon: Dict[str, Any], rules: List[_OnlineSalonRule]
 
 
 def json2dicts(
-        events_file_name: str, french_regions_tsv: str, prefix_tsv: str) -> List[Dict[str, Any]]:
+        events_file_name: str, french_regions_tsv: str, prefix_tsv: str) -> list[dict[str, Any]]:
     """Convert salons from pole-emploi API to json compatible with
     online_salon_pb2.OnlineSalon proto.
     """
@@ -200,8 +200,8 @@ def json2dicts(
             online_salon_pb2.SalonFilterRule)
     ]
 
-    with open(events_file_name) as json_data:
-        salons = typing.cast(List[Dict[str, Any]], json.load(json_data))
+    with open(events_file_name, encoding='utf-8') as json_data:
+        salons = typing.cast(list[dict[str, Any]], json.load(json_data))
 
     for salon in salons:
         salon['start_date'] = _isodate_from_string(salon['dateDebut'])

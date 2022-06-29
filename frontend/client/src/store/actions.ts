@@ -1,9 +1,9 @@
-import {TFunction} from 'i18next'
-import {ReactFacebookLoginInfo} from 'react-facebook-login'
-import {GoogleLoginResponse} from 'react-google-login'
+import type {TFunction} from 'i18next'
+import type {ReactFacebookLoginInfo} from 'react-facebook-login'
+import type {GoogleLoginResponse} from 'react-google-login'
 import {useDispatch as reduxUseDispatch} from 'react-redux'
-import {Action, Dispatch} from 'redux'
-import {ThunkAction, ThunkDispatch} from 'redux-thunk'
+import type {Action, Dispatch} from 'redux'
+import type {ThunkAction, ThunkDispatch} from 'redux-thunk'
 import sha1 from 'sha1'
 
 import {upperFirstLetter} from 'store/french'
@@ -15,6 +15,8 @@ import {adviceTipsGet, advicePost, projectPost, jobRequirementsGet, jobsGet, use
   expandedCardContentGet, strategyPost, convertFromProtoPost, convertToProtoPost,
   projectLaborStatsPost, sendUserEmailPost, applicationModesGet, supportTicketPost,
   strategyDelete, authTokensGet, diagnosticMainChallengesPost, simulateFocusEmailsPost,
+  listUserEmailsGet, actionPost, actionPlanEmailPost, projectComputeActionsPost, logoutPost,
+  feedbackVolunteeringSend,
 } from './api'
 
 const ASYNC_MARKER = 'ASYNC_MARKER'
@@ -22,45 +24,56 @@ const ASYNC_MARKER = 'ASYNC_MARKER'
 // Set of actions we want to log in the analytics
 export const actionTypesToLog = {
   ACCEPT_PRIVACY_NOTICE: 'Accept privacy notice',
+  ACTION_IS_SHOWN: 'Action from plan is shown',
   ADVICE_CARD_IS_SHOWN: 'Advice card is shown',
   ADVICE_PAGE_IS_SHOWN: 'Advice page shown',
   AUTHENTICATE_USER: 'Log in',
+  CLICK_EXPLORE_ACTIONS_ACTION: 'Explore actions',
+  COMPLETE_ACTION: 'Complete an action from action plan',
   CREATE_PROJECT: 'Create project',
   CREATE_PROJECT_SAVE: 'Save project',
   DELETE_USER_DATA: 'Delete user',
-  DIAGNOSTIC_IS_SHOWN: 'Diagnostic is shown',
-  DIAGNOSTIC_TALK_IS_SHOWN: 'Introductory text to diagnostic is shown',
   DISPLAY_TOAST_MESSAGE: 'Display toast message',
+  DROP_OUT_PROJECT_FEEDBACK: 'Drop out of project feedback',
+  EXPAND_ACTION_LIST: 'Expand action list in action plan',
+  EXPLORE_ACTION: 'Explore action (link)',
   EXPLORE_ADVICE: 'Explore advice (link or info)',
+  FINISH_ACTION_PLAN_ONBOARDING: 'Finish action plan onboarding',
   FINISH_PROFILE_FRUSTRATIONS: 'Finish profile frustrations',
   FINISH_PROFILE_SETTINGS: 'Finish profile settings',
   FINISH_PROFILE_SITUATION: 'Finish profile situation',
-  FINISH_PROJECT_CRITERIA: 'Finish project criteria',
   FINISH_PROJECT_EXPERIENCE: 'Finish project experience',
   FINISH_PROJECT_GOAL: 'Finish project goal',
   FINISH_PROJECT_SELF_DIAGNOSTIC: 'Finish project self-diagnostic',
-  FOLLOW_JOB_OFFERS_LINK: 'Follow a link to job offers',
   GET_USER_DATA: 'Load app',
+  GO_TO_FIRST_STRATEGY: 'Go to first strategy',
   LANDING_PAGE_SECTION_IS_SHOWN: 'A landing page section is shown',
   LOAD_LANDING_PAGE: 'Load landing page',
   LOGOUT: 'Log out',
   MIGRATE_USER_TO_ADVISOR: 'Migrate to advisor',
   MODIFY_PROJECT: 'Modify project',
   ONBOARDING_PAGE: 'Fill the onboarding form',
+  OPEN_ACTION_DATE: 'Open deadline action modal',
+  OPEN_DETAIL_ACTION_ACTION: 'Click on the action title in the action plan',
   OPEN_LOGIN_MODAL: 'Open login modal',
   OPEN_REGISTER_MODAL: 'Open register modal',
   OPEN_STATS_PAGE: 'Open a link to market statistical information',
   OPEN_TIP_EXTERNAL_LINK: 'Open tip external link',
   PAGE_IS_LOADED: 'Page is loaded',
+  PREVIEW_ACTION: 'Preview an action',
   READ_TIP: 'Open tip',
   REGISTER_USER: 'Register new user',
+  RENAME_ACTION_PLAN: 'Give a name to the action plan',
   REPLACE_STRATEGY: 'Update strategy advancement',
   RESET_USER_PASSWORD: 'Ask password email',
   REVIEW_PROJECT_ACHIEVEMENTS: 'Acknowledge project achievements',
   REVIEW_PROJECT_MAIN_CHALLENGE: "Accept project's main challenge",
   REVIEW_PROJECT_PREVIEW_STRATS: 'Acknowledge project strats preview',
+  SAVE_ACTION_DATE: 'Save date for an action for the action plan',
   SCORE_PROJECT_CHALLENGE_AGREEMENT: 'Score the project challenge agreement',
   SEE_ADVICE: 'See advice in dashboard',
+  SELECT_ACTION: 'Select an action for the action plan',
+  SEND_ACTION_PLAN_EMAIL: 'Ask for an email with action plan',
   SEND_ADVICE_FEEDBACK: 'Send advice feedback',
   SEND_PROFESSIONAL_FEEDBACK: 'Send feedback from professional page',
   SEND_PROJECT_FEEDBACK: 'Send project feedback',
@@ -69,12 +82,24 @@ export const actionTypesToLog = {
   SHARE_PRODUCT_TO_NETWORK: 'Share product to network',
   SHOW_ALL_TIPS: 'Show all tips',
   START_AS_GUEST: 'Start as guest',
+  START_PROJECT_FEEDBACK: 'Start scoring the project',
   START_STRATEGY: 'Start a job search strategy',
   STATIC_ADVICE_PAGE_IS_SHOWN: 'A static advice page is shown',
   STATS_PAGE_IS_SHOWN: 'The statistics page is shown',
-  STRATEGY_EXPLORATION_PAGE_IS_SHOWN: 'A strategy page is shown in exploration mode',
   STRATEGY_WORK_PAGE_IS_SHOWN: 'A strategy page is shown in work mode',
+  UNCOMPLETE_ACTION: 'Mark an action as not completed in action plan',
+  UNSELECT_ACTION: 'Remove an action from the action plan',
+  VALIDATE_ACTION_PLAN: 'Finish selecting actions for the action plan',
+  VALIDATE_ACTION_PLAN_STRATEGY: 'Finish selecting actions for a strategy',
   WORKBENCH_IS_SHOWN: 'The workbench is shown',
+}
+
+const ACTIONS_FOR_ACTION_PLAN = new Set(['EXPAND_ACTION_LIST', 'VALIDATE_ACTION_PLAN',
+  'SEND_ACTION_PLAN_EMAIL', 'OPEN_ACTION_DATE', 'CLICK_EXPLORE_ACTIONS_ACTION',
+  'OPEN_DETAIL_ACTION_ACTION'])
+function isActionForActionPlan<T extends string>(action: Readonly<Action<T>>):
+action is ProjectAction<T> {
+  return ACTIONS_FOR_ACTION_PLAN.has(action.type) && !!(action as ProjectAction<T>).project
 }
 
 function isActionRegister(action: AllActions): boolean {
@@ -91,21 +116,16 @@ export function getDefinedFieldsPath<T>(proto: T, prefix = ''): readonly string[
   if (typeof proto !== 'object' || !proto || Array.isArray(proto)) {
     return []
   }
-  let paths: string[] = []
-  // TODO(pascal): Use flatMap, once it's properly added in our typescript and polyfill configs.
-  for (const key of Object.keys(proto)) {
-    const value = proto[key as keyof T]
+  return Object.entries(proto).flatMap(([key, value]): readonly string[] => {
     if (typeof value === 'undefined') {
-      continue
+      return []
     }
     const subPaths = getDefinedFieldsPath(value, prefix + key + '.')
-    if (!subPaths.length) {
-      paths.push(prefix + key)
-    } else {
-      paths = [...paths, ...subPaths]
+    if (subPaths.length) {
+      return subPaths
     }
-  }
-  return paths
+    return [prefix + key]
+  })
 }
 
 
@@ -125,14 +145,18 @@ export function getDefinedFieldsPath<T>(proto: T, prefix = ''): readonly string[
 export type AcceptCookiesUsageAction = Readonly<Action<'ACCEPT_COOKIES_USAGE'>>
 const acceptCookiesUsageAction: AcceptCookiesUsageAction = {type: 'ACCEPT_COOKIES_USAGE'}
 
+export type AskForAdsCookiesUsageAction = Readonly<Action<'ASK_FOR_ADS_COOKIES_USAGE'>>
+const askForAdsCookieUsageAction: AskForAdsCookiesUsageAction = {type: 'ASK_FOR_ADS_COOKIES_USAGE'}
+
+export type DropOutProjectFeedbackAction = Readonly<Action<'DROP_OUT_PROJECT_FEEDBACK'>>
+const dropOutProjectFeedbackAction: DropOutProjectFeedbackAction =
+  {type: 'DROP_OUT_PROJECT_FEEDBACK'}
+
 export type ClearExpiredTokenAction = Readonly<Action<'CLEAR_EXPIRED_TOKEN'>>
 const clearExpiredTokenAction: ClearExpiredTokenAction = {type: 'CLEAR_EXPIRED_TOKEN'}
 
 export type HideToasterMessageAction = Readonly<Action<'HIDE_TOASTER_MESSAGE'>>
 const hideToasterMessageAction: HideToasterMessageAction = {type: 'HIDE_TOASTER_MESSAGE'}
-
-export type LogoutAction = Readonly<Action<'LOGOUT'>>
-const logoutAction: LogoutAction = {type: 'LOGOUT'}
 
 // TODO(pascal): Rename that action as it's not opening the internal Stats Page, but the Pôle emploi
 // one.
@@ -142,11 +166,8 @@ const openStatsPageAction: OpenStatsPageAction = {type: 'OPEN_STATS_PAGE'}
 export type RemoveAuthDataAction = Readonly<Action<'REMOVE_AUTH_DATA'>>
 const removeAuthDataAction: RemoveAuthDataAction = {type: 'REMOVE_AUTH_DATA'}
 
-export type FollowJobOffersLinkAction = Readonly<Action<'FOLLOW_JOB_OFFERS_LINK'>>
-const followJobOffersLinkAction: FollowJobOffersLinkAction = {type: 'FOLLOW_JOB_OFFERS_LINK'}
-
-export type SwitchToMobileVersionAction = Readonly<Action<'SWITCH_TO_MOBILE_VERSION'>>
-const switchToMobileVersionAction: SwitchToMobileVersionAction = {type: 'SWITCH_TO_MOBILE_VERSION'}
+type GoToFirstStrategyAction = Readonly<Action<'GO_TO_FIRST_STRATEGY'>>
+const goToFirstStrategy: GoToFirstStrategyAction = {type: 'GO_TO_FIRST_STRATEGY'}
 
 // Synchronous action generators, keep them grouped and alpha sorted.
 export interface AdviceAction<T extends string> extends ProjectAction<T> {
@@ -166,6 +187,12 @@ export interface StrategyAction<T extends string> extends ProjectAction<T> {
   readonly strategy: bayes.bob.Strategy
 }
 
+export type ActionWithId = bayes.bob.Action & {actionId: string}
+export type ActionOnAction<T extends string> = Readonly<Action<T>> & {
+  action: ActionWithId
+  actionDiff?: ActionWithId
+}
+
 export interface TipAction<T extends string> extends Readonly<Action<T>> {
   readonly action: {
     readonly actionId: string
@@ -176,11 +203,17 @@ export interface VisualElementAction<T extends string> extends Readonly<Action<T
   readonly visualElement: string
 }
 
-export interface ActivateDemoInFutureAction extends Readonly<Action<'WILL_ACTIVATE_DEMO'>> {
-  readonly demo: keyof bayes.bob.Features
+export interface DetailAction<T extends string> extends Readonly<Action<T>> {
+  readonly detail: string
 }
-function activateDemoInFuture(demo: keyof bayes.bob.Features): ActivateDemoInFutureAction {
-  return {demo, type: 'WILL_ACTIVATE_DEMO'}
+
+export interface ActivateExperimentInFutureAction extends
+  Readonly<Action<'WILL_ACTIVATE_EXPERIMENT'>> {
+  readonly experiment: keyof bayes.bob.Features
+}
+function activateExperimentInFuture(experiment: keyof bayes.bob.Features):
+ActivateExperimentInFutureAction {
+  return {experiment, type: 'WILL_ACTIVATE_EXPERIMENT'}
 }
 
 // TODO(cyrille): Maybe deprecate this and create a synthetic event.
@@ -219,12 +252,6 @@ interface CommentIsShown extends Readonly<Action<'COMMENT_IS_SHOWN'>> {
 
 function commentIsShown(commentKey: string): CommentIsShown {
   return {commentKey, type: 'COMMENT_IS_SHOWN'}
-}
-
-type DiagnosticTalkIsShownAction = ProjectAction<'DIAGNOSTIC_TALK_IS_SHOWN'>
-
-function diagnosticTalkIsShown(project: bayes.bob.Project): DiagnosticTalkIsShownAction {
-  return {project, type: 'DIAGNOSTIC_TALK_IS_SHOWN'}
 }
 
 export interface DisplayToastMessageAction extends Readonly<Action<'DISPLAY_TOAST_MESSAGE'>> {
@@ -369,15 +396,6 @@ function statsPageIsShown(project: bayes.bob.Project): StatsPageIsShownAction {
   return {project, type: 'STATS_PAGE_IS_SHOWN'}
 }
 
-type StrategyExplorationPageIsShown = StrategyAction<'STRATEGY_EXPLORATION_PAGE_IS_SHOWN'>
-
-// TODO(pascal): Drop if unused.
-function strategyExplorationPageIsShown(
-  project: bayes.bob.Project, strategy: bayes.bob.WorkingStrategy, strategyRank: number,
-): StrategyExplorationPageIsShown {
-  return {project, strategy, strategyRank, type: 'STRATEGY_EXPLORATION_PAGE_IS_SHOWN'}
-}
-
 type StrategyWorkPageIsShown = StrategyAction<'STRATEGY_WORK_PAGE_IS_SHOWN'>
 
 function strategyWorkPageIsShown(
@@ -398,15 +416,6 @@ interface TrackInitialUtmAction extends Readonly<Action<'TRACK_INITIAL_UTM'>>{
 
 function trackInitialUtm(utm: bayes.bob.TrackingParameters): TrackInitialUtmAction {
   return {type: 'TRACK_INITIAL_UTM', utm}
-}
-
-interface TrackInitialFeaturesAction extends Readonly<Action<'TRACK_INITIAL_FEATURES'>> {
-  readonly features: InitialFeatures
-}
-
-// TODO(pascal): Consider removing.
-function trackInitialFeatures(features: InitialFeatures): TrackInitialFeaturesAction {
-  return {features, type: 'TRACK_INITIAL_FEATURES'}
 }
 
 // Asynchronous action generators.
@@ -459,6 +468,16 @@ export function wrapAsyncAction<T extends string, Extra, Result>(
 
 // Asynchronous actions wrapped with the dispatched actions (see wrapAsyncAction).
 
+export type ComputeActionsForProjectAction =
+  AsyncAction<'COMPUTE_ADVICES_FOR_PROJECT', bayes.bob.Actions>
+
+function computeActionsForProject(user: bayes.bob.User):
+ThunkAction<Promise<bayes.bob.Actions|void>, unknown, unknown, ComputeActionsForProjectAction> {
+  return wrapAsyncAction(
+    'COMPUTE_ACTIONS_FOR_PROJECT',
+    (): Promise<bayes.bob.Actions> => projectComputeActionsPost(user))
+}
+
 export type ComputeAdvicesForProjectAction =
   AsyncAction<'COMPUTE_ADVICES_FOR_PROJECT', bayes.bob.Advices>
 
@@ -485,6 +504,24 @@ function convertToProto<K extends keyof bayes.bob.Reflection>(
 ): ThunkAction<Promise<string|void>, unknown, unknown, ConvertToProtoAction> {
   return wrapAsyncAction('CONVERT_PROTO', (): Promise<string> =>
     convertToProtoPost(url, proto))
+}
+
+export type ListUserEmailsAction = AsyncAction<'LIST_USER_EMAILS', bayes.bob.Campaigns>
+
+function listUserEmails():
+ThunkAction<Promise<bayes.bob.Campaigns|void>, RootState, unknown, ListUserEmailsAction> {
+  return (dispatch: DispatchAllActions, getState: () => RootState):
+  Promise<bayes.bob.Campaigns|void> => {
+    const {user, app: {authToken}} = getState()
+    return dispatch(wrapAsyncAction(
+      'LIST_USER_EMAILS',
+      (): Promise<bayes.bob.Campaigns> => listUserEmailsGet(user, ensureAuth(authToken))))
+  }
+}
+
+type LogoutAction = Readonly<Action<'LOGOUT'>>
+function logout(): ThunkAction<Promise<unknown>, unknown, unknown, LogoutAction> {
+  return wrapAsyncAction('LOGOUT', logoutPost)
 }
 
 type SendUserEmailAction = AsyncAction<'SEND_EMAIL', unknown>
@@ -553,10 +590,7 @@ export type RomeJobGroup = bayes.bob.JobGroup & {romeId: string}
 
 function getJobs({romeId}: RomeJobGroup):
 ThunkAction<Promise<bayes.bob.JobGroup|void>, unknown, unknown, GetJobAction> {
-  return (dispatch: DispatchAllActions): Promise<bayes.bob.JobGroup|void> => {
-    return dispatch(wrapAsyncAction(
-      'GET_JOBS', (): Promise<bayes.bob.JobGroup> => jobsGet(romeId), {romeId}))
-  }
+  return wrapAsyncAction('GET_JOBS', (): Promise<bayes.bob.JobGroup> => jobsGet(romeId), {romeId})
 }
 
 type GetApplicationModesAction = AsyncAction<'GET_APPLICATION_MODES', bayes.bob.JobGroup> & {
@@ -565,12 +599,10 @@ type GetApplicationModesAction = AsyncAction<'GET_APPLICATION_MODES', bayes.bob.
 
 function fetchApplicationModes({romeId}: RomeJobGroup):
 ThunkAction<Promise<bayes.bob.JobGroup|void>, unknown, unknown, GetApplicationModesAction> {
-  return (dispatch: DispatchAllActions): Promise<bayes.bob.JobGroup|void> => {
-    return dispatch(wrapAsyncAction(
-      'GET_APPLICATION_MODES',
-      (): Promise<bayes.bob.JobGroup> => applicationModesGet(romeId),
-      {romeId}))
-  }
+  return wrapAsyncAction(
+    'GET_APPLICATION_MODES',
+    (): Promise<bayes.bob.JobGroup> => applicationModesGet(romeId),
+    {romeId})
 }
 
 type GetProjectRequirementsAction =
@@ -598,9 +630,11 @@ type GetDiagnosticMainChallengesAction =
   AsyncAction<'GET_DIAGNOSTIC_MAIN_CHALLENGES', bayes.bob.DiagnosticMainChallenges> &
   {key: string}
 
-function getDiagnosticMainChallenges(defaultLocale = config.defaultLang): ThunkAction<
-Promise<bayes.bob.DiagnosticMainChallenges|void>,
-RootState, unknown, GetDiagnosticMainChallengesAction> {
+function getDiagnosticMainChallenges(
+  defaultLocale = config.defaultLang, forceAlpha = false,
+): ThunkAction<
+  Promise<bayes.bob.DiagnosticMainChallenges|void>,
+  RootState, unknown, GetDiagnosticMainChallengesAction> {
   return (dispatch, getState): Promise<bayes.bob.DiagnosticMainChallenges|void> => {
     const {
       app: {diagnosticMainChallenges = {}},
@@ -613,7 +647,10 @@ RootState, unknown, GetDiagnosticMainChallengesAction> {
     return dispatch(wrapAsyncAction(
       'GET_DIAGNOSTIC_MAIN_CHALLENGES',
       async (): Promise<bayes.bob.DiagnosticMainChallenges> => {
-        return await diagnosticMainChallengesPost({featuresEnabled: {alpha}, profile: {locale}})
+        return await diagnosticMainChallengesPost({
+          featuresEnabled: {alpha: alpha || forceAlpha},
+          profile: {locale},
+        })
       },
       {key},
     ))
@@ -625,10 +662,8 @@ type GetMainChallengesUsersCountAction = AsyncAction<
 
 function getMainChallengesUserCount(): ThunkAction<
 Promise<bayes.bob.UsersCount|void>, unknown, unknown, GetMainChallengesUsersCountAction> {
-  return (dispatch: DispatchAllActions): Promise<bayes.bob.UsersCount|void> => {
-    return dispatch(wrapAsyncAction(
-      'GET_MAIN_CHALLENGES_USERS_COUNT', (): Promise<bayes.bob.UsersCount> => userCountsGet()))
-  }
+  return wrapAsyncAction(
+    'GET_MAIN_CHALLENGES_USERS_COUNT', (): Promise<bayes.bob.UsersCount> => userCountsGet())
 }
 
 type DeleteUserAction = AsyncAction<'DELETE_USER_DATA', bayes.bob.User>
@@ -719,12 +754,14 @@ ThunkAction<Promise<bayes.bob.QuickDiagnostic|void>, RootState, unknown, Diagnos
   }
 }
 
-type ActivateDemoAction = Readonly<Action<'ACTIVATE_DEMO'>> & {demo: string}
+type ActivateExperimentsAction = Readonly<Action<'ACTIVATE_EXPERIMENTS'>> & {
+  experiments: readonly string[]
+}
 
-function activateDemo(demo: string): ThunkAction<
-Promise<bayes.bob.User|void>, RootState, unknown, ActivateDemoAction | PostUserDataAction> {
+function activateExperiments(experiments: readonly string[]): ThunkAction<
+Promise<bayes.bob.User|void>, RootState, unknown, ActivateExperimentsAction | PostUserDataAction> {
   return (dispatch, getState): Promise<bayes.bob.User|void> => {
-    dispatch({demo, type: 'ACTIVATE_DEMO'})
+    dispatch({experiments, type: 'ACTIVATE_EXPERIMENTS'})
     return dispatch(saveUser(getState().user))
   }
 }
@@ -779,6 +816,32 @@ function updateAdvice<
   }
 }
 
+interface ActionExtra {
+  action: ActionWithId
+  actionDiff: bayes.bob.Action
+  project: bayes.bob.Project
+}
+
+function updateAction<
+  T extends string, E, A extends AsyncAction<T, bayes.bob.Action> & ActionExtra & E>(
+  type: T, project: bayes.bob.Project, action: bayes.bob.Action, actionDiff: bayes.bob.Action,
+  options?: E):
+  ThunkAction<Promise<bayes.bob.Action|void>, RootState, unknown, A> {
+  return (dispatch, getState): Promise<bayes.bob.Action|void> => {
+    const {app: {authToken}, user} = getState()
+    return dispatch(wrapAsyncAction(
+      type,
+      (): Promise<bayes.bob.Action> => {
+        if (user.userId) {
+          return actionPost(user, project, action, actionDiff, ensureAuth(authToken))
+        }
+        return Promise.resolve({...action, ...actionDiff})
+      },
+      {action, actionDiff, project, ...options},
+    ))
+  }
+}
+
 type AsyncUpdateAdviceAction<T extends string> = AsyncAction<T, bayes.bob.Advice> & AdviceExtra
 type AdvicePageIsShownAction = AsyncUpdateAdviceAction<'ADVICE_PAGE_IS_SHOWN'>
 
@@ -787,18 +850,183 @@ ThunkAction<Promise<bayes.bob.Advice|void>, RootState, unknown, AdvicePageIsShow
   return updateAdvice('ADVICE_PAGE_IS_SHOWN', project, advice, {status: 'ADVICE_READ'})
 }
 
-type DiagnosticIsShownAction =
-  AsyncAction<'DIAGNOSTIC_IS_SHOWN', bayes.bob.Project> & ProjectExtra
+type PreviewActionOnAction = ActionOnAction<'PREVIEW_ACTION'>
 
-function diagnosticIsShown(project: bayes.bob.Project):
-ThunkAction<Promise<bayes.bob.Project|void>, RootState, unknown, DiagnosticIsShownAction> |
-Action<'DIAGNOSTIC_IS_SHOWN'> {
-  if (project && project.diagnosticShownAt) {
-    return {type: 'DIAGNOSTIC_IS_SHOWN'}
+function previewAction(action: ActionWithId): PreviewActionOnAction {
+  return {
+    action,
+    type: 'PREVIEW_ACTION',
   }
-  const now = new Date()
-  now.setMilliseconds(0)
-  return updateProject('DIAGNOSTIC_IS_SHOWN', project, {diagnosticShownAt: now.toISOString()})
+}
+
+type RenameActionPlanAction = AsyncAction<'RENAME_ACTION_PLAN', bayes.bob.Project> & ProjectExtra
+
+function renameProjectActionPlan(project: bayes.bob.Project, newName: string):
+ThunkAction<Promise<bayes.bob.Project|void>, RootState, unknown, RenameActionPlanAction> {
+  return updateProject('RENAME_ACTION_PLAN', project, {actionPlanName: newName})
+}
+
+type ValidateActionPlanStrategyAction = StrategyAction<'VALIDATE_ACTION_PLAN_STRATEGY'>
+
+function validateActionPlanStrategy(project: bayes.bob.Project, strategy: bayes.bob.Strategy):
+ValidateActionPlanStrategyAction {
+  return {
+    project,
+    strategy,
+    type: 'VALIDATE_ACTION_PLAN_STRATEGY',
+  }
+}
+
+type ValidateActionPlanAction = ProjectAction<'VALIDATE_ACTION_PLAN'>
+
+function validateActionPlan(project: bayes.bob.Project): ValidateActionPlanAction {
+  return {
+    project,
+    type: 'VALIDATE_ACTION_PLAN',
+  }
+}
+
+type FinishActionPlanOnboardingAction =
+  AsyncAction<'FINISH_ACTION_PLAN_ONBOARDING', bayes.bob.Project> & ProjectExtra
+function finishActionPlanOnboarding(project: bayes.bob.Project):
+ThunkAction<Promise<bayes.bob.Project|void>, RootState, unknown, FinishActionPlanOnboardingAction> {
+  return updateProject('FINISH_ACTION_PLAN_ONBOARDING', project, {
+    actionPlanStartedAt: new Date().toISOString(),
+  })
+}
+
+type SendActionPlanEmailAction = ProjectAction<'SEND_ACTION_PLAN_EMAIL'>
+function sendActionPlanEmail(project: bayes.bob.Project & {projectId: string}):
+ThunkAction<Promise<boolean|void>, RootState, unknown, SendActionPlanEmailAction> {
+  return (dispatch, getState) => {
+    const {app: {authToken}, user: {userId}} = getState()
+    return dispatch(wrapAsyncAction('SEND_ACTION_PLAN_EMAIL', async () => {
+      await actionPlanEmailPost(ensureAuth(userId), project.projectId, ensureAuth(authToken))
+      return true
+    }, {project}))
+  }
+}
+
+
+type AsyncUpdateActionOnAction<T extends string> =
+AsyncAction<T, bayes.bob.Action> & ActionOnAction<T> & ActionExtra
+type ActionIsShownAction = AsyncUpdateActionOnAction<'ACTION_IS_SHOWN'>
+
+function actionIsShown(project: bayes.bob.Project, action: bayes.bob.Action):
+ThunkAction<Promise<bayes.bob.Action|void>, RootState, unknown, ActionIsShownAction> {
+  return updateAction('ACTION_IS_SHOWN', project, action, {isResourceShown: true})
+}
+
+type ExploreActionAction =
+  & AsyncUpdateActionOnAction<'EXPLORE_ACTION'>
+  & VisualElementAction<'EXPLORE_ACTION'>
+  & {link?: string}
+function exploreAction(project: bayes.bob.Project, action: ActionWithId, link: string):
+ThunkAction<Promise<bayes.bob.Action|void>, RootState, unknown, ExploreActionAction> {
+  const {numExplorations = 0} = action
+  return updateAction('EXPLORE_ACTION', project, action, {
+    numExplorations: numExplorations + 1,
+  }, {
+    link,
+    visualElement: 'link',
+  })
+}
+
+type SelectAction = AsyncUpdateActionOnAction<'SELECT_ACTION'>
+type UnselectAction = AsyncUpdateActionOnAction<'UNSELECT_ACTION'>
+
+function selectAction(project: bayes.bob.Project, action: ActionWithId, strategyId: string):
+ThunkAction<Promise<bayes.bob.Action|void>, RootState, unknown, SelectAction> {
+  return updateAction('SELECT_ACTION', project, action, {
+    acceptedFromStrategyId: strategyId,
+    status: 'ACTION_CURRENT',
+  })
+}
+
+function unselectAction(project: bayes.bob.Project, action: ActionWithId):
+ThunkAction<Promise<bayes.bob.Action|void>, RootState, unknown, UnselectAction> {
+  return updateAction('SELECT_ACTION', project, action, {
+    acceptedFromStrategyId: '',
+    status: 'ACTION_UNREAD',
+  })
+}
+
+type CompleteActionAction =
+AsyncUpdateActionOnAction<'COMPLETE_ACTION'> & VisualElementAction<'COMPLETE_ACTION'>
+function completeAction(project: bayes.bob.Project, action: ActionWithId,
+  visualElement: 'page'|'plan'):
+  ThunkAction<Promise<bayes.bob.Action|void>, RootState, unknown, CompleteActionAction> {
+  return updateAction('COMPLETE_ACTION', project, action, {
+    status: 'ACTION_DONE',
+    stoppedAt: new Date().toISOString(),
+  }, {visualElement})
+}
+
+type UncompleteActionAction =
+AsyncUpdateActionOnAction<'UNCOMPLETE_ACTION'> & VisualElementAction<'UNCOMPLETE_ACTION'>
+function uncompleteAction(project: bayes.bob.Project, action: ActionWithId,
+  visualElement: 'page'|'plan'):
+  ThunkAction<Promise<bayes.bob.Action|void>, RootState, unknown, UncompleteActionAction> {
+  return updateAction(
+    'UNCOMPLETE_ACTION', project, action, {status: 'ACTION_CURRENT'}, {visualElement},
+  )
+}
+
+type SaveActionDateAction =
+AsyncUpdateActionOnAction<'SAVE_ACTION_DATE'> & VisualElementAction<'SAVE_ACTION_DATE'>
+function saveActionDate(project: bayes.bob.Project, action: ActionWithId,
+  visualElement: 'page'|'plan', days?: number):
+  ThunkAction<Promise<bayes.bob.Action|void>, RootState, unknown, SaveActionDateAction> {
+  const completionDate = new Date()
+  if (days) {
+    completionDate.setDate(completionDate.getDate() + days)
+  }
+  return updateAction('SAVE_ACTION_DATE', project, action, {
+    expectedCompletionAt: completionDate.toISOString(),
+    status: 'ACTION_CURRENT',
+  }, {visualElement})
+}
+
+type OpenActionDateAction = TipAction<'OPEN_ACTION_DATE'> &
+ProjectAction<'OPEN_ACTION_DATE'> & VisualElementAction<'OPEN_ACTION_DATE'>
+function openActionDate(project: bayes.bob.Project, action: ActionWithId,
+  visualElement: 'page'|'plan'): OpenActionDateAction {
+  return {
+    action,
+    project,
+    type: 'OPEN_ACTION_DATE',
+    visualElement,
+  }
+}
+
+type ClickExploreActionsAction = ProjectAction<'CLICK_EXPLORE_ACTIONS_ACTION'>
+function clickExploreActions(project: bayes.bob.Project): ClickExploreActionsAction {
+  return {
+    project,
+    type: 'CLICK_EXPLORE_ACTIONS_ACTION',
+  }
+}
+
+type OpenActionDetailAction =
+  TipAction<'OPEN_DETAIL_ACTION_ACTION'> & ProjectAction<'OPEN_DETAIL_ACTION_ACTION'>
+function openActionDetailAction(project: bayes.bob.Project, action: ActionWithId):
+OpenActionDetailAction {
+  return {
+    action,
+    project,
+    type: 'OPEN_DETAIL_ACTION_ACTION',
+  }
+}
+
+type ExpandActionListAction =
+ProjectAction<'EXPAND_ACTION_LIST'> & DetailAction<'EXPAND_ACTION_LIST'>
+function expandActionList(project: bayes.bob.Project, detail: 'close'|'open'):
+ExpandActionListAction {
+  return {
+    detail,
+    project,
+    type: 'EXPAND_ACTION_LIST',
+  }
 }
 
 const ProjectReviews = {
@@ -847,16 +1075,24 @@ export interface WithFeedback {
   feedback: bayes.bob.Feedback
 }
 
+export interface WithProjectFeedback {
+  feedback: bayes.bob.ProjectFeedback
+}
+
 export interface StateForFeedback {
   app: AppState
   user: bayes.bob.User
 }
 
+type DispatchFeedbackActions<T extends string> =
+  & ThunkDispatch<unknown, unknown, AsyncAction<T, string> & WithFeedback>
+  & Dispatch<AllActions>
+
 export function sendFeedback<T extends string, A extends AsyncAction<T, string> & WithFeedback>(
   type: T, source: bayes.bob.FeedbackSource, feedback: bayes.bob.Feedback, t: TFunction,
   extraFields?: Omit<bayes.bob.Feedback, 'source' | 'feedback' | 'userId'>):
   ThunkAction<Promise<unknown|void>, StateForFeedback, unknown, A> {
-  return async (dispatch: DispatchAllActions, getState): Promise<unknown|void> => {
+  return async (dispatch: DispatchFeedbackActions<T>, getState): Promise<unknown|void> => {
     const {user, app} = getState()
     const response = await dispatch(wrapAsyncAction<T, WithFeedback, unknown>(
       type,
@@ -895,22 +1131,50 @@ ThunkAction<Promise<unknown|void>, StateForFeedback, unknown, SendProfessionalFe
 }
 
 type SendProjectFeedbackAction =
-  AsyncAction<'SEND_PROJECT_FEEDBACK', bayes.bob.Project> & WithFeedback & {
-    readonly project: bayes.bob.Project
-    readonly projectDiff: bayes.bob.Project
-  }
+  AsyncAction<'SEND_PROJECT_FEEDBACK', bayes.bob.Project> & WithProjectFeedback & ProjectExtra
 
 function sendProjectFeedback(
   project: bayes.bob.Project, feedback: bayes.bob.ProjectFeedback, t: TFunction):
   ThunkAction<
-  Promise<bayes.bob.Project|void>, StateForFeedback, unknown, SendProjectFeedbackAction> {
+  Promise<bayes.bob.Project|void>, RootState, unknown, SendProjectFeedbackAction> {
   return async (dispatch: DispatchAllActions): Promise<bayes.bob.Project|void> => {
-    const response = await dispatch(updateProject(
-      'SEND_PROJECT_FEEDBACK', project, {feedback}, {feedback}))
+    const response = await dispatch(
+      updateProject('SEND_PROJECT_FEEDBACK', project, {feedback}, {feedback}))
     if (response) {
       dispatch(displayToasterMessage(t('Merci pour ce retour\u00A0!')))
     }
     return response
+  }
+}
+
+type ProjectFeedbackRequestedAction =
+  AsyncAction<'PROJET_FEEDBACK_REQUESTED', bayes.bob.Project> & ProjectExtra
+
+function projectFeedbackRequested(project: bayes.bob.Project):
+ThunkAction<Promise<bayes.bob.Project|void>, RootState, unknown, ProjectFeedbackRequestedAction> {
+  return updateProject('PROJET_FEEDBACK_REQUESTED', project, {wasFeedbackRequested: true})
+}
+
+type SendFeedbackVolunteeringAction = AsyncAction<
+'SEND_FEEDBACK_VOLUNTEERING', unknown|void>
+
+function sendFeedbackVolunteering(email: string): ThunkAction<
+Promise<unknown|void>, unknown, unknown, SendFeedbackVolunteeringAction> {
+  return wrapAsyncAction(
+    'SEND_FEEDBACK_VOLUNTEERING', (): Promise<unknown|string> =>
+      feedbackVolunteeringSend(email, 'Bob'))
+}
+
+type StartScoringProjectAction = Readonly<Action<'START_PROJECT_FEEDBACK'>> & WithFeedback & {
+  project: bayes.bob.Project
+}
+
+function startProjectFeedback(
+  project: bayes.bob.Project, score: number): StartScoringProjectAction {
+  return {
+    feedback: {score},
+    project,
+    type: 'START_PROJECT_FEEDBACK',
   }
 }
 
@@ -970,6 +1234,7 @@ type AuthenticationMethod =
 
 export type AuthenticateUserAction =
   AsyncAction<'AUTHENTICATE_USER', bayes.bob.AuthResponse> & {
+    isPersistent?: boolean
     method: AuthenticationMethod
   }
 
@@ -978,9 +1243,11 @@ export function asyncAuthenticate(
   authenticate: (request: bayes.bob.AuthRequest) => Promise<bayes.bob.AuthResponse>,
   authRequest: bayes.bob.AuthRequest,
   method: AuthenticationMethod,
-  disconnectOnError?: boolean,
-  callback?: (response: bayes.bob.AuthResponse) => bayes.bob.AuthResponse):
-  ThunkAction<Promise<bayes.bob.AuthResponse|void>, RootState, unknown, AllActions> {
+  {callback, disconnectOnError, isPersistent}: {
+    callback?: (response: bayes.bob.AuthResponse) => bayes.bob.AuthResponse
+    disconnectOnError?: boolean
+    isPersistent?: boolean
+  } = {}): ThunkAction<Promise<bayes.bob.AuthResponse|void>, RootState, unknown, AllActions> {
   return async (dispatch, getState): Promise<bayes.bob.AuthResponse|void> => {
     const {app: {authToken, initialFeatures}, user: {hasAccount, hasPassword, userId}} = getState()
     const finalAuthRequest = {
@@ -999,7 +1266,7 @@ export function asyncAuthenticate(
         }
         return response
       },
-      {method},
+      {isPersistent: !!isPersistent, method},
     ))
     if (disconnectOnError && !authResponse) {
       // There was an error while connecting, return to a clean authentication state.
@@ -1029,7 +1296,7 @@ ThunkAction<Promise<bayes.bob.AuthResponse|void>, RootState, unknown, Authentica
   //  - the user's birth day: birthday
   return asyncAuthenticate(authenticate, {
     facebookAccessToken: facebookAuth.accessToken,
-  }, 'facebook', false)
+  }, 'facebook')
 }
 
 
@@ -1039,7 +1306,7 @@ function googleAuthenticateUser(
   const authenticate = mockApi ? mockApi.userAuthenticate : userAuthenticate
   return asyncAuthenticate(authenticate, {
     googleTokenId: googleAuth.getAuthResponse().id_token,
-  }, 'google', false, (authResponse: bayes.bob.AuthResponse): bayes.bob.AuthResponse => {
+  }, 'google', {callback: (authResponse: bayes.bob.AuthResponse): bayes.bob.AuthResponse => {
     // The signed request sent to the server only contains some fields. If it
     // is verified we trust the full googleAuth object and add non-signed
     // fields that we need.
@@ -1060,7 +1327,7 @@ function googleAuthenticateUser(
         },
       },
     }
-  })
+  }})
 }
 
 function peConnectAuthenticateUser(code: string, nonce: string, mockApi?: MockApi):
@@ -1106,7 +1373,8 @@ ThunkAction<Promise<bayes.bob.AuthResponse|void>, unknown, unknown, ChangePasswo
 }
 
 function registerNewUser(
-  email: string, password: string, firstName: string, userData?: bayes.bob.AuthUserData,
+  email: string, password: string, firstName: string, isPersistent: boolean,
+  userData?: bayes.bob.AuthUserData,
 ): ThunkAction<Promise<bayes.bob.AuthResponse|void>, RootState, unknown, AuthenticateUserAction> {
   const cleanEmail = email.trim()
   return asyncAuthenticate(userAuthenticate, {
@@ -1117,28 +1385,37 @@ function registerNewUser(
   }, 'password')
 }
 
-function silentlyRegisterUser(email: string):
+function silentlyRegisterUser(email: string, isPersistent: boolean, t: TFunction):
 ThunkAction<Promise<bayes.bob.AuthResponse|void>, RootState, unknown, AuthenticateUserAction> {
   const cleanEmail = email.trim()
-  return asyncAuthenticate(userAuthenticate, {email: cleanEmail}, 'password')
+  return asyncAuthenticate(userAuthenticate, {email: cleanEmail}, 'password', {
+    callback: response => {
+      if (!response.authenticatedUser) {
+        throw new Error(t('Cette adresse est déjà utilisée'))
+      }
+      return response
+    },
+    isPersistent,
+  })
 }
 
-function registerNewGuestUser(firstName: string, userData?: bayes.bob.AuthUserData):
-ThunkAction<Promise<bayes.bob.AuthResponse|void>, RootState, unknown, AuthenticateUserAction> {
+function registerNewGuestUser(
+  firstName: string, isPersistent: boolean, userData?: bayes.bob.AuthUserData,
+): ThunkAction<Promise<bayes.bob.AuthResponse|void>, RootState, unknown, AuthenticateUserAction> {
   return asyncAuthenticate(userAuthenticate, {
     firstName: upperFirstLetter(firstName.trim()),
     userData,
-  }, 'guest', true)
+  }, 'guest', {disconnectOnError: true, isPersistent})
 }
 
-function loginUser(email: string, password: string, hashSalt: string):
+function loginUser(email: string, password: string, hashSalt: string, isPersistent: boolean):
 ThunkAction<Promise<bayes.bob.AuthResponse|void>, RootState, unknown, AuthenticateUserAction> {
   const cleanEmail = email.trim()
   return asyncAuthenticate(userAuthenticate, {
     email: cleanEmail,
     hashSalt,
     hashedPassword: sha1(hashSalt + sha1(cleanEmail + password)),
-  }, 'password')
+  }, 'password', {isPersistent})
 }
 
 function loginUserFromToken(userId: string, authToken: string):
@@ -1238,7 +1515,6 @@ function setUserProfile<T extends string>(
 }
 
 type CreateProjectAction = ProjectAction<'CREATE_PROJECT'>
-type FinishProjectCriteriaAction = ProjectAction<'FINISH_PROJECT_CRITERIA'>
 type FinishProjectGoalAction = ProjectAction<'FINISH_PROJECT_GOAL'>
 type FinishProjectExperienceAction = ProjectAction<'FINISH_PROJECT_EXPERIENCE'>
 type FinishProjectSelfDiagnostic = ProjectAction<'FINISH_PROJECT_SELF_DIAGNOSTIC'>
@@ -1290,10 +1566,10 @@ ThunkAction<Promise<string|void>, unknown, unknown, ResetUserPasswordAction> {
   return wrapAsyncAction('RESET_USER_PASSWORD', (): Promise<string> => resetPasswordPost(email))
 }
 
-function silentlySetupCoaching(email: string):
+function silentlySetupCoaching(email: string, isPersistent: boolean, t: TFunction):
 ThunkAction<Promise<bayes.bob.AuthResponse|void>, RootState, unknown, AuthenticateUserAction> {
   return async (dispatch, getState): Promise<bayes.bob.AuthResponse|void> => {
-    const authResponse = await dispatch(silentlyRegisterUser(email))
+    const authResponse = await dispatch(silentlyRegisterUser(email, isPersistent, t))
     if (!authResponse) {
       return authResponse
     }
@@ -1345,12 +1621,12 @@ ThunkAction<Promise<bayes.bob.EmailHistory|void>, unknown, unknown, SimulateFocu
 // Type of the main dispatch function.
 export type DispatchAllActions =
   // Add actions as required.
-  ThunkDispatch<RootState, unknown, ActivateDemoAction> &
-  ThunkDispatch<RootState, unknown, DiagnosticIsShownAction> &
+  ThunkDispatch<RootState, unknown, ActivateExperimentsAction> &
   ThunkDispatch<RootState, unknown, ExploreAdviceAction> &
   ThunkDispatch<RootState, unknown, GetAuthTokensAction> &
   ThunkDispatch<RootState, unknown, GetDiagnosticMainChallengesAction> &
   ThunkDispatch<RootState, unknown, GetUserDataAction> &
+  ThunkDispatch<RootState, unknown, ListUserEmailsAction> &
   ThunkDispatch<RootState, unknown, MigrateUserToAdviceAction> &
   ThunkDispatch<RootState, unknown, OpenLoginModalAction> &
   ThunkDispatch<RootState, unknown, PageIsLoadedAction> &
@@ -1361,34 +1637,38 @@ export type DispatchAllActions =
 export type AllActions =
   | AcceptCookiesUsageAction
   | AcceptPrivacyNoticeAction
-  | ActivateDemoAction
-  | ActivateDemoInFutureAction
+  | ActionIsShownAction
+  | ActivateExperimentInFutureAction
+  | ActivateExperimentsAction
   | AdviceCardIsShownAction
   | AdvicePageIsShownAction
+  | AskForAdsCookiesUsageAction
   | AsyncStartedAction
   | AuthenticateUserAction
   | ChangePasswordAction
   | ClearExpiredTokenAction
+  | ClickExploreActionsAction
   | CloseLoginModalAction
   | CommentIsShown
+  | CompleteActionAction
   | CreateProjectAction
   | CreateProjectSaveAction
   | DeleteUserAction
   | DiagnoseOnboardingAction
-  | DiagnosticIsShownAction
-  | DiagnosticTalkIsShownAction
   | DisplayToastMessageAction
+  | DropOutProjectFeedbackAction
   | EditFirstProjectAction
   | EmailCheckAction
+  | ExpandActionListAction
+  | ExploreActionAction
   | ExploreAdviceAction
+  | FinishActionPlanOnboardingAction
   | FinishProfileFrustrationsAction
   | FinishProfileSettingsAction
   | FinishProfileSituationAction
-  | FinishProjectCriteriaAction
   | FinishProjectExperienceAction
   | FinishProjectGoalAction
   | FinishProjectSelfDiagnostic
-  | FollowJobOffersLinkAction
   | GetAdviceTipsAction
   | GetApplicationModesAction
   | GetAuthTokensAction
@@ -1400,6 +1680,7 @@ export type AllActions =
   | GetMainChallengesUsersCountAction
   | GetProjectRequirementsAction
   | GetUserDataAction
+  | GoToFirstStrategyAction
   | HideToasterMessageAction
   | LandingPageSectionIsShownAction
   | LoadLandingPageAction
@@ -1408,35 +1689,46 @@ export type AllActions =
   | ModifyProjectAction
   | OnboardingCommentIsShownAction
   | OnboardingPageAction
+  | OpenActionDateAction
+  | OpenActionDetailAction
   | OpenLoginModalAction
   | OpenRegistrationModalAction
   | OpenStatsPageAction
   | OpenTipExternalLinkAction
   | PageIsLoadedAction
   | PostUserDataAction
+  | PreviewActionOnAction
+  | ProjectFeedbackRequestedAction
   | ProjectReviewAction
   | ReadTipAction
   | RemoveAuthDataAction
+  | RenameActionPlanAction
   | ReplaceStrategyAction
   | ResetUserPasswordAction
-  | SeeAdviceAction
-  | SendProjectFeedbackAction
-  | SetUserProfileAction
+  | SaveActionDateAction
   | ScoreProjectChallengeAgreementAction
+  | SeeAdviceAction
+  | SendActionPlanEmailAction
+  | SendFeedbackVolunteeringAction
+  | SendProjectFeedbackAction
+  | SelectAction
+  | SetUserProfileAction
   | ShareProductModalIsShownAction
   | ShareProductToNetworkAction
   | ShowAllTipsAction
   | SimulateFocusEmailsAction
   | StartAsGuestAction
+  | StartScoringProjectAction
   | StartStrategyAction
   | StaticAdvicePageIsShownAction
   | StatsPageIsShownAction
   | StopStrategyAction
-  | StrategyExplorationPageIsShown
   | StrategyWorkPageIsShown
-  | SwitchToMobileVersionAction
-  | TrackInitialFeaturesAction
   | TrackInitialUtmAction
+  | UnselectAction
+  | UncompleteActionAction
+  | ValidateActionPlanAction
+  | ValidateActionPlanStrategyAction
   | WorkbenchIsShownAction
 
 
@@ -1471,27 +1763,30 @@ export const useDispatch: () => DispatchAllActions = reduxUseDispatch
 
 export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser, clearExpiredTokenAction,
   readTip, facebookAuthenticateUser, sendAdviceFeedback, modifyProject,
-  googleAuthenticateUser, emailCheck, registerNewUser, loginUser, logoutAction,
+  googleAuthenticateUser, emailCheck, registerNewUser, loginUser, logout,
   createFirstProject, fetchProjectRequirements, resetPassword, openStatsPageAction,
-  editFirstProject, sendProfessionalFeedback,
-  displayToasterMessage, closeLoginModal, followJobOffersLinkAction,
-  openLoginModal, acceptCookiesUsageAction, switchToMobileVersionAction,
+  editFirstProject, sendProfessionalFeedback, saveActionDate, isActionForActionPlan,
+  displayToasterMessage, closeLoginModal, completeAction, uncompleteAction,
+  openLoginModal, acceptCookiesUsageAction,
   loadLandingPage, deleteUser, askPasswordReset, registerNewGuestUser,
-  onboardingPage,
-  openTipExternalLink, advicePageIsShown, seeAdvice,
+  onboardingPage, listUserEmails, validateActionPlanStrategy, unselectAction,
+  openTipExternalLink, advicePageIsShown, seeAdvice, validateActionPlan,
   adviceCardIsShown, getAdviceTips, showAllTips, migrateUserToAdvisor, getJobs,
-  shareProductToNetwork, trackInitialUtm, trackInitialFeatures,
+  shareProductToNetwork, trackInitialUtm, exploreAction,
   peConnectAuthenticateUser, sendProjectFeedback, createSupportTicket,
-  landingPageSectionIsShown, openRegistrationModal, computeAdvicesForProject, diagnosticTalkIsShown,
-  getExpandedCardContent, activateDemoInFuture, activateDemo, diagnosticIsShown,
-  loginUserFromToken, shareProductModalIsShown, getAuthTokens,
+  landingPageSectionIsShown, openRegistrationModal, computeAdvicesForProject,
+  getExpandedCardContent, activateExperimentInFuture, activateExperiments,
+  loginUserFromToken, shareProductModalIsShown, getAuthTokens, sendActionPlanEmail,
   staticAdvicePageIsShown, linkedInAuthenticateUser, pageIsLoaded,
   isActionRegister, workbenchIsShown, exploreAdvice, diagnoseOnboarding, convertFromProto,
-  convertToProto, replaceStrategy, fetchApplicationModes,
-  startStrategy, stopStrategy, removeAuthDataAction,
-  strategyExplorationPageIsShown, strategyWorkPageIsShown, getLaborStats,
+  convertToProto, replaceStrategy, fetchApplicationModes, finishActionPlanOnboarding,
+  startStrategy, stopStrategy, removeAuthDataAction, previewAction, selectAction,
+  strategyWorkPageIsShown, getLaborStats, sendFeedbackVolunteering,
   startAsGuest, statsPageIsShown, changePassword, silentlyRegisterUser,
   onboardingCommentIsShown, commentIsShown, silentlySetupCoaching,
   getDiagnosticMainChallenges, sendUserEmail, reviewProject, scoreProjectChallengeAgreement,
-  getMainChallengesUserCount, simulateFocusEmails,
+  getMainChallengesUserCount, simulateFocusEmails, renameProjectActionPlan,
+  openActionDate, clickExploreActions, openActionDetailAction, expandActionList,
+  goToFirstStrategy, computeActionsForProject, askForAdsCookieUsageAction,
+  dropOutProjectFeedbackAction, startProjectFeedback, actionIsShown, projectFeedbackRequested,
 }

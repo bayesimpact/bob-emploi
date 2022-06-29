@@ -1,11 +1,14 @@
 """Import Status tool tests."""
 
+import argparse
 import datetime
 import json
 import logging
+import os
 import re
 import subprocess
-from typing import Any, Dict, List
+import typing
+from typing import Any
 import unittest
 from unittest import mock
 
@@ -18,6 +21,8 @@ from bob_emploi.data_analysis.importer import importers
 from bob_emploi.data_analysis.importer import import_status
 
 _FAKE_MONGO_URL = 'mongodb://test_url/test_db'
+
+_BOB_EMPLOI_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '../../..'))
 
 
 def _strip_colors(text: str) -> str:
@@ -48,6 +53,16 @@ class ImportStatusBasicTests(unittest.TestCase):
         self.addCleanup(patcher.stop)
         self.mongo_db = pymongo.MongoClient(_FAKE_MONGO_URL).get_database()
 
+    def _find_log_call_matching(self, needle: str, logging_mock: mock.MagicMock) -> str:
+        try:
+            return next(
+                flatten_log
+                for call in logging_mock.call_args_list
+                if needle in (flatten_log := typing.cast(str, call[0][0] % call[0][1:]))
+            )
+        except StopIteration:
+            self.fail(f'Call not found including "{needle}": {logging_mock.call_args_list}')
+
     @mock.patch.dict(import_status.get_importers(), {
         'collection_id': importers.Importer(
             name='Collection name',
@@ -61,8 +76,7 @@ class ImportStatusBasicTests(unittest.TestCase):
     def test_details_importer_missing(self) -> None:
         """Test missing importer."""
 
-        # This is the SystemExit from argparse getting a bad argument.
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(argparse.ArgumentError):
             import_status.main(['unknown_collection'])
 
     @mock.patch(logging.__name__ + '.info')
@@ -72,7 +86,7 @@ class ImportStatusBasicTests(unittest.TestCase):
         importer = importers.Importer(
             name='no import needed', script=None, args=None, is_imported=False,
             run_every=None, proto_type=None, key=None, has_pii=False)
-        import_status.print_single_importer(importer, 'no-import-needed', 'url', [])
+        import_status.print_single_importer(importer, 'no-import-needed', [])
         mock_log_info.assert_any_call(
             'No import needed for %s',
             termcolor.colored('no-import-needed', 'green'))
@@ -86,12 +100,12 @@ class ImportStatusBasicTests(unittest.TestCase):
             script='run', args={'this': 'value'},
             is_imported=True, run_every=None,
             proto_type=None, key=None, has_pii=False)
-        import_status.print_single_importer(importer, 'foo', 'url', [])
+        import_status.print_single_importer(importer, 'foo', [])
         mock_log_info.assert_any_call(
             'To import "%s" in "%s", run:\n%s',
             'with command',
             'foo',
-            'docker-compose run --rm -e MONGO_URL=url data-analysis-prepare \\\n'
+            'docker-compose run --rm -e MONGO_URL="<your mongo URL>" data-analysis-prepare \\\n'
             '    python bob_emploi/data_analysis/importer/run.py \\\n'
             '    --this "value" \\\n    --mongo_collection "foo"\n')
 
@@ -228,13 +242,17 @@ class ImportStatusBasicTests(unittest.TestCase):
         import_status.main([])
         mock_log_info.assert_any_call(
             '%s collection%s not imported yet:', _AnyColorText('1'), ' is')
-        mock_log_info.assert_any_call(
-            'To import "%s" in "%s", run:\n%s',
-            'Collection name', 'collection_id',
-            'docker-compose run --rm -e MONGO_URL=mongodb://test_url/test_db'
-            ' data-analysis-prepare \\\n'
-            '    python bob_emploi/data_analysis/importer/my-script-name.py \\\n'
-            '    --mongo_collection "collection_id"\n')
+
+        info_log = self._find_log_call_matching('To import "Collection name"', mock_log_info)
+        self.assertIn(
+            'To import "Collection name" in "collection_id", run:\ndocker-compose run --rm -e',
+            info_log)
+        self.assertNotIn('test_url/test_db', info_log)
+        self.assertRegex(
+            info_log,
+            r'.*docker-compose run --rm .*data-analysis-prepare (\s|\\\n)*'
+            r'python bob_emploi/data_analysis/importer/my-script-name\.py (\s|\\\n)*'
+            r'--mongo_collection "collection_id"\n$')
 
     @mock.patch(logging.__name__ + '.info')
     @mock.patch.dict(import_status.get_importers(), {
@@ -260,13 +278,17 @@ class ImportStatusBasicTests(unittest.TestCase):
         self.mongo_db.create_collection('collection_id')
 
         import_status.main(['collection_id'])
-        mock_log_info.assert_called_once_with(
-            'To import "%s" in "%s", run:\n%s',
-            'Collection name', 'collection_id',
-            'docker-compose run --rm -e MONGO_URL=mongodb://test_url/test_db'
-            ' data-analysis-prepare \\\n'
-            '    python bob_emploi/data_analysis/importer/my-script-name.py \\\n'
-            '    --mongo_collection "collection_id"\n')
+        mock_log_info.assert_called_once()
+        info_log = mock_log_info.call_args[0][0] % mock_log_info.call_args[0][1:]
+        self.assertIn(
+            'To import "Collection name" in "collection_id", run:\ndocker-compose run --rm -e',
+            info_log)
+        self.assertNotIn('test_url/test_db', info_log)
+        self.assertRegex(
+            info_log,
+            r'.*docker-compose run --rm .*data-analysis-prepare (\s|\\\n)*'
+            r'python bob_emploi/data_analysis/importer/my-script-name\.py (\s|\\\n)*'
+            r'--mongo_collection "collection_id"\n$')
 
     def test_command_on_one_line(self) -> None:
         """Checks that all importers command are on one line."""
@@ -286,7 +308,7 @@ class ImportStatusBasicTests(unittest.TestCase):
                     self.assertNotIn(value, '\n', msg=f'Importer "{name}", arg "{key}"')
 
     @mock.patch(logging.__name__ + '.info', new=mock.MagicMock())
-    @mock.patch(import_status.subprocess.__name__ + '.run')
+    @mock.patch('subprocess.run')
     @mock.patch.dict(import_status.get_importers(), {
         'collection_id': importers.Importer(
             name='Collection name',
@@ -301,12 +323,12 @@ class ImportStatusBasicTests(unittest.TestCase):
 
         import_status.main(['--run', 'collection_id'])
         mock_subprocess_run.assert_called_once_with([
-            'python', '/work/bob_emploi/data_analysis/importer/my-script-name.py',
+            'python', f'{_BOB_EMPLOI_DIR}/data_analysis/importer/my-script-name.py',
             '--custom_importer_flag', 'value for custom flag',
             '--mongo_collection', 'collection_id'], stderr=subprocess.PIPE, check=True)
 
     @mock.patch(logging.__name__ + '.error')
-    @mock.patch(import_status.subprocess.__name__ + '.run', )
+    @mock.patch('subprocess.run', )
     @mock.patch.dict(import_status.get_importers(), {
         'collection_id': importers.Importer(
             name='Collection name',
@@ -324,7 +346,7 @@ class ImportStatusBasicTests(unittest.TestCase):
             2, ['the command'], stderr=b'the error')
         import_status.main(['--run', 'collection_id'])
         mock_subprocess_run.assert_called_once_with([
-            'python', '/work/bob_emploi/data_analysis/importer/my-script-name.py',
+            'python', f'{_BOB_EMPLOI_DIR}/data_analysis/importer/my-script-name.py',
             '--mongo_collection', 'collection_id'], stderr=subprocess.PIPE, check=True)
         mock_log_error.assert_any_call(
             'Could not import "%s":\nCommand run: %s\nError: %s',
@@ -333,7 +355,7 @@ class ImportStatusBasicTests(unittest.TestCase):
             'the error')
 
     @mock.patch(logging.__name__ + '.info', new=mock.MagicMock())
-    @mock.patch(import_status.subprocess.__name__ + '.run')
+    @mock.patch('subprocess.run')
     @mock.patch.dict(import_status.get_importers(), {
         'collection_id': importers.Importer(
             name='Collection name',
@@ -359,16 +381,16 @@ class ImportStatusBasicTests(unittest.TestCase):
         ])
         self.assertEqual(2, mock_subprocess_run.call_count)
         mock_subprocess_run.assert_any_call([
-            'python', '/work/bob_emploi/data_analysis/importer/my-script-name.py',
+            'python', f'{_BOB_EMPLOI_DIR}/data_analysis/importer/my-script-name.py',
             '--custom_importer_flag', 'value for custom flag',
             '--mongo_collection', 'collection_id'], stderr=subprocess.PIPE, check=True)
         mock_subprocess_run.assert_any_call([
-            'python', '/work/bob_emploi/data_analysis/importer/other-script-name.py',
+            'python', f'{_BOB_EMPLOI_DIR}/data_analysis/importer/other-script-name.py',
             '--custom_importer_flag', 'other value for custom flag',
             '--mongo_collection', 'other_collection_id'], stderr=subprocess.PIPE, check=True)
 
     @mock.patch(logging.__name__ + '.info', new=mock.MagicMock())
-    @mock.patch(import_status.subprocess.__name__ + '.run')
+    @mock.patch('subprocess.run')
     @mock.patch.dict(import_status.get_importers(), {
         'collection_id': importers.Importer(
             name='Collection name',
@@ -383,12 +405,12 @@ class ImportStatusBasicTests(unittest.TestCase):
 
         import_status.main(['--run', 'collection_id', '--no_diff'])
         mock_subprocess_run.assert_called_once_with([
-            'python', '/work/bob_emploi/data_analysis/importer/my-script-name.py',
+            'python', f'{_BOB_EMPLOI_DIR}/data_analysis/importer/my-script-name.py',
             '--custom_importer_flag', 'value for custom flag',
             '--mongo_collection', 'collection_id', '--no_diff'], stderr=subprocess.PIPE, check=True)
 
     @mock.patch(logging.__name__ + '.info')
-    @mock.patch(import_status.subprocess.__name__ + '.run')
+    @mock.patch('subprocess.run')
     @mock.patch.dict(import_status.get_importers(), {
         'collection_id': importers.Importer(
             name='Collection name',
@@ -409,7 +431,7 @@ class ImportStatusBasicTests(unittest.TestCase):
             ['make', 'data/my_target'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             check=True)
         mock_subprocess_run.assert_any_call([
-            'python', '/work/bob_emploi/data_analysis/importer/my-script-name.py',
+            'python', f'{_BOB_EMPLOI_DIR}/data_analysis/importer/my-script-name.py',
             '--needed_data', 'data/my_target',
             '--mongo_collection', 'collection_id'], stderr=subprocess.PIPE, check=True)
         mock_log_info.assert_any_call(
@@ -419,7 +441,7 @@ class ImportStatusBasicTests(unittest.TestCase):
             '    data/my_target\n')
 
     @mock.patch(logging.__name__ + '.error')
-    @mock.patch(import_status.subprocess.__name__ + '.run')
+    @mock.patch('subprocess.run')
     @mock.patch.dict(import_status.get_importers(), {
         'collection_id': importers.Importer(
             name='Collection name',
@@ -454,7 +476,7 @@ class ImportStatusBasicTests(unittest.TestCase):
     def test_main_unknown_extra_args(self) -> None:
         """Unknown arg."""
 
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(argparse.ArgumentError):
             import_status.main(['--no_diff'])
 
     @mock.patch.dict(import_status.get_importers(), {
@@ -507,7 +529,7 @@ class ImportStatusBasicTests(unittest.TestCase):
 class ImportStatusSyncTests(unittest.TestCase):
     """Test that importers are sync with schedule tasks."""
 
-    def _get_task_scheduling(self, rules: List[Dict[str, Any]], directory: str) -> Dict[str, str]:
+    def _get_task_scheduling(self, rules: list[dict[str, Any]], directory: str) -> dict[str, str]:
         scheduled_tasks = {}
         for rule in rules:
             schedule_expression = rule.get('ScheduleExpression')
@@ -516,7 +538,7 @@ class ImportStatusSyncTests(unittest.TestCase):
             rule_file = rule.get('Name')
             if not rule_file:
                 continue
-            with open(f'{directory}{rule_file}.json') as rule_json:
+            with open(f'{directory}{rule_file}.json', encoding='utf-8') as rule_json:
                 rule_content = json.load(rule_json)
             rule_type = rule_content['Targets'][0]['Id']
             if rule_type != 'import':
@@ -532,10 +554,11 @@ class ImportStatusSyncTests(unittest.TestCase):
         # TODO(pascal): Check all deployments.
         all_importers = import_status.get_importers()
         scheduled_tasks_dirs = [
+            os.path.join(_BOB_EMPLOI_DIR, f'frontend/release/scheduled-tasks/{d}/')
             # TODO(cyrille): Also test US importers.
-            f'bob_emploi/frontend/release/scheduled-tasks/{d}/' for d in ('fr',)]
+            for d in ('fr',)]
         for scheduled_tasks_dir in scheduled_tasks_dirs:
-            with open(f'{scheduled_tasks_dir}index.json') as index_json:
+            with open(f'{scheduled_tasks_dir}index.json', encoding='utf-8') as index_json:
                 rules = json.load(index_json)
             scheduled_tasks = self._get_task_scheduling(rules.get('Rules', []), scheduled_tasks_dir)
 
@@ -550,9 +573,10 @@ class ImportStatusSyncTests(unittest.TestCase):
         """Check sync between ARN and rule names in scheduled tasks."""
 
         scheduled_tasks_dirs = [
-            f'bob_emploi/frontend/release/scheduled-tasks/{d}/' for d in ('fr', 'usa')]
+            os.path.join(_BOB_EMPLOI_DIR, f'frontend/release/scheduled-tasks/{d}/')
+            for d in ('fr', 'usa')]
         for scheduled_tasks_dir in scheduled_tasks_dirs:
-            with open(f'{scheduled_tasks_dir}index.json') as index_json:
+            with open(f'{scheduled_tasks_dir}index.json', encoding='utf-8') as index_json:
                 rules = json.load(index_json)
             for rule in rules.get('Rules', []):
                 schedule_expression = rule.get('ScheduleExpression')

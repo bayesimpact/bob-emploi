@@ -1,13 +1,12 @@
-import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
-import {getEmailTemplates} from 'store/i18n'
+import {getEmailTemplates} from 'store/advice'
 
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
-import Picto from 'images/advices/picto-follow-up.svg'
 
-import {CardProps, EmailTemplate, MethodSuggestionList} from './base'
+import type {CardProps} from './base'
+import {EmailTemplate, MethodSuggestionList} from './base'
 
 
 const FollowUpCard: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
@@ -30,12 +29,6 @@ const FollowUpCard: React.FC<CardProps> = (props: CardProps): React.ReactElement
     </MethodSuggestionList>
   </React.Fragment>
 }
-FollowUpCard.propTypes = {
-  advice: PropTypes.shape({
-    adviceId: PropTypes.string.isRequired,
-  }).isRequired,
-  handleExplore: PropTypes.func.isRequired,
-}
 const ExpandedAdviceCardContent = React.memo(FollowUpCard)
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName: 'notepad' as const}

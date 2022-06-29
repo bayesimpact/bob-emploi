@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+
 package bayes.bob;
 option go_package="bayes.org/bob_emploi/frontend/api/feedback";
 
@@ -49,4 +51,15 @@ enum FeedbackSource {
 
   // Feedback about the upskilling sub-product.
   UPSKILLING_FEEDBACK = 7;
+
+  // General comment on the product 3-months after using it.
+  PRODUCT_STEPBACK_FEEDBACK = 8;
+}
+
+message FeedbackExportRequest {
+  // Export feedback sent after this date.
+  google.protobuf.Timestamp after = 1;
+
+  // Export feedback sent before this date.
+  google.protobuf.Timestamp before = 2;
 }

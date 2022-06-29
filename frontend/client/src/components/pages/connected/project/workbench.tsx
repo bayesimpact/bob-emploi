@@ -1,19 +1,22 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
+import _uniqueId from 'lodash/uniqueId'
 import ChevronLeftIcon from 'mdi-react/ChevronLeftIcon'
-import PropTypes from 'prop-types'
 import {parse} from 'query-string'
 import React, {useEffect, useMemo, useRef} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useDispatch, useSelector} from 'react-redux'
 import {Link, Redirect, useLocation, useParams} from 'react-router-dom'
 
-import {DispatchAllActions, RootState, advicePageIsShown, workbenchIsShown} from 'store/actions'
-import {ValidAdvice, getAdviceShortTitle, getAdviceTitle} from 'store/advice'
+import type {DispatchAllActions, RootState} from 'store/actions'
+import {advicePageIsShown, workbenchIsShown} from 'store/actions'
+import type {ValidAdvice} from 'store/advice'
+import {getAdviceShortTitle, getAdviceTitle} from 'store/advice'
 import isMobileVersion from 'store/mobile'
 
 import {AdviceCard} from 'components/advisor'
-import Button from 'components/button'
-import {PageWithNavigationBar, Scrollable} from 'components/navigation'
+import LinkButton from 'components/link_button'
+import type {Scrollable} from 'components/navigation'
+import {PageWithNavigationBar} from 'components/navigation'
 import RocketChain from 'components/rocket_chain'
 import {ObservationMethod} from './strategy'
 
@@ -104,6 +107,9 @@ const allMethodsWrapStyle: React.CSSProperties = {
   display: 'flex',
   flexWrap: 'wrap',
   justifyContent: 'space-between',
+  listStyleType: 'none',
+  margin: 0,
+  padding: 0,
 }
 
 
@@ -111,22 +117,24 @@ const AllMethodsBase = (props: AllMethodsProps): React.ReactElement|null => {
   const {advice, baseUrl, project: {advices = []}, style, t} = props
   const currentAdviceId = advice && advice.adviceId
   const otherAdvicePieces = advices.filter(({adviceId}) => adviceId !== currentAdviceId)
+  const titleId = useMemo(_uniqueId, [])
   if (!otherAdvicePieces.length) {
     return null
   }
   return <div style={style}>
-    <div style={allMethodsTitleStyle}>
+    <h2 style={allMethodsTitleStyle} id={titleId}>
       {t('Toutes les méthodes de {{productName}}', {productName: config.productName})}
-    </div>
-    <div style={allMethodsWrapStyle}>
+    </h2>
+    <ul style={allMethodsWrapStyle} role="navigation" aria-labelledby={titleId}>
       {otherAdvicePieces.filter((a: bayes.bob.Advice): a is ValidAdvice => a && !!a.adviceId).map(
-        (advice: ValidAdvice, index: number) =>
+        (advice: ValidAdvice, index: number) => <li key={index}>
           <Link
             style={{color: 'inherit', textDecoration: 'none'}}
-            to={`${baseUrl}/methode/${advice.adviceId}`} key={index} >
+            to={`${baseUrl}/methode/${advice.adviceId}`}>
             <ObservationMethod style={methodCardStyle} {...{advice}} />
-          </Link>)}
-    </div>
+          </Link>
+        </li>)}
+    </ul>
   </div>
 }
 const AllMethods = React.memo(AllMethodsBase)
@@ -166,12 +174,10 @@ const BreadCrumbsBase = (props: BreadCrumbsProps): React.ReactElement => {
     ...style,
   }), [style])
   return <div style={containerStyle}>
-    <Link to={urlOnClose}>
-      <Button type="discreet" style={backButtonStyle}>
-        <ChevronLeftIcon style={chevronStyle} />
-        Retour {hasStrategyPage ? 'à la stratégie' : 'au diagnostic'}
-      </Button>
-    </Link>
+    <LinkButton to={urlOnClose} type="discreet" style={backButtonStyle}>
+      <ChevronLeftIcon style={chevronStyle} />
+      Retour {hasStrategyPage ? 'à la stratégie' : 'au diagnostic'}
+    </LinkButton>
   </div>
 }
 const BreadCrumbs = React.memo(BreadCrumbsBase)
@@ -243,18 +249,6 @@ const Workbench = (props: WorkbenchProps): React.ReactElement => {
 
   return <WorkbenchWithAdvice {...props} {...{advice, hasStrategyPage, urlOnClose}} />
 }
-Workbench.propTypes = {
-  baseUrl: PropTypes.string.isRequired,
-  project: PropTypes.shape({
-    advices: PropTypes.arrayOf(PropTypes.shape({
-      adviceId: PropTypes.string.isRequired,
-      score: PropTypes.number,
-    }).isRequired),
-    strategies: PropTypes.arrayOf(PropTypes.shape({
-      strategyId: PropTypes.string.isRequired,
-    }).isRequired),
-  }).isRequired,
-}
 
 const contentStyle = {
   margin: 'auto',
@@ -309,7 +303,7 @@ const WorkbenchWithAdviceBase = (props: WorkbenchWithAdviceProps): React.ReactEl
     navBarContent={getAdviceShortTitle(advice, t)}
     onBackClick={urlOnClose}
     isContentScrollable={true}
-    ref={pageDom} isChatButtonShown={true} style={pageStyle}>
+    ref={pageDom} isChatButtonShown={false} style={pageStyle}>
     {isMobileVersion ?
       <div style={{backgroundColor: '#fff', flex: 1, position: 'relative'}}>
         <WorkbenchAdvice {...{advice, profile, project}} />
@@ -321,16 +315,6 @@ const WorkbenchWithAdviceBase = (props: WorkbenchWithAdviceProps): React.ReactEl
         </div>
       </div>}
   </PageWithNavigationBar>
-}
-WorkbenchWithAdviceBase.propTypes = {
-  advice: PropTypes.shape({
-    adviceId: PropTypes.string.isRequired,
-    score: PropTypes.number,
-  }).isRequired,
-  baseUrl: PropTypes.string.isRequired,
-  hasStrategyPage: PropTypes.bool,
-  project: PropTypes.object.isRequired,
-  urlOnClose: PropTypes.string.isRequired,
 }
 const WorkbenchWithAdvice = React.memo(WorkbenchWithAdviceBase)
 

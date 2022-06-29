@@ -6,7 +6,7 @@ It happens in 3 main steps: 'Release', 'Check release notes and ask for manual a
 
 The first step for the release is to decide which code to release.
 
-To create a new tag with the current master and start a release with it:
+To create a new tag with the default branch and start a release with it:
 ```sh
 frontend/release/release.sh
 ```

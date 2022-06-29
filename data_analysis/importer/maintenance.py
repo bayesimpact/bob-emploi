@@ -11,11 +11,12 @@ Run it regularly with the command:
 
 # TODO(pascal): Send the results to slack.
 import argparse
+import json
 import logging
 import re
 import os
 import typing
-from typing import Dict, ItemsView, Iterable, Iterator, List, Optional, Set, Tuple
+from typing import ItemsView, Iterable, Iterator, Optional, Set, Tuple, TypedDict
 
 from airtable import airtable
 import pymongo
@@ -24,10 +25,9 @@ import tqdm
 
 from bob_emploi.data_analysis.importer import importers
 from bob_emploi.data_analysis.importer import import_status
-from bob_emploi.data_analysis.lib import checker
+from bob_emploi.common.python import checker
 from bob_emploi.frontend.api import options_pb2
 from bob_emploi.frontend.server import scoring
-from bob_emploi.frontend.server import scoring_base
 
 _AIRTABLE_BASE_ID = 'appXmyc7yYj0pOcae'
 # See the result at https://airtable.com/tblJYesuqUHrcISMe
@@ -105,7 +105,7 @@ def _iterate_translations_templates(mongo_db: pymongo.database.Database) \
         record.pop('_id')
         string = record.pop('string')
         for lang, translation in record.items():
-            if '%' in translation:
+            if isinstance(translation, str) and '%' in translation:
                 yield MongoReference('translations', lang, translation, string)
 
 
@@ -152,45 +152,97 @@ def _list_formatted_fields(
                 yield _MongoField(collection_name, field.camelcase_name)
 
 
-def check_urls(mongo_db: pymongo.database.Database) -> None:
-    """Check that all links are valid."""
+# A quick URL pattern to find URLs inside our strings.
+_URL_PATTERN = re.compile(r'https?://[^\s\(\)\<\>]+')
 
-    url_fields = _list_formatted_fields(
-        import_status.get_importers().items(), options_pb2.URL_FORMAT)
-    url_checker = checker.UrlChecker()
 
-    records = list(_iterate_all_records(mongo_db, url_fields, 'link'))
-    for collection, unused_field, url, record_id in tqdm.tqdm(records):
-        if _is_application_internal_url(url):
-            continue
+class _UrlSiteChecker:
+    """A class to check that websites are still up."""
+
+    def __init__(self) -> None:
+        self._checked: dict[str, Optional[str]] = {}
+        self._valid_url_checker = checker.UrlChecker()
+
+    def _check(self, url: str) -> Optional[str]:
         try:
-            url_checker.check_value(url, 'fr')
+            self._valid_url_checker.check_value(url, 'fr')
         except ValueError:
-            logging.error(
-                'Malformed URL in record "%s" in collection "%s":\n%s', record_id, collection, url)
-            continue
+            return 'Malformed URL'
+
         try:
             res = requests.get(url, headers=_HTTP_HEADERS)
             if res.status_code != 200:
-                logging.error(
-                    'HTTP Error %d while trying to access the URL of the record "%s" '
-                    'in collection "%s":\n%s',
-                    res.status_code, record_id, collection, url)
+                return f'HTTP Error {res.status_code} while trying to access the URL'
         except requests.exceptions.SSLError:
             # When I checked, they were all false positives.
             pass
         except Exception as exception:  # pylint: disable=broad-except
-            logging.error(
-                'Error %s while trying to access the URL of the record "%s" '
-                'in collection "%s":\n%s',
-                type(exception).__name__, record_id, collection, url)
+            return f'Error {type(exception).__name__} while trying to access the URL'
+
+        return None
+
+    def check_url(self, url: str, reason: str) -> None:
+        """Check that an URL is valid and is linking to an existing website."""
+
+        if _is_application_internal_url(url):
+            return
+
+        if url in self._checked:
+            result = self._checked[url]
+        else:
+            result = self._check(url)
+            self._checked[url] = result
+
+        if not result:
+            return
+
+        logging.error('%s %s:\n%s', result, reason, url)
+
+    def check_string(self, string: str, reason: str) -> None:
+        """Find all URLs in string and checkt that they are linking to an existing website."""
+
+        for url in _URL_PATTERN.finditer(string):
+            self.check_url(url.group(), reason)
+
+
+class _ClientURL(TypedDict):
+    file: str
+    url: str
+
+
+def check_urls(
+        mongo_db: pymongo.database.Database, *, client_urls_json: Optional[str] = None) -> None:
+    """Check that all links are valid."""
+
+    url_fields = _list_formatted_fields(
+        import_status.get_importers().items(), options_pb2.URL_FORMAT)
+    url_checker = _UrlSiteChecker()
+
+    records = list(_iterate_all_records(mongo_db, url_fields, 'link'))
+    for collection, unused_field, url, record_id in tqdm.tqdm(records):
+        url_checker.check_url(url, f' of record "{record_id}" in collection "{collection}"')
+
+    translations_with_urls = list(mongo_db.translations.find(
+        {'string': re.compile('http')},
+        {'string': 1, 'origin': 1, 'origin_id': 1}))
+
+    for doc in tqdm.tqdm(translations_with_urls):
+        url_checker.check_string(
+            doc['string'],
+            f'in string to translate "{doc.get("origin", "")}/{doc.get("origin_id", "")}"')
+
+    if client_urls_json:
+        with open(client_urls_json, encoding='utf-8') as client_urls_file:
+            client_urls: list[_ClientURL] = json.load(client_urls_file)
+        for client_url in tqdm.tqdm(client_urls):
+            url_checker.check_url(client_url['url'], f'in file "{client_url["file"]}"')
 
 
 def _get_variables_from(template: str) -> Set[str]:
     if '%' not in template:
         return set()
     # pylint: disable=protected-access
-    pattern = re.compile('|'.join(scoring_base._TEMPLATE_VARIABLES.keys()))
+    pattern = re.compile('|'.join(scoring.scoring_base._TEMPLATE_VARIABLES.keys()))
     return set(pattern.findall(template))
 
 
@@ -199,7 +251,7 @@ def check_template_variables(mongo_db: pymongo.database.Database) -> None:
 
     airtable_api_key = os.getenv('AIRTABLE_API_KEY')
     airtable_client: Optional[airtable.Airtable] = None
-    airtable_keys: Optional[Dict[Tuple[str, str], str]] = None
+    airtable_keys: Optional[dict[Tuple[str, str], str]] = None
     if airtable_api_key:
         airtable_client = airtable.Airtable(_AIRTABLE_BASE_ID, airtable_api_key)
         # This list all (origin, variable) pairs in the Airtable table,
@@ -211,7 +263,7 @@ def check_template_variables(mongo_db: pymongo.database.Database) -> None:
         logging.warning(
             "AIRTABLE_API_KEY is not set. The used variables won't be uploaded to airtable.")
     template_checker = checker.MissingTemplateVarsChecker()
-    unused_vars = set(scoring_base._TEMPLATE_VARIABLES.keys())  # pylint: disable=protected-access
+    unused_vars = set(scoring.scoring_base._TEMPLATE_VARIABLES.keys())  # pylint: disable=protected-access
     template_fields = _list_formatted_fields(
         import_status.get_importers().items(), options_pb2.SCORING_PROJECT_TEMPLATE)
 
@@ -257,7 +309,7 @@ def ensure_users_indices(mongo_db: pymongo.database.Database) -> None:
         mongo_db.get_collection(collection).create_index([(field, pymongo.ASCENDING)])
 
 
-def main(string_args: Optional[List[str]] = None) -> None:
+def main(string_args: Optional[list[str]] = None) -> None:
     """Handle all maintenance tasks."""
 
     parser = argparse.ArgumentParser(
@@ -265,20 +317,30 @@ def main(string_args: Optional[List[str]] = None) -> None:
     parser.add_argument(
         '--deployment', nargs=3, action='append',
         help='Deployment name and mongo URLs for deployment-specific databases (data, then users).')
+    parser.add_argument(
+        '--checks', action='append',
+        choices=['indices', 'scoring-models', 'URLs', 'template-variables'])
+    parser.add_argument(
+        '--client_urls_json',
+        help='Path to a JSON file containing the URLs used on the client. See extract_urls.ts.')
     args = parser.parse_args(string_args)
     for deployment, mongo_url, users_mongo_url in args.deployment:
         logging.info('Running maintenance on deployment "%s".', deployment)
-        if users_mongo_url.isupper():
-            users_mongo_url = os.getenv(users_mongo_url)
-        users_db = pymongo.MongoClient(users_mongo_url).get_database()
-        ensure_users_indices(users_db)
+        if not args.checks or 'indices' in args.checks:
+            if users_mongo_url.isupper():
+                users_mongo_url = os.getenv(users_mongo_url)
+            users_db = pymongo.MongoClient(users_mongo_url).get_database()
+            ensure_users_indices(users_db)
 
         if mongo_url.isupper():
             mongo_url = os.getenv(mongo_url)
         mongo_db = pymongo.MongoClient(mongo_url).get_database()
-        check_scoring_models(mongo_db)
-        check_urls(mongo_db)
-        check_template_variables(mongo_db)
+        if not args.checks or 'scoring-models' in args.checks:
+            check_scoring_models(mongo_db)
+        if not args.checks or 'URLs' in args.checks:
+            check_urls(mongo_db, client_urls_json=args.client_urls_json)
+        if not args.checks or 'template-variables' in args.checks:
+            check_template_variables(mongo_db)
 
 
 if __name__ == '__main__':

@@ -3,13 +3,10 @@ import React from 'react'
 import ShallowRenderer from 'react-test-renderer/shallow'
 
 // @ts-ignore
-import {FamilySituation, Frustration, UserOrigin} from 'api/user'
+import {FamilySituation, UserOrigin} from 'api/user'
 import {getUserFrustrationTags, FAMILY_SITUATION_OPTIONS, increaseRevision, addProjectIds,
   getHighestDegreeDescription, ORIGIN_OPTIONS, keepMostRecentRevision,
-  isEmailTemplatePersonalized, projectMatchAllFilters, filterPredicatesMatch,
-  personalizationsPredicates, getJobSearchLengthMonths, getUserLocale,
-  useUserExample} from 'store/user'
-import emailTemplates from 'components/advisor/data/email_templates.json'
+  getJobSearchLengthMonths, getUserLocale, useUserExample} from 'store/user'
 
 
 const fakeT = (string: string) => string
@@ -33,86 +30,6 @@ describe('frustrations', (): void => {
     const profile = {}
     const result = getUserFrustrationTags(profile, fakeT)
     expect(result.length).to.equal(0)
-  })
-})
-
-
-describe('email personalization', (): void => {
-  it('should return true for personalization matching frustrations', (): void => {
-    const profile = {frustrations: ['UNKNOWN_JOB_SEARCH_FRUSTRATION']} as const
-    const personalizations = ['UNKNOWN_JOB_SEARCH_FRUSTRATION'] as const
-    const result = isEmailTemplatePersonalized(personalizations, profile, {})
-    expect(result).to.be.true
-  })
-
-  it('should return false if personalization is not a frustrations and nothing else', (): void => {
-    const profile = {frustrations: ['UNKNOWN_JOB_SEARCH_FRUSTRATION']} as const
-    const personalizations = ['UNKNOWN_JOB_SEARCH_FRUSTRATION_2'] as const
-    const result = isEmailTemplatePersonalized(personalizations, profile, {})
-    expect(result).to.be.false
-  })
-
-  it('should return true for graduates', (): void => {
-    const profile = {highestDegree: 'LICENCE_MAITRISE'} as const
-    const personalizations = ['GRADUATE', 'WHATEVER'] as const
-    const result = isEmailTemplatePersonalized(personalizations, profile, {})
-    expect(result).to.be.true
-  })
-
-  it('should return true for adequate network', (): void => {
-    const profile = {} as const
-    const project = {networkEstimate: 3}
-    const personalizations = ['NETWORK_SCORE_3'] as const
-    const result = isEmailTemplatePersonalized(personalizations, profile, project)
-    expect(result).to.be.true
-  })
-
-  it('should return false for the same job personalization if the user has not done it',
-    (): void => {
-      const profile = {} as const
-      const project = {previousJobSimilarity: 'NEVER_DONE'} as const
-      const personalizations = ['SAME_JOB'] as const
-      const result = isEmailTemplatePersonalized(personalizations, profile, project)
-      expect(result).to.be.false
-    })
-})
-
-
-describe('projectMatchAllFilters', (): void => {
-  it('should match if there are no filters', (): void => {
-    const filters = [] as const
-    const project = {seniority: 'UNKNOWN'} as const
-    // @ts-ignore We want to force the type to see what happens with an unknown value.
-    const result = projectMatchAllFilters(project, filters)
-    expect(result).to.be.true
-  })
-
-  it('should not match for juniors with for-experienced(2)', (): void => {
-    const filters = ['for-experienced(2)'] as const
-    const project = {seniority: 'JUNIOR'} as const
-    const result = projectMatchAllFilters(project, filters)
-    expect(result).to.be.false
-  })
-
-  it('should match intermediary with for-experienced(2)', (): void => {
-    const filters = ['for-experienced(2)'] as const
-    const project = {seniority: 'INTERMEDIARY'} as const
-    const result = projectMatchAllFilters(project, filters)
-    expect(result).to.be.true
-  })
-
-  it('should not match intermediary with for-experienced(6)', (): void => {
-    const filters = ['for-experienced(6)'] as const
-    const project = {seniority: 'INTERMEDIARY'} as const
-    const result = projectMatchAllFilters(project, filters)
-    expect(result).to.be.false
-  })
-
-  it('should match intermediary with for-experienced(6)', (): void => {
-    const filters = ['for-experienced(6)'] as const
-    const project = {seniority: 'SENIOR'} as const
-    const result = projectMatchAllFilters(project, filters)
-    expect(result).to.be.true
   })
 })
 
@@ -206,65 +123,6 @@ describe('keepMostRecentRevision', (): void => {
       {origin: {source: 'client'}, revision: 2},
       {origin: {source: 'server'}, revision: 2})
     expect(user.origin && user.origin.source).to.eq('client')
-  })
-})
-
-
-describe('Network email templates filters', (): void => {
-  it('should be defined in filterPredicatesMatch', (): void => {
-    let hasFilters = false
-    for (const {filters} of emailTemplates.network) {
-      if (filters) {
-        expect(filterPredicatesMatch).to.contain.all.keys(filters)
-        hasFilters = true
-      }
-    }
-    // If this is false, then this test is useless and can be removed.
-    expect(hasFilters).to.be.true
-  })
-
-  it('should use all the filters defined by filterPredicatesMatch', (): void => {
-    const usedFilters: {[filter: string]: true} = {}
-    for (const {filters} of emailTemplates.network) {
-      if (filters) {
-        for (const filter of filters) {
-          usedFilters[filter] = true
-        }
-      }
-    }
-    expect(usedFilters).to.contain.all.keys(filterPredicatesMatch)
-  })
-})
-
-
-describe('Network email templates personalizations', (): void => {
-  it('should be defined in personalizationsPredicates', (): void => {
-    let hasPersonalizations = false
-    for (const {personalizations} of emailTemplates.network) {
-      if (personalizations) {
-        for (const personalization of personalizations) {
-          if (personalization in Frustration) {
-            return
-          }
-          expect(personalizationsPredicates).to.contain.all.keys(personalization)
-          hasPersonalizations = true
-        }
-      }
-    }
-    // If this is false, then this test is useless and can be removed.
-    expect(hasPersonalizations).to.be.true
-  })
-
-  it('should use all the personalizations defined by personalizationsPredicates', (): void => {
-    const usedPersonalizations: {[personalization: string]: true} = {}
-    for (const {personalizations} of emailTemplates.network) {
-      if (personalizations) {
-        for (const personalization of personalizations) {
-          usedPersonalizations[personalization] = true
-        }
-      }
-    }
-    expect(usedPersonalizations).to.contain.all.keys(personalizationsPredicates)
   })
 })
 

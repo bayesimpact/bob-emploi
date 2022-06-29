@@ -1,24 +1,25 @@
 import EmailOutlineIcon from 'mdi-react/EmailOutlineIcon'
-import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useMemo, useState} from 'react'
 import {useDispatch, useSelector} from 'react-redux'
-import {ThunkAction} from 'redux-thunk'
+import type {ThunkAction} from 'redux-thunk'
 
 import useFastForward from 'hooks/fast_forward'
 import {aliUserDataPost} from 'store/api'
 import {validateEmail} from 'store/validations'
 
-import FieldSet from 'components/field_set'
+import FieldSet, {OneField} from 'components/field_set'
 import IconInput from 'components/icon_input'
 import LabeledToggle from 'components/labeled_toggle'
-import {Modal, ModalConfig, useModal} from 'components/modal'
+import type {ModalConfig} from 'components/modal'
+import {Modal, useModal} from 'components/modal'
 
 import 'styles/fonts/Fredoka/font.css'
 import 'styles/fonts/OpenSans/font.css'
 
 import Button from './button'
-import {DispatchActions, DisplayToasterMessageAction, MiniRootState, SaveAction,
-  makeUrlUser} from '../store'
+import type {DispatchActions, DisplayToasterMessageAction, MiniRootState,
+  SaveAction} from '../store'
+import {makeUrlUser} from '../store'
 
 const trimAndLowerCase = (email: string): string => email.trim().toLowerCase()
 
@@ -63,7 +64,7 @@ ThunkAction<Promise<void>, MiniRootState, unknown, SaveAction> =>
         dispatch(displayToasterMessage("Le bilan n'a pas pu être envoyé au conseiller"))
       }
     } catch (error) {
-      dispatch({...action, error, status: 'error'})
+      dispatch({...action, error: error as Error, status: 'error'})
       // TODO(pascal): Add server error message in here as well.
       dispatch(displayToasterMessage('Impossible de sauvegarder le bilan'))
     }
@@ -131,17 +132,17 @@ React.ReactElement => {
   useFastForward(advisorEmail && email ? dispatchEmail : fillForm)
   return <Modal title="Conserver mon bilan" onClose={onClose} isShown={isShown} {...modalProps}>
     <form style={modalContentStyle}>
-      <FieldSet
+      <OneField
         label="Je m'envoie un e-mail qui me permettra de retrouver
         ma progression là où j'en suis actuellement."
         isValid={validateEmail(email)} isValidated={isValidated}>
         <IconInput
-          type="email" placeholder="Mon adresse email"
+          type="email" placeholder="Mon adresse email" name="email"
           value={email} iconComponent={EmailOutlineIcon}
           applyFunc={trimAndLowerCase}
           iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
           onChange={setEmail} />
-      </FieldSet>
+      </OneField>
       <FieldSet
         isValid={!shouldSendToAdvisor || validateEmail(advisorEmail)}
         isValidated={isValidated && shouldSendToAdvisor}>
@@ -150,7 +151,7 @@ React.ReactElement => {
           label="J'envoie une copie à mon conseiller (optionnel)." />
         <IconInput
           type="email" placeholder="L'adresse email de mon conseiller" value={advisorEmail}
-          iconComponent={EmailOutlineIcon}
+          iconComponent={EmailOutlineIcon} name="coach-email" autoComplete="email"
           applyFunc={trimAndLowerCase}
           iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
           onChange={setAdvisorEmail} onFocus={forceSendToAdvisor} />
@@ -161,10 +162,6 @@ React.ReactElement => {
       </Button>
     </form>
   </Modal>
-}
-EmailModalBase.propTypes = {
-  isShown: PropTypes.bool,
-  onClose: PropTypes.func.isRequired,
 }
 const EmailModal = React.memo(EmailModalBase)
 
@@ -180,9 +177,6 @@ React.ReactElement => {
     <EmailModal isShown={isShown} onClose={closeModal} />
     <Button style={buttonStyle} {...props} onClick={showModal}>Sauvegarder</Button>
   </React.Fragment>
-}
-SaveButton.propTypes = {
-  style: PropTypes.object,
 }
 
 

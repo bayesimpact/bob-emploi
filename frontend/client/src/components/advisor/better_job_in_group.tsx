@@ -1,11 +1,11 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 import _keyBy from 'lodash/keyBy'
 import ChevronDownIcon from 'mdi-react/ChevronDownIcon'
-import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useMemo, useState} from 'react'
 import {useDispatch, useSelector} from 'react-redux'
 
-import {DispatchAllActions, RootState, getJobs} from 'store/actions'
+import type {DispatchAllActions, RootState} from 'store/actions'
+import {getJobs} from 'store/actions'
 import {genderizeJob, getJobSearchURL} from 'store/job'
 import isMobileVersion from 'store/mobile'
 
@@ -15,9 +15,9 @@ import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
 import PercentBar from 'components/percent_bar'
 import {RadiumExternalLink} from 'components/radium'
-import Picto from 'images/advices/picto-better-job-in-group.svg'
 
-import {CardProps, MethodSuggestionList} from './base'
+import type {CardProps} from './base'
+import {HandicapSuggestionWarning, MethodSuggestionList} from './base'
 
 
 interface WeightedJobProps {
@@ -98,17 +98,6 @@ const WeightedJobBase = (props: WeightedJobProps): React.ReactElement => {
     </span> : null}
   </RadiumExternalLink>
 }
-WeightedJobBase.propTypes = {
-  gender: PropTypes.string,
-  isBetterThanTarget: PropTypes.bool,
-  isTargetJob: PropTypes.bool,
-  job: PropTypes.object,
-  maxWeight: PropTypes.number.isRequired,
-  onClick: PropTypes.func.isRequired,
-  style: PropTypes.object,
-  t: PropTypes.func.isRequired,
-  weight: PropTypes.number,
-}
 const WeightedJob = React.memo(WeightedJobBase)
 
 
@@ -133,7 +122,7 @@ interface WeightedJobState {
 
 const BetterJobInGroup = (props: CardProps): React.ReactElement => {
   const dispatch = useDispatch<DispatchAllActions>()
-  const {handleExplore, profile: {gender}, project: {targetJob}, t} = props
+  const {handleExplore, profile: {gender, hasHandicap}, project: {targetJob}, t} = props
   const {codeOgr = '', jobGroup = {}} = targetJob || {}
   const {romeId} = jobGroup
   const jobGroupInfo = useSelector(({app}: RootState): bayes.bob.JobGroup|undefined =>
@@ -164,7 +153,7 @@ const BetterJobInGroup = (props: CardProps): React.ReactElement => {
   const showAllJobs = useCallback((): void => setAreAllJobsShown(true), [])
 
   const showMoreButton: ReactStylableElement|null = areAllJobsShown ? null : <button
-    key="show-more" style={showMoreButtonStyle} onClick={showAllJobs}>
+    key="show-more" style={showMoreButtonStyle} onClick={showAllJobs} type="button">
     <Trans parent="span" style={{fontSize: 13}} t={t}>
       Voir tous les métiers
     </Trans>
@@ -183,33 +172,24 @@ const BetterJobInGroup = (props: CardProps): React.ReactElement => {
   ) + '*'
   const footer = <DataSource style={{margin: 0}}>
     ROME <ExternalLink
-      href={`http://candidat.pole-emploi.fr/marche-du-travail/fichemetierrome?codeRome=${romeId}`}
+      href={`https://candidat.pole-emploi.fr/marche-du-travail/fichemetierrome?codeRome=${romeId}`}
       style={{color: colors.COOL_GREY}}>{romeId}</ExternalLink> / Pôle emploi
   </DataSource>
   const shownJobs = areAllJobsShown ? weightedJobs :
     weightedJobs.slice(0, (targetJobIndex + 1) || 10)
-  return <MethodSuggestionList title={title} subtitle={subtitle} footer={footer}>
-    {[...shownJobs.map(({job, weight}: WeightedJobState, index): ReactStylableElement|null =>
-      <WeightedJob
-        isTargetJob={index === targetJobIndex}
-        isBetterThanTarget={index < targetJobIndex} key={job.codeOgr}
-        onClick={handleExplore('job')}
-        {...{gender, job, maxWeight, t, weight}} />), showMoreButton]}
-  </MethodSuggestionList>
-}
-BetterJobInGroup.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-  profile: PropTypes.shape({
-    gender: PropTypes.string,
-  }).isRequired,
-  project: PropTypes.shape({
-    targetJob: PropTypes.shape({
-      name: PropTypes.string,
-    }),
-  }).isRequired,
-  t: PropTypes.func.isRequired,
+  return <React.Fragment>
+    <MethodSuggestionList title={title} subtitle={subtitle} footer={footer}>
+      {[...shownJobs.map(({job, weight}: WeightedJobState, index): ReactStylableElement|null =>
+        <WeightedJob
+          isTargetJob={index === targetJobIndex}
+          isBetterThanTarget={index < targetJobIndex} key={job.codeOgr}
+          onClick={handleExplore('job')}
+          {...{gender, job, maxWeight, t, weight}} />), showMoreButton]}
+    </MethodSuggestionList>
+    <HandicapSuggestionWarning hasHandicap={!!hasHandicap} />
+  </React.Fragment>
 }
 const ExpandedAdviceCardContent = React.memo(BetterJobInGroup)
 
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName: 'magnifyingGlass' as const}

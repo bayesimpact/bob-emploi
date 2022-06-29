@@ -18,7 +18,7 @@ import collections
 import math
 import sys
 import typing
-from typing import Any, Dict, Iterable, List
+from typing import Any, Iterable
 
 import tqdm
 
@@ -37,13 +37,13 @@ _TOTAL_RECORDS = 11170764
 
 
 class _CityData(typing.NamedTuple):
-    job_group_to_city_ids: Dict[str, Dict[str, int]]
-    offers_per_job_group: Dict[str, int]
-    city_info: Dict[str, Any]
+    job_group_to_city_ids: dict[str, dict[str, int]]
+    offers_per_job_group: dict[str, int]
+    city_info: dict[str, Any]
 
 
 def _add_population_data(
-        city_info: Dict[str, Dict[str, Any]], data_folder: str) -> None:
+        city_info: dict[str, dict[str, Any]], data_folder: str) -> None:
     french_city_stats = cleaned_data.french_city_stats(data_folder)
     for city_code in city_info:
         try:
@@ -61,10 +61,10 @@ def _list_hiring_cities(
     french_cities.loc[french_cities.current_city_id.isnull(), 'current_city_id'] = \
         french_cities[french_cities.current_city_id.isnull()].index
 
-    job_group_to_city_ids: Dict[str, Dict[str, int]] = \
+    job_group_to_city_ids: dict[str, dict[str, int]] = \
         collections.defaultdict(lambda: collections.defaultdict(int))
-    offers_per_job_group: Dict[str, int] = collections.defaultdict(int)
-    city_info: Dict[str, Any] = {}
+    offers_per_job_group: dict[str, int] = collections.defaultdict(int)
+    city_info: dict[str, Any] = {}
     bad_format_records = 0
 
     for offer in tqdm.tqdm(offers_rows, total=_TOTAL_RECORDS, file=sys.stdout):
@@ -122,7 +122,7 @@ def _list_hiring_cities(
 
 def extract_offers_per_cities(
         offers_file: str, colnames: str, min_creation_date: str, data_folder: str = 'data') \
-        -> List[Dict[str, Any]]:
+        -> list[dict[str, Any]]:
     """Extract the interesting cities in terms of number of offers for each job group.
 
     Args:
@@ -140,11 +140,11 @@ def extract_offers_per_cities(
     city_data = _list_hiring_cities(offers_rows, min_creation_date, data_folder)
 
     # Computing the threshold per job group.
-    job_group_threshold: Dict[str, float] = collections.defaultdict(float)
+    job_group_threshold: dict[str, float] = collections.defaultdict(float)
     for job_group, offers in city_data.offers_per_job_group.items():
         job_group_threshold[job_group] = math.pow(offers, 0.6) / 40
 
-    job_group_to_kept_cities: Dict[str, List[Dict[str, Any]]] = \
+    job_group_to_kept_cities: dict[str, list[dict[str, Any]]] = \
         collections.defaultdict(list)
     for job_group, city_ids in city_data.job_group_to_city_ids.items():
         kept_cities = []

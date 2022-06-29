@@ -1,3 +1,5 @@
+/* TODO(cyrille): Make this file sassier. */
+
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -15,32 +17,37 @@ h2+h3 {
 }
 
 input, select, textarea {
-  border: solid 1px #d9d9e0;  /* silver */
+  border: solid 1px $colors-SILVER;
 }
 
 div:focus, input:focus, select:focus, button:focus, a:focus, textarea:focus {
   outline: none;
 }
 
+.keyboard-focus button:focus, .keyboard-focus a:focus, .keyboard-focus select:focus,
+.keyboard-focus textarea:focus, .keyboard-focus input:focus {
+  outline: solid 2px;
+}
+
 input:hover, select:hover, textarea:hover {
-  border-color: #9596a0;  /* cool-grey */
+  border-color: $colors-COOL_GREY;
 }
 
 input:focus, select:focus, textarea:focus {
-  border-color: #1888ff;  /* colors.BOB_BLUE */
+  border-color: $colors-BOB_BLUE;
 }
 
 .no-hover input:hover, .no-hover select:hover, .no-hover textarea:hover,
 .no-focus input:focus, .no-focus select:focus, .no-focus textarea:focus {
-  border-color: #d9d9e0;  /* silver */
+  border-color: $colors-SILVER;
 }
 
 .marked-invalid input, .marked-invalid select {
-  border-color: #ff1f4e;  /* red-pink */
+  border-color: $colors-RED_PINK;
 }
 
 .marked-invalid .algolia-autocomplete input.aa-input {
-  border-color: #ff1f4e;  /* red-pink */
+  border-color: $colors-RED_PINK;
 }
 
 * {
@@ -54,38 +61,62 @@ input[type=number]::-webkit-outer-spin-button {
   margin: 0;
 }
 
+input {
+  letter-spacing: inherit;
+  word-spacing: inherit;
+}
+
 button {
   background: none;
   border: none;
   color: inherit;
   cursor: pointer;
   font: inherit;
+  letter-spacing: inherit;
+  margin: 0;
   padding: 0;
   text-align: left;
+  word-spacing: inherit;
 }
 
 button.login.google-login {
-  background: #dc4e41;
+  background: $colors-BRAND_GOOGLE;
   padding: 7px 18px 7px 10px;
+
+  &:focus-visible {
+    box-shadow: 0px 0px 0px 2px #fff, 0px 0px 0px 5px $colors-BRAND_GOOGLE;
+  }
 }
 
 button.facebook-login {
-  background: #3b5998;
+  background: $colors-BRAND_FACEBOOK;
+
+  &:focus-visible {
+    box-shadow: 0px 0px 0px 2px #fff, 0px 0px 0px 5px $colors-BRAND_FACEBOOK;
+  }
 }
 
 button.pe-connect-login {
-  background: #1b2e57;
+  background: $colors-BRAND_POLE_EMPLOI;
+
+  &:focus-visible {
+    box-shadow: 0px 0px 0px 2px #fff, 0px 0px 0px 5px $colors-BRAND_POLE_EMPLOI;
+  }
 }
 
 button.linkedin-login {
-  background: #0077b5;
+  background: $colors-BRAND_LINKED_IN;
+
+  &:focus-visible {
+    box-shadow: 0px 0px 0px 2px #fff, 0px 0px 0px 5px $colors-BRAND_LINKED_IN;
+  }
 }
 
 button.login:hover {
   box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.25);
 }
 
-button.login:focus, button.login:disabled {
+button.login:disabled {
   opacity: .7;
 }
 
@@ -124,7 +155,7 @@ button.login .fa {
     visibility: hidden;
     min-width: 120px;
     background-color: #fff;
-    color: #21293d;
+    color: $colors-DARK;
     text-align: center;
     padding: 5px 0;
     border-radius: 6px;
@@ -170,7 +201,7 @@ button.login .fa {
     top: 100%;
     left: 50%;
     background-color: #fff;
-    box-shadow: 0 1 20px 0 rgba(0, 0, 0, 0.4);
+    box-shadow: 0 1px 20px 0 rgba(0, 0, 0, 0.4);
     transform: translate(-6.07px, -6.07px) rotate(45deg);
     width: 10px;
     height: 10px;
@@ -212,17 +243,17 @@ button.login .fa {
 
 /* Placeholder color COOL_GREY */
 ::-webkit-input-placeholder { /* Chrome/Opera/Safari */
-  color: #9596a0 !important;
+  color: $colors-COOL_GREY !important;
 }
 ::-moz-placeholder { /* Firefox 19+ */
-  color: #9596a0 !important;
+  color: $colors-COOL_GREY !important;
   opacity: 1;
 }
 :-ms-input-placeholder { /* IE 10+ */
-  color: #9596a0 !important;
+  color: $colors-COOL_GREY !important;
 }
 :-moz-placeholder { /* Firefox 18- */
-  color: #9596a0 !important;
+  color: $colors-COOL_GREY !important;
 }
 
 .no-scrollbars::-webkit-scrollbar {
@@ -232,6 +263,7 @@ button.login .fa {
 .no-scrollbars {
   overflow: -moz-scrollbars-none;
   -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* React Select adjustments.
@@ -244,25 +276,25 @@ button.login .fa {
   height: 39px !important;
 }
 .Select-control {
-  border-color: #d9d9e0; /* colors.SILVER */
+  border-color: $colors-SILVER;
   transition: all 450ms cubic-bezier(0.18, 0.71, 0.4, 0.82) 0ms;
 }
 .Select:not(.is-open) > .Select-control:hover {
-  border-color: #9596a0 !important;
+  border-color: $colors-COOL_GREY !important;
   box-shadow: initial;
 }
 .Select.is-focused:not(.is-open) > .Select-control {
-  border-color: #1888ff !important; /* colors.BOB_BLUE */
+  border-color: $colors-BOB_BLUE !important;
   box-shadow: initial;
 }
 .marked-invalid .Select:not(.is-open) > .Select-control {
-  border-color: #ff1f4e !important; /* colors.RED_PINK */
+  border-color: $colors-RED_PINK !important;
 }
 .Select.has-value.Select--single > .Select-control .Select-value .Select-value-label, .Select.has-value.is-pseudo-focused.Select--single > .Select-control .Select-value .Select-value-label {
-  color: #383f52 !important; /* colors.CHARCOAL_GREY */
+  color: $colors-CHARCOAL_GREY !important;
 }
 .Select-placeholder {
-  color: #9596a0 !important; /* colors.COOL_GREY */
+  color: $colors-COOL_GREY !important;
 }
 .Select-placeholder, .Select--single > .Select-control .Select-value, .Select-input {
   padding: 7px 1px 1px 15px !important;

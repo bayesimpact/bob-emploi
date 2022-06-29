@@ -1,0 +1,36 @@
+@font-face {
+    font-family: 'Poppins';
+    font-style: normal;
+    font-weight: 400;
+    src: url(Poppins-Regular.eot);
+    src: local('Poppins Regular'), local('Poppins-Regular'),
+    url(Poppins-Regular.eot?#iefix) format('embedded-opentype'),
+    url(Poppins-Regular.woff2) format('woff2'),
+    url(Poppins-Regular.woff) format('woff'),
+    url(Poppins-Regular.ttf) format('truetype'),
+    url(Poppins-Regular.svg#Poppins-Regular) format('svg');
+}
+@font-face {
+    font-family: 'Poppins';
+    font-style: normal;
+    font-weight: 500;
+    src: url(Poppins-500.eot);
+    src: local('Poppins 500'), local('Poppins-500'),
+    url(Poppins-500.eot?#iefix) format('embedded-opentype'),
+    url(Poppins-500.woff2) format('woff2'),
+    url(Poppins-500.woff) format('woff'),
+    url(Poppins-500.ttf) format('truetype'),
+    url(Poppins-500.svg#Poppins) format('svg');
+}
+@font-face {
+    font-family: 'Poppins';
+    font-style: normal;
+    font-weight: bold;
+    src: url(Poppins-Bold.eot);
+    src: local('Poppins Bold'), local('Poppins-Bold'),
+    url(Poppins-Bold.eot?#iefix) format('embedded-opentype'),
+    url(Poppins-Bold.woff2) format('woff2'),
+    url(Poppins-Bold.woff) format('woff'),
+    url(Poppins-Bold.ttf) format('truetype'),
+    url(Poppins-Bold.svg#Poppins-Bold) format('svg');
+}

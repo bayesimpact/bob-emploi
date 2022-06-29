@@ -28,7 +28,6 @@ Then we got two approaches:
 """
 
 import typing
-from typing import List
 
 import numpy as np
 import pandas as pd
@@ -46,7 +45,7 @@ class _RecoCDF(typing.NamedTuple):
     salary_decrease: str
 
 
-def compute_recommendation_cdf(table_offers: pd.DataFrame) -> List[_RecoCDF]:
+def compute_recommendation_cdf(table_offers: pd.DataFrame) -> list[_RecoCDF]:
     """Approach 1: compute the salary recommendation based on the CDF, it was designed to be
     called in a groupby.
 
@@ -77,10 +76,10 @@ def compute_recommendation_cdf(table_offers: pd.DataFrame) -> List[_RecoCDF]:
     reco_as_namedtuple = top1reco.loc[top1reco.shift(1) != top1reco].reset_index().apply(
         _RecoCDF._make, axis=1)
 
-    return typing.cast(List[_RecoCDF], reco_as_namedtuple.tolist())
+    return typing.cast(list[_RecoCDF], reco_as_namedtuple.tolist())
 
 
-def compute_recommendation_score(table_offers: pd.DataFrame) -> List[_RecoScore]:
+def compute_recommendation_score(table_offers: pd.DataFrame) -> list[_RecoScore]:
     """Approach 2: compute the salary recommendation based on the score sqrt(delta(O))/delta(S),
      it was designed to be called in a groupby.
 
@@ -104,7 +103,7 @@ def compute_recommendation_score(table_offers: pd.DataFrame) -> List[_RecoScore]
     reco_as_namedtuple = cumul_offers[['annual_minimum_salary', 'gained_offers']].apply(
         _RecoScore._make, axis=1)
 
-    return typing.cast(List[_RecoScore], reco_as_namedtuple.tolist())
+    return typing.cast(list[_RecoScore], reco_as_namedtuple.tolist())
 
 
 def _compute_job_offers_salary(table_offers: pd.DataFrame) -> pd.Series:

@@ -14,14 +14,6 @@
       "Name": "bob-monitoring",
       "ScheduleExpression": "rate(24 hours)",
       "State": "ENABLED"
-    },
-    {
-      "Arn": "arn:aws:events:us-east-1:951168128976:rule/count-users",
-      "Description": "Count users by county and SOC unit group and populate the user_count table in mongo",
-      "EventBusName": "default",
-      "Name": "count-users",
-      "ScheduleExpression": "rate(30 days)",
-      "State": "ENABLED"
     }
   ]
 }

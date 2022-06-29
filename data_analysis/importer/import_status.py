@@ -24,13 +24,12 @@ import os
 import re
 import subprocess
 import typing
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Optional, Set
 
 import pymongo
 import sentry_sdk
 from sentry_sdk.integrations import logging as sentry_logging
 import termcolor
-import typing_extensions
 
 from bob_emploi.data_analysis.importer import deployments
 # Importers should be accessed from the get_importers function, not from importers.
@@ -56,7 +55,7 @@ class _CollectionsDiff(typing.NamedTuple):
 
 _MAINTENANCE_COLLECTIONS = {'meta', 'system.indexes', 'objectlabs-system'}
 
-_ImportersType = Dict[str, importers.Importer]
+_ImportersType = dict[str, importers.Importer]
 
 
 def get_importers(deployment: str = _DEFAULT_DEPLOYMENT) -> _ImportersType:
@@ -103,7 +102,7 @@ def compute_collections_diff(
     )
 
 
-def get_meta_info(db_client: pymongo.database.Database) -> Dict[str, Dict[str, Any]]:
+def get_meta_info(db_client: pymongo.database.Database) -> dict[str, dict[str, Any]]:
     """Get meta information for a specific collection."""
 
     meta_collection = db_client.meta.find()
@@ -119,8 +118,7 @@ def _bold(value: Any) -> str:
 
 
 def print_single_importer(
-        importer: importers.Importer, collection_name: str,
-        mongo_url: str, extra_args: List[str]) -> None:
+        importer: importers.Importer, collection_name: str, extra_args: list[str]) -> None:
     """Show detailed information for a single importer."""
 
     if not importer.is_imported:
@@ -138,9 +136,9 @@ def print_single_importer(
     args['mongo_collection'] = collection_name
     command = ' \\\n    '.join(
         [
-            f'docker-compose run --rm -e MONGO_URL={mongo_url} data-analysis-prepare',
+            'docker-compose run --rm -e MONGO_URL="<your mongo URL>" data-analysis-prepare',
             f'python bob_emploi/data_analysis/importer/{importer.script}.py',
-        ] + [f'--{key} "{value}"' for key, value in args.items()] + extra_args
+        ] + [f'--{key} "{value}"' for key, value in args.items() if value] + extra_args
     ) + '\n'
 
     logging.info(
@@ -152,10 +150,10 @@ def _get_importer_targets(importer: importers.Importer) -> Set[str]:
     if not importer.args:
         return set()
 
-    return {target for target in importer.args.values() if target.startswith('data/')}
+    return {target for target in importer.args.values() if target and target.startswith('data/')}
 
 
-def _show_command(cmd: List[str]) -> str:
+def _show_command(cmd: list[str]) -> str:
     res = ''
     row = ''
     for arg in cmd:
@@ -209,16 +207,18 @@ def _revert_collection(collection_name: str, database: pymongo.database.Database
 
 
 def _run_importer(
-        importer: importers.Importer, collection_name: str, extra_args: List[str]) -> None:
+        importer: importers.Importer, collection_name: str, extra_args: list[str]) -> None:
 
     args = collections.OrderedDict(importer.args or {})
     args['mongo_collection'] = collection_name
+    if importer.run_every:
+        args['run_every'] = importer.run_every
 
     logging.info('Running importer…')
     try:
         subprocess.run(
             ['python', os.path.join(os.path.dirname(__file__), f'{importer.script}.py')] +
-            [arg for key, value in args.items() for arg in (f'--{key}', value)] +
+            [arg for key, value in args.items() if value for arg in (f'--{key}', value)] +
             extra_args, stderr=subprocess.PIPE, check=True)
     except subprocess.CalledProcessError as err:
         logging.error(
@@ -235,7 +235,7 @@ def _warn_unknown_collection(collection_name: str, all_importers: _ImportersType
 
 
 def _print_report(
-        db_client: pymongo.database.Database, extra_args: List[str],
+        db_client: pymongo.database.Database, extra_args: list[str],
         all_importers: _ImportersType) -> None:
     diff = compute_collections_diff(all_importers, db_client)
 
@@ -250,7 +250,7 @@ def _print_report(
             termcolor.colored(str(diff.collection_missing), 'red'))
         for missing_collection in diff.collection_missing:
             importer = all_importers[missing_collection]
-            print_single_importer(importer, missing_collection, _MONGO_URL, extra_args)
+            print_single_importer(importer, missing_collection, extra_args)
 
     n_importers_missing = len(diff.importer_missing)
     logging.info(
@@ -286,37 +286,36 @@ def _print_report(
     logging.info('Please remember to import the other deployments if needed.')
 
 
-class _Registerable(typing_extensions.Protocol):
+class _Registerable(typing.Protocol):
     def register(self) -> None:
         """Register this element."""
 
         ...
 
 
-def main(string_args: Optional[List[str]] = None) -> None:
+def main(string_args: Optional[list[str]] = None) -> None:
     """Print a report on which collections have been imported."""
-
-    if not _MONGO_URL:
-        logging.info('Database is missing')
-        return
 
     all_deployments = set(deployments.list_all_deployments())
 
     deployment_parser = argparse.ArgumentParser(
         add_help=False,
-        description='Specify for which deployment you want to import')
-    deployment_parser.add_argument(
+        description='Specify for which deployment you want to import',
+        exit_on_error=False)
+    plugin_action = deployment_parser.add_argument(
         '--plugin', help='[DEPRECATED] Use --deployment or BOB_DEPLOYMENT env var.', nargs='?')
     deployment_parser.add_argument(
         '--deployment', help='Name of the deployment you want to import to.',
         default=_DEFAULT_DEPLOYMENT, choices=all_deployments)
     deployment_args, main_args = deployment_parser.parse_known_args(string_args)
     if deployment_args.plugin:
-        raise SystemExit(2, '--plugin is deprecated, use --deployment or BOB_DEPLOYMENT env var.')
+        raise argparse.ArgumentError(
+            plugin_action, '--plugin is deprecated, use --deployment or BOB_DEPLOYMENT env var.')
     all_importers = get_importers(deployment_args.deployment)
 
     parser = argparse.ArgumentParser(
-        description='Print a report on which collections have been imported')
+        description='Print a report on which collections have been imported',
+        exit_on_error=False)
     # Unused, but needed for help.
     parser.add_argument(
         '--deployment', help='Name of the deployment you want to import to.',
@@ -338,14 +337,14 @@ def main(string_args: Optional[List[str]] = None) -> None:
         '--make_data', action='store_true', help='Run the make rule to retrieve the needed data.')
     args, unknown_args = parser.parse_known_args(main_args)
     if unknown_args and not args.run:
-        raise SystemExit(2, f'Unknown args: {unknown_args}')
+        raise argparse.ArgumentError(None, f'Unknown args: {unknown_args}')
 
-    db_client = pymongo.MongoClient(_MONGO_URL).get_database()
+    db_client = pymongo.MongoClient(_MONGO_URL).get_database() if _MONGO_URL else None
 
     if args.collection_name:
         try:
             print_single_importer(
-                all_importers[args.collection_name], args.collection_name, _MONGO_URL, unknown_args)
+                all_importers[args.collection_name], args.collection_name, unknown_args)
         except KeyError:
             _warn_unknown_collection(args.collection_name, all_importers)
         return
@@ -353,19 +352,27 @@ def main(string_args: Optional[List[str]] = None) -> None:
     for collection_name in (args.run or []):
         try:
             importer = all_importers[collection_name]
-            print_single_importer(importer, collection_name, _MONGO_URL, unknown_args)
+            print_single_importer(importer, collection_name, unknown_args)
             if not args.make_data or _make_data_targets(importer):
                 _run_importer(importer, collection_name, unknown_args)
         except KeyError:
             _warn_unknown_collection(collection_name, all_importers)
 
     for collection_name in (args.revert or []):
+        if not db_client:
+            logging.info('Database is missing')
+            return
+
         if collection_name in all_importers:
             _revert_collection(collection_name, db_client)
         else:
             _warn_unknown_collection(collection_name, all_importers)
 
     if not args.revert and not args.run:
+        if not db_client:
+            logging.info('Database is missing')
+            return
+
         _print_report(db_client, unknown_args, all_importers)
 
 
@@ -374,7 +381,8 @@ if __name__ == '__main__':
     if _SENTRY_DSN:
         # Setup logging basic's config first so that we also get basic logging to STDERR.
         # TODO(sil): Add info on which release version we are on.
-        sentry_sdk.init(
+        # TODO(pascal): Fix when https://github.com/getsentry/sentry-python/issues/1081 is solved.
+        sentry_sdk.init(  # pylint: disable=abstract-class-instantiated
             dsn=_SENTRY_DSN,
             integrations=[
                 sentry_logging.LoggingIntegration(level=logging.INFO, event_level=logging.WARNING)]

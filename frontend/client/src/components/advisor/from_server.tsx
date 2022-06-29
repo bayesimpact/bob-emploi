@@ -1,8 +1,7 @@
 import React from 'react'
 
-import Picto from 'images/advices/picto-specific-to-job.svg'
-
-import {CardProps, StaticAdviceCardContent} from './base'
+import type {CardProps} from './base'
+import {StaticAdviceCardContent} from './base'
 
 
 const AdviceFromServer = ({advice}: CardProps): React.ReactElement =>
@@ -10,4 +9,4 @@ const AdviceFromServer = ({advice}: CardProps): React.ReactElement =>
 const ExpandedAdviceCardContent = React.memo(AdviceFromServer)
 
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName: 'gear' as const}

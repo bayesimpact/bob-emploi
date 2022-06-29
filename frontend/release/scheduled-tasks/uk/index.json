@@ -1,3 +1,12 @@
 {
-  "Rules": []
+  "Rules": [
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/blast-mail-jobflix",
+      "Description": "Send requests to get users for evaluation interviews",
+      "EventBusName": "default",
+      "Name": "blast-dwp-interview-requests",
+      "ScheduleExpression": "cron(0 10 ? * TUE *)",
+      "State": "ENABLED"
+    }
+  ]
 }

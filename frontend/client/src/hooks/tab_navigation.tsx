@@ -2,11 +2,18 @@ import React, {useContext, useEffect, useState} from 'react'
 
 const commonTabUsers = new Set(['input', 'select', 'textarea'])
 
-const isTabNavigationUsed =
-  (): boolean => new Set(document.documentElement.classList).has('keyboard-focus')
+const isTabNavigationUsed = (): boolean|undefined => {
+  const documentClasses = new Set(document.documentElement.classList)
+  if (documentClasses.has('keyboard-focus')) {
+    return true
+  }
+  if (documentClasses.has('mouse-focus')) {
+    return false
+  }
+  return undefined
+}
 
-const TabNavigationContext = React.createContext(
-  new Set(document.documentElement.classList).has('keyboard-focus'))
+const TabNavigationContext = React.createContext(isTabNavigationUsed())
 
 interface ProviderProps {
   children: React.ReactNode
@@ -14,7 +21,7 @@ interface ProviderProps {
 
 const TabNavigationProvider = (props: ProviderProps): React.ReactElement => {
   const {children} = props
-  const [hasUsedTab, setHasUsedTab] = useState<boolean>(isTabNavigationUsed)
+  const [hasUsedTab, setHasUsedTab] = useState<boolean|undefined>(isTabNavigationUsed)
   useEffect((): (() => void) => {
     function onKeyboardFocus(e: KeyboardEvent): void {
       if (e.keyCode !== 9 || commonTabUsers.has((e.target as HTMLElement).nodeName.toLowerCase())) {
@@ -26,6 +33,7 @@ const TabNavigationProvider = (props: ProviderProps): React.ReactElement => {
       document.removeEventListener('keydown', onKeyboardFocus, false)
     }
 
+    setHasUsedTab(hadUsedTab => hadUsedTab || false)
     document.documentElement.classList.add('mouse-focus')
     document.addEventListener('keydown', onKeyboardFocus, false)
 
@@ -41,8 +49,12 @@ const TabNavigationProvider = (props: ProviderProps): React.ReactElement => {
 }
 
 // Hook to check if the user has used tab navigation.
-export function useIsTabNavigationUsed(): boolean {
-  return useContext(TabNavigationContext)
+export function useIsTabNavigationUsed(defaultIfNoProvider = false): boolean {
+  const contextValue = useContext(TabNavigationContext)
+  if (contextValue === undefined) {
+    return defaultIfNoProvider
+  }
+  return contextValue
 }
 
 export default React.memo(TabNavigationProvider)

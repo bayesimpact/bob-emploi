@@ -4,7 +4,7 @@ import datetime
 import unittest
 from unittest import mock
 
-from bob_emploi.common.python import now
+from bob_emploi.common.python.test import nowmock
 from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
@@ -134,7 +134,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         events = self.json_from_response(response)
         self.assertEqual({}, events)
 
-    @mock.patch(now.__name__ + '.get')
+    @nowmock.patch()
     def test_with_events(self, mock_now: mock.MagicMock) -> None:
         """Basic test with alpha user and constant events."""
 
@@ -167,7 +167,7 @@ class EndpointTestCase(base_test.ServerTestCase):
             ],
             [e.get('title') for e in events.get('events', [])])
 
-    @mock.patch(now.__name__ + '.get')
+    @nowmock.patch()
     def test_with_old_events(self, mock_now: mock.MagicMock) -> None:
         """Basic test with alpha user and constant events, some being in the past."""
 
@@ -197,7 +197,7 @@ class EndpointTestCase(base_test.ServerTestCase):
             ['Le Salon du Travail et de la Mobilité Professionnelle'],
             [e.get('title') for e in events.get('events', [])])
 
-    @mock.patch(now.__name__ + '.get')
+    @nowmock.patch()
     def test_compute_endpoint(self, mock_now: mock.MagicMock) -> None:
         """Use the compute (POST) endpoint that does not require authentication."""
 

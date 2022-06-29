@@ -1,21 +1,29 @@
-import React from 'react'
-import {hot} from 'react-hot-loader/root'
+import React, {Suspense, useState} from 'react'
 
 import 'normalize.css'
 import 'styles/App.css'
 
+import {init as i18nInit} from 'store/i18n'
 import isMobileVersion from 'store/mobile'
 
 import Button, {BUTTON_TYPE_STYLES} from 'components/button'
 import {colorToHSL} from 'components/colors'
 import {FixedButtonNavigation} from 'components/navigation'
+import CityInput from 'components/city_input'
+import DepartementInput from 'components/departement_input'
+
+import type {ConfigColor} from 'config'
+
+i18nInit()
 
 type ButtonType = keyof typeof BUTTON_TYPE_STYLES
 const buttonTypes = Object.keys(BUTTON_TYPE_STYLES) as readonly ButtonType[]
 
+type ColorName = keyof typeof colorsMap
+
 const colorSquaredStyles = Object.fromEntries(Object.entries(colorsMap).map(
-  ([name, color]) => [name, {
-    backgroundColor: color,
+  ([name, color]): [ColorName, React.CSSProperties] => [name as ColorName, {
+    backgroundColor: color as ConfigColor,
     borderRadius: 3,
     display: 'inline-block',
     height: 20,
@@ -23,9 +31,8 @@ const colorSquaredStyles = Object.fromEntries(Object.entries(colorsMap).map(
   }]))
 
 const colorHSL = Object.fromEntries(Object.entries(colorsMap).map(
-  ([name, color]) => [name, colorToHSL(color)]))
+  ([name, color]) => [name as ColorName, colorToHSL(color as ConfigColor)]))
 
-type ColorName = keyof typeof colorsMap
 const sortByHSL = (colors: readonly ColorName[]): readonly ColorName[] => {
   const sortedColors = [...colors]
   sortedColors.sort((nameA: ColorName, nameB: ColorName): number => {
@@ -67,8 +74,21 @@ const mobileLikeStyle: React.CSSProperties = {
 }
 
 const App = (): React.ReactElement => {
-  return <React.Fragment>
+  const [departement, setDepartement] = useState<bayes.bob.FrenchCity|undefined>()
+  const [city, setCity] = useState<bayes.bob.FrenchCity|undefined>()
+  return <Suspense fallback={<div />}>
     <h1>{config.productName} Design System</h1>
+    <section>
+      <h2>Inputs</h2>
+      <label htmlFor="dep-input">Département:</label>
+      <DepartementInput
+        onChange={setDepartement} value={departement} placeholder="Enter a département"
+        id="dep-input" />
+      <label htmlFor="city-input">City:</label>
+      <CityInput
+        onChange={setCity} value={city} placeholder="Enter a city"
+        id="city-input" />
+    </section>
     <section>
       <h2>Buttons</h2>
       <table>
@@ -105,7 +125,7 @@ const App = (): React.ReactElement => {
         </tbody>
       </table>
     </section>
-  </React.Fragment>
+  </Suspense>
 }
 
-export default hot(React.memo(App))
+export default React.memo(App)

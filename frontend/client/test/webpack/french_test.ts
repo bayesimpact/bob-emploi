@@ -9,6 +9,7 @@ import {Month} from 'api/job'
 
 
 i18n.init({
+  compatibilityJSON: 'v3',
   keySeparator: false,
   lng: 'fr',
   nsSeparator: false,

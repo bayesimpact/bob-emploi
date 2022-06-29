@@ -10,23 +10,22 @@ This module make the assumptions that old emails have less chance to be updated
 import argparse
 import datetime
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from google.protobuf import json_format
 import requests
 
 from bob_emploi.common.python import now
+from bob_emploi.common.python import proto as common_proto
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.asynchronous import report
 from bob_emploi.frontend.server.mail import mail_blast
 from bob_emploi.frontend.server.mail import mail_send
-from bob_emploi.frontend.api import user_pb2
-
-_, _DB, _ = mongo.get_connections_from_env()
+from bob_emploi.frontend.api import email_pb2
 
 
-def _find_message(email_sent: user_pb2.EmailSent) -> Optional[Dict[str, Any]]:
+def _find_message(email_sent: email_pb2.EmailSent) -> Optional[dict[str, Any]]:
     if email_sent.mailjet_message_id:
         try:
             return mail_send.get_message(email_sent.mailjet_message_id)
@@ -39,14 +38,14 @@ def _find_message(email_sent: user_pb2.EmailSent) -> Optional[Dict[str, Any]]:
 
 
 def _update_email_sent_status(
-        email_sent_dict: Dict[str, Any], yesterday: str,
-        campaign_ids: Optional[List[str]] = None) -> Dict[str, Any]:
-    email_sent = proto.create_from_mongo(email_sent_dict, user_pb2.EmailSent)
+        email_sent_dict: dict[str, Any], yesterday: str,
+        campaign_ids: Optional[list[str]] = None) -> dict[str, Any]:
+    email_sent = proto.create_from_mongo(email_sent_dict, email_pb2.EmailSent)
     if campaign_ids and email_sent.campaign_id not in campaign_ids:
         # Email is not from a campaign we wish to update, skipping.
         return email_sent_dict
 
-    if email_sent.status != user_pb2.EMAIL_SENT_UNKNOWN and email_sent.last_status_checked_at:
+    if email_sent.status != email_pb2.EMAIL_SENT_UNKNOWN and email_sent.last_status_checked_at:
         sent_at = email_sent.sent_at.ToJsonString()
         if sent_at < yesterday:
             last_status_checked_at = email_sent.last_status_checked_at.ToJsonString()
@@ -58,19 +57,18 @@ def _update_email_sent_status(
         email_sent.mailjet_message_id = message.get('ID', email_sent.mailjet_message_id)
         status = message.get('Status')
         if status:
-            email_sent.status = user_pb2.EmailSentStatus.Value(f'EMAIL_SENT_{status.upper()}')
+            email_sent.status = email_pb2.EmailSentStatus.Value(f'EMAIL_SENT_{status.upper()}')
         else:
             logging.warning('No status for message "%s"', email_sent.mailjet_message_id)
     else:
         logging.warning('Could not find a message in MailJet.')
 
-    email_sent.last_status_checked_at.FromDatetime(now.get())
-    email_sent.last_status_checked_at.nanos = 0
+    common_proto.set_date_now(email_sent.last_status_checked_at)
     email_sent.last_status_checked_after_days = (now.get() - email_sent.sent_at.ToDatetime()).days
     return json_format.MessageToDict(email_sent)
 
 
-def main(string_args: Optional[List[str]] = None) -> None:
+def main(string_args: Optional[list[str]] = None) -> None:
     """Check the status of sent emails on MailJet and update our Database.
     """
 
@@ -128,7 +126,8 @@ def main(string_args: Optional[List[str]] = None) -> None:
         ],
     }
 
-    mongo_collection = _DB.get_collection(args.mongo_collection)
+    user_db = mongo.get_connections_from_env().user_db
+    mongo_collection = user_db.get_collection(args.mongo_collection)
     selected_users = mongo_collection.find(mongo_filter, {'emailsSent': 1})
     treated_users = 0
     # TODO(cyrille): Make sure errors are logged to sentry.

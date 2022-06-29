@@ -2,7 +2,7 @@
 
 import logging
 import os
-from typing import Dict, Iterator, Optional
+from typing import Iterator, Optional
 
 import emploi_store
 
@@ -18,7 +18,7 @@ def get_lbb_companies(
         project: project_pb2.Project,
         distance_km: float = 10,
         contract: Optional[str] = None,
-) -> Iterator[Dict[str, str]]:
+) -> Iterator[dict[str, str]]:
     """Retrieve a list of companies from LaBonneBoite API."""
 
     if not _EMPLOI_STORE_DEV_CLIENT_ID or not _EMPLOI_STORE_DEV_SECRET:
@@ -42,7 +42,7 @@ def get_lbb_companies(
         return
 
 
-def to_proto(company_json: Dict[str, str]) -> company_pb2.Company:
+def to_proto(company_json: dict[str, str]) -> company_pb2.Company:
     """Convert a JSON company fetched from LBB to our proto."""
 
     return company_pb2.Company(

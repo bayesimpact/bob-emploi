@@ -1,7 +1,7 @@
 """Modules to ensure privacy in the Bob app."""
 
 import typing
-from typing import Any, Dict, Iterator, Optional, Set, Tuple
+from typing import Any, Iterator, Optional, Set, Tuple
 
 from google.protobuf import descriptor
 from google.protobuf import message
@@ -120,7 +120,7 @@ def get_redacted_copy(
 
 
 def user_to_use_case(
-        user: Dict[str, Any], pool_name: str, index_in_pool: int) \
+        user: dict[str, Any], pool_name: str, index_in_pool: int) \
         -> Optional[use_case_pb2.UseCase]:
     """Extracts a use case from a real user."""
 

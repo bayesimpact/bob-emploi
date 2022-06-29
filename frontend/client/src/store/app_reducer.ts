@@ -1,17 +1,14 @@
 import Storage from 'local-storage-fallback'
 import _keyBy from 'lodash/keyBy'
-import {Action} from 'redux'
+import type {Action} from 'redux'
 
-import {AllActions, AsyncAction} from './actions'
+import type {AllActions, AsyncAction} from './actions'
+import {initialUtm} from './utm'
 
 // Name of the cookie to accept cookies.
 const ACCEPT_COOKIES_COOKIE_NAME = 'accept-cookies'
 // Name of the cookie to store the auth token.
 const AUTH_TOKEN_COOKIE_NAME = 'authToken'
-// Name of the local storage key to store the UTM initial information.
-const UTM_LOCAL_STORAGE_NAME = 'utm'
-// Name of the local storage key to store the initial information on unregistered features.
-const FEATURES_LOCAL_STORAGE_NAME = 'features'
 
 
 function dropKey<K extends string, M>(data: M, key: K): Omit<M, K> {
@@ -19,9 +16,11 @@ function dropKey<K extends string, M>(data: M, key: K): Omit<M, K> {
   return remaining
 }
 
+type StorageType = typeof Storage | typeof window.sessionStorage
 
-function getJsonFromStorage<T>(storageKey: string): T|null {
-  const storedJson = Storage.getItem(storageKey)
+
+function getJsonFromStorage<T>(storageKey: string, storage: StorageType = Storage): T|null {
+  const storedJson = storage.getItem(storageKey)
   if (!storedJson) {
     return null
   }
@@ -29,16 +28,9 @@ function getJsonFromStorage<T>(storageKey: string): T|null {
 }
 
 
-export function setJsonToStorage(storageKey: string, value: unknown): void {
-  Storage.setItem(storageKey, JSON.stringify(value))
-}
-
-
-function setOnceJsonToStorage(storageKey: string, value: unknown): void {
-  if (Storage.getItem(storageKey)) {
-    return
-  }
-  setJsonToStorage(storageKey, value)
+export function setJsonToStorage(
+  storageKey: string, value: unknown, storage: StorageType = Storage): void {
+  storage.setItem(storageKey, JSON.stringify(value))
 }
 
 
@@ -52,8 +44,7 @@ function isTimestampInCookieBeforeNow(cookieName: string): boolean {
 
 
 const {quickDiagnostic: omittedQuickDiagnostic,
-  ...initialFeatures}: InitialFeatures =
-  getJsonFromStorage<InitialFeatures>(FEATURES_LOCAL_STORAGE_NAME) || {}
+  ...initialFeatures}: InitialFeatures = {}
 
 export const appInitialData: AppState = {
   // Cache for advice data. It is organized as a map of maps: the first key
@@ -63,8 +54,11 @@ export const appInitialData: AppState = {
   adviceTips: {},
   // Cache of job application modes.
   applicationModes: {},
+  // Whether we want to ask for Ads cookie usage.
+  areAdsCookieUsageRequested: false,
   // Authentication token.
-  authToken: Storage.getItem(AUTH_TOKEN_COOKIE_NAME) || undefined,
+  authToken: Storage.getItem(AUTH_TOKEN_COOKIE_NAME) ||
+    window.sessionStorage.getItem(AUTH_TOKEN_COOKIE_NAME) || undefined,
   // Default props to use when creating a new project.
   defaultProjectProps: {},
   // Whether the app loading time has already been measured.
@@ -75,8 +69,7 @@ export const appInitialData: AppState = {
   hasTokenExpired: false,
   // TODO(cyrille): Set as null if empty.
   initialFeatures,
-  initialUtm: getJsonFromStorage(UTM_LOCAL_STORAGE_NAME) || undefined,
-  isMobileVersion: false,
+  initialUtm,
   // Cache for full jobGroupInfos.
   jobGroupInfos: {},
   // Cache of job requirements.
@@ -157,6 +150,7 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
       }
     case 'REMOVE_AUTH_DATA':
       Storage.removeItem(AUTH_TOKEN_COOKIE_NAME)
+      window.sessionStorage.removeItem(AUTH_TOKEN_COOKIE_NAME)
       return {
         ...state,
         authToken: undefined,
@@ -204,6 +198,11 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
         }
       }
       break
+    case 'ASK_FOR_ADS_COOKIES_USAGE':
+      return {
+        ...state,
+        areAdsCookieUsageRequested: true,
+      }
     case 'ACCEPT_COOKIES_USAGE':
       // 604800000 is the number of milliseconds in a week.
       Storage.setItem(ACCEPT_COOKIES_COOKIE_NAME, (Date.now() + 604_800_000) + '')
@@ -211,14 +210,10 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
         ...state,
         userHasAcceptedCookiesUsage: true,
       }
-    case 'SWITCH_TO_MOBILE_VERSION':
-      return {
-        ...state,
-        isMobileVersion: true,
-      }
     case 'LOGOUT': // Fallthrough intended.
     case 'DELETE_USER_DATA':
       Storage.removeItem(AUTH_TOKEN_COOKIE_NAME)
+      window.sessionStorage.removeItem(AUTH_TOKEN_COOKIE_NAME)
       return {...state, adviceData: {}, adviceTips: {}, authToken: undefined}
     case 'GET_ADVICE_TIPS':
       if (action.status !== 'success' || !action.advice.adviceId || !action.project.projectId) {
@@ -229,7 +224,7 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
         adviceTips: {
           ...state.adviceTips,
           [action.project.projectId]: {
-            ...(state.adviceTips && state.adviceTips[action.project.projectId] || {}),
+            ...state.adviceTips && state.adviceTips[action.project.projectId],
             [action.advice.adviceId]: action.response as {actionId: string}[],
           },
         },
@@ -268,20 +263,9 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
       }
       return state
     case 'TRACK_INITIAL_UTM':
-      if (!state.initialUtm && action.utm) {
-        setOnceJsonToStorage(UTM_LOCAL_STORAGE_NAME, action.utm)
-      }
       return {
         ...state,
         initialUtm: state.initialUtm || action.utm,
-      }
-    case 'TRACK_INITIAL_FEATURES':
-      if (!state.initialFeatures && action.features) {
-        setOnceJsonToStorage(FEATURES_LOCAL_STORAGE_NAME, action.features)
-      }
-      return {
-        ...state,
-        initialFeatures: state.initialFeatures || action.features,
       }
     case 'AUTHENTICATE_USER':
       if (action.status !== 'success') {
@@ -293,19 +277,23 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
           hasTokenExpired: action.response.hasTokenExpired,
         }
       }
-      Storage.setItem(AUTH_TOKEN_COOKIE_NAME, action.response.authToken)
+      if (action.isPersistent) {
+        Storage.setItem(AUTH_TOKEN_COOKIE_NAME, action.response.authToken)
+      } else {
+        window.sessionStorage.setItem(AUTH_TOKEN_COOKIE_NAME, action.response.authToken)
+      }
       return {
         ...state,
         authToken: action.response.authToken,
         lastAccessAt: action.response.lastAccessAt,
       }
-    case 'WILL_ACTIVATE_DEMO':
+    case 'WILL_ACTIVATE_EXPERIMENT':
       return {
         ...state,
-        demo: action.demo,
+        experiments: [...state.experiments || [], action.experiment],
       }
-    case 'ACTIVATE_DEMO':
-      return dropKey(state, 'demo')
+    case 'ACTIVATE_EXPERIMENTS':
+      return dropKey(state, 'experiments')
     case 'SHARE_PRODUCT_MODAL_IS_SHOWN':
       return {
         ...state,
@@ -364,6 +352,11 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
           [action.commentKey]: true,
         },
       }
+    case 'SEND_FEEDBACK_VOLUNTEERING':
+      return {
+        ...state,
+        hasVolunteeredFeedback: true,
+      }
     case 'GET_DIAGNOSTIC_MAIN_CHALLENGES':
       if (action.status === 'success') {
         return {
@@ -403,6 +396,7 @@ AsyncState<AllActions> {
   const authAction = action as {response: bayes.bob.AuthResponse}
   if (action.status === 'error' || authAction.response && authAction.response.errorMessage) {
     const errorMessage = (action.status === 'error') ?
+      // TODO(cyrille): Only show the message when the type of action.error is Error.
       (action.ignoreFailure || !action.error) ? '' : action.error.toString() :
       authAction.response.errorMessage
     return {

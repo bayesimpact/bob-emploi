@@ -1,6 +1,6 @@
 """Module to advise the user to consider to reorient to a job close to theirs."""
 
-from typing import Iterable, Iterator, List
+from typing import Iterable, Iterator
 
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
@@ -69,7 +69,7 @@ class _AdviceReorientToClose(scoring_base.ModelBase):
         close_jobs = self.get_close_jobs(project)
         search_since_nb_months = round(project.get_search_length_now())
         score_modifier = 0
-        reasons: List[str] = []
+        reasons: list[str] = []
         if len(close_jobs.close_jobs) + len(close_jobs.evolution_jobs) < 2:
             return scoring_base.NULL_EXPLAINED_SCORE
         # TODO(cyrille): Make this more robust.

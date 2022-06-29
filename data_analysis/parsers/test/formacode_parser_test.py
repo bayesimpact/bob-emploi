@@ -2,7 +2,7 @@
 
 import io
 from os import path
-from typing import List, Tuple
+from typing import Tuple
 import unittest
 
 from bob_emploi.data_analysis.parsers import formacode_parser
@@ -18,7 +18,7 @@ class FormacodeParserTestCase(unittest.TestCase):
         """End-to-end test of the formacode_parser."""
 
         out = io.StringIO()
-        formacode_parser.main(['formacode_parser.py', self.pdf_dump], out)
+        formacode_parser.main([self.pdf_dump], out)
         output = out.getvalue().split('\n')
         self.assertEqual('rome,formacode', output[0])
         self.assertLess(
@@ -29,8 +29,8 @@ class FormacodeParserTestCase(unittest.TestCase):
         """Test the parser without arguments."""
 
         out = io.StringIO()
-        self.assertRaises(
-            SystemExit, formacode_parser.main, ['formacode_parser.py'], out)
+        with self.assertRaises(SystemExit):
+            formacode_parser.main([], out)
 
     def test_parse_line(self) -> None:
         """Unit test for the parse_rome_formacode_line."""
@@ -68,7 +68,7 @@ class FormacodeParserTestCase(unittest.TestCase):
             '• découpe des viandes H2101 _____ bOuChERiE')
 
 
-def _parse_line(line: str) -> List[Tuple[str, str]]:
+def _parse_line(line: str) -> list[Tuple[str, str]]:
     """Test helper to parse all mappings in one line."""
 
     return [m for m in formacode_parser.parse_rome_formacode_line(line)]

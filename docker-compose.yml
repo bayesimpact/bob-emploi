@@ -11,7 +11,7 @@ services:
       - ./data_analysis/data:/home/jovyan/data:rw
       - ./analytics/data:/home/jovyan/data_analytics:ro
       # TODO(cyrille): Try to link to current python version.
-      - ./data_analysis:/opt/conda/lib/python3.8/bob_emploi/data_analysis:ro
+      - ./data_analysis:/opt/conda/lib/python3.9/bob_emploi/data_analysis:ro
       - ./data_analysis/notebooks:/home/jovyan/notebooks
     environment:
       AIRTABLE_API_KEY:
@@ -24,7 +24,6 @@ services:
         - SKIP_TEST
       context: .
       dockerfile: data_analysis/Dockerfile.prepare
-    entrypoint: ./entrypoint.sh
     environment:
       AIRTABLE_API_KEY:
       ALGOLIA_API_KEY:
@@ -47,6 +46,7 @@ services:
       target: dev
       args:
         - AIRTABLE_API_KEY
+        - FAIL_ON_MISSING_TRANSLATIONS
         - REACT_BASE_TAG
     command: npm start
     entrypoint: ./entrypoint.sh
@@ -55,6 +55,7 @@ services:
       - frontend-flask
     environment:
       BOB_DEPLOYMENT:
+      BOB_DEPLOYMENTS:
       BOB_PLUGINS:
   frontend-test:
     image: bayesimpact/bob-emploi-test:${DOCKER_TAG:-latest}
@@ -64,6 +65,7 @@ services:
       target: test
       args:
         - AIRTABLE_API_KEY
+        - FAIL_ON_MISSING_TRANSLATIONS
         - REACT_BASE_TAG
         - SKIP_TEST
     tty: true
@@ -90,12 +92,13 @@ services:
       SERVER_VERSION: dev.$USER
       EMPLOI_STORE_CLIENT_ID:
       EMPLOI_STORE_CLIENT_SECRET:
-      FACEBOOK_APP_SECRET:
       LINKED_IN_CLIENT_ID:
       LINKED_IN_CLIENT_SECRET:
       MAILJET_SECRET:
       SENTRY_DSN:
       SLACK_FEEDBACK_URL:
+      SLACK_FEEDBACK_WEBHOOK_URL:
+      SLACK_VOLUNTEER_FEEDBACK_CHANNEL:
       ELASTICSEARCH_URL: 'http://elastic:changeme@elastic-dev:9200'
       EMAILS_FOR_EVALUATIONS:
     links:
@@ -117,10 +120,21 @@ services:
       TEST_ENV: '1'
     tty: true
     network_mode: none
+  frontend-monitoring:
+    image: docker.bayesimpact.org/bob-emploi/frontend-monitoring:${DOCKER_TAG:-latest}
+    build:
+      args:
+        - SKIP_TEST
+      context: .
+      dockerfile: frontend/monitoring/Dockerfile
   mailjet:
     build:
+      args:
+        - SKIP_TEST
       context: .
       dockerfile: frontend/mailjet/Dockerfile
+    entrypoint: ./entrypoint.sh
     environment:
       MAILJET_APIKEY_PUBLIC:
       MAILJET_SECRET:
+      RECIPIENT:

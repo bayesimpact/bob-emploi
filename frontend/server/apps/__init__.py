@@ -19,6 +19,7 @@ if False:  # pylint: disable=using-constant-test
     # TODO(cyrille): Test that all dynamically imported modules are here.
     from . import ali
     from . import evaluation
+    from . import jobflix
 
 _APPS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 _KEPT_PLUGINS = {plugin for plugin in os.getenv('BOB_PLUGINS', '').split(',') if plugin}
@@ -44,6 +45,8 @@ def register_blueprints(app: flask.Flask) -> None:
 
     for package in pkgutil.iter_modules([_APPS_FOLDER]):
         if _KEPT_PLUGINS and package.name not in _KEPT_PLUGINS:
+            continue
+        if package.name == 'test':
             continue
         # TODO(cyrille): Test that those are not statically imported elsewhere.
         module = typing.cast(AppModule, importlib.import_module(f'.{package.name}', __package__))

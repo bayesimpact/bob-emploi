@@ -1,10 +1,11 @@
-import {Config, ConfigOptions} from 'karma'
+import type {Config, ConfigOptions} from 'karma'
 import path from 'path'
 import puppeteer from 'puppeteer'
-import {Configuration as WebpackConfiguration} from 'webpack'
+import type {Configuration as WebpackConfiguration} from 'webpack'
 
 import {getDefaultDeploymentConstants} from './cfg/deployment'
-import getAllPlugins, {TestablePlugin} from './cfg/plugins'
+import type {TestablePlugin} from './cfg/plugins'
+import getAllPlugins from './cfg/plugins'
 import createWebpackTestConfig from './cfg/test'
 
 export interface NamedConfigOptions extends ConfigOptions {

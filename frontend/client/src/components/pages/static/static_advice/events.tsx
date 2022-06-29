@@ -2,11 +2,11 @@ import React from 'react'
 
 import {prepareT} from 'store/i18n'
 
+import type {AdvicePageProps, CardProps} from 'components/static'
 import {TestimonialCard} from 'components/testimonials'
 import picto from 'images/advices/picto-events.svg'
 
-import {AdviceDetail, AdvicePageProps, AdviceSection, CardProps, StaticAdviceCardBase,
-  StaticAdvicePage} from './base'
+import {AdviceDetail, AdviceSection, StaticAdviceCardBase, StaticAdvicePage} from './base'
 
 
 const adviceId = 'evenements'

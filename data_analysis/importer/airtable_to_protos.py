@@ -23,7 +23,7 @@ import logging
 import os
 import re
 import typing
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, \
+from typing import Any, Callable, Iterable, Iterator, Mapping, Optional, Sequence, \
     Set, Tuple, Type, Union
 
 from airtable import airtable
@@ -31,8 +31,8 @@ from google.protobuf import json_format
 from google.protobuf import message
 import requests
 
-from bob_emploi.data_analysis.i18n import translation
-from bob_emploi.data_analysis.lib import checker
+from bob_emploi.common.python import checker
+from bob_emploi.common.python.i18n import translation
 from bob_emploi.data_analysis.lib import mongo
 from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import application_pb2
@@ -46,9 +46,11 @@ from bob_emploi.frontend.api import network_pb2
 from bob_emploi.frontend.api import online_salon_pb2
 from bob_emploi.frontend.api import options_pb2
 from bob_emploi.frontend.api import skill_pb2
+from bob_emploi.frontend.api import stats_pb2
 from bob_emploi.frontend.api import strategy_pb2
 from bob_emploi.frontend.api import testimonial_pb2
 from bob_emploi.frontend.api import training_pb2
+from bob_emploi.frontend.api import upskilling_pb2
 
 
 _ProtoType = typing.TypeVar('_ProtoType', bound=message.Message)
@@ -60,7 +62,7 @@ def _get_bob_deployment() -> str:
 
 def _group_filter_fields(
         record: Mapping[str, Any], field: str = 'filters',
-        others: Iterable[str] = ('for-departement', 'for-job-group')) -> List[str]:
+        others: Iterable[str] = ('for-departement', 'for-job-group')) -> list[str]:
     """Group multiple fields to specify filters.
 
     Args:
@@ -82,7 +84,7 @@ def _group_filter_fields(
     """
 
     # TODO(cyrille): Consider adding deployment specific filters.
-    filters = typing.cast(List[str], record.get(field, []))
+    filters = typing.cast(list[str], record.get(field, []))
     if others:
         for filter_type in others:
             filter_value = record.get(
@@ -130,7 +132,7 @@ class _FilterSetSorter:
         return not other._filters - self._filters
 
 
-_BEFORE_TRANSLATION_CHECKERS: Dict['options_pb2.StringFormat.V', checker.ValueChecker] = {
+_BEFORE_TRANSLATION_CHECKERS: dict['options_pb2.StringFormat.V', checker.ValueChecker] = {
     options_pb2.LIST_OPTION: checker.ListOptionChecker(),
     options_pb2.MARKUP_LANGUAGE: checker.MarkupChecker(),
     options_pb2.PARTIAL_SENTENCE: checker.PartialSentenceChecker(),
@@ -159,6 +161,52 @@ def _convert_to_snake_case(camel_case: str) -> str:
     return '_'.join(word.lower() for word in words)
 
 
+def load_items_from_prefix(
+        proto_name: str, keys: Iterable[str],
+        airtable_connection: Optional[str], key_prefixes_field: str) \
+        -> Optional[Mapping[str, list[dict[str, Any]]]]:
+    """Loads values from an airtable view keyed by prefix.
+
+    For each key in keys, list all Airtable rows for which the prefix match the key. Airtable rows
+    are converted to protos before being listed.
+
+    Args:
+    - proto_name: The name of the Proto corresponding to the table.
+    - keys: A list of keys for which to find values.
+    - airtable_connection: The base ID and the table name joined by a ':' of the Airtable
+    - key_prefixes_field: The name of the field containing the prefixes for the keys.
+    """
+
+    if not airtable_connection:
+        return None
+    parts = airtable_connection.split(':')
+    if len(parts) <= 2:
+        base_id, table = parts
+        view = None
+    else:
+        base_id, table, view = parts
+    items: dict[str, list[dict[str, Any]]] = {key: [] for key in keys}
+    converter = PROTO_CLASSES[proto_name]
+    api_key = os.getenv('AIRTABLE_API_KEY', '')
+    client = airtable.Airtable(base_id, api_key)
+    for record in client.iterate(table, view=view):
+        item = converter.convert_record(record)
+        del item['_id']
+        key_prefixes = record['fields'].get(key_prefixes_field, '')
+        added_to_keys = set()
+        for key_prefix in key_prefixes.split(','):
+            key_prefix = key_prefix.strip()
+            if not key_prefix:
+                continue
+            for key, items_for_group in items.items():
+                if key.startswith(key_prefix):
+                    if key in added_to_keys:
+                        continue
+                    added_to_keys.add(key)
+                    items_for_group.append(item)
+    return items
+
+
 class ProtoAirtableConverter:
     """A converter for Airtable records to proto-JSON formatted dict.
 
@@ -175,7 +223,7 @@ class ProtoAirtableConverter:
     def __init__(
             self, proto_type: Type[message.Message],
             id_field: Optional[str] = None,
-            required_fields: Union[List[str], Tuple[str, ...]] = (),
+            required_fields: Union[list[str], Tuple[str, ...]] = (),
             unique_field_tuples: Iterable[Sequence[str]] = ()) -> None:
         self._proto_type = proto_type
         self._id_field = id_field
@@ -185,11 +233,11 @@ class ProtoAirtableConverter:
             self.proto_type.DESCRIPTOR.fields_by_name.items()}
         if id_field:
             assert self.snake_to_camelcase[id_field]
-        self.checkers: List[checker.Checker] = []
+        self.checkers: list[checker.Checker] = []
         self.add_checkers(
             checker.QuotesChecker(),
             checker.SpacesChecker())
-        self._split_fields_separators: Dict[str, str] = {}
+        self._split_fields_separators: dict[str, str] = {}
         # Sort key shouldn't be used anywhere else than airtable2dicts, since some implementations
         # depend on how it's used there.
         self.sort_key = self._sort_key
@@ -209,7 +257,7 @@ class ProtoAirtableConverter:
             return _convert_to_snake_case(self._unique_field_tuples[0][0])
         return None
 
-    def convert_record(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> Dict[str, Any]:
+    def convert_record(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> dict[str, Any]:
         """Convert an AirTable record to a dict proto-Json ready.
 
         Returns:
@@ -263,22 +311,22 @@ class ProtoAirtableConverter:
             The updated converter, for chaining.
         """
 
-        self._split_fields_separators = dict(self._split_fields_separators, **fields)
+        self._split_fields_separators = self._split_fields_separators | fields
         return self
 
-    def _split_fields(self, fields: Mapping[str, Any]) -> Dict[str, Any]:
-        return dict(fields, **{
+    def _split_fields(self, fields: Mapping[str, Any]) -> dict[str, Any]:
+        return fields | {
             field: [s.strip() for s in fields[field].split(separator)]
             for field, separator in self._split_fields_separators.items()
             if field in fields
-        })
+        }
 
-    def _get_array_heads(self, fields: Mapping[str, Any]) -> Dict[str, Any]:
-        return dict(fields, **{
+    def _get_array_heads(self, fields: Mapping[str, Any]) -> dict[str, Any]:
+        return fields | {
             field: fields[field][0]
             for field in self._unarray_fields
             if field in fields and fields[field]
-        })
+        }
 
     def _sort_key(self, unused_record: airtable.Record[Mapping[str, Any]]) -> Any:
         """Function to compute the sort key of a record before it's been converted.
@@ -299,7 +347,7 @@ class ProtoAirtableConverter:
         except KeyError as error:
             if '_' in error.args[0]:
                 raise ValueError('Use camelCased field names in unique_field_tuples') from error
-            raise
+            raise ValueError(f'Missing an unique key value:\n{proto_record}') from error
 
     def set_fields_sorter(
             self: ConverterType, sort_lambda: Callable[[Mapping[str, Any]], Any]) \
@@ -309,7 +357,7 @@ class ProtoAirtableConverter:
         self.sort_key = lambda airtable_record: sort_lambda(airtable_record['fields'])
         return self
 
-    def _record2dict(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> Dict[str, Any]:
+    def _record2dict(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> dict[str, Any]:
         """Convert an AirTable record to a dict proto-Json ready.
 
         When overriding this method, if some exceptions are triggered because of bad input,
@@ -426,12 +474,12 @@ class _ProtoAirtableFiltersConverter(ProtoAirtableConverter):
     def __init__(
             self, proto_type: Type[message.Message],
             id_field: Optional[str] = None,
-            required_fields: Union[List[str], Tuple[str, ...]] = (),
+            required_fields: Union[list[str], Tuple[str, ...]] = (),
             unique_field_tuples: Iterable[Sequence[str]] = ()) -> None:
         super().__init__(proto_type, id_field, required_fields, unique_field_tuples)
         self.add_checkers(checker.TemplateVarsChecker())
 
-    def _record2dict(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> Dict[str, Any]:
+    def _record2dict(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> dict[str, Any]:
         """Convert an AirTable record to a dict proto-Json ready."""
 
         fields = super()._record2dict(airtable_record)
@@ -444,9 +492,9 @@ class _ProtoAirtableFiltersConverter(ProtoAirtableConverter):
         return fields
 
 
-class _ActionTemplateConverter(_ProtoAirtableFiltersConverter):
+class _TipTemplateConverter(_ProtoAirtableFiltersConverter):
 
-    def _record2dict(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> Dict[str, Any]:
+    def _record2dict(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> dict[str, Any]:
         """Convert an AirTable record to a dict proto-Json ready."""
 
         updated_airtable_record = airtable_record
@@ -464,7 +512,7 @@ class _ActionTemplateConverter(_ProtoAirtableFiltersConverter):
 
 class _CampaignConverter(ProtoAirtableConverter):
 
-    def _record2dict(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> Dict[str, Any]:
+    def _record2dict(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> dict[str, Any]:
         """Convert an AirTable record to a dict proto-Json ready."""
 
         fields = super()._record2dict(airtable_record)
@@ -482,14 +530,14 @@ class _CampaignConverter(ProtoAirtableConverter):
 
 def generate_dynamic_advices_changes(
         markdown_list: Optional[str], prefix: str = '', suffix: str = '') \
-        -> Dict[str, Union[str, List[str]]]:
+        -> dict[str, Union[str, list[str]]]:
     """Generate a list of changes to apply to a dynamic advice record before saving it."""
 
     if not markdown_list:
         return {}
-    result: Dict[str, Union[str, List[str]]] = {}
+    result: dict[str, Union[str, list[str]]] = {}
     if markdown_list.startswith('*'):
-        parts: List[str] = ['', markdown_list[1:]]
+        parts: list[str] = ['', markdown_list[1:]]
     else:
         parts = markdown_list.split('\n*', 1)
 
@@ -511,7 +559,7 @@ def generate_dynamic_advices_changes(
 
 class _DynamicAdviceConverter(_ProtoAirtableFiltersConverter):
 
-    def _record2dict(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> Dict[str, Any]:
+    def _record2dict(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> dict[str, Any]:
         """Convert an AirTable record to a dict proto-Json ready."""
 
         fields = super()._record2dict(airtable_record)
@@ -528,9 +576,25 @@ class _DynamicAdviceConverter(_ProtoAirtableFiltersConverter):
         return fields
 
 
-PROTO_CLASSES: Dict[str, ProtoAirtableConverter] = {
-    'ActionTemplate': _ActionTemplateConverter(
-        action_pb2.ActionTemplate, 'action_template_id', required_fields=[]),
+class _ChallengeActionConverter(ProtoAirtableConverter):
+
+    def _record2dict(self, airtable_record: airtable.Record[Mapping[str, Any]]) -> dict[str, Any]:
+        fields = super()._record2dict(airtable_record)
+        fields['scoreByChallenge'] = {}
+        for challenge, score in fields.items():
+            if isinstance(score, int) and score:
+                fields['scoreByChallenge'][challenge] = score
+        return fields
+
+
+PROTO_CLASSES: dict[str, ProtoAirtableConverter] = {
+    'ActionTemplate': _ProtoAirtableFiltersConverter(
+        action_pb2.ActionTemplate, None,
+        required_fields=[
+            'action_template_id', 'title', 'short_description', 'duration',
+            'trigger_scoring_model'],
+        unique_field_tuples=(('actionTemplateId',),),
+    ).set_first_only_fields('adviceId'),
     'AdviceModule': ProtoAirtableConverter(
         advisor_pb2.AdviceModule, 'airtable_id',
         required_fields=['advice_id', 'trigger_scoring_model'],
@@ -538,6 +602,7 @@ PROTO_CLASSES: Dict[str, ProtoAirtableConverter] = {
     ).add_split_fields({'emailFacts': ','}),
     'ApplicationTip': _ProtoAirtableFiltersConverter(
         application_pb2.ApplicationTip, None, required_fields=['content', 'type']),
+    'ChallengeAction': _ChallengeActionConverter(stats_pb2.ChallengeAction, 'action_id'),
     'JobBoard': _ProtoAirtableFiltersConverter(
         jobboard_pb2.JobBoard, None, required_fields=['title', 'link']),
     'Association': _ProtoAirtableFiltersConverter(
@@ -563,8 +628,9 @@ PROTO_CLASSES: Dict[str, ProtoAirtableConverter] = {
             'response_id', 'self_main_challenge_id', 'bob_main_challenge_id', 'text'],
         unique_field_tuples=(('responseId',), ('selfMainChallengeId', 'bobMainChallengeId')),),
     'DiagnosticTemplate': _ProtoAirtableFiltersConverter(
-        diagnostic_pb2.DiagnosticTemplate, None,
-        required_fields=['sentence_template', 'score', 'order', 'text_template', 'category_id']
+        diagnostic_pb2.DiagnosticTemplate, 'id',
+        required_fields=['sentence_template', 'score', 'order', 'text_template', 'category_id'],
+        unique_field_tuples=(('id',),),
     ).set_fields_sorter(
         lambda record: (record.get('category_id', []), _FilterSetSorter(record), record['order'])
     ).set_first_only_fields('categoryId'),
@@ -578,6 +644,8 @@ PROTO_CLASSES: Dict[str, ProtoAirtableConverter] = {
         testimonial_pb2.Testimonial, None,
         required_fields=['author_name', 'author_job_name', 'description']
     ).add_split_fields({'preferredJobGroupIds': ','}),
+    'TipTemplate': _TipTemplateConverter(
+        action_pb2.ActionTemplate, 'action_template_id', required_fields=[]),
     'SalonFilterRule': _ProtoAirtableFiltersConverter(
         online_salon_pb2.SalonFilterRule, None, required_fields=['regexp', 'fields']
     ).add_split_fields({f: ',' for f in ('fields', 'locationIds', 'jobGroupIds')}),
@@ -587,7 +655,8 @@ PROTO_CLASSES: Dict[str, ProtoAirtableConverter] = {
     'StrategyModule': ProtoAirtableConverter(
         strategy_pb2.StrategyModule, None,
         required_fields=('trigger_scoring_model', 'title', 'category_ids'),
-        unique_field_tuples=(('strategyId',),)),
+        unique_field_tuples=(('strategyId',),),
+    ).set_first_only_fields('infinitiveTitle'),
     'StrategyAdviceTemplate': ProtoAirtableConverter(
         strategy_pb2.StrategyAdviceTemplate, None, required_fields=('advice_id', 'strategy_id'),
         unique_field_tuples=(('strategyId', 'adviceId'),),
@@ -595,13 +664,18 @@ PROTO_CLASSES: Dict[str, ProtoAirtableConverter] = {
         'adviceId', 'strategyId'),
     'Training': _ProtoAirtableFiltersConverter(
         training_pb2.Training, None, required_fields=['name', 'url']),
+    'TrainingAgency': ProtoAirtableConverter(
+        training_pb2.TrainingAgency, None, required_fields=['url', 'region_id'],
+        unique_field_tuples=(('regionId',),)),
+    'upskilling.Section': ProtoAirtableConverter(
+        upskilling_pb2.Section, None, required_fields=['id', 'generator'])
 }
 
 
 def airtable2dicts(
         *, collection_name: str,
         base_id: str, table: str, proto: str, view: Optional[str] = None,
-        alt_table: Optional[str] = None) -> List[Dict[str, Any]]:
+        alt_table: Optional[str] = None) -> list[dict[str, Any]]:
     """Import the suggestions in MongoDB.
 
     Args:
@@ -639,7 +713,7 @@ def airtable2dicts(
 
     has_error = False
     # If sorting implementation changes, please also change implementation for _FilterSetSorter.
-    previous_keys: Dict[str, Any] = {}
+    previous_keys: dict[str, Any] = {}
     for record in records:
         sort_key = converter.sort_key(record)
         record_id = record['id']

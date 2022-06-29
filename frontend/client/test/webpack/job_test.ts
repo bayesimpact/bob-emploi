@@ -4,7 +4,7 @@ import i18next from 'i18next'
 import {genderizeJob, getIMTURL, getJobSearchURL, getApplicationModes,
   getJobPlacesFromDepartementStats, getApplicationModeText, getPEJobBoardURL,
   getMostlyRequiredDiploma} from 'store/job'
-import {jobFromSuggestion} from 'components/suggestions'
+import {jobFromSuggestion} from 'components/job_input'
 
 // @ts-ignore
 import {ApplicationMode} from 'api/job_pb'
@@ -180,7 +180,7 @@ describe('getIMTURL', (): void => {
   it('should return a URL for the IMT', (): void => {
     const url = getIMTURL(fakeI, {codeOgr: '15546'}, {departementId: '69'})
     expect(url).to.equal(
-      'http://candidat.pole-emploi.fr/marche-du-travail/statistiques?codeMetier=15546' +
+      'https://candidat.pole-emploi.fr/marche-du-travail/statistiques?codeMetier=15546' +
       '&codeZoneGeographique=69&typeZoneGeographique=DEPARTEMENT')
   })
 

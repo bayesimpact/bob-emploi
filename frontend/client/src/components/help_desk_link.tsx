@@ -1,9 +1,9 @@
-import PropTypes from 'prop-types'
-import {stringify} from 'query-string'
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import {useSelector} from 'react-redux'
 
-import {RootState, createSupportTicket, useDispatch} from 'store/actions'
+import type {RootState} from 'store/actions'
+import {createSupportTicket, useDispatch} from 'store/actions'
 
 import {RadiumExternalLink} from 'components/radium'
 
@@ -17,17 +17,27 @@ interface HelpDeskLinkProps extends Omit<React.HTMLProps<HTMLAnchorElement>, 're
 }
 
 interface HelpDeskLinkBasicProps {
-  onClick: (event: React.MouseEvent<HTMLAnchorElement>) => void
   href: string
+  onClick: (event: React.MouseEvent<HTMLAnchorElement>) => void
 }
 
+const helpDeskProductSource = (source?: string): string => {
+  const productSourceBase = `${config.productName.toLowerCase()}-${config.countryId}`
+  if (!source) {
+    return productSourceBase
+  }
+  return `${productSourceBase}-${source}`
+}
 
 export const useHelpDeskLinkProps = (props?: Partial<HelpDeskLinkBasicProps>):
-HelpDeskLinkBasicProps => {
-  const {href, onClick} = props || {}
+HelpDeskLinkBasicProps|undefined => {
+  const {onClick} = props || {}
+  const {t: translate} = useTranslation('components')
   const dispatch = useDispatch()
   const hasUser = useSelector(({user: {userId}}: RootState): boolean => !!userId)
+  const userSource = useSelector(({user}: RootState) => user?.origin?.source)
   const [ticketId, setTicketId] = useState(getRandomTicketId())
+  const productSource = helpDeskProductSource(userSource)
   const timeout = useRef<number|undefined>(undefined)
   useEffect((): (() => void) => (): void => window.clearTimeout(timeout.current), [])
   const finalOnClick = useCallback((event: React.MouseEvent<HTMLAnchorElement>) => {
@@ -38,29 +48,32 @@ HelpDeskLinkBasicProps => {
     }
     onClick && onClick(event)
   }, [dispatch, hasUser, onClick, ticketId])
-  // eslint-disable-next-line camelcase
-  const queryString = hasUser ? '?' + stringify({identifiant_bob: ticketId}) : ''
-  const finalHref = (href || config.helpRequestUrl) + queryString
+  const finalHref = translate(config.helpRequestUrl, {
+    productSource: encodeURIComponent(productSource),
+    ticketId: hasUser ? encodeURIComponent(ticketId) : '',
+  })
+  if (!config.helpRequestUrl) {
+    return undefined
+  }
   return {href: finalHref, onClick: finalOnClick}
 }
 
 
 const HelpDeskLink: React.FC<HelpDeskLinkProps> =
-({href, onClick, style, ...props}): React.ReactElement => {
-  const {href: finalHref, onClick: finalOnClick} = useHelpDeskLinkProps({href, onClick})
+({onClick, style, ...props}): React.ReactElement|null => {
+  const helpDeskLinkProps = useHelpDeskLinkProps({onClick})
   const finalStyle = useMemo(() => ({
     color: 'inherit',
     textDecoration: 'none',
     ...style,
   }), [style])
+  if (!helpDeskLinkProps) {
+    return null
+  }
+  const {href: finalHref, onClick: finalOnClick} = helpDeskLinkProps
   // eslint-disable-next-line jsx-a11y/anchor-has-content
   return <RadiumExternalLink
     {...props} href={finalHref} onClick={finalOnClick} style={finalStyle} />
-}
-HelpDeskLink.propTypes = {
-  href: PropTypes.string,
-  onClick: PropTypes.func,
-  style: PropTypes.object,
 }
 
 

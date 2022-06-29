@@ -1,0 +1,28 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Resources": {
+    "Certificate": {
+      "Type": "AWS::CertificateManager::Certificate",
+      "Properties": {
+        "ValidationMethod": "DNS",
+        "DomainName": {
+          "Ref": "PublicDomainName"
+        }
+      }
+    }
+  },
+  "Parameters": {
+    "PublicDomainName": {
+      "Type": "String",
+      "Description": "Hostnames to use to publicly serve this client instance"
+    }
+  },
+  "Outputs": {
+    "PublicDomainCertificate": {
+      "Description": "The ARN of the created certificate",
+      "Value": {
+        "Ref": "Certificate"
+      }
+    }
+  }
+}

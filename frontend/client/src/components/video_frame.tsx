@@ -1,24 +1,25 @@
-import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
 
 interface Props {
+  // Desired width/height ratio for the frame.
   aspectRatio?: number
   children: React.ReactElement<{
-    height: string
     style: RadiumCSSProperties
-    width: string
   }>
   style?: React.CSSProperties
 }
 
 
 const coverallStyle: React.CSSProperties = {
+  border: 'none',
   bottom: 0,
+  height: '100%',
   left: 0,
   position: 'absolute',
   right: 0,
   top: 0,
+  width: '100%',
 } as const
 
 
@@ -35,18 +36,10 @@ const VideoFrame = (props: Props): React.ReactElement => {
   return <div style={style}>
     <div style={containerStyle}>
       {React.cloneElement(children, {
-        height: '100%',
         style: childrenStyle,
-        width: '100%',
       })}
     </div>
   </div>
-}
-VideoFrame.propTypes = {
-  // Desired width/height ratio for the frame.
-  aspectRatio: PropTypes.number,
-  children: PropTypes.element.isRequired,
-  style: PropTypes.object,
 }
 
 

@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# TODO(cyrille): Drop once deploy.py has been properly used, both by hand and on CI.
 # Script to deploy a Bob release, both server and client.
 #
 # The canonical place for our releases are the Docker Images in Docker Hub.
@@ -28,11 +29,13 @@
 #
 # Usage:
 # frontend/release/deploy.sh $CIRCLE_TAG
+# TODO(cyrille): Translate to python scripting.
 
 set -e
 readonly DIRNAME=$(dirname "$0")
 # Import functions echo_error, echo_warning...
 source "$DIRNAME/echo_with_colors.sh"
+source "$DIRNAME/../cli/bashrc"
 
 if [ -n "$DRY_RUN" ]; then
   echo_warning 'DRY RUN: will not actually modify anything.'
@@ -161,57 +164,6 @@ if [ -z "$(grep "^." $RELEASE_NOTES)" ]; then
   exit 12
 fi
 
-function count_deployments()
-{
-  aws ecs describe-services --services $@ | \
-    jq '.services[0].deployments|length'
-}
-
-function wait_for_deployment()
-{
-  while [ "$(count_deployments $@)" != "1" ]; do
-    printf .
-    sleep 10
-  done
-}
-
-function deploy_server() {
-  local FAMILY="$1"
-  local SERVICE="$2"
-  local CLUSTER="${3:-default}"
-  local REGION="${4:-eu-west-3}"
-  local SERVER_TAG="${6:-prod.$TAG}"
-  local OUTPUT_REGION="${6:-$REGION}"
-  # Deploying the server.
-  echo_info 'Creating a new task definition…'
-  # Do not print sensitive info from AWS.
-  local CURRENT_SETTINGS=${-}
-  set +x
-  local PREVIOUS_DOCKER_CONFIG=$(
-    aws ecs describe-task-definition --task-definition $FAMILY --region $REGION | \
-      jq '.taskDefinition | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
-  local PREVIOUS_DOCKER_SERVER_IMAGE=$(jq -r '.containerDefinitions[0].image' <<< "$PREVIOUS_DOCKER_CONFIG")
-
-  if [ "$PREVIOUS_DOCKER_SERVER_IMAGE" == "$DOCKER_SERVER_IMAGE" ]; then
-    echo_info 'The server is already deployed.'
-    return
-  fi
-
-  local NEW_DOCKER_CONFIG=$(
-    jq --arg version "$SERVER_TAG" --arg new_image "$DOCKER_SERVER_IMAGE" \
-      '.containerDefinitions[0].image=$new_image | .containerDefinitions[0].environment |= map(select(.name=="SERVER_VERSION").value = $version)' <<< "$PREVIOUS_DOCKER_CONFIG")
-
-  if [ -z "$DRY_RUN" ]; then
-    aws ecs register-task-definition --region=$OUTPUT_REGION --family=$FAMILY \
-      --cli-input-json "$NEW_DOCKER_CONFIG" > /dev/null
-  fi
-  set -$CURRENT_SETTINGS
-
-  echo_info 'Rolling out the new task definition…'
-  if [ -z "$DRY_RUN" ]; then
-    aws ecs update-service --service=$SERVICE --task-definition=$FAMILY --cluster=$CLUSTER --region=$OUTPUT_REGION > /dev/null
-  fi
-}
 
 # Deploying the tagged version by updating the corresponding parameter in the CloudFormation stack.
 # TODO(cyrille): Use cloudformation/deploy_parameter.sh script.
@@ -226,39 +178,41 @@ function deploy_stack_server {
   )"
 
   echo_info 'Rolling out the new task definition…'
-  aws cloudformation create-change-set --change-set-name "$CHANGE_SET_NAME" --use-previous-template $@ --parameters "$NEW_PARAMETERS"
+  aws cloudformation create-change-set --change-set-name "$CHANGE_SET_NAME" --use-previous-template $@ --parameters "$NEW_PARAMETERS" --capabilities CAPABILITY_IAM
   if [ -z "$DRY_RUN" ]; then
     aws cloudformation wait change-set-create-complete --change-set-name "$CHANGE_SET_NAME" $@
     aws cloudformation execute-change-set --change-set-name "$CHANGE_SET_NAME" $@
   fi
 }
 
-# TODO(cyrille): Drop since unused.
-deploy_server $ECS_FAMILY $ECS_SERVICE
-if [ -n "$ALTERNATE_AWS_REGION" ]; then
-  deploy_server $ECS_FAMILY $ECS_SERVICE default eu-west-3 "prod.$TAG" $ALTERNATE_AWS_REGION
-fi
+PREVIOUS_DOCKER_TAG=""
+function _needs_server_deploy() {
+  local previous
+  previous="$(bob_stack_var "$1" FlaskDockerTag)"
+  if [[ $previous == "$DOCKER_TAG" ]]; then
+    return 1
+  fi
+  if [ -z "$PREVIOUS_DOCKER_TAG" ]; then
+    PREVIOUS_DOCKER_TAG="$previous"
+    return
+  fi
+  if [[ $previous != "$PREVIOUS_DOCKER_TAG" ]]; then
+    echo_warning "Found inconsistent previous tags: $previous and $PREVIOUS_DOCKER_TAG"
+  fi
+}
 
-# TODO(cyrille): Use __bob_stack_params
-readonly DEPLOYABLE_STACKS="$(jq -r '.[]|select(.deprecatedFor | not)|.stackId,.region' "$DIRNAME/stack_deployments.json")"
-echo "$DEPLOYABLE_STACKS" | while read stack_name; do
-  read region
-  deploy_stack_server --stack-name "$stack_name" --region "$region"
+readonly DEPLOYABLE_DEPLOYMENTS="$(jq -r '.[]|select(.deprecatedFor | not)|.deployment' "$DIRNAME/stack_deployments.json")"
+echo "$DEPLOYABLE_DEPLOYMENTS" | while read deployment; do
+  if _needs_server_deploy "$deployment"; then
+    deploy_stack_server $(__bob_stack_params "$deployment")
+  fi
 done
 
-if [ -z "$DRY_RUN" ]; then
-  wait_for_deployment $ECS_SERVICE
-  if [ -n "$ALTERNATE_AWS_REGION" ]; then
-    wait_for_deployment $ECS_FAMILY --region $ALTERNATE_AWS_REGION
-  fi
-fi
-echo_success "Server deployed for bob_fr!"
-echo "$DEPLOYABLE_STACKS" | while read stack_name; do
-  read region
+echo "$DEPLOYABLE_DEPLOYMENTS" | while read deployment; do
   if [ -z "$DRY_RUN" ]; then
-    aws cloudformation wait stack-update-complete --stack-name "$stack_name" --region "$region"
+    aws cloudformation wait stack-update-complete $(__bob_stack_params "$deployment")
   fi
-  echo_success "Server deployed for $stack_name!"
+  echo_success "Server deployed for $deployment!"
 done
 
 # Deploying the client.
@@ -302,10 +256,20 @@ rm -r $TMP_DIR
 echo_info 'Logging the deployment on GitHub…'
 echo >> $RELEASE_NOTES
 echo "Deployed on $(date -R -u)" >> $RELEASE_NOTES
-readonly PREVIOUS_RELEASE="$(git describe --tags origin/prod)"
+
+function get_previous_release() {
+  if [[ "$PREVIOUS_DOCKER_TAG" == "tag-"* ]]; then
+    echo "${PREVIOUS_DOCKER_TAG#"tag-"}"
+    return
+  fi
+  >&2 echo_warning "No previous deployment found. Relaying on git tags."
+  git describe --tags origin/prod
+}
+readonly PREVIOUS_RELEASE="$(get_previous_release)"
+
 if [ -z "$DRY_RUN" ]; then
   hub release edit --draft=false --file=$RELEASE_NOTES $TAG
-  git push -f "$GIT_ORIGIN_WITH_WRITE_PERMISSION" $TAG:prod
+  git push -f "$GIT_ORIGIN_WITH_WRITE_PERMISSION" ${TAG}~0:prod
 fi
 
 # TODO(cyrille): Add release info to Sentry, with sourcemap url.

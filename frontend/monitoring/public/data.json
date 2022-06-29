@@ -1,0 +1,44 @@
+{
+  "https://www.bob-emploi.fr": {
+    "serverVersion": "prod.fr.tag-2021-09-01_00",
+    "lastSentEmail": {
+      "network-plus": "2021-09-02T08:16:16.093216Z",
+      "focus-body-language": "2021-09-03T08:16:16.387680Z",
+      "focus-network": "2021-09-03T08:16:16.387680Z",
+      "spontaneous-short": "2021-09-03T08:16:16.387680Z",
+      "improve-cv": "2021-09-02T08:16:16.093216Z"
+    },
+    "frontVersion": "prod.fr.tag-2021-09-01_00"
+  },
+  "https://us.hellobob.com": {
+    "serverVersion": "prod.usa.tag-2021-09-01_00",
+    "lastSentEmail": {
+      "focus-body-language": "2021-08-30T08:16:16Z",
+      "focus-network": "2021-08-04T08:16:15Z",
+      "network-plus": "2021-08-24T08:16:16Z",
+      "improve-cv": "2021-07-28T08:16:21Z"
+    },
+    "frontVersion": "prod.usa.tag-2021-09-01_00"
+  },
+  "https://uk.hellobob.com": {
+    "serverVersion": "prod.uk.tag-2021-09-01_00",
+    "lastSentEmail": {
+      "post-covid": "2021-07-13T08:15:43Z",
+      "focus-body-language": "2021-09-03T08:15:43.707015Z",
+      "network-plus": "1970-01-01T00:00:00Z",
+      "focus-network": "2021-08-09T08:15:46Z",
+      "improve-cv": "2021-08-02T08:15:43Z"
+    },
+    "frontVersion": "prod.uk.tag-2021-09-01_00"
+  },
+  "https://skillup.hellobob.com": {
+    "serverVersion": "prod.skillup.tag-2021-09-01_00",
+    "lastSentEmail": {
+      "focus-body-language": "2021-08-30T08:16:16Z",
+      "improve-cv": "2021-07-28T08:16:21Z",
+      "network-plus": "2021-08-24T08:16:16Z",
+      "focus-network": "2021-08-04T08:16:15Z"
+    },
+    "frontVersion": "prod.skillup.tag-2021-09-01_00"
+  }
+}

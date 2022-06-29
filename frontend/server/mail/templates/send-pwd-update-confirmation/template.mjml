@@ -1,0 +1,28 @@
+<mjml owa="desktop" version="4.5.1">
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-image align="center" alt="{{var:productName}}" border="none" height="auto" src="{{var:productLogoUrl}}" width="102px"/>
+        <mj-divider border-color="#E9EBF0" border-style="solid" border-width="1px" container-background-color="transparent" padding-bottom="20px" padding-top="20px" padding="10px 25px" width="100%"/>
+        <mj-text line-height="1.38" font-size="14.7px">
+          <p>Bonjour {{var:firstName}},</p>
+          <p>Nous vous informons que votre mot de passe a été modifié avec succès.</p>
+          <p>Vous pouvez dès à présent utiliser votre nouveau mot de passe pour vous connecter à votre compte et accéder à {{var:productName}}.</p>
+        </mj-text>
+        <mj-button align="center" background-color="#58BBFB" border-radius="100px" border="none" color="#ffffff" container-background-color="transparent" font-family="Ubuntu, Helvetica, Arial, sans-serif" font-size="13px" font-weight="normal" href="{{var:authLink}}" inner-padding="10px 25px" padding-bottom="20px" padding-left="25px" padding-right="25px" padding-top="20px" padding="10px 25px" text-decoration="none" text-transform="none" vertical-align="middle">
+          Se connecter à {{var:productName}}
+        </mj-button>
+        <mj-text line-height="1.38" font-size="14.7px">
+          <p>Si vous n'êtes pas à l'origine de ce changement, nous vous invitons à modifier votre mot de passe en cliquant sur <a target="_blank" style="color:inherit" href="{{var:resetPwdLink}}">mot de passe oublié</a>.</p>
+          <p>Nous vous remercions de votre confiance.</p>
+          <p>{{var:senderName}}</p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-text font-size="11px" color="#55575d" line-height="2">Vous recevez cet email car vous êtes inscrit{%if var:gender:""=="FEMININE"%}e{%elseif var:gender:""=="MASCULINE"%}{%else%}·e{%endif%} sur <a href="{{var:baseUrl}}?utm_source=bob-emploi&amp;utm_medium=email" target="_blank">{{var:productName}}</a> et avez demandé à modifier votre mot de passe. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte {{var:productName}} en veille ? <a href="{{var:statusUpdateUrl}}" target="_blank">cliquez ici</a>.</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

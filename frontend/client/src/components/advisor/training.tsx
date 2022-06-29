@@ -1,23 +1,23 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
-import PropTypes from 'prop-types'
 import React, {useMemo, useState} from 'react'
 
-import {lowerFirstLetter, ofJobName, slugify} from 'store/french'
-import {LocalizableString, prepareT} from 'store/i18n'
+import type {GetTipsProps} from 'deployment/training'
+import {getTips, websites} from 'deployment/training'
+
+import {lowerFirstLetter, ofJobName} from 'store/french'
 import {genderizeJob} from 'store/job'
+import type {LocalizableString} from 'store/i18n'
+import {prepareT} from 'store/i18n'
 import {useAsynceffect} from 'store/promise'
 
-import ExternalLink from 'components/external_link'
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
 import {RadiumExternalLink} from 'components/radium'
-import {fetchCity} from 'components/suggestions'
-import laBonneFormationImage from 'images/labonneformation-picto.png'
-import Picto from 'images/advices/picto-training.svg'
+import {fetchCityByAdmin2Code} from 'components/city_input'
 
-import {MethodSuggestionList, CardProps, EmailTemplate, EmailTemplateProps,
-  HandyLink, useAdviceData} from './base'
+import type {CardProps} from './base'
+import {EmailTemplate, MethodSuggestionList, useAdviceData} from './base'
 
 
 const emptyArray = [] as const
@@ -43,31 +43,30 @@ const valueToText: {[K in keyof typeof valueToColor]: LocalizableString} = {
   5: prepareT('Excellent'),
 } as const
 
-
-// TODO(cyrille): Make a working link.
-function createTrainingLink(domain?: string): string {
-  if (!domain || config.countryId !== 'fr') {
-    return config.trainingFindUrl
-  }
-  return `${config.trainingFindUrl}/${domain}/france`
+const sectionStyle: React.CSSProperties = {
+  marginBottom: 20,
 }
 
+// The training method is built with 2 sections:
+// - a list of tips
+// - a list of training sessions, replaced by a list of websites if we have none.
 
 const TrainingMethod = (props: CardProps): React.ReactElement => {
   const {
     handleExplore,
-    profile: {gender = undefined, hasHandicap = false} = {},
-    project: {targetJob = undefined, city: {departementId = undefined} = {}} = {},
+    profile, profile: {gender = undefined} = {},
+    project, project: {targetJob = undefined, city: {departementId = undefined} = {}} = {},
     t,
   } = props
-  const {data: {trainings = emptyArray}, loading} = useAdviceData<bayes.bob.Trainings>(props)
+  const {data, data: {trainings = emptyArray}, loading} = useAdviceData<bayes.bob.Trainings>(props)
 
-  const tipsTemplates = useMemo(
-    (): readonly Pick<EmailTemplateProps, 'content' | 'contentName' | 'title'>[] => {
-      const jobName = lowerFirstLetter(genderizeJob(targetJob, gender))
-      const counselorTip = {
-        content: t(`
-Bonjour,
+  const onContentShown = handleExplore('tip')
+  const jobName = lowerFirstLetter(genderizeJob(targetJob, gender))
+  const commonTips = useMemo((): GetTipsProps['commonTips'] => ({
+    coach: <EmailTemplate
+      onContentShown={onContentShown} key="coach"
+      title={t('Demander à son conseiller emploi')}
+      content={t(`Bonjour,
 
 Je m'intéresse à la possibilité de faire une formation pour le poste {{ofJobName}}.
 
@@ -78,28 +77,11 @@ Je suis disponible cette semaine, et la semaine prochaine, à votre convenance.
 Je vous remercie pour votre réponse.
 
 Bien cordialement,
-`, {ofJobName: ofJobName(jobName, t)}),
-        title: hasHandicap ?
-          t('Demander à son conseiller Cap emploi') : t('Demander à son conseiller emploi'),
-      }
-      return [
-        ...hasHandicap && [
-          counselorTip,
-          {
-            content: t(`
-Ne tombez pas dans les pièges de formation d'agent administratif.
-
-C'est un métier qui se transforme, et beaucoup de centres de formation ne se sont pas adaptés.
-
-Commencez par vous demander ce qui vous intéresse réellement.
-`),
-            contentName: t("l'astuce Hanploi"),
-            title: t('Prendre conscience des pièges à éviter'),
-          },
-        ] || [],
-        {
-          content: t(`
-Bonjour,
+`, {ofJobName: ofJobName(jobName, t)})} />,
+    friend: <EmailTemplate
+      key="friend" onContentShown={onContentShown}
+      title={t('Demander aux gens qui font le métier visé')}
+      content={t(`Bonjour,
 
 Je parlais à \\[prénom de votre ami·e en commun\\] de mon projet de devenir
 {{jobName}}, et elle/il m'a parlé de vous.
@@ -113,67 +95,37 @@ Auriez-vous 15 minutes pour en discuter au téléphone, ou pour prendre un café
 Merci beaucoup.
 
 Bonne journée,
-`, {context: gender, jobName}),
-          title: t('Demander aux gens qui font le métier visé'),
-        },
-        {
-          content: t(`
-J'ai des questions à propos de votre offre de \\[titre de l'offre\\]. Est-ce qu'une expérience
-de \\[années d'experience\\] serait suffisante même si le·a candidat·e n'a pas de diplôme\u00A0?
-`, {context: gender}),
-          contentName: t('comment demander'),
-          title: t('Téléphoner aux recruteurs pour connaitre leurs critères'),
-        },
-        ...hasHandicap && [] || [counselorTip],
-      ]
-    }, [gender, hasHandicap, t, targetJob])
-
-  const footer = useMemo((): React.ReactNode => {
-    const {jobGroup: {name = undefined} = {}} = targetJob || {}
-    const domain = name && slugify(name)
-    // TODO(cyrille): DRY this up in base.tsx.
-    const linkStyle = {
-      color: colors.BOB_BLUE,
-      textDecoration: 'none',
-    }
-    return <Trans parent={null} t={t}>
-      <img
-        style={{height: 20, marginRight: 10}} src={laBonneFormationImage}
-        alt="la bonne formation" />
-      Trouvez une formation et lisez des témoignages sur <ExternalLink
-        style={linkStyle} href={createTrainingLink(domain)}>
-        {{trainingFindName: config.trainingFindName}}</ExternalLink>
-    </Trans>
-  }, [t, targetJob])
+`, {jobName})} />,
+    recruiter: <EmailTemplate
+      key="recruiter" onContentShown={onContentShown}
+      title={t('Téléphoner aux recruteurs pour connaitre leurs critères')}
+      contentName={t('comment demander')}
+      content={t(
+        "J'ai des questions à propos de votre offre de \\[titre de l'offre\\]. Est-ce qu'une " +
+        "expérience de \\[années d'experience\\] serait suffisante même si le·a candidat·e n'a " +
+        'pas de diplôme\u00A0?')} />,
+  }), [t, jobName, onContentShown])
+  const {isOrdered, tips} = useMemo(
+    () => getTips({commonTips, data, onContentShown, profile, project, t}),
+    [commonTips, data, onContentShown, profile, project, t],
+  )
 
   const tipsSection = useMemo((): React.ReactNode => {
-    const templates = tipsTemplates
-    if (!templates.length) {
+    if (!tips.length) {
       return null
     }
-    const stepOrTip = hasHandicap ?
-      t('étape', {count: templates.length}) : t('astuce', {count: templates.length})
+    const stepOrTip = isOrdered ?
+      t('étape', {count: tips.length}) : t('astuce', {count: tips.length})
     const title = <Trans parent={null} t={t}>
-      <GrowingNumber number={templates.length} isSteady={true} /> {{stepOrTip}} pour savoir quelle
+      <GrowingNumber number={tips.length} isSteady={true} /> {{stepOrTip}} pour savoir quelle
       formation il vous faudrait
     </Trans>
-    const listFooter = hasHandicap ? <HandyLink
-      linkIntro={t(
-        'Se renseigner sur les aides formation pour les personnes en situation de handicap\u00A0:',
-      )} href="https://www.pole-emploi.fr/candidat/travailleurs-handicapes-@/article.jspz?id=60726">
-      Pôle emploi
-    </HandyLink> : trainings.length ? null : footer
-    return <MethodSuggestionList title={title} footer={listFooter}>
-      {templates.map((template, index): ReactStylableElement => <EmailTemplate
-        onContentShown={handleExplore('tip')} key={index} {...template} />)}
+    return <MethodSuggestionList title={title} style={sectionStyle}>
+      {tips}
     </MethodSuggestionList>
-  }, [trainings, footer, handleExplore, hasHandicap, t, tipsTemplates])
+  }, [isOrdered, t, tips])
 
-  const wrapperStyle = useMemo(
-    (): React.CSSProperties => tipsSection ? {marginTop: 20} : {},
-    [tipsSection],
-  )
-  const renderTrainings = useMemo((): React.ReactNode => {
+  const trainingsSection = useMemo((): React.ReactNode => {
     if (!trainings.length) {
       return null
     }
@@ -181,24 +133,56 @@ de \\[années d'experience\\] serait suffisante même si le·a candidat·e n'a p
       <GrowingNumber number={trainings.length} isSteady={true} />
       {' '}exemple de formation près de chez vous
     </Trans>
-    return <MethodSuggestionList title={title} footer={footer} style={wrapperStyle}>
+    return <MethodSuggestionList title={title}>
       {trainings.map((training, index): ReactStylableElement => <TrainingSuggestion
         onClick={handleExplore('training')} training={training} key={index} t={t}
         departementId={departementId} />)}
     </MethodSuggestionList>
-  }, [departementId, footer, t, handleExplore, trainings, wrapperStyle])
+  }, [departementId, t, handleExplore, trainings])
 
+  const trainingWebsites = useMemo((): React.ReactNode|null => {
+    if (!websites.length) {
+      return null
+    }
+    const title = <Trans parent={null} t={t} count={websites.length}>
+      <GrowingNumber number={websites.length} isSteady={true} /> sites pour découvrir
+      des formations</Trans>
+    const containerStyle: React.CSSProperties = {
+      color: 'inherit',
+      height: 70,
+      padding: '15px 20px',
+      textDecoration: 'none',
+    }
+    const logoContainerStyle: React.CSSProperties = {
+      alignItems: 'center',
+      border: `1px solid ${colors.MODAL_PROJECT_GREY}`,
+      boxSizing: 'border-box',
+      display: 'flex',
+      height: 40,
+      justifyContent: 'center',
+      marginRight: 20,
+      width: 42,
+    }
+    const logoStyle: React.CSSProperties = {
+      width: 30,
+    }
+    return <MethodSuggestionList title={title}>
+      {websites.map((website, index): ReactStylableElement =>
+        <RadiumExternalLink href={website.url} key={index} style={containerStyle}>
+          <div style={logoContainerStyle}><img src={website.logo} alt="" style={logoStyle} /></div>
+          {website.name}
+          <div style={{flex: 1}} />
+          <ChevronRightIcon style={{fill: colors.CHARCOAL_GREY, height: 20, width: 20}} />
+        </RadiumExternalLink>)}
+    </MethodSuggestionList>
+  }, [t])
   if (loading) {
     return loading
   }
   return <div>
     {tipsSection}
-    {renderTrainings}
+    {trainings.length ? trainingsSection : trainingWebsites}
   </div>
-}
-TrainingMethod.propTypes = {
-  project: PropTypes.object.isRequired,
-  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(TrainingMethod)
 
@@ -274,11 +258,11 @@ const TrainingSuggestionBase = (props: SuggestionProps): React.ReactElement => {
       setCityDisplay(cityName)
       return
     }
-    const {name} = await fetchCity({departementId})
-    if (checkIfCanceled() || !name) {
+    const city = await fetchCityByAdmin2Code(departementId)
+    if (checkIfCanceled() || !city || !city.name) {
       return
     }
-    setCityDisplay(name)
+    setCityDisplay(city.name)
   }, [cityName, departementId])
   const containerStyle = useMemo((): React.CSSProperties => ({
     color: 'inherit',
@@ -295,17 +279,7 @@ const TrainingSuggestionBase = (props: SuggestionProps): React.ReactElement => {
     <ChevronRightIcon style={chevronStyle} />
   </RadiumExternalLink>
 }
-TrainingSuggestionBase.propTypes = {
-  onClick: PropTypes.func.isRequired,
-  style: PropTypes.object,
-  training: PropTypes.shape({
-    cityName: PropTypes.string,
-    hiringPotential: PropTypes.number,
-    name: PropTypes.string,
-    url: PropTypes.string,
-  }).isRequired,
-}
 const TrainingSuggestion = React.memo(TrainingSuggestionBase)
 
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName: 'rocket' as const}

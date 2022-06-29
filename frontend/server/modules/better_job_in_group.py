@@ -3,6 +3,14 @@
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import project_pb2
 
+# TODO(pascal): Check for other such job groups.
+_EXCLUDE_JOB_LIST = {
+    # Teachers (e.g. maths, geography, French).
+    'K2107',
+    # Researchers (e.g. economy, science, philosophy)
+    'K2401',
+}
+
 
 class _AdviceBetterJobInGroup(scoring_base.ModelBase):
     """A scoring model to trigger the "Change to better job in your job group" advice."""
@@ -13,9 +21,7 @@ class _AdviceBetterJobInGroup(scoring_base.ModelBase):
 
         # This job group has jobs that are too different to consider them as a
         # small change.
-        # TODO(pascal): Check for other such job groups and move the config to
-        # a class property.
-        if project.details.target_job.job_group.rome_id == 'K2401':
+        if project.details.target_job.job_group.rome_id in _EXCLUDE_JOB_LIST:
             return scoring_base.NULL_EXPLAINED_SCORE
 
         specific_jobs = project.requirements().specific_jobs

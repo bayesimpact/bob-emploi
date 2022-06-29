@@ -1,8 +1,7 @@
-import PropTypes from 'prop-types'
 import React from 'react'
 
-import {CardProps} from './base'
-import {NetworkAdvicePage, Picto} from './network'
+import type {CardProps} from './base'
+import {NetworkAdvicePage, pictoName} from './network'
 
 
 const NetworkGoodCard = (props: CardProps): React.ReactElement => {
@@ -15,10 +14,7 @@ const NetworkGoodCard = (props: CardProps): React.ReactElement => {
       'personnes comme vous. Alors allez-y à fond.',
     )} />
 }
-NetworkGoodCard.propTypes = {
-  t: PropTypes.func.isRequired,
-}
 const ExpandedAdviceCardContent = React.memo(NetworkGoodCard)
 
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName}

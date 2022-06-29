@@ -1,0 +1,30 @@
+<mjml owa="desktop" version="4.6.3">
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-text line-height="1.38">Bonjour {{var:firstName:"Rémi"}},</mj-text>
+        <mj-text line-height="1.38">On vous a probablement déjà posé cette question : quelle est votre passion ? Certaines personnes le savent tout de suite, mais la plupart des gens que j'ai coachés ont du mal à répondre à cette question.</mj-text>
+        <mj-text line-height="1.38">Il y a beaucoup de pression pour découvrir sa ✨ vraie passion ✨ et en faire sa carrière. En réalité, la plupart des gens <strong>n'ont pas qu'une seule passion</strong>, ce qui rend difficile le fait de faire un choix. En moyenne, une personne changera de carrière 5 à 7 fois au cours de sa vie.</mj-text>
+        <mj-text line-height="1.38">Parfois, le fait de trop se concentrer sur la recherche de notre passion peut nous empêcher d'essayer de nouvelles choses et de <strong>cultiver</strong> noS passionS au fil du temps.</mj-text>
+        <mj-text line-height="1.38">La vidéo ci-dessous donne d'excellents conseils sur la façon d'élargir nos perspectives au-delà de la recherche de notre passion. Voici quelques-uns de mes enseignements préférés :<br /></mj-text>
+        <mj-text line-height="1.38">
+          <ul>
+            <li><strong>Une passion n'est pas un plan, c'est un sentiment - et les sentiments peuvent changer.</strong> Nous ne devrions pas juger chaque opportunité en fonction de notre passion initiale, car celle-ci peut changer avec le temps.</li>
+            <li><strong>Le succès alimente la passion plus que la passion n'alimente le succès.</strong> Lorsque nous réussissons dans notre travail, nous nous sentons bien dans notre peau et nous avons tendance à apprécier davantage notre travail - parfois, la meilleure chose à faire est de se concentrer sur des emplois dans lesquels nous pensons être bons, et la passion viendra par la suite.</li>
+            <li><strong>On ne commence pas par créer sa vie pour ensuite la vivre.</strong> On crée sa vie en la vivant, sans se demander si l'on est passionné à 100 % par ce que l'on fait.</li>
+          </ul>
+        </mj-text>
+        <mj-image align="center" alt="" border="none" height="auto" href="https://youtu.be/6MBaFL7sCb8" padding="10px 25px" src="https://t.bob-emploi.fr/tplimg/6u2u/b/vv9v/izmgm.png" target="_blank" title="" width="700px"></mj-image>
+        <mj-text line-height="1.38" color="#55575d">Astuce 🇫🇷 Si les sous-titres en français ne sont pas activés sur la vidéo, cliquez sur l'icône <b>réglages</b> en bas de la vidéo, puis sur <b>subtitles</b> et choisissez <b>français ☕️</b></mj-text>
+        <mj-text line-height="1.38">J'espère que vous avez trouvé cette vidéo aussi utile que moi ! Dites-moi ce que vous en pensez - et bonne chance !</mj-text>
+        <mj-text line-height="1.38">{{var:senderName}}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-text font-size="11px" color="#55575d" line-height="2">Vous recevez cet email car vous êtes inscrit{%if var:gender:""=="FEMININE"%}e{%elseif var:gender:""=="MASCULINE"%}{%else%}·e{%endif%} sur <a href="{{var:baseUrl}}?utm_source=bob-emploi&amp;utm_medium=email" target="_blank">{{var:productName}}</a> et avez demandé des emails de coaching. <a href="{{var:changeEmailSettingsUrl}}" target="_blank">Cliquez ici</a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte {{var:productName}} en veille ? <a href="{{var:statusUpdateUrl}}" target="_blank">cliquez ici</a>.</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

@@ -1,12 +1,13 @@
-import {LocalizableString, prepareT as prepareTNoExtract} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {prepareT as prepareTNoExtract} from 'store/i18n'
 
-import {LocalizedSelectOption} from 'components/select'
+import type {LocalizedSelectOption} from 'components/select'
 
 interface SelectOption<T = string> extends LocalizedSelectOption<T> {
   readonly equivalent?: LocalizableString
 }
 const DEGREE_OPTIONS: readonly SelectOption<bayes.bob.DegreeLevel>[] = [
-  {name: prepareTNoExtract('--'), value: 'NO_DEGREE'},
+  {name: prepareTNoExtract('En dessous du CAP ou BEP'), value: 'NO_DEGREE'},
   {name: prepareTNoExtract('CAP - BEP'), value: 'CAP_BEP'},
   {name: prepareTNoExtract('Bac - Bac Pro'), value: 'BAC_BACPRO'},
   {
@@ -26,5 +27,6 @@ const DEGREE_OPTIONS: readonly SelectOption<bayes.bob.DegreeLevel>[] = [
   },
 ]
 
-// eslint-disable-next-line import/prefer-default-export
-export {DEGREE_OPTIONS}
+const RACE_OPTIONS = [] as const
+
+export {DEGREE_OPTIONS, RACE_OPTIONS}

@@ -1,16 +1,15 @@
-import PropTypes from 'prop-types'
 import {stringify} from 'query-string'
 import React from 'react'
 
-import {getEmailTemplates} from 'store/i18n'
+import {getEmailTemplates} from 'store/advice'
 
 import vroomVroomImage from 'images/vroom-vroom-picto.jpg'
 
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
-import Picto from 'images/advices/picto-driving-license.svg'
 
-import {CardProps, EmailTemplate, ExpandableAction, ToolCard, useAdviceData} from './base'
+import type {CardProps} from './base'
+import {EmailTemplate, ExpandableAction, ToolCard, useAdviceData} from './base'
 
 
 interface RequirementsProps extends CardProps {
@@ -66,7 +65,7 @@ const comparatorStyle: React.CSSProperties = {
 const getVroomVroomUrl =
   ({latitude, longitude}: bayes.bob.FrenchCity, city?: bayes.bob.FrenchCity): string => {
     if (!city || !latitude || !longitude) {
-      return 'https://www.vroomvroom.fr/'
+      return 'https://www.vroomvroom.fr/' // checkURL
     }
     const {name, regionName} = city
     const location = `${name}, ${regionName}, France`
@@ -126,23 +125,7 @@ const DrivingLicenseLowIncome: React.FC<CardProps> = (props: CardProps): React.R
     {actions}
   </div>
 }
-DrivingLicenseLowIncome.propTypes = {
-  advice: PropTypes.shape({
-    adviceId: PropTypes.string.isRequired,
-    numStars: PropTypes.number,
-  }).isRequired,
-  handleExplore: PropTypes.func.isRequired,
-  profile: PropTypes.shape({
-    gender: PropTypes.oneOf(['FEMININE', 'MASCULINE']),
-  }).isRequired,
-  project: PropTypes.shape({
-    city: PropTypes.shape({
-      name: PropTypes.string,
-      regionName: PropTypes.string,
-    }),
-  }).isRequired,
-}
 const ExpandedAdviceCardContent = React.memo(DrivingLicenseLowIncome)
 
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName: 'drivingLicense' as const}

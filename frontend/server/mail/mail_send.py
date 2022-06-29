@@ -5,56 +5,23 @@ import logging
 import os
 import re
 import typing
-from typing import Any, Dict, Iterable, Iterator, List, Literal, Mapping, Optional, TypedDict, Union
+from typing import Any, Iterable, Iterator, Literal, Mapping, Optional, TypedDict, Union
 
+from google.protobuf import json_format
 import mailjet_rest
 from requests import exceptions
 from requests import models
 
-from bob_emploi.common.python import now
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.common.python import proto
+from bob_emploi.frontend.api import email_pb2
+from bob_emploi.frontend.api import mailjet_pb2
+from bob_emploi.frontend.server import i18n
 from bob_emploi.frontend.server.mail.templates import mailjet_templates
 
 if typing.TYPE_CHECKING:
     class _MailjetUser(TypedDict, total=False):
         Name: str
         Email: str
-
-    _MailjetParsePartHeaderJson = TypedDict(
-        '_MailjetParsePartHeaderJson', {
-            'Content-Type': List[str],
-            'Content-Transfer-Encoding': List[str],
-            'Content-Disposition': List[str],
-        }, total=False)
-
-    class _MailjetParsePartJson(TypedDict, total=False):
-        # Add more attachments if needed.
-        ContentRef: Literal[
-            'Html-part', 'Text-part', 'Attachment1', 'Attachment2', 'Attachment3',
-        ]
-        Headers: _MailjetParsePartHeaderJson
-
-    _MailjetParseJson = TypedDict(
-        '_MailjetParseJson', {
-            # Email of sender.
-            'Sender': str,
-            'Recipient': str,
-            'Date': str,
-            # Sender in format "Name <Email>".
-            'From': str,
-            'Subject': str,
-            'Headers': Dict[str, Any],
-            'Parts': List[_MailjetParsePartJson],
-            'Text-part': str,
-            'Html-part': str,
-            'SpamAssassinScore': str,
-            'Attachment1': str,
-            'Attachment2': str,
-            'Attachment3': str,
-            # Add more attachments if needed.
-        }, total=False)
-
-    _AttachmentRefType = Literal['Attachment1', 'Attachment2', 'Attachment3']
 
     class _MailjetSendAttachmentJson(TypedDict, total=False):
         ContentType: str
@@ -64,19 +31,23 @@ if typing.TYPE_CHECKING:
     _MailjetSendMessageJson = TypedDict(
         '_MailjetSendMessageJson', {
             # Email of sender.
-            'To': List[_MailjetUser],
+            'To': list[_MailjetUser],
             'From': _MailjetUser,
             'HTMLPart': Optional[str],
             'Subject': str,
             'TemplateID': int,
             'TemplateLanguage': bool,
+            'TemplateErrorReporting': _MailjetUser,
+            'CustomCampaign': str,
+            'TrackOpens': Literal['account_default', 'disabled', 'enabled'],
+            'TrackClicks': Literal['account_default', 'disabled', 'enabled'],
             'TextPart': Optional[str],
-            'Variables': Dict[str, Any],
-            'Attachments': List[_MailjetSendAttachmentJson],
+            'Variables': Mapping[str, Any],
+            'Attachments': list[_MailjetSendAttachmentJson],
         }, total=False)
 
     class _MailjetSendDataJson(TypedDict, total=False):
-        Messages: List[_MailjetSendMessageJson]
+        Messages: list[_MailjetSendMessageJson]
 
     class _Recipient(typing.Protocol):
         @property
@@ -123,6 +94,7 @@ _MAILJET_APIKEY_PUBLIC = os.getenv('MAILJET_APIKEY_PUBLIC', 'f53ee2bc432e531d209
 # See https://app.mailjet.com/account/api_keys
 _MAILJET_SECRET = os.getenv('MAILJET_SECRET', 'dev-mailjet-private-key')
 _MAIL_SENDER_EMAIL = 'bob@bob-emploi.fr'
+_NO_REPLY_EMAIL = 'no-reply@bob-emploi.fr'
 _MAIL_SENDER_NAME = 'Bob'
 
 _NAME_AND_MAIL_REGEXP = re.compile(r'(.*?)\s*<(.*)>')
@@ -134,25 +106,30 @@ _NAME_AND_MAIL_REGEXP = re.compile(r'(.*?)\s*<(.*)>')
 _FILENAME_DISPOSITION_REGEX = re.compile(r'filename=("(?:\\"|[^"])+"|[^ ]+)')
 
 # Email of admin to send service emails.
-_ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'pascal@bayes.org')
+# By default this is pinging Bayes Impact #bob-bugs channel.
+# TODO(cyrille): Create and use a Google groups email address here.
+_ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'bob-bugs-aaaaatnpsefcluioi5jfvhjvee@bayesimpact.slack.com')
 
 # Mailjet statuses for which we consider that the mail has been read/opened.
 READ_EMAIL_STATUSES = frozenset([
-    user_pb2.EMAIL_SENT_OPENED, user_pb2.EMAIL_SENT_CLICKED])
+    email_pb2.EMAIL_SENT_OPENED, email_pb2.EMAIL_SENT_CLICKED])
 READ_EMAIL_STATUS_STRINGS = frozenset(
-    user_pb2.EmailSentStatus.Name(status)
+    email_pb2.EmailSentStatus.Name(status)
     for status in READ_EMAIL_STATUSES
 )
 
 
-class _FakeResponse(typing.NamedTuple):
-    status_code: int = 200
-    text: str = 'OK'
+class _FakeResponse:
 
-    def json(self) -> Dict[str, Any]:  # pylint: disable=invalid-name
+    def __init__(self, recipients: list[Any]) -> None:
+        self.status_code = 200
+        self.text = 'OK'
+        self._recipients = recipients
+
+    def json(self) -> dict[str, Any]:  # pylint: disable=invalid-name
         """Get JSON encoded data from the body."""
 
-        return {}
+        return {'Messages': [{'To': [{'MessageID': 0} for r in self._recipients]}]}
 
     def raise_for_status(self) -> None:
         """Raises an exception if status_code is that of an error."""
@@ -172,22 +149,34 @@ def _make_mailjet_user(user: Union[str, '_Recipient']) -> '_MailjetUser':
             'Name': match.group(1),
         }
     recipient: '_Recipient' = user
+    name: str
+    if recipient.name:
+        if recipient.last_name:
+            name = f'{recipient.name} {recipient.last_name}'
+        else:
+            name = recipient.name
+    else:
+        name = recipient.last_name
     return {
         'Email': recipient.email,
-        'Name': f'{recipient.name} {recipient.last_name}',
+        'Name': name,
     }
 
 
 def _get_mailjet_id(campaign_id: mailjet_templates.Id, locale: str = '') -> int:
     campaign_templates = mailjet_templates.MAP[campaign_id]
-    if not locale or locale == 'fr':
+    if not locale or locale == 'fr' or campaign_templates.get('noI18n'):
         return campaign_templates['mailjetTemplate']
-    try:
-        return campaign_templates['i18n'][locale]
-    except KeyError:
-        logging.warning(
-            'Missing a translation in "%s" for mailing campaign "%s".', locale, campaign_id)
-        return campaign_templates['mailjetTemplate']
+
+    for try_locale in i18n.iterate_on_fallback_locales(locale):
+        try:
+            return campaign_templates['i18n'][try_locale]
+        except KeyError:
+            pass
+
+    logging.warning(
+        'Missing a translation in "%s" for mailing campaign "%s".', locale, campaign_id)
+    return campaign_templates['mailjetTemplate']
 
 
 def _check_not_null_variable(
@@ -208,7 +197,9 @@ def send_template(
         template_vars: Mapping[str, Any],
         dry_run: bool = False, other_recipients: Optional[Iterable['_Recipient']] = None,
         sender_email: str = _MAIL_SENDER_EMAIL,
-        sender_name: str = _MAIL_SENDER_NAME) -> '_Response':
+        sender_name: str = _MAIL_SENDER_NAME,
+        template_id: Optional[int] = None,
+        *, options: Optional['_MailjetSendMessageJson'] = None) -> '_Response':
     """Send an email using a template.
 
     Args:
@@ -228,6 +219,8 @@ def send_template(
     """
 
     _check_not_null_variable(template_vars)
+    if 'senderName' not in template_vars:
+        template_vars = template_vars | {'senderName': sender_name}
     mail_client = _mailjet_client(version='v3.1')
     # TODO(cyrille): Batch messages when sending several.
     all_recipients = [recipient] + list(other_recipients or [])
@@ -236,9 +229,13 @@ def send_template(
         for r in all_recipients
         if '@' in r.email and not r.email.endswith('@example.com')
     ]
+
+    if not template_vars.get('areEmailsAnswerRead', True):
+        sender_email = _NO_REPLY_EMAIL
+
     # TODO(cyrille): Update locale depending on other recipients.
-    template_id = _get_mailjet_id(campaign_id, recipient.locale)
-    data = {
+    template_id = template_id or _get_mailjet_id(campaign_id, recipient.locale)
+    data: _MailjetSendDataJson = {
         'Messages': [{
             'TemplateID': template_id,
             'TemplateLanguage': True,
@@ -246,18 +243,20 @@ def send_template(
             'From': {'Email': sender_email, 'Name': sender_name},
             'Variables': template_vars,
             'To': recipients,
-        }]
+        }],
     }
+    if options:
+        data['Messages'][0].update(options)
     if campaign_id:
         data['Messages'][0]['CustomCampaign'] = campaign_id
     if dry_run or not recipients:
         logging.info(data)
-        return _FakeResponse()
+        return _FakeResponse(all_recipients)
     # TODO(cyrille): Drop the cast if mailjet_rest ever gets typed.
     return typing.cast(models.Response, mail_client.send.create(data=data))
 
 
-def get_message(message_id: int) -> Optional[Dict[str, Any]]:
+def get_message(message_id: int) -> Optional[dict[str, Any]]:
     """Get the status of a sent message, using its Mailjet Message ID."""
 
     mail_client = _mailjet_client()
@@ -276,26 +275,26 @@ def _get_message_ids(response: '_Response') -> Iterator[int]:
                 yield typing.cast(int, recipient['MessageID'])
 
 
-def _create_email_sent_proto(message_id: int) -> user_pb2.EmailSent:
-    email_sent = user_pb2.EmailSent()
-    email_sent.sent_at.FromDatetime(now.get())
-    email_sent.sent_at.nanos = 0
+def _create_email_sent_proto(message_id: int) -> email_pb2.EmailSent:
+    email_sent = email_pb2.EmailSent()
+    proto.set_date_now(email_sent.sent_at)
     email_sent.mailjet_message_id = message_id
     return email_sent
 
 
-def create_email_sent_proto(response: '_Response') -> Optional[user_pb2.EmailSent]:
+def create_email_sent_proto(response: '_Response') -> Optional[email_pb2.EmailSent]:
     """Create an EmailSent proto from a MailJet response for the first recipient."""
 
-    message_id = next(_get_message_ids(response), 0)
-    if not message_id:
+    try:
+        message_id = next(_get_message_ids(response))
+    except StopIteration:
         return None
 
     return _create_email_sent_proto(message_id)
 
 
 def create_email_sent_protos(response: '_Response') \
-        -> Iterator[user_pb2.EmailSent]:
+        -> Iterator[email_pb2.EmailSent]:
     """Create an EmailSent proto for each recipient of an email from a MailJet response."""
 
     for message_id in _get_message_ids(response):
@@ -303,7 +302,7 @@ def create_email_sent_protos(response: '_Response') \
 
 
 def send_direct_email(
-        recipient: '_Recipient', email_data: '_MailjetParseJson',
+        recipient: '_Recipient', email_data: mailjet_pb2.Parse,
         subject: Optional[str] = None) -> models.Response:
     """Send an email for which we already have the content to a specific recipient.
 
@@ -311,50 +310,54 @@ def send_direct_email(
     """
 
     mail_client = _mailjet_client(version='v3.1')
-    attachments: List['_MailjetSendAttachmentJson'] = []
-    for part in email_data.get('Parts', []):
-        ref = part.get('ContentRef')
+    attachments: list['_MailjetSendAttachmentJson'] = []
+    for part in email_data.parts:
+        ref = part.content_ref
         if not ref or not ref.startswith('Attachment'):
             continue
-        headers = part.get('Headers', {})
+        headers = part.headers
         filename_match = next((
             _FILENAME_DISPOSITION_REGEX.search(dispo)
-            for dispo in iter(headers.get('Content-Disposition', []))
+            for dispo in headers.content_disposition
             if dispo.startswith('attachment')), None)
         filename = filename_match.group(1) if filename_match else ''
-        attachment_ref = typing.cast('_AttachmentRefType', ref)
+        attachment_ref = '_'.join(ref.split('-')).lower()
         attachments.append({
-            'Base64Content': email_data.get(attachment_ref, ''),
-            'ContentType': headers.get('Content-Type', [''])[0].split(';', 1)[0],
+            'Base64Content': getattr(email_data, attachment_ref),
+            'ContentType': (headers.content_type or [''])[0].split(';', 1)[0],
             'Filename': filename,
         })
+    # TODO(cyrille): Strip HTMLPart of #-starting lines too.
+    text_part = '\n'.join(
+        line for line in email_data.text_part.split('\n')
+        if not line.strip().startswith('#')) or None
     data: _MailjetSendDataJson = {'Messages': [{
         'Attachments': attachments,
-        'From': _make_mailjet_user(email_data.get('From', '')),
-        'HTMLPart': email_data.get('Html-part'),
-        'Subject': subject or email_data.get('Subject', ''),
-        'TextPart': email_data.get('Text-part'),
+        'From': _make_mailjet_user(email_data.full_sender),
+        'HTMLPart': email_data.html_part or None,
+        'Subject': subject or email_data.subject,
+        'TextPart': text_part,
         'To': [_make_mailjet_user(recipient)],
     }]}
     return typing.cast(models.Response, mail_client.send.create(data=data))
 
 
 def mailer_daemon(
-        error_message: str, email_data: '_MailjetParseJson',
+        error_message: str, email_data: mailjet_pb2.Parse,
         user_id: Optional[str] = None) -> models.Response:
     """Send an email back to the original sender of a Mailjet Parse API email,
     saying there has been an error."""
 
     data: _MailjetSendDataJson = {'Messages': [{
         'From': {'Name': 'Mail Delivery Subsystem', 'Email': 'mailer-daemon@bob-emploi.fr'},
-        'To': [_make_mailjet_user(email_data.get('From', ''))],
+        'To': [_make_mailjet_user(email_data.full_sender)],
         'TemplateID': 896724,
         'TemplateLanguage': True,
         'Variables': {
             'additionalContent': error_message,
-            'originalHtml': email_data.get('Html-part', ''),
-            'originalSubject': email_data.get('Subject', ''),
-            'quotedOriginalText': '> ' + '\n> '.join(email_data.get('Text-part', '').split('\n')),
+            'originalHtml': email_data.html_part,
+            'originalSubject': email_data.subject,
+            'quotedOriginalText': '> ' + '\n> '.join(email_data.text_part.split('\n')),
             'userId': user_id or '',
         },
     }]}
@@ -378,5 +381,27 @@ def get_html_template(campaign_id: mailjet_templates.Id, locale: str) -> Optiona
     if response.status_code == 404:
         return None
     response.raise_for_status()
-    detail_content: _MailjetParseJson = next(iter(response.json().get('Data', [])), {})
-    return detail_content.get('Html-part')
+    detail_contents = mailjet_pb2.TemplateDetailContents()
+    json_format.ParseDict(response.json(), detail_contents, ignore_unknown_fields=True)
+    return detail_contents.data[0].html_part
+
+
+def get_mailjet_sent_campaign_id(campaign_id: mailjet_templates.Id) -> Optional[int]:
+    """Retrieves the Sent Campaign ID of one of our campaign.
+
+    This can be used to find the Mailjet page with stats, e.g.
+    https://app.mailjet.com/stats/campaigns/7693941302/overview
+    """
+
+    client = _mailjet_client()
+    response = typing.cast(models.Response, client.campaign.get(
+        filters={'CustomCampaign': campaign_id}))
+
+    if response.status_code == 404:
+        return None
+    response.raise_for_status()
+    sent_campaigns = mailjet_pb2.SentCampaigns()
+    json_format.ParseDict(response.json(), sent_campaigns, ignore_unknown_fields=True)
+    if not sent_campaigns.data or len(sent_campaigns.data) > 1:
+        return None
+    return sent_campaigns.data[0].campaign_id

@@ -1,0 +1,352 @@
+[
+ {
+  "_id": "recBs9S8y6xiEo7NF",
+  "_order": 0,
+  "categoryId": "bravo",
+  "filters": [
+   "not-for-experienced(2)"
+  ],
+  "id": "recBs9S8y6xiEo7NF",
+  "order": 1,
+  "score": 60,
+  "sentenceTemplate": "Aucun défi majeur pour vous",
+  "strategiesIntroduction": "Rassurez-vous, il n'y a rien de majeur à changer. Dans les stratégies, vous trouverez des méthodes à essayer. Vous y trouverez peut-être la petite astuce qui fera la différence 🙂",
+  "textTemplate": "**%name**, j'ai préparé votre diagnostic et ... (roulements de tambour) ..."
+ },
+ {
+  "_id": "recGqAREwxv9shJFN",
+  "_order": 1,
+  "categoryId": "bravo",
+  "filters": [
+   "for-company-creator"
+  ],
+  "id": "recGqAREwxv9shJFN",
+  "order": 2,
+  "score": 65,
+  "sentenceTemplate": "Aucun défi majeur pour vous",
+  "strategiesIntroduction": "Rassurez-vous, il n'y a rien de majeur à changer. Dans les stratégies, vous trouverez des méthodes à essayer. Vous y trouverez peut-être la petite astuce qui fera la différence 🙂",
+  "textTemplate": "**%name**, j'ai préparé votre diagnostic et ... (roulements de tambour) ..."
+ },
+ {
+  "_id": "recwRsFXBJqiqHBSY",
+  "_order": 2,
+  "categoryId": "bravo",
+  "filters": [
+   "for-old(50)"
+  ],
+  "id": "recwRsFXBJqiqHBSY",
+  "order": 3,
+  "score": 70,
+  "sentenceTemplate": "Aucun défi majeur pour vous",
+  "strategiesIntroduction": "Rassurez-vous, il n'y a rien de majeur à changer. Dans les stratégies, vous trouverez des méthodes à essayer. Vous y trouverez peut-être la petite astuce qui fera la différence 🙂",
+  "textTemplate": "**%name**, j'ai préparé votre diagnostic et ... (roulements de tambour) ..."
+ },
+ {
+  "_id": "rec9OCEmoc0VBV0gO",
+  "_order": 3,
+  "categoryId": "bravo",
+  "id": "rec9OCEmoc0VBV0gO",
+  "order": 5,
+  "score": 80,
+  "sentenceTemplate": "Aucun défi majeur pour vous",
+  "strategiesIntroduction": "Rassurez-vous, il n'y a rien de majeur à changer. Dans les stratégies, vous trouverez des méthodes à essayer. Vous y trouverez peut-être la petite astuce qui fera la différence 🙂",
+  "textTemplate": "**%name**, j'ai préparé votre diagnostic et ... (roulements de tambour) ..."
+ },
+ {
+  "_id": "rec3Kal63086SskKo",
+  "_order": 4,
+  "categoryId": "covid-risk",
+  "id": "rec3Kal63086SskKo",
+  "order": 1,
+  "score": 35,
+  "sentenceTemplate": "Moins d'opportunités à cause du coronavirus",
+  "strategiesIntroduction": "Vous cherchez un emploi dans une industrie qui est bouleversée par la crise du COVID-19. J'ai des stratégies pour vous aider à décider de la meilleure façon d'augmenter vos chances de trouver.",
+  "textTemplate": "**%name**, j'ai pris en compte vos réponses. En temps normal, je vous encouragerais à poursuivre votre objectif ! Mais les données suggèrent que les recrutements dans cette industrie sont en berne à cause de la crise du coronavirus.\n\nA moins d'avoir un très bon réseau professionnel, ou d'avoir beaucoup d'expérience, ce milieu professionnel peut présenter des difficultés d'accès en ce moment.\n\nJ'ai essayé de résumer les enjeux et de suggérer des idées pour augmenter vos chances de trouver.\n\nOn regarde ?"
+ },
+ {
+  "_id": "rec8LAH3CvbgSbFhE",
+  "_order": 5,
+  "categoryId": "enhance-methods-to-interview",
+  "filters": [
+   "for-many-interviews(3)",
+   "for-long-search(7)"
+  ],
+  "id": "rec8LAH3CvbgSbFhE",
+  "order": 1,
+  "score": 60,
+  "sentenceTemplate": "Booster vos méthodes de recherche",
+  "strategiesIntroduction": "Vous cherchez un poste dans un métier qui recrute, vous êtes passionné%eFeminine, et vous êtes diplômé%eFeminine.\n\nVous avez un super profil.\n\nJ'ai des stratégies pour vous aider à le transformer en plus d'entretiens.",
+  "textTemplate": "**%name**, j'ai pris en compte vos réponses. Cela m'a donné des pistes pour analyser ce qui bloque votre recherche d'emploi.\n\nVous avez un très bon profil. La preuve : vous avez été contacté%eFeminine pour des entretiens. Mais vous cherchez depuis longtemps, c'est donc le bon moment de revoir vos techniques d'entretien.\n\nVos méthodes de candidature m'ont l'air efficaces. Mais on gagne toujours à les passer en revue après quelques mois de recherche.\n\nJe vous ai préparé un diagnostic pour résumer les enjeux. On regarde ?"
+ },
+ {
+  "_id": "recHla8wOQwoKagyy",
+  "_order": 6,
+  "categoryId": "enhance-methods-to-interview",
+  "filters": [
+   "for-stressed-market(10/5)",
+   "for-long-search(7)"
+  ],
+  "id": "recHla8wOQwoKagyy",
+  "order": 2,
+  "score": 48,
+  "sentenceTemplate": "Booster vos méthodes de recherche",
+  "strategiesIntroduction": "Vous cherchez un poste dans un métier qui recrute, vous êtes passionné%eFeminine, et vous êtes diplômé%eFeminine.\n\nVous avez un super profil.\n\nJ'ai des stratégies pour vous aider à le transformer en plus d'entretiens.",
+  "textTemplate": "**%name**, j'ai pris en compte vos réponses. Cela m'a donné des pistes pour analyser ce qui bloque votre recherche d'emploi.\n\nVous avez un très bon profil. Pourtant, je note que vos méthodes de recherche d'emploi sont **différentes** de celles des gens dans votre métier qui ont **trouvé** un emploi récemment.\n\nIl y a pas mal de concurrence dans votre métier. Donc utiliser des méthodes inefficaces est un frein pour être embauché%eFeminine facilement. Cela peut aussi rendre votre recherche **plus longue** que nécessaire.\n\nJe vous ai préparé un diagnostic pour résumer les enjeux. On regarde ?"
+ },
+ {
+  "_id": "rec7gYTB6aJqdZ4bh",
+  "_order": 7,
+  "categoryId": "enhance-methods-to-interview",
+  "filters": [
+   "for-long-search(7)"
+  ],
+  "id": "rec7gYTB6aJqdZ4bh",
+  "order": 3,
+  "score": 50,
+  "sentenceTemplate": "Booster vos méthodes de recherche",
+  "strategiesIntroduction": "Vous cherchez un poste dans un métier qui recrute, vous êtes passionné%eFeminine, et vous êtes diplômé%eFeminine.\n\nVous avez un super profil.\n\nJ'ai des stratégies pour vous aider à le transformer en plus d'entretiens.",
+  "textTemplate": "**%name**, j'ai pris en compte vos réponses. Cela m'a donné des pistes pour analyser ce qui bloque votre recherche d'emploi.\n\nVous avez un très **bon** profil. Pourtant, je note que vous cherchez depuis déjà **quelque temps**.\n\nVos méthodes de recherche d'emploi sont **différentes** de celles des gens dans votre métier qui ont **trouvé** un emploi récemment.\n\nUtiliser des méthodes inefficaces est un frein pour être embauché%eFeminine facilement. Si après une longue recherche vous n'avez pas encore trouvé, c'est un signe qu'il y a quelque chose à changer.\n\nJe vous ai préparé un diagnostic pour résumer les enjeux. On regarde ?"
+ },
+ {
+  "_id": "recK3LqYe9IjMQBqy",
+  "_order": 8,
+  "categoryId": "enhance-methods-to-interview",
+  "filters": [
+   "for-young(25)",
+   "for-mainly-hiring-through-network(±15%)",
+   "for-network(1)"
+  ],
+  "id": "recK3LqYe9IjMQBqy",
+  "order": 4,
+  "score": 65,
+  "sentenceTemplate": "Booster vos méthodes de recherche",
+  "strategiesIntroduction": "Vous cherchez un poste dans un métier qui recrute, vous êtes passionné%eFeminine, et vous êtes diplômé%eFeminine.\n\nVous avez un super profil.\n\nJ'ai des stratégies pour vous aider à le transformer en plus d'entretiens.",
+  "textTemplate": "**%name**, j'ai pris en compte vos réponses. Cela m'a donné des pistes pour analyser ce qui bloque votre recherche d'emploi.\n\nVous avez un bon profil. Pourtant, je note que vos méthodes de recherche d'emploi sont **différentes** de celles des gens dans votre métier qui ont **trouvé** un emploi récemment. Vous êtes jeune, donc vous n'avez pas encore beaucoup de réseau.\n\nUtiliser des méthodes inefficaces est un frein pour être embauché%eFeminine facilement. Cela peut aussi rendre votre recherche **plus longue** que nécessaire.\n\nJe vous ai préparé un diagnostic pour résumer les enjeux. On regarde ?"
+ },
+ {
+  "_id": "recBL2CJgyX6QccBC",
+  "_order": 9,
+  "categoryId": "enhance-methods-to-interview",
+  "id": "recBL2CJgyX6QccBC",
+  "order": 5,
+  "score": 68,
+  "sentenceTemplate": "Booster vos méthodes de recherche",
+  "strategiesIntroduction": "Vous cherchez un poste dans un métier qui recrute, vous êtes passionné%eFeminine, et vous êtes diplômé%eFeminine.\n\nVous avez un super profil.\n\nJ'ai des stratégies pour vous aider à le transformer en plus d'entretiens.",
+  "textTemplate": "**%name**, j'ai pris en compte vos réponses. Cela m'a donné des pistes pour analyser ce qui bloque votre recherche d'emploi.\n\nVous avez un très bon profil. Pourtant, je note que vos méthodes de recherche d'emploi sont **différentes** de celles des gens dans votre métier qui ont **trouvé** un emploi récemment.\n\nUtiliser des méthodes inefficaces est un frein pour être embauché%eFeminine facilement. Cela peut aussi rendre votre recherche **plus longue** que nécessaire.\n\nJe vous ai préparé un diagnostic pour résumer les enjeux. On regarde ?"
+ },
+ {
+  "_id": "recERm8TzP1EnXVju",
+  "_order": 10,
+  "categoryId": "find-what-you-like",
+  "filters": [
+   "for-young(30)"
+  ],
+  "id": "recERm8TzP1EnXVju",
+  "order": 1,
+  "score": 61,
+  "sentenceTemplate": "Trouver un métier qui vous motive",
+  "strategiesIntroduction": "Chercher un emploi devient plus facile quand on a un réel intérêt pour le métier. Mais cela n'arrive pas spontanément, ni même en se forçant. J'ai des stratégies pour vous aider à surmonter ce défi.",
+  "textTemplate": "**%name**, c'est un honneur de pouvoir vous aider au début de votre carrière.\n\nJ'ai pris en compte vos réponses, et je note que **%jobName** n'est pas un métier qui vous passionne.\n\nLes recruteurs nous disent qu'un manque d'intérêt chez un candidat se ressent tout de suite. En entretien, mais aussi dans la qualité de la candidature. Surtout, vous méritez de faire un métier qui vous plaise. 🌞\n\nJe pense que c'est vraiment cet aspect de votre recherche qui vous bloque le plus.\n\nJe vous ai préparé un diagnostic pour résumer les enjeux.\n\nOn regarde ?"
+ },
+ {
+  "_id": "recHIJHauX60n6dS8",
+  "_order": 11,
+  "categoryId": "find-what-you-like",
+  "id": "recHIJHauX60n6dS8",
+  "order": 2,
+  "score": 61,
+  "sentenceTemplate": "Trouver un métier qui vous motive",
+  "strategiesIntroduction": "Avoir de l'intérêt pour son nouveau projet est important pour changer de métier. J'ai préparé des stratégies pour vous aider à surmonter ce défi.",
+  "textTemplate": "**%name**, c'est un honneur de pouvoir vous accompagner dans cette nouvelle étape.\n\nJ'ai pris en compte votre envie de changer de métier, mais je note que %jobName n'est pas un métier qui vous passionne. Changer de métier est un beau projet, mais qui est très dur sans la passion qui vous guide. C'est aussi la clef pour convaincre un recruteur.\n\nJe pense que c'est vraiment cet aspect de votre recherche qui vous bloque le plus.\n\nJe vous ai préparé un diagnostic pour résumer les enjeux.\n\nOn regarde ?"
+ },
+ {
+  "_id": "reckK1fDEarkAW8bw",
+  "_order": 12,
+  "categoryId": "missing-diploma",
+  "filters": [
+   "for-experienced(6)",
+   "for-experience-in-domain"
+  ],
+  "id": "reckK1fDEarkAW8bw",
+  "order": 1,
+  "score": 62,
+  "sentenceTemplate": "Obtenir le diplôme qui vous manque",
+  "strategiesIntroduction": "Vous avez beaucoup d'expérience dans ce métier. C'est un bel atout de votre profil.\nComme ce métier demande un diplôme que vous n'êtes pas sûr%eFeminine d'avoir, j'ai des stratégies pour vous aider à faire le point.",
+  "textTemplate": "**%Name**, j'ai analysé votre recherche d'emploi, et je trouve que vous avez un beau projet. Vous avez déjà beaucoup **d'expérience**, et dans un secteur où il y a des **opportunités** de travail 😊\n\nJ'ai analysé les offres, et ce métier demande souvent un diplôme. Mais vu votre niveau d'expérience, je privilégie les stratégies pour vous aider à avancer dans votre recherche avec votre profil actuel.\n\nJe vous ai préparé un **diagnostic** pour résumer les enjeux.\n\nOn regarde ?"
+ },
+ {
+  "_id": "recjKNBR4xQfKEIth",
+  "_order": 13,
+  "categoryId": "missing-diploma",
+  "filters": [
+   "for-old(45)"
+  ],
+  "id": "recjKNBR4xQfKEIth",
+  "order": 2,
+  "score": 60,
+  "sentenceTemplate": "Obtenir le diplôme qui vous manque",
+  "strategiesIntroduction": "Comme ce métier demande un diplôme que vous n'êtes pas sûr%eFeminine d'avoir, c'est le moment de faire le point. Une formation n'est pas toujours nécessaire, j'ai aussi des stratégies pour vous aider à faire briller votre profil.",
+  "textTemplate": "**%Name**, j'ai analysé votre recherche d'emploi, et je trouve que vous avez un beau projet. Vous visez un métier qui vous **intéresse** réellement, dans un secteur où il y a des **opportunités** de travail 😊\n\nJ'ai analysé les offres et ce métier demande souvent un diplôme. J'ai des stratégies pour vous aider à faire les démarches pour **l'obtenir**. Et j'ai aussi des idées pour **avancer** dans votre recherche avec votre profil actuel.\n\nJe vous ai préparé un **diagnostic** pour résumer les enjeux.\n\nOn regarde ?"
+ },
+ {
+  "_id": "recfEDI3qsWXG6ujx",
+  "_order": 14,
+  "categoryId": "missing-diploma",
+  "id": "recfEDI3qsWXG6ujx",
+  "order": 3,
+  "score": 55,
+  "sentenceTemplate": "Obtenir le diplôme qui vous manque",
+  "strategiesIntroduction": "Vous visez un métier qui demande un diplôme que vous n'êtes pas sûr%eFeminine d'avoir.\n\nJ'ai des stratégies pour vous aider à travailler votre profil pour cibler le métier qui vous intéresse.",
+  "textTemplate": "**%Name**, j'ai analysé votre recherche d'emploi, et je trouve que vous avez un beau projet. Vous visez un métier qui vous **intéresse** réellement, dans un secteur où il y a des **opportunités** de travail 😊\n\nJ'ai analysé les offres, et ce métier demande souvent un diplôme. J'ai des stratégies pour vous aider à faire les démarches pour l'avoir. Et j'ai aussi des idées pour avancer dans votre recherche avec votre profil actuel.\n\nJe vous ai préparé un **diagnostic** pour résumer les enjeux.\n\nOn regarde ?"
+ },
+ {
+  "_id": "recBFpZUOHQkHIhI1",
+  "_order": 15,
+  "categoryId": "start-your-search",
+  "filters": [
+   "for-frustrated(SELF_CONFIDENCE)"
+  ],
+  "id": "recBFpZUOHQkHIhI1",
+  "order": 1,
+  "score": 75,
+  "sentenceTemplate": "Vous lancer dans votre recherche",
+  "strategiesIntroduction": "Pour moi, vous avez un super profil. Voici des stratégies pour commencer votre recherche doucement.",
+  "textTemplate": "**%Name**, pour moi votre manque de confiance en vous est mal placé. Quand je regarde votre profil et le poste que vous recherchez, je vois beaucoup de voyants au vert.\n\nJe vous ai préparé un diagnostic. Si vous le regardez, vous verrez que vous êtes bien placé%eFeminine pour trouver un emploi.\n\nDonc, trouvons ensemble des stratégies pour mieux gérer votre confiance en vous pour mettre toutes les chances de votre côté.\n\nOn y va ?"
+ },
+ {
+  "_id": "recBZ6gvP9xypLANe",
+  "_order": 16,
+  "categoryId": "start-your-search",
+  "filters": [
+   "for-frustrated(MOTIVATION)"
+  ],
+  "id": "recBZ6gvP9xypLANe",
+  "order": 2,
+  "score": 75,
+  "sentenceTemplate": "Vous lancer dans votre recherche",
+  "strategiesIntroduction": "Pour moi, vous avez un super profil. Voici des stratégies pour commencer votre recherche doucement.",
+  "textTemplate": "**%Name**, quand je regarde votre profil et le poste que vous recherchez, je vois beaucoup de voyants au vert.\n\nJe vous ai préparé un diagnostic. Si vous le regardez, vous verrez que vous êtes bien placé%eFeminine pour trouver un emploi.\n\nDonc, trouvons ensemble des stratégies pour mieux gérer votre motivation pour mettre toutes les chances de votre côté.\n\nOn y va ?"
+ },
+ {
+  "_id": "recEMvxRoOhSa22us",
+  "_order": 17,
+  "categoryId": "start-your-search",
+  "filters": [
+   "for-first-job-search"
+  ],
+  "id": "recEMvxRoOhSa22us",
+  "order": 3,
+  "score": 65,
+  "sentenceTemplate": "Vous lancer dans votre recherche",
+  "strategiesIntroduction": "J'ai confiance en vos chances de trouver bientôt si vous commencez aujourd'hui. Mais la meilleure façon de prédire l'avenir, c'est de le créer. Donc voici des stratégies pour bien vous aider à démarrer.",
+  "textTemplate": "**%Name**, j'ai envie de vous encourager car beaucoup de voyants sont au vert dans votre recherche d'emploi.\n\nJ'ai analysé votre profil et le poste recherché dans le contexte du marché du travail, et je suis plutôt confiant. Il ne reste plus qu'à commencer.\n\nJe vous ai préparé un **diagnostic** pour résumer les enjeux.\n\nOn regarde ?"
+ },
+ {
+  "_id": "recaGXh7a5lO1LCYf",
+  "_order": 18,
+  "categoryId": "start-your-search",
+  "filters": [
+   "for-currently-in-training"
+  ],
+  "id": "recaGXh7a5lO1LCYf",
+  "order": 4,
+  "score": 70,
+  "sentenceTemplate": "Vous lancer dans votre recherche",
+  "strategiesIntroduction": "J'ai confiance en vos chances de trouver un travail à la suite de votre formation. Vous avez raison de vouloir commencer dès maintenant, donc je vous ai préparé des stratégies pour vous aider à vous lancer.",
+  "textTemplate": "**%Name**, j'ai envie de vous encourager car beaucoup de voyants sont au vert dans votre recherche d'emploi.\n\nJ'ai analysé votre profil et le poste recherché dans le contexte du marché du travail, et je suis plutôt confiant. Il ne reste plus qu'à commencer.\n\nJe vous ai préparé un **diagnostic** pour résumer les enjeux.\n\nOn regarde ?"
+ },
+ {
+  "_id": "recuY7musMMtgEujk",
+  "_order": 19,
+  "categoryId": "start-your-search",
+  "id": "recuY7musMMtgEujk",
+  "order": 10,
+  "score": 70,
+  "sentenceTemplate": "Vous lancer dans votre recherche",
+  "strategiesIntroduction": "J'ai confiance en vos chances de trouver bientôt si vous commencez aujourd'hui. Mais la meilleure façon de prédire l'avenir, c'est de le créer. Donc voici des stratégies pour bien vous aider à démarrer.",
+  "textTemplate": "**%Name**, j'ai envie de vous encourager car beaucoup de voyants sont au vert dans votre recherche d'emploi.\n\nJ'ai analysé votre profil et le poste recherché dans le contexte du marché du travail, et je suis plutôt confiant. Il ne reste plus qu'à commencer.\n\nJe vous ai préparé un **diagnostic** pour résumer les enjeux.\n\nOn regarde ?"
+ },
+ {
+  "_id": "recKghdwbPHe4Soek",
+  "_order": 20,
+  "categoryId": "stuck-market",
+  "filters": [
+   "not-for-more-job-offers-locally(5)",
+   "not-for-stressed-job(10/3)",
+   "for-low-mobility(departement)"
+  ],
+  "id": "recKghdwbPHe4Soek",
+  "order": 2,
+  "score": 40,
+  "sentenceTemplate": "Faire face à un marché très concurrentiel",
+  "strategiesIntroduction": "La concurrence est forte, mais vous êtes plus fort%eFeminine qu'elle !\nPour trouver un emploi dans ce contexte difficile, le principal est d'avoir une bonne stratégie.",
+  "textTemplate": "%name, vous avez beaucoup de potentiel. J'aimerais vraiment vous aider à avancer 🤗.\n\nJe vous ai donc préparé un diagnostic pour résumer les enjeux.\n\nBien évidemment, j'ai regardé vos réponses au questionnaire avec attention.\n\nMais plus j'analyse la situation générale, plus je me dis que **le marché de l'emploi est très compliqué pour le métier %ofJobName.**\n\nOn regarde ?"
+ },
+ {
+  "_id": "recTfVZuP2qbN5Lgk",
+  "_order": 21,
+  "categoryId": "stuck-market",
+  "filters": [
+   "not-for-stressed-job(10/3)"
+  ],
+  "id": "recTfVZuP2qbN5Lgk",
+  "order": 3,
+  "score": 40,
+  "sentenceTemplate": "Faire face à un marché très concurrentiel",
+  "strategiesIntroduction": "La concurrence est forte, mais vous êtes plus fort%eFeminine qu'elle !\nPour trouver un emploi dans ce contexte difficile, le principal est d'avoir une bonne stratégie.",
+  "textTemplate": "%name, vous avez beaucoup de **potentiel**. J'aimerais vraiment vous aider à avancer 🤗\n\nJe vous ai donc préparé un diagnostic pour résumer les enjeux.\n\nBien évidemment, j'ai regardé vos réponses au questionnaire avec attention.\n\nMais plus j'analyse la situation générale, plus je me dis que **le marché de l'emploi est très compliqué pour le métier %ofJobName.**\n\nOn regarde ?"
+ },
+ {
+  "_id": "recx9Qqk1sNXL2non",
+  "_order": 22,
+  "categoryId": "stuck-market",
+  "filters": [
+   "for-more-job-offers-locally(5)",
+   "not-for-no-interview",
+   "for-employed",
+   "for-experienced(6)"
+  ],
+  "id": "recx9Qqk1sNXL2non",
+  "order": 4,
+  "score": 40,
+  "sentenceTemplate": "Faire face à un marché très concurrentiel",
+  "strategiesIntroduction": "La concurrence est forte, mais vous êtes plus fort%eFeminine qu'elle !\nPour trouver un emploi dans ce contexte difficile, le principal est d'avoir une bonne stratégie.",
+  "textTemplate": "%name, vous avez beaucoup d'expérience, vous êtes en poste, et vous avez les diplômes qu'il faut pour le métier %ofJobName.\n\nHonnêtement, je trouve que vous avez un excellent profil.\n\nEt les recruteurs sont d'accord: vous avez déjà obtenu %totalInterviewCount entretiens.\n\nMais plus j'analyse la situation générale, plus je me dis que le marché de l'emploi est très compliqué pour le métier %ofJobName.\n\nJe vous ai donc préparé un diagnostic pour résumer les enjeux.\n\nOn regarde ?"
+ },
+ {
+  "_id": "recYpBXCskUZBLkv0",
+  "_order": 23,
+  "categoryId": "stuck-market",
+  "filters": [
+   "for-more-job-offers-locally(5)"
+  ],
+  "id": "recYpBXCskUZBLkv0",
+  "order": 5,
+  "score": 40,
+  "sentenceTemplate": "Faire face à un marché très concurrentiel",
+  "strategiesIntroduction": "La concurrence est forte, mais vous êtes plus fort%eFeminine qu'elle !\nPour trouver un emploi dans ce contexte difficile, le principal est d'avoir une bonne stratégie.",
+  "textTemplate": "%name, vous avez beaucoup de **potentiel**. J'aimerais vraiment vous aider à avancer 🤗\n\nJe vous ai donc préparé un diagnostic pour résumer les enjeux.\n\nBien évidemment, j'ai regardé vos réponses au questionnaire avec attention.\n\nMais plus j'analyse la situation générale, plus je me dis que **le marché de l'emploi est très compliqué pour le métier %ofJobName.**\n\nOn regarde ?"
+ },
+ {
+  "_id": "recVweNcZXKJWcKdd",
+  "_order": 24,
+  "categoryId": "stuck-market",
+  "id": "recVweNcZXKJWcKdd",
+  "order": 14,
+  "score": 40,
+  "sentenceTemplate": "Faire face à un marché très concurrentiel",
+  "strategiesIntroduction": "La concurrence est forte, mais vous êtes plus fort%eFeminine qu'elle !\nPour trouver un emploi dans ce contexte difficile, le principal est d'avoir une bonne stratégie.",
+  "textTemplate": "%name, vous avez beaucoup de **potentiel**. J'aimerais vraiment vous aider à avancer 🤗\n\nJe vous ai donc préparé un diagnostic pour résumer les enjeux.\n\nBien évidemment, j'ai regardé vos réponses au questionnaire avec attention.\n\nMais plus j'analyse la situation générale, plus je me dis que **le marché de l'emploi est très compliqué pour le métier %ofJobName.**\n\nOn regarde ?"
+ },
+ {
+  "_id": "recuga8N8HzvSSAHq",
+  "_order": 25,
+  "categoryId": "undefined-project",
+  "id": "recuga8N8HzvSSAHq",
+  "order": 1,
+  "score": 25,
+  "sentenceTemplate": "Définir clairement votre projet",
+  "strategiesIntroduction": "Vous avez un profil intéressant. J'ai des stratégies pour vous aider à définir un projet qui vous plaît pour vous aider plus précisément dans votre recherche.",
+  "textTemplate": "%name, j'ai pris en compte vos réponses. Cela m'a donné des pistes pour analyser ce qui bloque votre recherche d'emploi.\n\nVous avez un profil intéressant. Pourtant, je note que votre projet professionnel n'est **pas défini**.\n\nMalheureusement, je pense que c'est le frein principal à votre recherche aujourd'hui. Trouver un métier qui vous plaît est à la fois une source de motivation, mais également un bon moyen d'orienter votre recherche.\n\nJe vous ai préparé un diagnostic pour résumer les enjeux, ainsi que des stratégies pour avancer. On regarde ?"
+ }
+]

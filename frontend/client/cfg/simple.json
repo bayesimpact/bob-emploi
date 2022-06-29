@@ -1,0 +1,23 @@
+{
+  "resolve": {
+    "alias": {
+      "api": "/usr/app/bob_emploi/frontend/api",
+      "components": "/usr/app/src/components",
+      "config": false,
+      "deployment": "/usr/app/src/deployments/fr",
+      "hooks": "/usr/app/src/hooks",
+      "images": "/usr/app/src/images",
+      "plugin/deployment": "/usr/app/plugins/jobflix/src/deployments/default",
+      "store": "/usr/app/src/store",
+      "styles": "/usr/app/src/styles",
+      "translations": "/usr/app/i18n/translations"
+    },
+    "extensions": [
+      ".js",
+      ".jsx",
+      "_pb.js",
+      ".ts",
+      ".tsx"
+    ]
+  }
+}

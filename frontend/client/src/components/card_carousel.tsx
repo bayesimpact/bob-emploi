@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useRef, useState} from 'react'
 
 import isMobileVersion from 'store/mobile'
@@ -162,15 +161,6 @@ const CardCarousel: React.FC<CarouselProps> = (props: CarouselProps): React.Reac
       isVisible={indexFirstShown + numCardsShown < children.length}
       handleClick={getCarouselMover(numCardsShown)} style={arrowStyle} />
   </div>
-}
-CardCarousel.propTypes = {
-  backGroundColor: PropTypes.string,
-  children: PropTypes.arrayOf(PropTypes.element.isRequired).isRequired,
-  isLarge: PropTypes.bool,
-  // The maximum preferred width of the carousel. Note that if there's enough
-  // room, this component will also use extra width to show the arrows
-  // outside this width.
-  maxWidth: PropTypes.number,
 }
 
 

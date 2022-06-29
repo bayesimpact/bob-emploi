@@ -11,7 +11,7 @@ if [ -n "$1" ]; then
 fi
 readonly TAG_PREFIX="$(date +%Y-%m-%d)${RELEASE_TYPE}_"
 readonly TAG="${TAG_PREFIX}$(printf %02d $(git tag -l "${TAG_PREFIX}*" | wc -l))"
-readonly BRANCH=${2:-master}
+readonly BRANCH="${2:-HEAD}"
 
 if [[ -z "$GITHUB_TOKEN" ]]; then
   readonly GIT_ORIGIN_WITH_WRITE_PERMISSION="origin"
@@ -20,7 +20,12 @@ else
 fi
 
 git fetch origin $BRANCH
-git tag "${TAG}" origin/$BRANCH
+if [ -n "$CI" ]; then
+  git config user.email "ci@bayesimpact.org"
+  git config user.name "Bayes CI"
+fi
+# TODO(cyrille): Replace message with release notes.
+git tag "${TAG}" FETCH_HEAD -m "Release tag $TAG"
 git push --tags "$GIT_ORIGIN_WITH_WRITE_PERMISSION"
 
 echo $TAG

@@ -7,7 +7,8 @@ const getScrollPosition = (): number => window.scrollY ||
 const getMaxScrollPosition = (): number =>
   document.documentElement.offsetHeight - window.innerHeight
 
-const computeIsAtBottom = (): boolean => getScrollPosition() >= getMaxScrollPosition()
+// Add a 5px error margin in the max scroll position reference.
+export const computeIsAtBottom = (): boolean => getScrollPosition() >= getMaxScrollPosition() - 5
 
 export function scrollDown(): void {
   window.scrollTo(0, document.body.scrollHeight)
@@ -40,6 +41,33 @@ function useStayAtBottom(deps: readonly unknown[] = []): boolean {
   }, deps)
 
   return isAtBottomBeforeRender
+}
+
+const STEP_WAITING_TIME_MILLISEC = 2000
+
+// A hook to get if the user scrolled at the bottom of the document.
+// Returns a boolean stating if the user has at least once scrolled at the bottom of the document.
+export function useHasScrolledOnceAtBottom(isShownOnlyWhenScrolledToBottom: boolean): boolean {
+  const [hasScrolledOnceAtBottom, setHasScrolledOnceAtBottom] = useState(false)
+
+  const onScroll = useCallback((): void => {
+    if (computeIsAtBottom()) {
+      setHasScrolledOnceAtBottom(true)
+    }
+  }, [])
+  useEffect((): (() => void) => {
+    if (hasScrolledOnceAtBottom || !isShownOnlyWhenScrolledToBottom) {
+      return (): void => void 0
+    }
+    document.addEventListener('scroll', onScroll)
+    const timeout = window.setInterval(onScroll, STEP_WAITING_TIME_MILLISEC)
+    return (): void => {
+      document.removeEventListener('scroll', onScroll)
+      clearInterval(timeout)
+    }
+  }, [hasScrolledOnceAtBottom, isShownOnlyWhenScrolledToBottom, onScroll])
+
+  return hasScrolledOnceAtBottom
 }
 
 export default useStayAtBottom

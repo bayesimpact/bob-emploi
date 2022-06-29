@@ -8,9 +8,8 @@ frontend/src/store/french.js as well.
 import itertools
 import re
 import typing
-from typing import Dict, List
 
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 
 if typing.TYPE_CHECKING:
     class _NamedJob(typing.Protocol):
@@ -33,6 +32,7 @@ def maybe_contract_prefix(prefix: str, contracted_prefix: str, sentence: str) ->
     return prefix + sentence
 
 
+# TODO(cyrille): Move to common.
 def lower_first_letter(sentence: str) -> str:
     """Lower the first letter of a string except if it starts with several uppercase letters."""
 
@@ -78,7 +78,7 @@ def in_city(city_name: str) -> str:
     return f'à {city_name}'
 
 
-_NUMBER_WORDS: Dict[int, str] = {
+_NUMBER_WORDS: dict[int, str] = {
     1: 'un',
     2: 'deux',
     3: 'trois',
@@ -88,7 +88,7 @@ _NUMBER_WORDS: Dict[int, str] = {
 }
 
 
-def join_sentences_properly(sentences: List[str]) -> str:
+def join_sentences_properly(sentences: list[str]) -> str:
     """
     Returns a nice sentence, depending on the length of the array 'sentences'.
     If two sentences, joins them with 'mais' coordinator.
@@ -116,20 +116,20 @@ def cleanup_firstname(firstname: str) -> str:
 
 
 def genderize_job(
-        job: '_NamedJob', gender: 'user_pb2.Gender.V', is_lowercased: bool = False) -> str:
+        job: '_NamedJob', gender: 'user_profile_pb2.Gender.V', is_lowercased: bool = False) -> str:
     """Genderize a job."""
 
     def _maybe_lower(name: str) -> str:
         return lower_first_letter(name) if is_lowercased else name
-    if gender == user_pb2.MASCULINE and job.masculine_name:
+    if gender == user_profile_pb2.MASCULINE and job.masculine_name:
         return _maybe_lower(job.masculine_name)
-    if gender == user_pb2.FEMININE and job.feminine_name:
+    if gender == user_profile_pb2.FEMININE and job.feminine_name:
         return _maybe_lower(job.feminine_name)
     return ungenderize(
         _maybe_lower(job.masculine_name), _maybe_lower(job.feminine_name), _maybe_lower(job.name))
 
 
-def _common_prefix_length(list1: List[str], list2: List[str]) -> int:
+def _common_prefix_length(list1: list[str], list2: list[str]) -> int:
     return sum(1 for _ in itertools.takewhile(lambda pair: pair[0] == pair[1], zip(list1, list2)))
 
 

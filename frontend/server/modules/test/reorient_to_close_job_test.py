@@ -2,7 +2,7 @@
 
 import datetime
 import json
-from typing import Any, Dict
+from typing import Any
 import unittest
 
 from bob_emploi.common.python import now
@@ -249,7 +249,7 @@ class ReorientCloseEndpointTestCase(base_test.ServerTestCase):
         user_info = self.get_user_info(self.user_id, self.auth_token)
         self.project_id = user_info['projects'][0]['projectId']
 
-    def _add_project_modifier(self, user: Dict[str, Any]) -> None:
+    def _add_project_modifier(self, user: dict[str, Any]) -> None:
         """Modifier to add a custom project."""
 
         user['projects'] = user.get('projects', []) + [{
@@ -257,7 +257,7 @@ class ReorientCloseEndpointTestCase(base_test.ServerTestCase):
             'city': {'departementId': '45'},
         }]
 
-    def _set_english_locale(self, user: Dict[str, Any]) -> None:
+    def _set_english_locale(self, user: dict[str, Any]) -> None:
         """Modifier to set english user locale."""
 
         user['profile']['locale'] = 'en'
@@ -358,10 +358,10 @@ class ReorientCloseEndpointTestCase(base_test.ServerTestCase):
     def test_jobs_translation(self) -> None:
         """Basic test with English translations."""
 
-        self._db.translations.insert_one({
+        self.add_translations([{
             'string': 'Superhéros',
             'en': 'Superhero',
-        })
+        }])
         self._db.local_diagnosis.drop()
         self._db.local_diagnosis.insert_one({
             '_id': '45:A1234',

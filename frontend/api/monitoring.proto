@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package bayes.bob.monitoring;
+
+message Data {
+  // Date of computation for this data.
+  google.protobuf.Timestamp computed_at = 1;
+
+  // Sites to be monitored, keyed by entry URL.
+  map<string, Site> sites = 2;
+}
+
+message Site {
+  // Front version of the monitored site.
+  string front_version = 1;
+
+  // Server version of the monitored site.
+  string server_version = 2;
+
+  // The dates at which each activated email was last sent, keyed by campaign ID.
+  // If an activated email was never sent, Unix epoch is given instead.
+  map<string, google.protobuf.Timestamp> last_sent_email = 3;
+
+  // The dates at which each mongo collection was last imported, keyed by collection name.
+  map<string, google.protobuf.Timestamp> last_table_import = 4;
+}

@@ -1,3 +1,5 @@
 {
-  googleUAID: 'G-5CWJX9Q7BV',
+  config: {
+    googleUAID: 'G-5CWJX9Q7BV',
+  },
 }

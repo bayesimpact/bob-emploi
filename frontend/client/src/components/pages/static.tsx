@@ -8,7 +8,6 @@ import Cookies from './static/cookies'
 import Covid from './static/covid'
 import Partners from './static/partners'
 import Privacy from './static/privacy'
-import Transparency from './static/transparency'
 import Team from './static/team'
 import Professionals from './static/professionals'
 import VideoSignup from './static/video_signup'
@@ -22,7 +21,6 @@ const StaticPages = (): React.ReactElement => <Switch>
   <Route path={Routes.COVID_PAGE} component={Covid} />
   <Route path={Routes.PARTNERS_PAGE} component={Partners} />
   <Route path={Routes.PRIVACY_PAGE} component={Privacy} />
-  <Route path={Routes.TRANSPARENCY_PAGE} component={Transparency} />
   <Route path={Routes.TEAM_PAGE} component={Team} />
   <Route path={Routes.PROFESSIONALS_PAGE} component={Professionals} />
   <Route path={Routes.VIDEO_SIGNUP_PAGE} component={VideoSignup} />
@@ -30,6 +28,5 @@ const StaticPages = (): React.ReactElement => <Switch>
   <Route path={Routes.VISION_PAGE} component={Vision} />
   <Route path={Routes.STATIC_ADVICE_PATH} component={StaticAdvice} />
 </Switch>
-
 
 export default React.memo(StaticPages)

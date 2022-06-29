@@ -13,9 +13,9 @@ class SkillForFutureTestCase(scoring_test.ScoringModelTestBase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.database.skills_for_future.insert_one({
-            '_id': 'D11',
-            'skills': [{'name': 'Empathie'}],
+        self.database.job_group_info.insert_one({
+            '_id': 'D1101',
+            'skillsForFuture': [{'name': 'Empathie'}],
         })
 
     def test_with_data(self) -> None:
@@ -46,9 +46,9 @@ class EndpointTestCase(base_test.ServerTestCase):
             'adviceId': 'skill-for-future',
             'triggerScoringModel': 'advice-skill-for-future',
         })
-        self._db.skills_for_future.insert_one({
-            '_id': 'D11',
-            'skills': [{'name': 'Empathie'}, {'name': 'Apprentissage actif'}],
+        self._db.job_group_info.insert_one({
+            '_id': 'D1101',
+            'skillsForFuture': [{'name': 'Empathie'}, {'name': 'Apprentissage actif'}],
         })
         self.user_id, self.auth_token = self.create_user_with_token(
             modifiers=[base_test.add_project_modifier], advisor=True)

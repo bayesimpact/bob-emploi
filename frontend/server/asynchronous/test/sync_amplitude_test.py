@@ -7,31 +7,27 @@ from unittest import mock
 import mongomock
 import requests_mock
 
+from bob_emploi.common.python.test import nowmock
 from bob_emploi.frontend.api import boolean_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.asynchronous import sync_amplitude
+from bob_emploi.frontend.server.asynchronous.test import asynchronous_test_case
 
 
 @requests_mock.mock()
 @mock.patch(sync_amplitude.__name__ + '._AMPLITUDE_AUTH', new=('api-key', 'auth-key'))
-@mock.patch(
-    sync_amplitude.now.__name__ + '.get',
-    new=mock.MagicMock(return_value=datetime.datetime(2017, 11, 19)))
-class SyncAmplitudeTestCase(unittest.TestCase):
+@nowmock.patch(new=lambda: datetime.datetime(2017, 11, 19))
+class SyncAmplitudeTestCase(asynchronous_test_case.TestCase):
     """Unit tests for the module."""
 
     def test_update_users_client_metrics(self, mock_requests: requests_mock.Mocker) -> None:
         """Test update_users_client_metrics."""
 
-        mock_db = mongomock.MongoClient().test
-        mock_db.user.insert_one({
+        self._user_db.user.insert_one({
             '_id': mongomock.ObjectId('7ed900dbfbebdee97f9e2332'),
             'registeredAt': '2017-11-17T10:57:12Z',
         })
-        patcher = mock.patch(sync_amplitude.__name__ + '._DB', new=mock_db)
-        patcher.start()
-        self.addCleanup(patcher.stop)
 
         mock_requests.get(
             'https://amplitude.com/api/2/usersearch?user=7ed900dbfbebdee97f9e2332',
@@ -54,7 +50,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
             '--disable-sentry', '--no-dry-run'])
 
         user = user_pb2.User()
-        proto.parse_from_mongo(mock_db.user.find_one({}), user)
+        proto.parse_from_mongo(self._user_db.user.find_one({}), user)
 
         self.assertEqual('42', user.client_metrics.amplitude_id)
         self.assertEqual(
@@ -65,14 +61,10 @@ class SyncAmplitudeTestCase(unittest.TestCase):
     def test_unknown_user(self, mock_requests: requests_mock.Mocker) -> None:
         """Test update_users_client_metrics with an unknown user."""
 
-        mock_db = mongomock.MongoClient().test
-        mock_db.user.insert_one({
+        self._user_db.user.insert_one({
             '_id': mongomock.ObjectId('7ed900dbfbebdee97f9e2332'),
             'registeredAt': '2017-11-17T10:57:12Z',
         })
-        patcher = mock.patch(sync_amplitude.__name__ + '._DB', new=mock_db)
-        patcher.start()
-        self.addCleanup(patcher.stop)
 
         mock_requests.get(
             'https://amplitude.com/api/2/usersearch?user=7ed900dbfbebdee97f9e2332',
@@ -84,21 +76,17 @@ class SyncAmplitudeTestCase(unittest.TestCase):
             '--disable-sentry', '--no-dry-run'])
 
         user = user_pb2.User()
-        proto.parse_from_mongo(mock_db.user.find_one({}), user)
+        proto.parse_from_mongo(self._user_db.user.find_one({}), user)
 
         self.assertEqual('Not Found', user.client_metrics.amplitude_id)
 
     def test_long_continuous_session(self, mock_requests: requests_mock.Mocker) -> None:
         """Test update_users_client_metrics with a user using Bob continuously for an hour."""
 
-        mock_db = mongomock.MongoClient().test
-        mock_db.user.insert_one({
+        self._user_db.user.insert_one({
             '_id': mongomock.ObjectId('7ed900dbfbebdee97f9e2332'),
             'registeredAt': '2017-11-17T10:57:12Z',
         })
-        patcher = mock.patch(sync_amplitude.__name__ + '._DB', new=mock_db)
-        patcher.start()
-        self.addCleanup(patcher.stop)
 
         mock_requests.get(
             'https://amplitude.com/api/2/usersearch?user=7ed900dbfbebdee97f9e2332',
@@ -120,7 +108,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
             '--disable-sentry', '--no-dry-run'])
 
         user = user_pb2.User()
-        proto.parse_from_mongo(mock_db.user.find_one({}), user)
+        proto.parse_from_mongo(self._user_db.user.find_one({}), user)
 
         self.assertEqual('42', user.client_metrics.amplitude_id)
         self.assertEqual(
@@ -133,14 +121,10 @@ class SyncAmplitudeTestCase(unittest.TestCase):
             self, mock_requests: requests_mock.Mocker, mock_logging: mock.MagicMock) -> None:
         """Test update_users_client_metrics."""
 
-        mock_db = mongomock.MongoClient().test
-        mock_db.user.insert_one({
+        self._user_db.user.insert_one({
             '_id': mongomock.ObjectId('7ed900dbfbebdee97f9e2332'),
             'registeredAt': '2017-11-17T10:57:12Z',
         })
-        patcher = mock.patch(sync_amplitude.__name__ + '._DB', new=mock_db)
-        patcher.start()
-        self.addCleanup(patcher.stop)
 
         mock_requests.get(
             'https://amplitude.com/api/2/usersearch?user=7ed900dbfbebdee97f9e2332',
@@ -158,7 +142,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
             '--disable-sentry'])
 
         user = user_pb2.User()
-        proto.parse_from_mongo(mock_db.user.find_one({}), user)
+        proto.parse_from_mongo(self._user_db.user.find_one({}), user)
 
         self.assertFalse(user.client_metrics.amplitude_id)
         self.assertFalse(user.client_metrics.first_session_duration_seconds)
@@ -169,14 +153,10 @@ class SyncAmplitudeTestCase(unittest.TestCase):
     def test_too_many_requests(self, mock_requests: requests_mock.Mocker) -> None:
         """Test too many requests."""
 
-        mock_db = mongomock.MongoClient().test
-        mock_db.user.insert_one({
+        self._user_db.user.insert_one({
             '_id': mongomock.ObjectId('7ed900dbfbebdee97f9e2332'),
             'registeredAt': '2017-11-17T10:57:12Z',
         })
-        patcher = mock.patch(sync_amplitude.__name__ + '._DB', new=mock_db)
-        patcher.start()
-        self.addCleanup(patcher.stop)
 
         mock_requests.get(
             'https://amplitude.com/api/2/usersearch?user=7ed900dbfbebdee97f9e2332',
@@ -193,14 +173,10 @@ class SyncAmplitudeTestCase(unittest.TestCase):
     def test_too_many_requests_but_still_enough(self, mock_requests: requests_mock.Mocker) -> None:
         """Test too many requests but already done more than 200."""
 
-        mock_db = mongomock.MongoClient().test
-        mock_db.user.insert_many([{
+        self._user_db.user.insert_many([{
             '_id': mongomock.ObjectId(f'7ed900dbfbebdee97f9e2{i:03d}'),
             'registeredAt': '2017-11-17T10:57:12Z',
         } for i in range(400)])
-        patcher = mock.patch(sync_amplitude.__name__ + '._DB', new=mock_db)
-        patcher.start()
-        self.addCleanup(patcher.stop)
 
         # Reply politely to the 300 first.
         for i in range(300):
@@ -225,13 +201,13 @@ class SyncAmplitudeTestCase(unittest.TestCase):
             '--disable-sentry', '--no-dry-run'])
 
         self.assertEqual(
-            300, len(list(mock_db.user.find({'clientMetrics.amplitudeId': {'$exists': True}}))))
+            300,
+            len(list(self._user_db.user.find({'clientMetrics.amplitudeId': {'$exists': True}}))))
 
     def test_registered_from_days_ago(self, mock_requests: requests_mock.Mocker) -> None:
         """Test update_users_client_metrics."""
 
-        mock_db = mongomock.MongoClient().test
-        mock_db.user.insert_many([
+        self._user_db.user.insert_many([
             {
                 '_id': mongomock.ObjectId('7ed900dbfbebdee97f9e2332'),
                 'registeredAt': '2017-11-17T10:57:12Z',
@@ -242,9 +218,6 @@ class SyncAmplitudeTestCase(unittest.TestCase):
                 'registeredAt': '2017-11-19T10:57:12Z',
             },
         ])
-        patcher = mock.patch(sync_amplitude.__name__ + '._DB', new=mock_db)
-        patcher.start()
-        self.addCleanup(patcher.stop)
 
         mock_requests.get(
             'https://amplitude.com/api/2/usersearch?user=7ed900dbfbebdee97f9e2332',
@@ -267,7 +240,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
             '--disable-sentry', '--no-dry-run'])
 
         user = user_pb2.User()
-        proto.parse_from_mongo(mock_db.user.find_one({
+        proto.parse_from_mongo(self._user_db.user.find_one({
             '_id': mongomock.ObjectId('7ed900dbfbebdee97f9e2332'),
         }), user)
         self.assertEqual('42', user.client_metrics.amplitude_id)
@@ -279,8 +252,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
     def test_adding_mobile_afterwards(self, mock_requests: requests_mock.Mocker) -> None:
         """Adding the mobile information after already syncing."""
 
-        mock_db = mongomock.MongoClient().test
-        mock_db.user.insert_many([
+        self._user_db.user.insert_many([
             {
                 'registeredAt': '2018-09-03T10:57:12Z',
                 'clientMetrics': {'amplitudeId': 'Not Found'},
@@ -309,9 +281,6 @@ class SyncAmplitudeTestCase(unittest.TestCase):
                 },
             },
         ])
-        patcher = mock.patch(sync_amplitude.__name__ + '._DB', new=mock_db)
-        patcher.start()
-        self.addCleanup(patcher.stop)
 
         mock_requests.get(
             'https://amplitude.com/api/2/useractivity?user=1234&limit=5',
@@ -336,7 +305,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
 
         user = user_pb2.User()
         proto.parse_from_mongo(
-            mock_db.user.find_one(mongomock.ObjectId('7ed900dbfbebd00000000004')), user)
+            self._user_db.user.find_one(mongomock.ObjectId('7ed900dbfbebd00000000004')), user)
         self.assertEqual('1234', user.client_metrics.amplitude_id)
         self.assertEqual(5, user.client_metrics.first_session_duration_seconds)
         self.assertEqual(boolean_pb2.TRUE, user.client_metrics.is_first_session_mobile)
@@ -346,14 +315,10 @@ class SyncAmplitudeTestCase(unittest.TestCase):
             self, unused_mock_requests: requests_mock.Mocker, mock_logging: mock.MagicMock) -> None:
         """Missing sentry env var."""
 
-        mock_db = mongomock.MongoClient().test
-        mock_db.user.insert_one({
+        self._user_db.user.insert_one({
             '_id': mongomock.ObjectId('7ed900dbfbebdee97f9e2332'),
             'registeredAt': '2017-11-17T10:57:12Z',
         })
-        patcher = mock.patch(sync_amplitude.__name__ + '._DB', new=mock_db)
-        patcher.start()
-        self.addCleanup(patcher.stop)
 
         sync_amplitude.main([
             '--registered-from', '2017-11-14',
@@ -361,7 +326,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
             '--no-dry-run'])
 
         user = user_pb2.User()
-        proto.parse_from_mongo(mock_db.user.find_one({}), user)
+        proto.parse_from_mongo(self._user_db.user.find_one({}), user)
         self.assertFalse(user.client_metrics.amplitude_id)
 
         mock_logging.assert_called_once()

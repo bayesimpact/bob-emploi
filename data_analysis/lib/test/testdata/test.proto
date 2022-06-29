@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package bayes.bob.test;
+
+message User {
+  string user_id = 1;
+}

@@ -1,8 +1,9 @@
-import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
 import {colorToAlpha} from 'components/colors'
 import {SmartLink, useRadium} from 'components/radium'
+
+import type {ConfigColor} from 'config'
 
 type RadiumCSSPropertiesNoBackground = Omit<RadiumCSSProperties, 'background'|'backgroundColor'>
 type ButtonCSSProperties = RadiumCSSPropertiesNoBackground & {
@@ -52,6 +53,7 @@ const smallButtonStyle = {
 
 type Props = React.ComponentProps<typeof SmartLink> & {
   isSmall?: boolean
+  // eslint-disable-next-line react/boolean-prop-naming
   disabled?: boolean
   style?: RadiumCSSPropertiesNoBackground
   type?: ButtonType
@@ -59,7 +61,9 @@ type Props = React.ComponentProps<typeof SmartLink> & {
 
 
 const RadiumButtonBase = (props: React.ComponentPropsWithoutRef<'button'>): React.ReactElement =>
-  <button {...useRadium<HTMLButtonElement, React.ComponentPropsWithoutRef<'button'>>(props)[0]} />
+  <button
+    type="button"
+    {...useRadium<HTMLButtonElement, React.ComponentPropsWithoutRef<'button'>>(props)[0]} />
 const RadiumButton = React.memo(RadiumButtonBase)
 
 
@@ -68,7 +72,7 @@ const MiniButton = (props: Props) => {
   const buttonStyle = useMemo((): RadiumCSSProperties => {
     const baseStyle: ButtonCSSProperties = {
       ...defaultButtonStyle,
-      ...type && typedStyles[type] || {},
+      ...type && typedStyles[type],
       ...disabled && disabledStyle,
       ...type === 'validation' ? {} : (style as RadiumCSSPropertiesNoBackground),
     }
@@ -95,15 +99,6 @@ const MiniButton = (props: Props) => {
   return <SmartLink {...linkProps} style={buttonStyle}>
     {children}
   </SmartLink>
-}
-MiniButton.propTypes = {
-  children: PropTypes.node,
-  // Keep disabled as prop for consistent naming with the underlying button.
-  // eslint-disable-next-line react/boolean-prop-naming
-  disabled: PropTypes.bool,
-  isSmall: PropTypes.bool,
-  style: PropTypes.object,
-  type: PropTypes.oneOf(['back', 'discreet', 'validation']),
 }
 
 

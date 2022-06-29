@@ -1,18 +1,30 @@
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
-import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
 import {getGoogleJobSearchUrl} from 'store/job'
 
-import ExternalLink from 'components/external_link'
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
 import {RadiumExternalLink} from 'components/radium'
 import Tag from 'components/tag'
-import Picto from 'images/advices/picto-find-a-jobboard.svg'
 
-import {CardProps, MethodSuggestionList, useAdviceData} from './base'
+import type {CardProps} from './base'
+import {MethodSuggestionList, useAdviceData} from './base'
 
+const noMarginStyle: React.CSSProperties = {
+  margin: 0,
+}
+const linkStyle: RadiumCSSProperties = {
+  ':focus': {
+    textDecoration: 'underline',
+  },
+  ':hover': {
+    textDecoration: 'underline',
+  },
+  'color': colors.BOB_BLUE,
+  'fontWeight': 'bold',
+  'textDecoration': 'none',
+}
 
 const JobBoardsMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
   const {targetJob: {name: jobName} = {name: ''}} = props.project
@@ -39,14 +51,14 @@ const JobBoardsMethod: React.FC<CardProps> = (props: CardProps): React.ReactElem
       <GrowingNumber number={jobBoards.length} isSteady={true} /> site
       {{specialized: hasOnlySpecialized ? specialized : null}} {{forYou}}
     </Trans>
-  const footer = <Trans parent={null} t={t}>
+  const footer = <Trans parent="p" style={noMarginStyle} t={t}>
     Trouvez d'autres offres directement
-    sur <ExternalLink
-      style={{color: colors.BOB_BLUE, textDecoration: 'none'}}
+    sur <RadiumExternalLink
+      style={linkStyle}
       onClick={handleExplore('google job search')}
       href={googleJobSearchUrl}>
       Google
-    </ExternalLink>
+    </RadiumExternalLink>
   </Trans>
   if (loading) {
     return loading
@@ -55,19 +67,11 @@ const JobBoardsMethod: React.FC<CardProps> = (props: CardProps): React.ReactElem
     {jobBoards.map(({filters, link: href, title}, index): ReactStylableElement|null =>
       href ? <JobBoardLink
         key={`job-board-${index}`} {...{filters, href, t}}
+        jobName={jobName}
         onClick={handleExplore('jobboard')}>
         {title}
       </JobBoardLink> : null)}
   </MethodSuggestionList>
-}
-JobBoardsMethod.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-  project: PropTypes.shape({
-    targetJob: PropTypes.shape({
-      name: PropTypes.string.isRequired,
-    }),
-  }).isRequired,
-  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(JobBoardsMethod)
 
@@ -76,6 +80,7 @@ interface LinkProps {
   children: React.ReactNode
   filters?: readonly string[]
   href: string
+  jobName?: string
   onClick: () => void
   style?: React.CSSProperties
   t: CardProps['t']
@@ -83,7 +88,7 @@ interface LinkProps {
 
 
 const JobBoardLinkBase: React.FC<LinkProps> = (props: LinkProps): React.ReactElement => {
-  const {children, filters, href, onClick, style, t} = props
+  const {children, filters, href, jobName, onClick, style, t} = props
   const tags = useMemo((): {color: string; value: string}[] => {
     const tags: {color: string; value: string}[] = []
     if (/\.pole-emploi\.fr/.test(href)) {
@@ -95,7 +100,7 @@ const JobBoardLinkBase: React.FC<LinkProps> = (props: LinkProps): React.ReactEle
     if ((filters || []).some((f): boolean => f.startsWith('for-job-group'))) {
       tags.push({
         color: colors.GREENISH_TEAL,
-        value: t('spécialisé pour votre métier'),
+        value: jobName ? t('spécialisé pour votre métier') : t('spécialisé pour votre situation'),
       })
     }
     if ((filters || []).some((f): boolean => f.startsWith('for-departement'))) {
@@ -105,7 +110,7 @@ const JobBoardLinkBase: React.FC<LinkProps> = (props: LinkProps): React.ReactEle
       })
     }
     return tags
-  }, [filters, href, t])
+  }, [filters, href, jobName, t])
 
   const containerStyle = useMemo((): React.CSSProperties => ({
     color: 'inherit',
@@ -123,15 +128,8 @@ const JobBoardLinkBase: React.FC<LinkProps> = (props: LinkProps): React.ReactEle
     <ChevronRightIcon style={{fill: colors.CHARCOAL_GREY, height: 20, width: 20}} />
   </RadiumExternalLink>
 }
-JobBoardLinkBase.propTypes = {
-  children: PropTypes.node,
-  filters: PropTypes.array,
-  href: PropTypes.string.isRequired,
-  onClick: PropTypes.func,
-  style: PropTypes.object,
-}
 const JobBoardLink = React.memo(JobBoardLinkBase)
 
 
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName: 'binocularsYellow' as const}

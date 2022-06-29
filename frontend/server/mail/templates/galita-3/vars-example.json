@@ -1,0 +1,11 @@
+{
+  "baseUrl": "https://www.bob-emploi.fr",
+  "changeEmailSettingsUrl": "https://www.bob-emploi.fr/settings",
+  "deepLinkToAdvice": "https://www.bob-emploi.fr/advice/deep",
+  "firstName": "Florence",
+  "gender": "FEMININE",
+  "highlightColor": "#faf453",
+  "productLogoUrl": "https://t.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
+  "productName": "Bob",
+  "statusUpdateUrl": "https://www.bob-emploi.fr/update"
+}

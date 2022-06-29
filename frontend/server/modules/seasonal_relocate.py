@@ -1,7 +1,6 @@
 """Advice module to recommend seasonal jobs in other départements."""
 
 import logging
-from typing import List
 
 from bob_emploi.frontend.server import geo
 from bob_emploi.frontend.server import proto
@@ -9,7 +8,7 @@ from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import seasonal_jobbing_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 
 _SEASONAL_JOBBING: proto.MongoCachedCollection[seasonal_jobbing_pb2.MonthlySeasonalJobbingStats] = \
     proto.MongoCachedCollection(
@@ -23,14 +22,14 @@ class _AdviceSeasonalRelocate(scoring_base.ModelBase):
             -> scoring_base.ExplainedScore:
         """Compute a score for the given ScoringProject."""
 
-        reasons: List[str] = []
+        reasons: list[str] = []
 
         # For now we just match for people willing to move to the whole country.
         # There might be cases where we should be able to recommend to people who want to move to
         # their own region, but it would add complexity to find them.
         is_not_ready_to_move = project.details.area_type < geo_pb2.COUNTRY
 
-        is_not_single = project.user_profile.family_situation != user_pb2.SINGLE
+        is_not_single = project.user_profile.family_situation != user_profile_pb2.SINGLE
         has_advanced_degree = project.user_profile.highest_degree >= job_pb2.LICENCE_MAITRISE
         is_not_young = project.get_user_age() > 30
         looks_only_for_cdi = project.details.employment_types == [job_pb2.CDI]

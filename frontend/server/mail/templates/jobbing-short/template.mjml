@@ -1,0 +1,26 @@
+<mjml owa="desktop" version="4.6.3">
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-text line-height="1.38">Bonjour {{var:firstName:"Rémi"}},</mj-text>
+        <mj-text line-height="1.38">J'espère que vous allez bien.</mj-text>
+        <mj-text line-height="1.38">Sur {{var:productName}}, nous recevons souvent des questions sur la meilleure stratégie pour <strong>trouver un emploi sans passer par une formation.</strong></mj-text>
+        <mj-text line-height="1.38">Évidemment, je sais que vous gardez votre objectif {{var:ofJobName:""}} en tête. Mais, je comprends aussi votre besoin de toujours être {%if var:gender:"" == "FEMININE"%}active{%else%}actif{%endif%}. En plus, continuer de travailler pendant votre recherche d'emploi montre votre détermination et votre motivation.<br /></mj-text>
+        <mj-text line-height="1.38">D'ailleurs, le témoignage de Franck, que j'ai rencontré récemment, est tout aussi positif. Il a fini par monter une entreprise d'informatique et a eu ses premiers clients grâce au réseau qu'il a réussi à développer ces dernières années !</mj-text>
+        <mj-text line-height="1.38">Je me suis renseignée pour vous et j'ai trouvé quelques métiers qui recrutent {{var:inDepartement:""}} :<br /></mj-text>
+        <mj-text line-height="1.38"><ul>{%for job in var:jobs%}<li>{{job.name}}</li>{%endfor%}</ul></mj-text>
+        <mj-text line-height="1.38">J'espère que ces idées de métiers pourront vous aider.<br /></mj-text>
+        <mj-text line-height="1.38">Pour aller plus loin, vous pouvez découvrir une analyse plus complète des métiers qui recrutent pour cette année. Elle est proposée par Pôle emploi et vous pouvez y accéder en <a data-cke-saved-href="https://statistiques.pole-emploi.org/bmo" target="_blank" href="https://statistiques.pole-emploi.org/bmo">cliquant ici.</a></mj-text>
+        <mj-image align="center" alt="" border="none" height="auto" padding="10px 25px" src="https://t.bob-emploi.fr/tplimg/6u2u/b/vv9v/i5ytu.png" width="1200px"></mj-image>
+        <mj-text line-height="1.38">{%if var:areEmailsAnswerRead%}Si le cœur vous en dit, vous pouvez me donner votre avis en répondant directement à ce mail.<br />{%endif%}</mj-text>
+        <mj-text line-height="1.38">À bientôt !</mj-text><br />
+        <mj-text line-height="1.38">{{var:senderName}}</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-text font-size="11px" color="#55575d" line-height="2">Vous recevez cet email car vous êtes inscrit{%if var:gender:""=="FEMININE"%}e{%elseif var:gender:""=="MASCULINE"%}{%else%}·e{%endif%} sur <a href="{{var:baseUrl}}?utm_source=bob-emploi&amp;utm_medium=email" target="_blank">{{var:productName}}</a> et avez demandé des emails de coaching. <a href="{{var:changeEmailSettingsUrl}}" target="_blank">Cliquez ici</a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte {{var:productName}} en veille ? <a href="{{var:statusUpdateUrl}}" target="_blank">cliquez ici</a>.</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

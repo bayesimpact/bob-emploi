@@ -1,7 +1,7 @@
 import _range from 'lodash/range'
-import PropTypes from 'prop-types'
 import React from 'react'
 
+import type {Focusable} from 'components/select'
 import Select from 'components/select'
 
 
@@ -12,6 +12,8 @@ interface BirthYearSelectOption {
 
 
 interface Props {
+  ['aria-labelledby']?: string
+  ['aria-describedby']?: string
   onChange: (value: number) => void
   placeholder?: string
   value?: number
@@ -29,15 +31,14 @@ const yearOfBirthRange = ((): readonly BirthYearSelectOption[] => {
 })()
 
 
-const BirthYearSelector = (props: Props): React.ReactElement => {
+const BirthYearSelector = (props: Props, ref?: React.Ref<Focusable>): React.ReactElement => {
   return <Select<number>
+    isSearchableOnMobile={true}
     options={yearOfBirthRange}
     defaultMenuScroll={yearOfBirthRange.length - 20}
+    ref={ref}
     {...props} />
 }
-BirthYearSelector.propTypes = {
-  value: PropTypes.number,
-}
 
 
-export default React.memo(BirthYearSelector)
+export default React.memo(React.forwardRef(BirthYearSelector))

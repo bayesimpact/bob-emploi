@@ -1,9 +1,9 @@
-import PropTypes from 'prop-types'
 import React, {useCallback, useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useDispatch} from 'react-redux'
 
-import {DispatchAllActions, sendProfessionalFeedback} from 'store/actions'
+import type {DispatchAllActions} from 'store/actions'
+import {sendProfessionalFeedback} from 'store/actions'
 
 import Button from 'components/button'
 import ExternalLink from 'components/external_link'
@@ -59,9 +59,6 @@ const FeedbackBase = (props: FeedbackProps): React.ReactElement => {
     </div>
   </section>
 }
-FeedbackBase.propTypes = {
-  style: PropTypes.object,
-}
 const Feedback = React.memo(FeedbackBase)
 
 
@@ -88,6 +85,11 @@ const linkStyle: React.CSSProperties = {
   fontSize: 20,
   padding: '0 20px',
 }
+const videoStyle: React.CSSProperties = {
+  border: 0,
+  height: 315,
+  width: isMobileVersion ? '100%' : 560,
+}
 
 
 const ProfessionalsPageBase = (): React.ReactElement => {
@@ -108,8 +110,8 @@ const ProfessionalsPageBase = (): React.ReactElement => {
       Comment faire découvrir {config.productName}
     </header>
     <iframe
-      width={isMobileVersion ? '100%' : 560} height={315} frameBorder={0}
       src="https://www.youtube.com/embed/ZmOZhDdFrL0"
+      style={videoStyle}
       allowFullScreen={true} title={`Comment créer un compte sur ${config.productName}`} />
   </section>, [])
 

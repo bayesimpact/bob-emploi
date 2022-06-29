@@ -1,5 +1,6 @@
 """Unit tests for the module frontend.geo."""
 
+import os
 import unittest
 from unittest import mock
 
@@ -10,11 +11,15 @@ from bob_emploi.frontend.server import geo
 from bob_emploi.frontend.server import mongo
 
 
+_FAKE_TRANSLATIONS_FILE = os.path.join(os.path.dirname(__file__), 'testdata/translations.json')
+
+
 class DepartementCase(unittest.TestCase):
     """Unit tests for departement functions."""
 
     def setUp(self) -> None:
         super().setUp()
+        geo.i18n.cache.clear()
         self._db = mongo.NoPiiMongoDatabase(mongomock.MongoClient().test)
         self._db.departements.insert_many([
             {
@@ -88,12 +93,18 @@ class DepartementCase(unittest.TestCase):
         self.assertEqual('dans les Bouches-du-Rhône', geo.get_in_a_departement_text(self._db, '13'))
         self.assertEqual('à la Réunion', geo.get_in_a_departement_text(self._db, '974'))
 
+    @mock.patch.dict(os.environ, {'I18N_TRANSLATIONS_FILE': _FAKE_TRANSLATIONS_FILE})
+    def test_get_in_a_departement_text_english(self) -> None:
+        """The in_a_departement text is translated."""
+
+        self.assertEqual('in Corrèze', geo.get_in_a_departement_text(self._db, '19', locale='en'))
+
     def test_get_in_a_departement_text_city_hint(self) -> None:
         """Test get_in_a_departement_text func with a city hing."""
 
         self.assertEqual(
             'in Illinois',
-            geo.get_in_a_departement_text(self._db, '19', geo_pb2.FrenchCity(
+            geo.get_in_a_departement_text(self._db, '19', city_hint=geo_pb2.FrenchCity(
                 departement_id='19',
                 departement_name='Illinois',
                 departement_prefix='in ',
@@ -115,9 +126,7 @@ class GetCityTest(unittest.TestCase):
         self.cities_index = patcher.start().SearchClient.create().init_index()
         self.addCleanup(patcher.stop)
 
-        patcher = mock.patch(geo.__name__ + '._ALGOLIA_INDEX', new=[])
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        geo._get_algolia_index.cache_clear()  # pylint: disable=protected-access
 
     def test_no_city_id(self) -> None:
         """No city_id."""
@@ -155,7 +164,7 @@ class GetCityTest(unittest.TestCase):
         self.assertEqual('69006', city.postcodes)
         self.cities_index.get_object.assert_called_once_with('69386')
 
-    @mock.patch(geo.logging.__name__ + '.warning')
+    @mock.patch('logging.warning')
     def test_format_error(self, mock_logging: mock.MagicMock) -> None:
         """The data returned by Algolia is not compatible."""
 

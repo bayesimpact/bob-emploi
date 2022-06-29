@@ -22,7 +22,7 @@ def main(rome_appellation_csv: str, output_txt: str) -> None:
     jobs = cleaned_data.rome_jobs(filename=rome_appellation_csv)
     samples = jobs.groupby('code_rome').apply(lambda d: d.sample(1))
     names, unused_ = rome_genderization.genderize(samples.name)
-    with open(output_txt, 'w') as output:
+    with open(output_txt, 'w', encoding='utf-8') as output:
         output.write('\n'.join(names.tolist()) + '\n')
 
 

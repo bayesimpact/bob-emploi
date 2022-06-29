@@ -1,5 +1,6 @@
 import convertImiloPropsToBobProps from './imilo'
-import {ImiloProps, getCoords, getDegrees, getIdentity, getMobility,
+import type {ImiloProps} from './imilo_api'
+import {getCoords, getDegrees, getIdentity, getMobility,
   getSituations} from './imilo_api'
 
 

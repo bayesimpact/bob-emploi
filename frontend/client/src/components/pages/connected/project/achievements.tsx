@@ -1,13 +1,13 @@
 import CheckIcon from 'mdi-react/CheckIcon'
-import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useSelector} from 'react-redux'
 
-import {RootState} from 'store/actions'
-import {CityNameAndPrefix, inCityPrefix} from 'store/french'
-import {getTranslatedMainChallenges} from 'store/i18n'
+import type {RootState} from 'store/actions'
+import type {CityNameAndPrefix} from 'store/french'
+import {inCityPrefix} from 'store/french'
 import {genderizeJob} from 'store/job'
+import {getTranslatedMainChallenges} from 'store/main_challenges'
 import isMobileVersion from 'store/mobile'
 import {useGender} from 'store/user'
 
@@ -242,7 +242,7 @@ const AchievementsPage = (props: Props): React.ReactElement => {
   return <PageWithNavigationBar
     page="bravo"
     navBarContent={t('Mes accomplissements')}
-    isChatButtonShown={true} style={pageStyle}>
+    isChatButtonShown={false} style={pageStyle}>
     <div style={pageContainerStyle}>
       <Trans parent="h2" style={headerStyle}>
         Bravo{name ? ` ${name}` : ''}&nbsp;!
@@ -255,23 +255,12 @@ const AchievementsPage = (props: Props): React.ReactElement => {
         </Trans>
       </BobInteraction>
       <FixedButtonNavigation
-        onClick={gotoNextPage}
+        onClick={gotoNextPage} isShownOnlyWhenScrolledToBottom={true}
         width={isMobileVersion ? undefined : desktopContainerWidth}>
         {t('Découvrir ma priorité')}
       </FixedButtonNavigation>
     </div>
   </PageWithNavigationBar>
-}
-AchievementsPage.propTypes = {
-  baseUrl: PropTypes.string.isRequired,
-  project: PropTypes.shape({
-    diagnostic: PropTypes.shape({
-      categories: PropTypes.arrayOf(PropTypes.shape({
-        relevance: PropTypes.string,
-      })),
-    }),
-    projectId: PropTypes.string.isRequired,
-  }).isRequired,
 }
 
 export default React.memo(AchievementsPage)

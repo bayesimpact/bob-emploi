@@ -1,17 +1,21 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
-import PropTypes from 'prop-types'
-import React, {useCallback, useMemo} from 'react'
+import React, {useMemo} from 'react'
 
-import ExternalLink from 'components/external_link'
+import type {LocalizableString} from 'store/i18n'
+import {combineTOptions, prepareT} from 'store/i18n'
+
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
-import {RadiumDiv} from 'components/radium'
+import {RadiumExternalLink} from 'components/radium'
 import Tag from 'components/tag'
+import {AssociationHelpContent, Footer} from 'deployment/association_help'
 import useMedia from 'hooks/media'
-import Picto from 'images/advices/picto-association-help.svg'
 
-import {MethodSuggestionList, CardProps, useAdviceData} from './base'
+import type {ConfigColor} from 'config'
+
+import type {CardProps} from './base'
+import {MethodSuggestionList, useAdviceData} from './base'
 
 function isValidAssociation(a: bayes.bob.Association): a is bayes.bob.Association & {link: string} {
   return !!(a.link)
@@ -43,20 +47,13 @@ const AssociationHelp: React.FC<CardProps> = (props: CardProps) => {
         style={{fontWeight: 'bold'}} number={validAssociations.length} isSteady={true} />
       {' '}association{{specialized: hasOnlySpecialized ? specialized : null}} {{forYou}}
     </Trans>
-  const linkStyle = {
-    color: colors.BOB_BLUE,
-    textDecoration: 'none',
-  }
-  const footer = config.methodAssociationHelpFooterUrl ? <Trans parent={null} t={t}>
-    Trouvez un accompagnement qui répond à vos attentes précises
-    sur <ExternalLink href={config.methodAssociationHelpFooterUrl} style={linkStyle}>
-      {{footerLink: config.methodAssociationHelpFooterLink || ''}}
-    </ExternalLink>
-  </Trans> : undefined
   if (loading) {
     return loading
   }
-  return <MethodSuggestionList title={title} footer={footer}>
+  if (!validAssociations.length) {
+    <AssociationHelpContent handleExplore={handleExplore} t={t} />
+  }
+  return <MethodSuggestionList title={title} footer={<Footer t={t} />}>
     {validAssociations.map(({filters, link, name}, index): React.ReactElement<AssociationProps> =>
       <AssociationLink
         key={`association-${index}`} href={link} onClick={handleExplore('association')}
@@ -65,11 +62,50 @@ const AssociationHelp: React.FC<CardProps> = (props: CardProps) => {
       </AssociationLink>)}
   </MethodSuggestionList>
 }
-AssociationHelp.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-  t: PropTypes.func.isRequired,
-}
 const ExpandedAdviceCardContent = React.memo(AssociationHelp)
+
+
+interface TagDefinition {
+  color: ConfigColor
+  filters?: RegExp
+  shouldReplace?: string
+  href?: RegExp
+  value: LocalizableString
+}
+
+const TAGS: readonly TagDefinition[] = [
+  {
+    color: colors.SQUASH,
+    href: /(\.pole-emploi\.fr|\.gouv\.fr)($|\/)/,
+    value: prepareT('officielle'),
+  },
+  {
+    color: colors.RED_PINK,
+    filters: /^for-job-group/,
+    value: prepareT('pour votre métier'),
+  },
+  {
+    color: colors.BOB_BLUE,
+    filters: /^for-departement/,
+    value: prepareT('pour votre région'),
+  },
+  {
+    color: colors.GREENISH_TEAL,
+    filters: /^for-women$/,
+    value: prepareT('pour les femmes'),
+  },
+  {
+    color: colors.GREENISH_TEAL,
+    filters: /^for-old\((\d+)\)$/,
+    shouldReplace: 'age',
+    value: prepareT('pour les plus de {{age}} ans'),
+  },
+  {
+    color: colors.BOB_BLUE,
+    filters: /^for-handicaped$/,
+    value: prepareT('recommandée par Hanploi'),
+  },
+] as const
 
 
 interface AssociationProps {
@@ -81,90 +117,65 @@ interface AssociationProps {
   t: TFunction
 }
 
+const linkStyle = {
+  minHeight: 'inherit',
+  padding: '10px 0 0',
+}
+const noLinkStyle = {
+  color: 'inherit',
+  textDecoration: 'none',
+}
+
 const AssociationLinkBase = (props: AssociationProps): React.ReactElement => {
-  const {children, filters = emptyArray, href, onClick, style, t} = props
+  const {children, filters = emptyArray, href, onClick, style, t: translate} = props
   const isForPrint = useMedia() === 'print'
-  const linkStyle = {
+
+  const containerStyle = useMemo((): React.CSSProperties => ({
+    ...noLinkStyle,
     ...style,
-    minHeight: 'inherit',
-    padding: '10px 0 0',
-  }
-  const handleClick = useCallback((): void => {
-    window.open(href, '_blank')
-    onClick?.()
-  }, [href, onClick])
+  }), [style])
 
   // TODO(cyrille): DRY up with job_boards.
   const tags = useMemo((): readonly {color: string; value: string}[] => {
-    // TODO(cyrille): Replace with flatMap or equivalent.
-    const tags: {color: string; value: string}[] = []
-    if (/\.pole-emploi\.fr/.test(href) || /\.gouv\.fr($|\/)/.test(href)) {
-      tags.push({
-        color: colors.SQUASH,
-        value: t('officielle'),
-      })
-    }
-    if (filters.some((f): boolean => f.startsWith('for-job-group'))) {
-      tags.push({
-        color: colors.RED_PINK,
-        value: t('pour votre métier'),
-      })
-    }
-    if (filters.some((f): boolean => f.startsWith('for-departement'))) {
-      tags.push({
-        color: colors.BOB_BLUE,
-        value: t('pour votre région'),
-      })
-    }
-    if (filters.includes('for-women')) {
-      tags.push({
-        color: colors.GREENISH_TEAL,
-        value: t('pour les femmes'),
-      })
-    }
-    const forOldFilter = filters.find((f): boolean => /^for-old\(\d+\)$/.test(f))
-    if (forOldFilter) {
-      const age = forOldFilter.replace(/^for-old\((\d+)\)$/, '$1')
-      tags.push({
-        color: colors.GREENISH_TEAL,
-        value: t('pour les plus de {{age}} ans', {age}),
-      })
-    }
-    if (filters.includes('for-handicaped')) {
-      tags.push({
-        color: colors.BOB_BLUE,
-        value: t('recommandée par Hanploi'),
-      })
-    }
-    return tags
-  }, [filters, href, t])
+    return TAGS.flatMap((tagDef): readonly {color: string; value: string}[] => {
+      const {color, filters: filtersPattern, href: hrefPattern, shouldReplace, value} = tagDef
+      if (hrefPattern?.test(href)) {
+        return [{color, value: translate(...value)}]
+      }
+      if (filtersPattern) {
+        const match = filters.find((f) => filtersPattern.test(f))
+        if (match) {
+          if (shouldReplace) {
+            return [{
+              color,
+              value: translate(...combineTOptions(
+                value, {[shouldReplace]: match.replace(filtersPattern, '$1')},
+              )),
+            }]
+          }
+          return [{color, value: translate(...value)}]
+        }
+      }
+      return []
+    })
+  }, [filters, href, translate])
 
-  return <div>
-    <RadiumDiv style={style} onClick={handleClick}>
-      <div>
-        {children}
-        {isForPrint ? <div style={linkStyle}>{href}</div> : null}
-      </div>
-      {tags.map(({color, value}): React.ReactNode => <Tag
-        key={`tag-${value}`} style={{backgroundColor: color, marginLeft: 15}}>
-        {value}
-      </Tag>)}
-      <div style={{flex: 1}} />
-      {isForPrint ? null :
-        <ChevronRightIcon style={{fill: colors.CHARCOAL_GREY, height: 24, width: 20}} />}
-    </RadiumDiv>
-  </div>
-}
-AssociationLinkBase.propTypes = {
-  children: PropTypes.node,
-  filters: PropTypes.array,
-  href: PropTypes.string.isRequired,
-  onClick: PropTypes.func,
-  style: PropTypes.object,
-  t: PropTypes.func.isRequired,
+  return <RadiumExternalLink style={containerStyle} onClick={onClick} href={href}>
+    <span>
+      {children}
+      {isForPrint ? <span style={linkStyle}>{href}</span> : null}
+    </span>
+    {tags.map(({color, value}): React.ReactNode => <Tag
+      key={`tag-${value}`} style={{backgroundColor: color, marginLeft: 15}}>
+      {value}
+    </Tag>)}
+    <span style={{flex: 1}} />
+    {isForPrint ? null :
+      <ChevronRightIcon style={{fill: colors.CHARCOAL_GREY, height: 24, width: 20}} />}
+  </RadiumExternalLink>
 }
 const AssociationLink = React.memo(AssociationLinkBase)
 
 
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName: 'handshake' as const}

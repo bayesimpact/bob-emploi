@@ -36,6 +36,8 @@ interface CounselorInfo {
   id: number
 }
 
+type CounselorStructures = readonly {id: number}[]
+
 interface PolicyInfo {
   policy: {
     // The name of the policy the young person is in. E.g. "Garantie jeunes" or "PACEA"

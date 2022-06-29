@@ -4,7 +4,8 @@ import isMobileVersion from 'store/mobile'
 
 import {StaticPage} from 'components/static'
 import {MAX_CONTENT_WIDTH} from 'components/theme'
-import bookmarkletIcon from 'images/favicon.ico'
+// TODO(cyrille): Make this work with deployments.
+import bookmarkletIcon from 'deployment/favicon.ico'
 
 
 const bookmarkletStyle: React.CSSProperties = {

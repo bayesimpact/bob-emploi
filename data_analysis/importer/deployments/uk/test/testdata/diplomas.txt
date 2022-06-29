@@ -1,0 +1,6 @@
+soc	level	description
+1223	nqf3-less	Restaurant and catering establishment managers and proprietors
+8126	nqf3	Water and sewerage plant operatives
+3412	nqf4	Authors, writers and translators
+1131	nqf6	Financial managers and directors
+2112	phd	Biological scientists and biochemists

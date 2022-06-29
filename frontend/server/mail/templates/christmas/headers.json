@@ -4,5 +4,5 @@
   "ReplyEmail": "",
   "SenderEmail": "joanna@bob-emploi.fr",
   "SenderName": "Joanna de Bob",
-  "Subject": "Comment voulez-vous aborder 2019 ?"
+  "Subject": "Comment voulez-vous aborder {{var:nextYear}} ?"
 }

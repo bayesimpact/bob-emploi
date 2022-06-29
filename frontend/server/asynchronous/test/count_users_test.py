@@ -2,28 +2,22 @@
 
 import typing
 import unittest
-from unittest import mock
-
-import mongomock
 
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import stats_pb2
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.asynchronous import count_users
+from bob_emploi.frontend.server.asynchronous.test import asynchronous_test_case
 
 
-class CountUsersTestCase(unittest.TestCase):
+class CountUsersTestCase(asynchronous_test_case.TestCase):
     """Unit tests for the module."""
 
     def setUp(self) -> None:
         super().setUp()
-        self._db = mongomock.MongoClient().test
-        self._user_db = mongomock.MongoClient().test
-        patcher = mock.patch(count_users.__name__ + '._USER_DB', new=self._user_db)
-        patcher.start()
-        patcher = mock.patch(count_users.__name__ + '._DB', new=self._db)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+
+        self._db = self._stats_db
+
         self._user_db.user.insert_many([
             {
                 'profile': {'name': 'Pascal'},

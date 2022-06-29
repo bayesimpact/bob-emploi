@@ -1,0 +1,15 @@
+*
+!.eslintignore
+!.eslintrc.json
+!frontend/api/*
+!frontend/client/*.*
+!frontend/client/.babelrc
+!frontend/client/cfg/*
+!frontend/client/node/*
+!frontend/client/src/*
+!frontend/client/plugins/*
+!frontend/client/test/*
+!frontend/client/vendor/*
+!frontend/release/*
+!frontend/server/db/*
+!common/vendor/*

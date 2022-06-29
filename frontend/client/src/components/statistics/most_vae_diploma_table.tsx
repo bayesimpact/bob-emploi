@@ -1,9 +1,8 @@
 import _memoize from 'lodash/memoize'
-import PropTypes from 'prop-types'
 import React from 'react'
 import {useTranslation} from 'react-i18next'
 
-import {getTranslatedVAEStats} from 'store/i18n'
+import {getTranslatedVAEStats} from 'store/statistics'
 
 import {colorToAlpha} from 'components/colors'
 import DataSource from 'components/data_source'
@@ -72,11 +71,6 @@ const MostVaeDiplomaTable: React.FC<Props> = (props: Props): React.ReactElement 
       MENJ-DEPP, enquête n°62
     </DataSource>
   </div>
-}
-MostVaeDiplomaTable.propTypes = {
-  targetJobGroup: PropTypes.shape({
-    romeId: PropTypes.string,
-  }),
 }
 
 

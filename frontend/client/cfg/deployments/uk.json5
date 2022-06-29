@@ -1,5 +1,5 @@
 {
-  constants: {
+  config: {
     aliAmplitudeToken: '',
     canonicalUrl: 'https://uk.hellobob.com',
     citySuggestAlgoliaIndex: 'cities_UK',
@@ -10,6 +10,7 @@
     dataSourceAutomation: 'ONS 2017',
     dataSourceLMI: 'Emsi {{dataSourceYear}}',
     defaultLang: 'en_UK',
+    departementSuggestAlgoliaIndex: 'local_authorities',
     emploiStoreClientId: '',
     externalLmiSiteName: '',
     // TODO(pascal): Find an LMI external website.
@@ -19,19 +20,18 @@
     geoAdmin2Name: 'area',
     googleTopLevelDomain: 'www.google.co.uk',
     grossToNet: .71,
+    hasRecruitmentModal: true,
+    helpRequestUrl: 'https://aide.bob-emploi.fr/hc/en-gb/requests/new?product_source={{productSource}}&identifiant_bob={{ticketId}}',
     hoursPerWeek: 39,
     isCoachingEnabled: true,
     isCurrencySignPrefixed: true,
     jobSuggestAlgoliaIndex: 'jobs_en_UK',
     npsSurvey: 'full',
     originOptionsExcluded: ['FROM_PE_WORKSHOP', 'FROM_PIMMS', 'FROM_PRESS'],
-    productName: 'Bob',
     salaryUnitOptionsExcluded: ['HOURLY_GROSS_SALARY'],
     sentryDSN: '',
     spontaneousApplicationSource: '',
-    trainingFindName: 'Find a Course tool',
-    trainingFindUrl: 'https://nationalcareers.service.gov.uk/find-a-course',
     zendeskDomain: '',
   },
-  plugins: ['core', 'evaluation'],
+  plugins: ['core', 'evaluation', 'jobflix'],
 }

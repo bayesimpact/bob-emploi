@@ -1,12 +1,11 @@
-import PropTypes from 'prop-types'
-import React, {useCallback, useEffect, useState} from 'react'
+import React, {useCallback, useEffect, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
-import VisibilitySensor from 'react-visibility-sensor'
 
 import {scoreProjectChallengeAgreement, sendProjectFeedback, useDispatch} from 'store/actions'
-import {getDiagnosticIllustrations} from 'store/i18n'
 import isMobileVersion from 'store/mobile'
-import {NO_CHALLENGE_CATEGORY_ID} from 'store/project'
+import {NO_CHALLENGE_CATEGORY_ID, getDiagnosticIllustrations} from 'store/project'
+
+import useOnScreen from 'hooks/on_screen'
 
 import BobInteraction from 'components/bob_interaction'
 import Button from 'components/button'
@@ -15,6 +14,7 @@ import {colorToAlpha} from 'components/colors'
 import Markdown from 'components/markdown'
 import {Modal, useModal} from 'components/modal'
 import {FixedButtonNavigation, PageWithNavigationBar} from 'components/navigation'
+import ScoreButtons from 'components/score_buttons'
 import Textarea from 'components/textarea'
 import {SmoothTransitions} from 'components/theme'
 import {STRAT_PREVIEW_PAGE} from 'components/url'
@@ -24,97 +24,8 @@ import useProjectReview from './project_review'
 const emptyArray = [] as const
 const pageMargin = 30
 const desktopContainerWidth = 650
+export const isStratsPreviewPageEnabled = !config.isStableDemo
 
-interface ScoreButtonProps {
-  isSelected: boolean
-  onClick: (score: number) => void
-  score: number
-}
-const solidBorderBlue = `solid 1px ${colors.BOB_BLUE}`
-const scoreButtonStyle: React.CSSProperties = {
-  background: colorToAlpha(colors.BOB_BLUE, .1),
-  borderBottom: solidBorderBlue,
-  borderRight: solidBorderBlue,
-  color: colors.BOB_BLUE,
-  flex: 1,
-  flexBasis: 60,
-  fontSize: 18,
-  height: 50,
-  textAlign: 'center',
-}
-const scoreButtonSelectedStyle: React.CSSProperties = {
-  ...scoreButtonStyle,
-  background: colors.BOB_BLUE,
-  color: '#fff',
-}
-
-const ScoreButtonBase = (props: ScoreButtonProps): React.ReactElement => {
-  const {isSelected, onClick, score} = props
-  const handleClick = useCallback(() => onClick(score), [onClick, score])
-  return <button
-    onClick={handleClick} style={isSelected ? scoreButtonSelectedStyle : scoreButtonStyle}>
-    {score}
-  </button>
-}
-const ScoreButton = React.memo(ScoreButtonBase)
-
-interface ScoreProps {
-  onScoreChange: (score: number) => void
-  numScoreButtons?: number
-  score?: number
-  priority?: string
-}
-const scoreButtonsContainerStyle: React.CSSProperties = {
-  borderLeft: solidBorderBlue,
-  borderTop: solidBorderBlue,
-  display: 'flex',
-  margin: '20px 0 10px',
-  padding: 0,
-}
-const legendContainerStyle: React.CSSProperties = {
-  display: 'flex',
-  fontSize: 13,
-  fontStyle: 'italic',
-  justifyContent: 'space-between',
-}
-const legendStyle: React.CSSProperties = {
-  maxWidth: 100,
-}
-const rightLegendStyle: React.CSSProperties = {
-  ...legendStyle,
-  textAlign: 'right',
-}
-const scoreButtonsSectionStyle: React.CSSProperties = isMobileVersion ? {} : {
-  margin: 'auto',
-  width: 315,
-}
-const scoreButtonsTitleStyle: React.CSSProperties = isMobileVersion ? {} : {
-  textAlign: 'center',
-}
-const scoreButtonsTitleThinkStyle: React.CSSProperties = isMobileVersion ? {} : {
-  margin: '20px 0 30px 0',
-  textAlign: 'center',
-}
-const ScoreButtonsBase = (props: ScoreProps): React.ReactElement => {
-  const {numScoreButtons = 5, onScoreChange, score, priority} = props
-  const {t} = useTranslation()
-  return <div style={scoreButtonsSectionStyle}>
-    {priority ? <div style={scoreButtonsTitleStyle}><strong>{priority + ' '}</strong>
-      {t('est votre plus grande priorité selon {{productName}}.',
-        {productName: config.productName})}</div> : null
-    }
-    <div style={scoreButtonsTitleThinkStyle}>{t("Qu'en pensez-vous\u00A0?")}</div>
-    <ol style={scoreButtonsContainerStyle}>
-      {Array.from({length: numScoreButtons}, (unused, index) => <ScoreButton
-        key={index} isSelected={index === score} score={index} onClick={onScoreChange} />)}
-    </ol>
-    <div style={legendContainerStyle}>
-      <span style={legendStyle}>{t("Pas du tout d'accord")}</span>
-      <span style={rightLegendStyle}>{t("Tout à fait d'accord")}</span>
-    </div>
-  </div>
-}
-const ScoreButtons = React.memo(ScoreButtonsBase)
 
 interface DisagreeModalProps {
   comment?: string
@@ -136,6 +47,7 @@ const modalTitleStyle: React.CSSProperties = {
 const modalSubtitleStyle: React.CSSProperties = {
   color: colors.COOL_GREY,
   fontSize: 16,
+  margin: 0,
 }
 const textAreaStyle: React.CSSProperties = {
   backgroundColor: colors.PALE_GREY,
@@ -165,9 +77,9 @@ const DisagreeModalBase = (props: DisagreeModalProps): React.ReactElement => {
       <h2 style={modalTitleStyle}>
         {t('Selon vous, quelle est votre plus grande priorité\u00A0?')}
       </h2>
-      <div style={modalSubtitleStyle}>
+      <p style={modalSubtitleStyle}>
         {t('Soyez honnêtes, nous lisons tous les commentaires\u00A0!')}
-      </div>
+      </p>
       <Textarea
         style={textAreaStyle} placeholder={t('Saisissez un commentaire ici (Facultatif)')}
         value={text} onChange={setText} />
@@ -214,11 +126,30 @@ const FeedbackSectionBase = (props: SectionProps): React.ReactElement => {
     }
     dispatch(sendProjectFeedback(project, {...project.feedback, text: newComment}, t))
   }, [dispatch, disagreeComment, hideDisagreeModal, project, t])
+  const scoreButtonsSectionStyle: React.CSSProperties = isMobileVersion ? {} : {
+    margin: 'auto',
+    width: 315,
+  }
+  const scoreButtonsTitleStyle: React.CSSProperties = isMobileVersion ? {} : {
+    textAlign: 'center',
+  }
+  const scoreButtonsTitleThinkStyle: React.CSSProperties = isMobileVersion ? {} : {
+    margin: '20px 0 30px 0',
+    textAlign: 'center',
+  }
   return <div style={feedbackSectionStyle}>
     <DisagreeModal
       isShown={isDisagreeModalShown} onComplete={handleFeedback} comment={disagreeComment} />
-    <ScoreButtons
-      score={score && (score - 1)} onScoreChange={setScore} priority={overallSentence} />
+    <div style={scoreButtonsSectionStyle}>
+      {overallSentence ? <div style={scoreButtonsTitleStyle}><strong>{overallSentence} </strong>
+        {t('est votre plus grande priorité selon {{productName}}.',
+          {productName: config.productName})}</div> : null
+      }
+      <div style={scoreButtonsTitleThinkStyle}>{t("Qu'en pensez-vous\u00A0?")}</div>
+      <ScoreButtons
+        score={score && (score - 1)} onScoreChange={setScore}
+        minText={t("Pas du tout d'accord")} maxText={t("Tout à fait d'accord")} />
+    </div>
   </div>
 }
 const FeedbackSection = React.memo(FeedbackSectionBase)
@@ -240,6 +171,7 @@ const illustrationStyle: React.CSSProperties = {
   justifyContent: 'center',
   minWidth: 225,
   padding: 20,
+  textAlign: 'center',
 }
 const illustrationMargedStyle: React.CSSProperties = {
   ...illustrationStyle,
@@ -253,7 +185,6 @@ const illustrationHighlightStyle: React.CSSProperties = {
 const illustrationTextStyle: React.CSSProperties = {
   fontSize: 13,
   marginTop: 10,
-  textAlign: 'center',
 }
 const separatorStyle: React.CSSProperties = {
   flexShrink: 0,
@@ -351,24 +282,21 @@ const trainMarginStyle: React.CSSProperties = {
   flexShrink: 0,
   width: pageMargin,
 }
-const ConvincePage = (props: Props): React.ReactElement => {
+const ConvincePageBase = (props: Props): React.ReactElement => {
   const {baseUrl, project, project: {
     diagnostic: {categories = emptyArray, overallSentence = '', response = ''} = {},
     originalSelfDiagnostic: {categoryId: selfDiagnostic} = {},
   } = {}} = props
   const {t} = useTranslation()
-  const [isNextButtonVisible, setIsNextButtonVisible] = useState(false)
-  const handleBottomVisibilityChange = useCallback((isVisible: boolean): void => {
-    if (isVisible) {
-      setIsNextButtonVisible(true)
-    }
-  }, [])
-  const gotoNextPage = useProjectReview(
-    `${baseUrl}/${STRAT_PREVIEW_PAGE}`, project, 'REVIEW_PROJECT_MAIN_CHALLENGE')
+  const bottomDomRef = useRef<HTMLDivElement>(null)
+  const isNextButtonVisible = useOnScreen(bottomDomRef, {isForAppearing: true})
+  const gotoUrl = config.postDiagnosticUrl || config.isStableDemo && baseUrl ||
+    `${baseUrl}/${STRAT_PREVIEW_PAGE}`
+  const gotoNextPage = useProjectReview(gotoUrl, project, 'REVIEW_PROJECT_MAIN_CHALLENGE')
   return <PageWithNavigationBar
     page="main-challenge"
     navBarContent={t('Mon diagnostic')}
-    isChatButtonShown={true} style={pageStyle}>
+    isChatButtonShown={false} style={pageStyle}>
     <div style={priorityTitleStyle}>
       {t('Votre priorité\u00A0:')}
       <span style={priorityValueStyle}>{overallSentence}</span>
@@ -384,9 +312,7 @@ const ConvincePage = (props: Props): React.ReactElement => {
     </BobInteraction>
     <IllustrationSection project={project} />
     <FeedbackSection project={project} />
-    {isNextButtonVisible ? null : <VisibilitySensor onChange={handleBottomVisibilityChange}>
-      <div style={buttonPlaceHolderStyle} />
-    </VisibilitySensor>}
+    {isNextButtonVisible ? null : <div ref={bottomDomRef} style={buttonPlaceHolderStyle} />}
     <FixedButtonNavigation
       onClick={gotoNextPage}
       placeHolderExtraHeight={isMobileVersion ? -30 : 0}
@@ -396,14 +322,5 @@ const ConvincePage = (props: Props): React.ReactElement => {
     </FixedButtonNavigation>
   </PageWithNavigationBar>
 }
-ConvincePage.propTypes = {
-  baseUrl: PropTypes.string.isRequired,
-  project: PropTypes.shape({
-    feedback: PropTypes.shape({
-      text: PropTypes.string,
-    }),
-    projectId: PropTypes.string.isRequired,
-  }).isRequired,
-}
 
-export default React.memo(ConvincePage)
+export const ConvincePage = React.memo(ConvincePageBase)

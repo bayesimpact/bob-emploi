@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef,
   useState} from 'react'
 
@@ -12,6 +11,7 @@ const computeSentenceDuration =
 
 interface ElementProps {
   children?: React.ReactNode
+  // TODO(cyrille): Rename to a more action-agnostic name.
   isFastForwarded?: boolean
   isClosingConversation?: boolean
   isOpeningConversation?: boolean
@@ -101,13 +101,11 @@ const GrowingPhylacteryBase = (props: PhylacteryProps): React.ReactElement => {
     })
   }, [lastShownStep, realChildren, onDone, onUpdate])
 
-  // WARNING: Children of global bubble div are in reverse order, to allow the presence of a
-  // scrollbar.
   return <React.Fragment>
     {realChildren.map(
       (child: React.ReactElement<ElementProps>, index: number):
       {child: React.ReactElement<ElementProps>; index: number} => ({child, index}),
-    ).reverse().map(({child, index}): React.ReactElement<ElementProps> =>
+    ).map(({child, index}): React.ReactElement<ElementProps> =>
       React.cloneElement(child, {
         isFastForwarded,
         isShown: index <= lastShownStep,
@@ -119,15 +117,6 @@ const GrowingPhylacteryBase = (props: PhylacteryProps): React.ReactElement => {
       }),
     )}
   </React.Fragment>
-}
-GrowingPhylacteryBase.propTypes = {
-  children: PropTypes.arrayOf(PropTypes.element).isRequired,
-  isFastForwarded: PropTypes.bool,
-  isShown: PropTypes.bool,
-  onDone: PropTypes.func,
-  onShown: PropTypes.func,
-  onUpdate: PropTypes.func,
-  setDiscussing: PropTypes.func,
 }
 const GrowingPhylactery = React.memo(GrowingPhylacteryBase)
 
@@ -148,9 +137,6 @@ const DiscussionBubbleBase = (props: PhylacteryProps): React.ReactElement|null =
         key: index,
       }))}
   </GrowingPhylactery>
-}
-DiscussionBubbleBase.propTypes = {
-  children: PropTypes.arrayOf(PropTypes.element).isRequired,
 }
 const DiscussionBubble = React.memo(DiscussionBubbleBase)
 
@@ -188,7 +174,12 @@ function scrollDown(): void {
 }
 
 
-function useBottomScrollSticker(): (() => void) {
+interface Sticker {
+  stick: () => void
+  unstick: () => void
+}
+
+function useBottomScrollSticker(): Sticker {
   const [isStuckToBottom, setIsStuckToBottom] = useState(true)
   const isSoonStuck = useRef(true)
 
@@ -223,45 +214,50 @@ function useBottomScrollSticker(): (() => void) {
       scrollDown()
     }
   }, [])
-  return stick
+  const unstick = useCallback((): void => {
+    setIsStuckToBottom(false)
+  }, [])
+  return {stick, unstick}
 }
 
 // A Component containing a growing phylactery. This allows to have scrolling with stuck-at-bottom
 // and disappearing top and bottom in a fixed height setting.
 const DiscussionBase: React.FC<DiscussionProps> = (props): React.ReactElement => {
-  const {children, headWidth = 75, isFastForwarded, isOneBubble, style,
+  const {children, headWidth = 75, isFastForwarded, isOneBubble, onDone, style,
     ...otherProps} = props
   const [isDiscussing, setDiscussing] = useState(false)
-  const stick = useBottomScrollSticker()
+  const {stick, unstick} = useBottomScrollSticker()
   const scrollableStyle = useMemo((): React.CSSProperties => ({
     display: 'flex',
-    flexDirection: 'column-reverse',
-    paddingBottom: 20,
+    flexDirection: 'column',
+    padding: '0 25px 20px',
     ...style,
   }), [style])
+  const handleUpdate = useCallback((): void => {
+    if (!isFastForwarded) {
+      stick()
+    }
+  }, [isFastForwarded, stick])
+  const handleDone = useCallback((): void => {
+    unstick()
+    onDone?.()
+  }, [unstick, onDone])
   const Container = isOneBubble ? DiscussionBubble : GrowingPhylactery
 
-  return <div style={scrollableStyle}>
+  return <div style={scrollableStyle} role="log" aria-busy={isDiscussing}>
+    <Container
+      {...{isFastForwarded, ...otherProps}}
+      setDiscussing={setDiscussing}
+      onUpdate={handleUpdate} onDone={handleDone}>
+      {children}
+    </Container>
+    <Ellipsis style={isDiscussing ? discussingEllipsisStyle : notDiscussingEllipsisStyle} />
     <img
       src={bobHeadImage} style={{
         alignSelf: 'center',
         width: headWidth,
       }} alt={config.productName} />
-    <Ellipsis style={isDiscussing ? discussingEllipsisStyle : notDiscussingEllipsisStyle} />
-    <Container
-      {...{isFastForwarded, ...otherProps}}
-      setDiscussing={setDiscussing}
-      onUpdate={stick}>
-      {children}
-    </Container>
   </div>
-}
-DiscussionBase.propTypes = {
-  children: PropTypes.node,
-  headWidth: PropTypes.number,
-  isFastForwarded: PropTypes.bool,
-  isOneBubble: PropTypes.bool,
-  style: PropTypes.object,
 }
 const Discussion = React.memo(DiscussionBase)
 
@@ -293,13 +289,6 @@ const WaitingElementBase = (props: WaitingElementProps): React.ReactElement|null
     return null
   }
   return children || null
-}
-WaitingElementBase.propTypes = {
-  children: PropTypes.node,
-  isFastForwarded: PropTypes.bool,
-  isShown: PropTypes.bool,
-  onDone: PropTypes.func,
-  waitingMillisec: PropTypes.number.isRequired,
 }
 const WaitingElement = React.memo(WaitingElementBase)
 
@@ -347,11 +336,6 @@ const EllipsisBase = (props: EllipsisProps): React.ReactElement => {
       <div key={color} style={bulletStyle(color, index)} />)}
   </div>
 }
-EllipsisBase.propTypes = {
-  bulletMargin: PropTypes.number,
-  bulletSize: PropTypes.number,
-  style: PropTypes.object,
-}
 const Ellipsis = React.memo(EllipsisBase)
 
 
@@ -373,11 +357,6 @@ const WaitingOnDone = (props: WaitingOnDoneProps): null => {
     setWasDone(isFastForwarded || !!isDone)
   }, [isDone, isFastForwarded, onDone, wasDone])
   return null
-}
-WaitingOnDone.propTypes = {
-  isDone: PropTypes.bool,
-  isFastForwarded: PropTypes.bool,
-  onDone: PropTypes.func,
 }
 
 
@@ -404,18 +383,12 @@ const NoOpElement = (props: ElementProps): React.ReactElement => {
     {children}
   </div>
 }
-NoOpElement.propTypes = {
-  children: PropTypes.node,
-  isShown: PropTypes.bool,
-  onDone: PropTypes.func,
-  onShown: PropTypes.func,
-  style: PropTypes.object,
-}
 
 
 interface BubbleProps {
   children?: React.ReactNode
   bubbleStyle?: React.CSSProperties
+  id?: string
   isClosingConversation?: boolean
   isDone?: boolean
   isOpeningConversation?: boolean
@@ -430,13 +403,13 @@ interface TextContainer {
   getTextContent(): string
 }
 
-
 // A growing phylactery element which is shown as a bubble, or part of a bubble, depending on
 // whether it's grouped in a DiscussionBubble. It is considered done as soon as shown.
 const BubbleBase = (props: BubbleProps, ref: React.Ref<TextContainer>): React.ReactElement => {
   const {
     bubbleStyle,
     children,
+    id,
     isOpeningConversation = true,
     isClosingConversation = true,
     isDone,
@@ -452,7 +425,7 @@ const BubbleBase = (props: BubbleProps, ref: React.Ref<TextContainer>): React.Re
     }
   }, [isShown, onDone])
 
-  const contentRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLParagraphElement>(null)
 
   useImperativeHandle(ref, (): TextContainer => ({
     getTextContent: (): string => contentRef.current?.textContent || '',
@@ -471,21 +444,20 @@ const BubbleBase = (props: BubbleProps, ref: React.Ref<TextContainer>): React.Re
   const smallBubbleStyle = {
     height: isShown ? 'initial' : 0,
     marginBottom: isShown ? 2 : 0,
-    marginLeft: 25,
-    marginRight: 25,
     padding: isShown ? '19px 25px 21px' : '0 25px',
     ...isUserSpeaking ? {} : bobBubbleStyle,
     ...bubbleStyle,
   }
 
-  return <div style={style} aria-hidden={!isShown}>
-    <div ref={contentRef} style={smallBubbleStyle}>{children}</div>
+  return <div style={style} aria-hidden={!isShown} id={id}>
+    <p ref={contentRef} style={smallBubbleStyle}>{children}</p>
   </div>
 }
 const Bubble = React.memo(React.forwardRef(BubbleBase))
 
 
 export interface BubbleToReadProps extends ElementProps {
+  id?: string
   readingTimeMillisec?: number
   setDiscussing?: (isDiscussing?: boolean) => void
 }
@@ -493,8 +465,8 @@ export interface BubbleToReadProps extends ElementProps {
 
 // A bubble spoken by Bob, so it gives the user some time to read.
 const BubbleToReadBase = (props: BubbleToReadProps): React.ReactElement => {
-  const {children, isClosingConversation, isFastForwarded, isOpeningConversation, isShown, onDone,
-    onUpdate, readingTimeMillisec, setDiscussing} = props
+  const {children, id, isClosingConversation, isFastForwarded, isOpeningConversation, isShown,
+    onDone, onUpdate, readingTimeMillisec, setDiscussing} = props
   const [isDone, setIsDone] = useState(false)
 
   const bubbleRef = useRef<TextContainer>(null)
@@ -523,23 +495,12 @@ const BubbleToReadBase = (props: BubbleToReadProps): React.ReactElement => {
 
   return <GrowingPhylactery onDone={handleDone} {...{isFastForwarded, isShown, onUpdate}}>
     <Bubble
-      ref={bubbleRef} {...{isClosingConversation, isOpeningConversation}}
+      ref={bubbleRef} {...{id, isClosingConversation, isOpeningConversation}}
       isDone={isFastForwarded || isDone}>
       {children}
     </Bubble>
     <WaitingElement waitingMillisec={readingDuration} />
   </GrowingPhylactery>
-}
-BubbleToReadBase.propTypes = {
-  children: PropTypes.node,
-  isClosingConversation: PropTypes.bool,
-  isFastForwarded: PropTypes.bool,
-  isOpeningConversation: PropTypes.bool,
-  isShown: PropTypes.bool,
-  onDone: PropTypes.func,
-  onUpdate: PropTypes.func,
-  readingTimeMillisec: PropTypes.number,
-  setDiscussing: PropTypes.func,
 }
 const BubbleToRead = React.memo(BubbleToReadBase)
 
@@ -558,15 +519,6 @@ const QuestionBubbleBase = (props: QuestionBubbleProps): React.ReactElement => {
     <NoOpElement>{children}</NoOpElement>
     <WaitingOnDone isDone={isDone} />
   </GrowingPhylactery>
-}
-QuestionBubbleBase.propTypes = {
-  children: PropTypes.node,
-  isDone: PropTypes.bool,
-  isFastForwarded: PropTypes.bool,
-  isShown: PropTypes.bool,
-  onDone: PropTypes.func,
-  onShown: PropTypes.func,
-  onUpdate: PropTypes.func,
 }
 const QuestionBubble = React.memo(QuestionBubbleBase)
 

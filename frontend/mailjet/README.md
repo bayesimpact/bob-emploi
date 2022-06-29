@@ -6,13 +6,8 @@ in Git and use the tool in this package to update the template collections in Ma
 
 The format we use for each template is a folder with the following file:
  * `headers.json`, a JSON file with the template's headers.
- * `template.mjml`, a MJML file (or its JSON version) with the template's definition.
- * `template.txt`, a plain text file with the text version of the template (usually empty).
- * `vars.txt`, a plain text file with variables used in the templates, one var per line.
- * `vars-example.json`, a JSON file with an example of values for each variable.
- * `template.html`, an HTML file using mustache with the template's definition.
-
-TODO(pascal): Replace all vars.txt files by vars-example.json files.
-TODO(pascal): Get rid of html templates.
+ * `template.mjml`, a MJML file with the template's definition.
+ * `vars-example.json`, a JSON file with a value example for each variable used in the template.
+ * `template.html`, an HTML file, generated from `template.mjml`.
 
 Those files are versioned and should be kept easy to read, and easy to diff.

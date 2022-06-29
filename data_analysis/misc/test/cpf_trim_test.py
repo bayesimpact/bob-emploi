@@ -31,7 +31,7 @@ class CPFTrimTests(unittest.TestCase):
             '--fields', 'formation.title,formation.proximiteRomes.code,duration',
         ], out=io.StringIO())
 
-        with open(self.tmpfile_name) as output_file:
+        with open(self.tmpfile_name, encoding='utf-8') as output_file:
             output = output_file.read()
 
         self.assertTrue(

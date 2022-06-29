@@ -1,18 +1,18 @@
-**Bob est un projet de Bayes Impact, l'association à but non lucratif que nous avons créée en 2014 afin de mettre la technologie au service du bien commun.** Nous sommes une petite équipe convaincue que les nouvelles technologies peuvent faire plus que générer du profit, et servir à créer de l'impact à grande échelle. C'est pourquoi nous avons quitté nos jobs pour dédier nos carrières à la construction de services numériques gratuits et ouverts qui aident les gens.
+**{{productName}} est un projet de {{orgName}}, l'association à but non lucratif que nous avons créée en 2014 afin de mettre la technologie au service du bien commun.** Nous sommes une petite équipe convaincue que les nouvelles technologies peuvent faire plus que générer du profit, et servir à créer de l'impact à grande échelle. C'est pourquoi nous avons quitté nos jobs pour dédier nos carrières à la construction de services numériques gratuits et ouverts qui aident les gens.
 
 Nous avons ainsi travaillé au cours de notre histoire sur plusieurs projets d'intérêt général qui vont de l'optimisation du parcours de santé des hôpitaux à la réduction de la violence policière en Californie.
 
-**Nous avons commencé à travailler sur Bob en mai 2016 à partir d'une idée simple.** Au lieu de créer un job board de plus, et si on travaillait en amont en permettant à chacun d'obtenir des conseils personnalisés et actionnables pour réaliser son potentiel ?
+**Nous avons commencé à travailler sur {{productName}} en mai 2016 à partir d'une idée simple.** Au lieu de créer un job board de plus, et si on travaillait en amont en permettant à chacun d'obtenir des conseils personnalisés et actionnables pour réaliser son potentiel ?
 
 Nous pensons qu'il n'y a pas de baguette (ou d'algorithme de matching) magique contre le chômage. Mais nous sommes convaincus qu'il y a déjà beaucoup à faire en remettant l'individu au cœur de la recherche d'emploi.
-Surtout dans un monde où il n'y aura plus de parcours fléché, mais où chacun devra avoir les clés pour créer le sien. Les donner à chacun de manière personnalisée, c'est ce que nous essayons de faire avec Bob. Que ce soit pour une personne, mille, ou un million.
+Surtout dans un monde où il n'y aura plus de parcours fléché, mais où chacun devra avoir les clés pour créer le sien. Les donner à chacun de manière personnalisée, c'est ce que nous essayons de faire avec {{productName}}. Que ce soit pour une personne, mille, ou un million.
 
-**Bien sûr, la route va être longue. C'est pourquoi nous avons choisi un modèle ouvert et non-lucratif** afin de pouvoir rassembler les énergies de tous. Bob est un projet collaboratif et nous le développons continuellement au contact des chercheurs d'emploi, mais aussi des conseillers et des accompagnateurs.
+**Bien sûr, la route va être longue. C'est pourquoi nous avons choisi un modèle ouvert et non-lucratif** afin de pouvoir rassembler les énergies de tous. {{productName}} est un projet collaboratif et nous le développons continuellement au contact des chercheurs d'emploi, mais aussi des conseillers et des accompagnateurs.
 
 C'est d'autant plus important que nous pensons que si l'innovation numérique peut apporter beaucoup à la recherche d'emploi, elle doit être complémentaire de l'accompagnement humain.
 
-**Notre engagement est une démarche de long-terme.** Le chômage est une question complexe, et tenter de nouvelles approches prend du temps et demande de se remettre en permanence en question. Rien que dans l'année que nous avons passée à travailler sur Bob, nous avons dû changer de cap plusieurs fois et faire des centaines d'itérations.
+**Notre engagement est une démarche de long-terme.** Le chômage est une question complexe, et tenter de nouvelles approches prend du temps et demande de se remettre en permanence en question. Rien que dans l'année que nous avons passée à travailler sur {{productName}}, nous avons dû changer de cap plusieurs fois et faire des centaines d'itérations.
 
 **C'est pour cela que nous pensons qu'il faut avancer ensemble.**
 
-_Si notre démarche vous intéresse ou si vous avez une idée à proposer, passez-nous le bonjour à hello@bayesimpact.org !_
+_Si notre démarche vous intéresse ou si vous avez une idée à proposer, passez-nous le bonjour à {{contactEmailAddress}} !_

@@ -16,12 +16,12 @@ class UploadTestCase(unittest.TestCase):
 
     testdata_folder = path.join(path.dirname(__file__), 'testdata')
 
-    def test_upload(self, mock_algoliasearch: mock.MagicMock) -> None:
-        """Test the full upload."""
+    def test_with_zip_codes(self, mock_algoliasearch: mock.MagicMock) -> None:
+        """Test with zip coded cities as file parameter."""
 
         geonames_city_suggest.upload([
-            '--geonames-dump', path.join(self.testdata_folder, 'geonames.txt'),
-            '--geonames-admin-dump', path.join(self.testdata_folder, 'geonames_admin.txt'),
+            '--cities-with-zip', path.join(self.testdata_folder, 'cities_zip.txt'),
+            '--population-by-zip', path.join(self.testdata_folder, 'population_by_zip_codes.txt'),
             '--states-fips-codes', path.join(self.testdata_folder, 'usa/states.txt'),
             '--algolia-index', 'cities_US',
             '--algolia-api-key', 'my-api-key',
@@ -38,27 +38,38 @@ class UploadTestCase(unittest.TestCase):
         index = mock_client.init_index()
         self.assertTrue(index.save_objects.called)
         self.assertEqual(
-            [
-                'Amchitka', 'Attu', 'Bauxite', 'Baxters', 'College Hill',
-                'Concrete', 'Cost', 'Doty', 'Ko Olina', 'The Bronx', 'New York City', 'Pittsburgh',
-            ],
+            ['Akutan', 'Cold Bay', 'Springfield', 'Springfield', 'New York', 'Bronx', 'Pittsburgh'],
             [city.get('name')
              for call in index.save_objects.call_args_list
              for city in call[0][0]])
-        city = index.save_objects.call_args[0][0][0]
+        city = index.save_objects.call_args[0][0][1]
         self.assertEqual('AK', city.get('admin1Code'), msg=city)
         self.assertEqual('Alaska', city.get('admin1Name'), msg=city)
-        self.assertEqual('Aleutians West Census Area', city.get('admin2Name'), msg=city)
-        self.assertEqual('2016', city.get('admin2Code'), msg=city)
-        self.assertEqual(0, city.get('borough'), msg=city)
+        self.assertEqual('Aleutians East', city.get('admin2Name'), msg=city)
+        self.assertEqual('2013', city.get('admin2Code'), msg=city)
+        self.assertEqual('AK_2013_ColdBay', city.get('objectID'), msg=city)
+        self.assertEqual(142, city.get('population'), msg=city)
+
+        springfield_ohio = index.save_objects.call_args[0][0][2]
+        self.assertEqual('39023', springfield_ohio.get('admin2Code'), msg=springfield_ohio)
+        self.assertEqual('Ohio', springfield_ohio.get('admin1Name'), msg=springfield_ohio)
+
+        springfield_oregon = index.save_objects.call_args[0][0][3]
+        self.assertEqual('41039', springfield_oregon.get('admin2Code'), msg=springfield_oregon)
+        self.assertEqual('Oregon', springfield_oregon.get('admin1Name'), msg=springfield_oregon)
 
         pittsburgh = index.save_objects.call_args[0][0][-1]
         self.assertEqual('42003', pittsburgh.get('admin2Code'), msg=pittsburgh)
-        self.assertEqual('Allegheny County', pittsburgh.get('admin2Name'), msg=pittsburgh)
+        self.assertEqual('Allegheny', pittsburgh.get('admin2Name'), msg=pittsburgh)
 
-        ko_olina = index.save_objects.call_args[0][0][-4]
-        self.assertEqual('15003', ko_olina.get('admin2Code'), msg=ko_olina)
-        self.assertEqual('Honolulu County', ko_olina.get('admin2Name'), msg=ko_olina)
+        new_york = index.save_objects.call_args[0][0][-3]
+        self.assertEqual('36061', new_york.get('admin2Code'), msg=new_york)
+        self.assertEqual('10001-10002-10003', new_york.get('zipCodes'), msg=new_york)
+        self.assertEqual(98596, new_york.get('population'), msg=new_york)
+
+        the_bronx = index.save_objects.call_args[0][0][-2]
+        self.assertEqual('36005', the_bronx.get('admin2Code'), msg=the_bronx)
+        self.assertEqual('10451-10452-10453', the_bronx.get('zipCodes'), msg=the_bronx)
 
         mock_client.move_index.assert_called_once_with(tmp_name, 'cities_US')
 
@@ -72,8 +83,9 @@ class UploadTestCase(unittest.TestCase):
 
         with self.assertRaises(exceptions.AlgoliaException):
             geonames_city_suggest.upload([
-                '--geonames-dump', path.join(self.testdata_folder, 'geonames.txt'),
-                '--geonames-admin-dump', path.join(self.testdata_folder, 'geonames_admin.txt'),
+                '--cities-with-zip', path.join(self.testdata_folder, 'cities_zip.txt'),
+                '--population-by-zip', path.join(
+                    self.testdata_folder, 'population_by_zip_codes.txt'),
                 '--states-fips-codes', path.join(self.testdata_folder, 'usa/states.txt'),
                 '--algolia-api-key', 'my-api-key',
             ], out=output)
@@ -82,14 +94,14 @@ class UploadTestCase(unittest.TestCase):
         mock_client.init_index().delete.assert_called_once_with()
         output_value = output.getvalue()
         self.assertTrue(
-            output_value.startswith('[\n  {\n    "objectID": "4045510",'), msg=output_value)
+            output_value.startswith('[\n  {\n    "admin2Code": "2013",'), msg=output_value)
 
     def test_without_states(self, mock_algoliasearch: mock.MagicMock) -> None:
         """Test not setting the states-fips-codes file parameter."""
 
         geonames_city_suggest.upload([
-            '--geonames-dump', path.join(self.testdata_folder, 'geonames.txt'),
-            '--geonames-admin-dump', path.join(self.testdata_folder, 'geonames_admin.txt'),
+            '--cities-with-zip', path.join(self.testdata_folder, 'cities_zip.txt'),
+            '--population-by-zip', path.join(self.testdata_folder, 'population_by_zip_codes.txt'),
             '--algolia-index', 'cities_US',
             '--algolia-api-key', 'my-api-key',
         ])
@@ -105,34 +117,24 @@ class UploadTestCase(unittest.TestCase):
         index = mock_client.init_index()
         self.assertTrue(index.save_objects.called)
         self.assertEqual(
-            [
-                'Amchitka', 'Attu', 'Bauxite', 'Baxters', 'College Hill',
-                'Concrete', 'Cost', 'Doty', 'Ko Olina', 'The Bronx', 'New York City', 'Pittsburgh',
-            ],
+            ['Akutan', 'Cold Bay', 'Springfield', 'Springfield', 'New York', 'Bronx', 'Pittsburgh'],
             [city.get('name')
              for call in index.save_objects.call_args_list
              for city in call[0][0]])
         city = index.save_objects.call_args[0][0][1]
         self.assertEqual('AK', city.get('admin1Code'), msg=city)
         self.assertEqual('Alaska', city.get('admin1Name'), msg=city)
-        self.assertEqual('Aleutians West Census Area', city.get('admin2Name'), msg=city)
-        self.assertEqual('016', city.get('admin2Code'), msg=city)
+        self.assertEqual('Aleutians East', city.get('admin2Name'), msg=city)
+        self.assertEqual('013', city.get('admin2Code'), msg=city)
+        self.assertEqual('AK_013_ColdBay', city.get('objectID'), msg=city)
 
-        pittsburgh = index.save_objects.call_args[0][0][-1]
-        self.assertEqual('003', pittsburgh.get('admin2Code'), msg=pittsburgh)
-        # TODO(cyrille): Rather test from a file with unique admin2 codes.
-        self.assertIn(
-            pittsburgh.get('admin2Name'), {'Honolulu County', 'Allegheny County'}, msg=pittsburgh)
+        new_york = index.save_objects.call_args[0][0][-3]
+        self.assertEqual('061', new_york.get('admin2Code'), msg=new_york)
+        self.assertEqual('10001-10002-10003', new_york.get('zipCodes'), msg=new_york)
 
-        new_york = index.save_objects.call_args[0][0][-2]
-        self.assertEqual('000', new_york.get('admin2Code'), msg=new_york)
-        # TODO(cyrille): Rather test from a file with unique admin2 codes.
-        self.assertEqual(0, new_york.get('borough'), msg=new_york)
-
-        the_bronx = index.save_objects.call_args[0][0][-3]
+        the_bronx = index.save_objects.call_args[0][0][-2]
         self.assertEqual('005', the_bronx.get('admin2Code'), msg=the_bronx)
-        # TODO(cyrille): Rather test from a file with unique admin2 codes.
-        self.assertEqual(1, the_bronx.get('borough'), msg=the_bronx)
+        self.assertEqual('10451-10452-10453', the_bronx.get('zipCodes'), msg=the_bronx)
 
         mock_client.move_index.assert_called_once_with(tmp_name, 'cities_US')
 

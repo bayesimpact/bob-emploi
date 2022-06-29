@@ -1,12 +1,13 @@
 import _groupBy from 'lodash/groupBy'
-import PropTypes from 'prop-types'
 import React, {useCallback, useMemo, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 
-import {ValidAdvice, isValidAdvice} from 'store/advice'
+import type {ValidAdvice} from 'store/advice'
+import {isValidAdvice} from 'store/advice'
 import {combineTOptions, prepareT} from 'store/i18n'
 
-import {RadiumDiv} from 'components/radium'
+import CircularProgress from 'components/circular_progress'
+import {SmartLink} from 'components/radium'
 import Textarea from 'components/textarea'
 import optimizeImage from 'images/optimize-picto.svg'
 import commentImage from 'images/comment-picto.svg'
@@ -41,6 +42,7 @@ interface AdvicesRecapProps {
     [adviceId: string]: bayes.bob.AdviceEvaluation
   }
   advices: readonly bayes.bob.Advice[]
+  isLoading: boolean
   moduleNewScores: {
     [adviceId: string]: number
   }
@@ -53,7 +55,7 @@ interface AdvicesRecapProps {
 
 
 const AdvicesRecapBase = (props: AdvicesRecapProps): React.ReactElement => {
-  const {advices, adviceEvaluations, moduleNewScores, onRescoreAdvice,
+  const {advices, adviceEvaluations, isLoading, moduleNewScores, onRescoreAdvice,
     onEvaluateAdvice, profile, project, style} = props
   const containerStyle = useMemo((): React.CSSProperties => ({
     backgroundColor: '#fff',
@@ -66,6 +68,9 @@ const AdvicesRecapBase = (props: AdvicesRecapProps): React.ReactElement => {
         !!numStars && !!ADVICE_GROUP_PROPS[(numStars + '') as NumStars]),
       'numStars')
   const groupKeys = Object.keys(ADVICE_GROUP_PROPS).sort().reverse() as NumStars[]
+  if (isLoading) {
+    return <CircularProgress />
+  }
   return <div style={containerStyle}>
     <div>
       {groupKeys.map((numStars: NumStars): React.ReactNode => (
@@ -76,16 +81,6 @@ const AdvicesRecapBase = (props: AdvicesRecapProps): React.ReactElement => {
       ))}
     </div>
   </div>
-}
-AdvicesRecapBase.propTypes = {
-  adviceEvaluations: PropTypes.objectOf(PropTypes.object.isRequired).isRequired,
-  advices: PropTypes.array.isRequired,
-  moduleNewScores: PropTypes.objectOf(PropTypes.number.isRequired).isRequired,
-  onEvaluateAdvice: PropTypes.func.isRequired,
-  onRescoreAdvice: PropTypes.func.isRequired,
-  profile: PropTypes.object.isRequired,
-  project: PropTypes.object.isRequired,
-  style: PropTypes.object,
 }
 const AdvicesRecap = React.memo(AdvicesRecapBase)
 
@@ -193,7 +188,7 @@ const ExtraAdviceBase = (props: ExtraAdviceProps): React.ReactElement => {
     <div style={{alignItems: 'center', display: 'flex'}}>
       <span style={{flex: 1}}>{adviceId}</span>
       <button
-        style={{cursor: 'pointer', padding: 5}}
+        style={{cursor: 'pointer', padding: 5}} type="button"
         onClick={handleClear} aria-label={t('Retirer')}>×</button>
     </div>
   </div>
@@ -274,16 +269,6 @@ const AdvicesRecapSectionBase = (props: AdvicesRecapSectionProps): React.ReactEl
     </div>
   </div>
 }
-AdvicesRecapSectionBase.propTypes = {
-  adviceEvaluations: PropTypes.objectOf(PropTypes.shape({
-    comment: PropTypes.string,
-  }).isRequired).isRequired,
-  advices: PropTypes.array.isRequired,
-  moduleNewScores: PropTypes.objectOf(PropTypes.number.isRequired).isRequired,
-  numStars: PropTypes.oneOf(Object.keys(ADVICE_GROUP_PROPS)).isRequired,
-  onEvaluateAdvice: PropTypes.func.isRequired,
-  onRescoreAdvice: PropTypes.func.isRequired,
-}
 const AdvicesRecapSection = React.memo(AdvicesRecapSectionBase)
 
 
@@ -309,16 +294,9 @@ const EvalElementButtonBase = (props: EvalElementButtonProps): React.ReactElemen
     'padding': 5,
     ...style,
   }), [isPreselected, isSelected, style])
-  return <RadiumDiv onClick={onClick} style={containerStyle}>
+  return <SmartLink onClick={onClick} style={containerStyle} aria-pressed={isSelected}>
     {children}
-  </RadiumDiv>
-}
-EvalElementButtonBase.propTypes = {
-  children: PropTypes.node.isRequired,
-  isPreselected: PropTypes.bool,
-  isSelected: PropTypes.bool,
-  onClick: PropTypes.func.isRequired,
-  style: PropTypes.object,
+  </SmartLink>
 }
 const EvalElementButton = React.memo(EvalElementButtonBase)
 

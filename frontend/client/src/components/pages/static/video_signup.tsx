@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 import React, {useState} from 'react'
 
 import {parseQueryString} from 'store/parse'
@@ -6,6 +5,7 @@ import {parseQueryString} from 'store/parse'
 import {LoginButton} from 'components/login'
 import isMobileVersion from 'store/mobile'
 import {PageWithNavigationBar} from 'components/navigation'
+import VideoFrame from 'components/video_frame'
 
 
 interface PageProps {
@@ -29,16 +29,20 @@ const buttonStyle: React.CSSProperties = {
   padding: '18px 28px',
   textTransform: 'uppercase',
 }
+const videoStyle: React.CSSProperties = {
+  width: isMobileVersion ? '100%' : 900,
+}
 
 
 const VideoSignUpPage = ({location: {search}}: PageProps): React.ReactElement => {
   const [email] = useState(parseQueryString(search).email)
   return <PageWithNavigationBar isContentScrollable={true} style={style}>
-    <iframe
-      width={isMobileVersion ? 320 : 900} height={isMobileVersion ? 200 : 506}
-      allowFullScreen={true}
-      src="https://www.youtube.com/embed/KSsVpeFqcaU?autoplay=1" frameBorder="0"
-      title={`Pourquoi ${config.productName}, par Paul Duan`} />
+    <VideoFrame style={videoStyle}>
+      <iframe
+        allowFullScreen={true}
+        src="https://www.youtube.com/embed/KSsVpeFqcaU?autoplay=1"
+        title={`Pourquoi ${config.productName}, par Paul Duan`} />
+    </VideoFrame>
     <LoginButton
       style={buttonStyle} email={email} type="navigation"
       isSignUp={true} visualElement="video-signup">
@@ -46,12 +50,6 @@ const VideoSignUpPage = ({location: {search}}: PageProps): React.ReactElement =>
     </LoginButton>
   </PageWithNavigationBar>
 }
-VideoSignUpPage.propTypes = {
-  location: PropTypes.shape({
-    search: PropTypes.string.isRequired,
-  }).isRequired,
-}
-
 
 
 export default React.memo(VideoSignUpPage)

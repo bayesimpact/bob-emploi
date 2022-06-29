@@ -2,12 +2,12 @@
 
 import itertools
 import typing
-from typing import Iterable, Iterator, List
+from typing import Iterable, Iterator
 
 _T = typing.TypeVar('_T')
 
 
-def batch_iterator(iterable: Iterable[_T], batch_size: int) -> Iterator[List[_T]]:
+def batch_iterator(iterable: Iterable[_T], batch_size: int) -> Iterator[list[_T]]:
     """Yield elements from the input iterable by batches of the given size."""
 
     batchable = iter(iterable)

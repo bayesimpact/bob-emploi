@@ -42,8 +42,8 @@ def hash_files(inputfile: str, outputfile: str, keep: Union[bool, str] = False) 
     """
 
     count = 0
-    with open(outputfile, 'wt') as output:
-        with open(inputfile, 'r') as input_lines:
+    with open(outputfile, 'wt', encoding='utf-8') as output:
+        with open(inputfile, 'r', encoding='utf-8') as input_lines:
             for line in input_lines:
                 output.write(hash_line(line, bool(keep)))
                 count += 1

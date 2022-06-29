@@ -5,7 +5,7 @@ import datetime
 import logging
 import os
 import typing
-from typing import Any, Callable, Dict, Iterator, ItemsView, KeysView, List, Literal, Optional, \
+from typing import Any, Callable, Iterator, ItemsView, KeysView, Literal, Optional, \
     Tuple, Type, Union
 
 from google.protobuf import json_format
@@ -13,7 +13,6 @@ from google.protobuf import message
 from google.protobuf import timestamp_pb2
 
 from bob_emploi.common.python import now
-from bob_emploi.frontend.api import options_pb2
 from bob_emploi.frontend.server import cache
 from bob_emploi.frontend.server import mongo
 
@@ -26,7 +25,7 @@ _ProtoType = typing.TypeVar('_ProtoType', bound=message.Message)
 
 # TODO(cyrille): Maybe get the id_field from proto option.
 def parse_from_mongo(
-        mongo_dict: Optional[Dict[str, Any]],
+        mongo_dict: Optional[dict[str, Any]],
         proto: message.Message, id_field: Optional[str] = None) -> bool:
     """Parse a Protobuf from a dict coming from MongoDB.
 
@@ -63,7 +62,7 @@ def parse_from_mongo(
 
 @typing.overload
 def create_from_mongo(
-        mongo_dict: Optional[Dict[str, Any]],
+        mongo_dict: Optional[dict[str, Any]],
         proto_type: Type[_ProtoType],
         id_field: Optional[str] = None,
         always_create: Literal[True] = True) -> _ProtoType:
@@ -72,7 +71,7 @@ def create_from_mongo(
 
 @typing.overload
 def create_from_mongo(
-        mongo_dict: Optional[Dict[str, Any]],
+        mongo_dict: Optional[dict[str, Any]],
         proto_type: Type[_ProtoType],
         id_field: Optional[str] = None,
         always_create: Literal[False] = ...) -> Optional[_ProtoType]:
@@ -80,7 +79,7 @@ def create_from_mongo(
 
 
 def create_from_mongo(
-        mongo_dict: Optional[Dict[str, Any]],
+        mongo_dict: Optional[dict[str, Any]],
         proto_type: Type[_ProtoType],
         id_field: Optional[str] = None,
         always_create: bool = True) -> Optional[_ProtoType]:
@@ -105,13 +104,13 @@ def create_from_mongo(
     return proto
 
 
-_DATABASE: List[mongo.NoPiiMongoDatabase] = []
-_MongoFindOneOutType = Optional[Dict[str, Any]]
+_DATABASE: list[mongo.NoPiiMongoDatabase] = []
+_MongoFindOneOutType = Optional[dict[str, Any]]
 
 
 def _find_one(collection: str, document_id: str) -> _MongoFindOneOutType:
     return typing.cast(
-        Optional[Dict[str, Any]],
+        Optional[dict[str, Any]],
         _DATABASE[0][collection].find_one({'_id': document_id}))
 
 
@@ -197,7 +196,7 @@ def fetch_from_mongo(
 
 
 def _convert_datetimes_to_string(
-        values: Union[Dict[Any, Any], List[Any]]) -> None:
+        values: Union[dict[Any, Any], list[Any]]) -> None:
     if isinstance(values, dict):
         for key, value in values.items():
             if isinstance(value, datetime.datetime):
@@ -214,10 +213,10 @@ def _convert_datetimes_to_string(
 
 
 def _cache_mongo_collection(
-        mongo_iterator: Callable[[], Iterator[Dict[str, Any]]],
+        mongo_iterator: Callable[[], Iterator[dict[str, Any]]],
         proto_type: type, id_field: Optional[str],
         update_func: Optional[Callable[[_ProtoType, str], None]] = None) \
-        -> Dict[str, _ProtoType]:
+        -> dict[str, _ProtoType]:
     """Cache in memory the content of a Mongo request returning protos.
 
     Args:
@@ -229,7 +228,7 @@ def _cache_mongo_collection(
         dict with all protos. The keys are the "_id" values.
     """
 
-    documents: Dict[str, _ProtoType] = {}
+    documents: dict[str, _ProtoType] = {}
 
     for document in mongo_iterator():
         _id = str(document['_id'])
@@ -248,10 +247,10 @@ class CachedCollection(typing.Generic[_Type]):
 
     def __init__(
             self,
-            get_values: Callable[[], Dict[str, _Type]],
+            get_values: Callable[[], dict[str, _Type]],
             cache_duration: datetime.timedelta = _CACHE_DURATION):
         self._get_values = get_values
-        self._cache: Optional[Dict[str, _Type]] = None
+        self._cache: Optional[dict[str, _Type]] = None
         self._cached_valid_until: Optional[datetime.datetime] = None
         self._cache_duration = cache_duration
         self._cache_version = self._global_cache_version
@@ -268,7 +267,7 @@ class CachedCollection(typing.Generic[_Type]):
 
         return bool(self._cache)
 
-    def _ensure_cache(self) -> Dict[str, _Type]:
+    def _ensure_cache(self) -> dict[str, _Type]:
         instant = now.get()
         if self._cached_valid_until and self._cached_valid_until >= instant and \
                 self._cache_version >= self._global_cache_version and self._cache is not None:
@@ -320,7 +319,7 @@ class MongoCachedCollection(typing.Generic[_ProtoType]):
     def __init__(
             self, proto_type: type, collection_name: str, id_field: Optional[str] = None,
             update_func: Optional[Callable[[_ProtoType, str], None]] = None,
-            query: Optional[Dict[str, Any]] = None,
+            query: Optional[dict[str, Any]] = None,
             sort_key: Optional[str] = None):
         """Creates a new collection.
 
@@ -357,12 +356,12 @@ class MongoCachedCollection(typing.Generic[_ProtoType]):
         self._cache = None
         self._database = None
 
-    def _get_values(self) -> Dict[str, _ProtoType]:
-        def _mongo_iterator() -> Iterator[Dict[str, Any]]:
+    def _get_values(self) -> dict[str, _ProtoType]:
+        def _mongo_iterator() -> Iterator[dict[str, Any]]:
             assert self._database
             # TODO(pascal): Type pymongo find method and remove the cast.
             return typing.cast(
-                Iterator[Dict[str, Any]],
+                Iterator[dict[str, Any]],
                 self._database.get_collection(self._collection_name).find(
                     self._query, sort=((self._sort_key, 1),) if self._sort_key else None))
         return _cache_mongo_collection(
@@ -375,11 +374,3 @@ def datetime_to_json_string(instant: datetime.datetime) -> str:
     timestamp = timestamp_pb2.Timestamp()
     timestamp.FromDatetime(instant)
     return typing.cast(str, json_format.MessageToDict(timestamp))
-
-
-def list_translatable_fields(proto_type: Type[_ProtoType]) -> Iterator[str]:
-    """List all fields that are translatable."""
-
-    for field in proto_type.DESCRIPTOR.fields:
-        if options_pb2.NATURAL_LANGUAGE in field.GetOptions().Extensions[options_pb2.string_format]:
-            yield field.name

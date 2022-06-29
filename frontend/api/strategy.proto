@@ -8,8 +8,12 @@ option go_package="bayes.org/bob_emploi/frontend/api/strategy";
 // See go/bob:strategies about what we mean by strategies. This represents a strategy as given to
 // the user.
 message Strategy {
-    // A title for the strategy, in the language of the user.
+    // The title for this strategy using a "you" form.
     string title = 1;
+
+    // The title for this strategy using an infinitive form. This is also used when listing
+    // the user strategies at a glance when preparing the action plan.
+    string infinitive_title = 11;
 
     // A header for the strategy, to explain why it's given to the user, and introduces the advice
     // we're going to give.
@@ -43,6 +47,21 @@ message Strategy {
     // When this strategy is actually not a bunch of methods on Bob, but a direct link to another
     // tool like Upskilling: this is the URL to link to.
     string external_url = 10;
+
+    // A set of action IDs that should be recommended for this strategy. Their order is derived
+    // from the importance they have for the project, and it only contains actions that are
+    // available for the project.
+    repeated string action_ids = 12;
+
+    // A short text to describe this strategy. It describes the objective of the strategy but not
+    // its full content (actions or methods).
+    //
+    // It is no more than 3 lines and phrased as Bob talking to the user.
+    //
+    // It is displayed next to the strategy's title or inifinitive_title and not far from a list of
+    // methods or actions that one can take for this strategy. As such the description does not
+    // duplicate the information contained in the title or in the list of actions.
+    string description_speech = 13;
 }
 
 // An advice with a possible header to introduce it.
@@ -50,8 +69,9 @@ message StrategyAdvice {
     // The ID of the advice module.
     string advice_id = 1;
 
-    // An optional header for this advice.
-    string header = 2;
+    // An optional explanation for this advice. It should answer the question "Why this task can be
+    // useful to you" in the context of a given strategy.
+    string why = 2;
 
     // An optional teaser for this advice, to override the one given in diagnostic
     // (currently presented as a goal).
@@ -65,7 +85,7 @@ message Strategies {
 
 // A module for a strategy, that describes how it is selected and populated. This assumes that the
 // user is already in a given diagnostic category.
-// (Next ID: 11)
+// (Next ID: 14)
 message StrategyModule {
     // DEPRECATED since 2019-03: use category_ids instead.
     // The diagnostic category in which this strategy should be shown.
@@ -81,11 +101,25 @@ message StrategyModule {
     // shows the hypothetical upgrade in Bob score that applying the strategy would give.
     string trigger_scoring_model = 1 [(string_format) = SCORING_MODEL_ID];
 
-    // The title for this strategy.
+    // The title for this strategy using a "you" form.
     string title = 2 [(string_format) = NATURAL_LANGUAGE];
 
+    // The title for this strategy using an infinitive form. This is also used when listing
+    // the user strategies at a glance when preparing the action plan.
+    string infinitive_title = 11 [(string_format) = NATURAL_LANGUAGE];
+
     // The template for a header for this strategy.
-    string header_template = 3 [(string_format) = NATURAL_LANGUAGE, (string_format) = SCORING_PROJECT_TEMPLATE];
+    string header_template = 3 [(string_format) = NATURAL_LANGUAGE, (string_format) = SCORING_PROJECT_TEMPLATE, (string_format) = MARKUP_LANGUAGE];
+
+    // A short text to describe this strategy. It describes the objective of the strategy but not
+    // its full content (actions or methods).
+    //
+    // It is no more than 3 lines and phrased as Bob talking to the user.
+    //
+    // It is displayed next to the strategy's title or inifinitive_title and not far from a list of
+    // methods or actions that one can take for this strategy. As such the description does not
+    // duplicate the information contained in the title or in the list of actions.
+    string description_speech = 13 [(string_format) = NATURAL_LANGUAGE, (string_format) = SCORING_PROJECT_TEMPLATE, (string_format) = MARKUP_LANGUAGE];
 
     // The advices we want to give in this strategy. If none of them is given to the user, it should
     // not be shown.
@@ -99,14 +133,18 @@ message StrategyModule {
     // When this module is actually not a bunch of methods on Bob, but a direct link to another tool
     // like Upskilling: this is the URL to link to.
     string external_url_template = 10 [(string_format) = SCORING_PROJECT_TEMPLATE];
+
+    // A set of action IDs that should be recommended for this strategy.
+    repeated string action_ids = 12;
 }
 
 message StrategyAdviceTemplate {
     // The ID of the advice module.
     string advice_id = 1;
 
-    // An optional header for this advice.
-    string header_template = 2 [(string_format) = NATURAL_LANGUAGE, (string_format) = SCORING_PROJECT_TEMPLATE];
+    // An optional explanation template for this advice. It should answer the question "Why this
+    // task can be useful to you" in the context of a given strategy.
+    string why_template = 2 [(string_format) = NATURAL_LANGUAGE, (string_format) = SCORING_PROJECT_TEMPLATE];
 
     // An optional teaser for this advice.
     string teaser_template = 4 [(string_format) = NATURAL_LANGUAGE, (string_format) = SCORING_PROJECT_TEMPLATE];

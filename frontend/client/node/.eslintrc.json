@@ -1,0 +1,7 @@
+{
+  "rules": {
+    // This is incorrect in Typescript Node, see
+    // https://github.com/sindresorhus/eslint-plugin-unicorn/issues/1273#issuecomment-1009673224
+    "unicorn/prefer-json-parse-buffer": "off"
+  }
+}

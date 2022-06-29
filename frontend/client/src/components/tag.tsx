@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
 interface Props {
@@ -28,10 +27,6 @@ const Tag = ({children, style}: Props): React.ReactElement => {
   return <span style={containerStyle}>
     {children}
   </span>
-}
-Tag.propTypes = {
-  children: PropTypes.node.isRequired,
-  style: PropTypes.object,
 }
 
 

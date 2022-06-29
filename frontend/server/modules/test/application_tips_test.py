@@ -6,7 +6,7 @@ import unittest
 
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
@@ -128,7 +128,7 @@ class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
 
         persona = self._random_persona().clone()
         persona.project.diagnostic.category_id = 'bravo'
-        persona.user_profile.frustrations.append(user_pb2.RESUME)
+        persona.user_profile.frustrations.append(user_profile_pb2.RESUME)
         score = self._score_persona(persona)
         self.assertNotEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
@@ -227,10 +227,10 @@ class ProjectResumeEndpointTestCase(base_test.ServerTestCase):
             'contentMasculine': 'Vous êtes spécial',
             'type': 'QUALITY'
         })
-        self._db.translations.insert_one({
+        self.add_translations([{
             'string': 'Vous êtes spécial',
             'fr@tu': 'Tu es spécial',
-        })
+        }])
 
         user_info = self.get_user_info(self.user_id, self.auth_token)
         user_info['profile']['gender'] = 'MASCULINE'

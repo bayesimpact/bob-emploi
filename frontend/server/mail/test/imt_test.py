@@ -1,12 +1,18 @@
 """Unit tests for the imt mail variables."""
 
+import os
 import re
 import unittest
+from unittest import mock
 
+from bob_emploi.frontend.api import email_pb2
 from bob_emploi.frontend.api import geo_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server.mail import imt
 from bob_emploi.frontend.server.mail.test import campaign_helper
+
+_FAKE_TRANSLATIONS_FILE = os.path.join(
+    os.path.dirname(__file__), '../../test/testdata/translations.json')
 
 
 class ImtVarsTestCase(campaign_helper.CampaignTestBase):
@@ -72,11 +78,11 @@ class ImtVarsTestCase(campaign_helper.CampaignTestBase):
             },
         })
 
-        self.user.profile.frustrations.append(user_pb2.MOTIVATION)
-        self.user.profile.gender = user_pb2.MASCULINE
+        self.user.profile.frustrations.append(user_profile_pb2.MOTIVATION)
+        self.user.profile.gender = user_profile_pb2.MASCULINE
         self.user.profile.name = 'patrick'
         self.user.profile.email = 'patrick@bayes.org'
-        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_MAXIMUM
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_MAXIMUM
         self.project.target_job.masculine_name = 'Juriste'
         self.project.target_job.job_group.rome_id = 'B1234'
         self.project.target_job.code_ogr = '123123'
@@ -95,9 +101,10 @@ class ImtVarsTestCase(campaign_helper.CampaignTestBase):
 
         self._assert_has_status_update_link(field='statusUpdateUrl')
 
-        base_url = f'https://www.bob-emploi.fr?userId={self.user.user_id}'
+        base_url = 'https://www.bob-emploi.fr?'
         self._assert_regex_field(
-            'loginUrl', rf'{re.escape(base_url)}&authToken=\d+\.[a-f0-9]+$')
+            'loginUrl',
+            rf'{re.escape(base_url)}authToken=\d+\.[a-f0-9]+&userId={self.user.user_id}$')
 
         self._assert_remaining_variables({
             'applicationModes': {
@@ -115,7 +122,7 @@ class ImtVarsTestCase(campaign_helper.CampaignTestBase):
                 'ratio': 2,
                 'title': 'CDI'
             },
-            'imtLink': 'http://candidat.pole-emploi.fr/marche-du-travail/statistiques?'
+            'imtLink': 'https://candidat.pole-emploi.fr/marche-du-travail/statistiques?'
                        'codeMetier=123123&codeZoneGeographique=69&typeZoneGeographique=DEPARTEMENT',
             'inCity': 'à Lyon',
             'jobNameInDepartement': 'juriste dans le Rhône',
@@ -208,6 +215,52 @@ class ImtVarsTestCase(campaign_helper.CampaignTestBase):
             },
             self._variables.pop('departements'))
 
+    @mock.patch.dict(os.environ, {'I18N_TRANSLATIONS_FILE': _FAKE_TRANSLATIONS_FILE})
+    def test_usa_deployment_departements(self) -> None:
+        """Show section about other departements for the USA."""
+
+        patcher = mock.patch(imt.__name__ + '._BOB_DEPLOYMENT', new='usa')
+        patcher.start()
+
+        self.user.profile.locale = 'en'
+
+        self.database.departements.insert_many([
+            {
+                '_id': 'NJ',
+                'name': 'New Jersey',
+                'prefix': 'in ',
+            },
+            {
+                '_id': 'CA',
+                'name': 'California',
+                'prefix': 'in ',
+            },
+        ])
+        self.database.job_group_info.update_one({'_id': 'B1234'}, {'$set': {
+            'bestDepartements': [
+                {
+                    'departementId': 'NJ',
+                    'local_stats': {'imt': {'yearlyAvgOffersPer10Candidates': 7}},
+                },
+                {
+                    'departementId': 'CA',
+                    'local_stats': {'imt': {'yearlyAvgOffersPer10Candidates': 7}},
+                },
+            ],
+        }})
+        self.project.area_type = geo_pb2.COUNTRY
+
+        self._assert_user_receives_campaign()
+        self.assertEqual(
+            {
+                'count': '2',
+                'isInBest': '',
+                'sentence': 'in New Jersey and in California',
+                'showSection': 'True',
+                'title': 'New Jersey<br />California',
+            },
+            self._variables.pop('departements'))
+
     def test_departements_when_best(self) -> None:
         """Show section about other departements when mine is best."""
 
@@ -251,6 +304,23 @@ class ImtVarsTestCase(campaign_helper.CampaignTestBase):
             {
                 'activeMonths': 'Juin - Juillet - Août - Septembre',
                 'onlyOneMonth': '',
+                'showSection': 'True',
+            },
+            self._variables.pop('months'))
+
+    @mock.patch.dict(os.environ, {'I18N_TRANSLATIONS_FILE': _FAKE_TRANSLATIONS_FILE})
+    def test_english_months(self) -> None:
+        """Show section about months."""
+
+        self.database.local_diagnosis.update_one({'_id': '69:B1234'}, {'$set': {
+            'imt.activeMonths': ['JUNE'],
+        }})
+        self.user.profile.locale = 'en'
+        self._assert_user_receives_campaign()
+        self.assertEqual(
+            {
+                'activeMonths': 'June',
+                'onlyOneMonth': 'True',
                 'showSection': 'True',
             },
             self._variables.pop('months'))
@@ -429,6 +499,117 @@ class ImtVarsTestCase(campaign_helper.CampaignTestBase):
             },
             self._variables.pop('marketStress'),
         )
+
+    @mock.patch.dict(os.environ, {'I18N_TRANSLATIONS_FILE': _FAKE_TRANSLATIONS_FILE})
+    def test_usa_basic(self) -> None:
+        """Test basic usage for US users."""
+
+        patcher = mock.patch(imt.__name__ + '._BOB_DEPLOYMENT', new='usa')
+        patcher.start()
+
+        self.database.departements.insert_one({
+            '_id': 'FL',
+            'name': 'Florida',
+            'prefix': 'in ',
+        })
+        self.database.local_diagnosis.insert_one({
+            '_id': 'FL:11-1011',
+            'imt': {
+                'employmentTypePercentages': [
+                    {
+                        'employmentType': 'CDI',
+                        'percentage': 47.06,
+                    },
+                    {
+                        'employmentType': 'CDD',
+                        'percentage': 29.41,
+                    },
+                    {
+                        'employmentType': 'CDD_LESS_EQUAL_3_MONTHS',
+                        'percentage': 23.53,
+                    },
+                ],
+                'yearlyAvgOffersPer10Candidates': 3,
+            },
+        })
+
+        self.database.job_group_info.insert_one({
+            '_id': '11-1011',
+            'applicationModes': {
+                'A0Z42': {
+                    'modes': [
+                        {
+                            'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS',
+                            'percentage': 42.57,
+                        },
+                        {
+                            'mode': 'SPONTANEOUS_APPLICATION',
+                            'percentage': 21.15,
+                        },
+                        {
+                            'mode': 'PLACEMENT_AGENCY',
+                            'percentage': 18.62,
+                        },
+                        {
+                            'mode': 'UNDEFINED_APPLICATION_MODE',
+                            'percentage': 17.66,
+                        },
+                    ],
+                },
+            },
+        })
+
+        self.project.target_job.masculine_name = 'VIP Steward'
+        self.project.target_job.job_group.rome_id = '11-1011'
+        self.project.city.name = 'Miami'
+        self.project.city.city_id = '33133'
+        self.project.city.departement_prefix = 'in '
+        self.project.city.departement_name = 'Florida'
+        self.project.city.departement_id = 'FL'
+        self.user.profile.locale = 'en'
+
+        self._assert_user_receives_campaign()
+
+        self._assert_has_default_vars()
+        self._assert_has_unsubscribe_url('changeEmailSettingsUrl', **{
+            'coachingEmailFrequency': 'EMAIL_MAXIMUM',
+        })
+
+        self._assert_has_status_update_link(field='statusUpdateUrl')
+
+        base_url = 'https://www.bob-emploi.fr?'
+        self._assert_regex_field(
+            'loginUrl',
+            rf'{re.escape(base_url)}authToken=\d+\.[a-f0-9]+&userId={self.user.user_id}$')
+
+        self._assert_remaining_variables({
+            'applicationModes': {
+                'showSection': 'True',
+                'link': '',
+                'title': 'The Network',
+                'name': 'their personal or professional network',
+                'percent': '43'
+            },
+            'departements': {'showSection': ''},
+            'employmentType': {
+                'showSection': 'True',
+                'name': 'a long-term contract',
+                'percent': '47',
+                'ratio': 2,
+                'title': 'a long-term contract'
+            },
+            'imtLink': 'https://www.bls.gov/oes/current/oes111011.htm',
+            'inCity': 'in Miami',
+            'jobNameInDepartement': 'VIP Steward in Florida',
+            'marketStress': {
+                'showSection': 'True',
+                'candidates': '3',
+                'offers': '1'
+            },
+            'months': {'showSection': ''},
+            'ofJobNameInDepartement': 'of VIP Steward in Florida',
+            'ofJobName': 'of VIP Steward',
+        })
 
 
 if __name__ == '__main__':

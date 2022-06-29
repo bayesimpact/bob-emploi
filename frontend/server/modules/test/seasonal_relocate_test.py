@@ -7,7 +7,7 @@ import unittest
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import seasonal_jobbing_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server.test import scoring_test
 
 
@@ -19,7 +19,7 @@ class AdviceSeasonalRelocateTestCase(scoring_test.ScoringModelTestBase):
     def setUp(self) -> None:
         super().setUp()
         self.persona = self._random_persona().clone()
-        self.now = datetime.datetime(2016, 2, 27)
+        self.now: datetime.datetime = datetime.datetime(2016, 2, 27)
         self.database.departements.insert_many([
             {
                 '_id': '2A',
@@ -74,13 +74,13 @@ class AdviceSeasonalRelocateTestCase(scoring_test.ScoringModelTestBase):
         """Do not trigger if the departement is unknown."""
 
         self.persona.project.area_type = geo_pb2.COUNTRY
-        if self.persona.user_profile.year_of_birth < datetime.date.today().year - 28:
-            self.persona.user_profile.year_of_birth = datetime.date.today().year - 28
-        if self.persona.user_profile.year_of_birth > datetime.date.today().year - 25:
-            self.persona.user_profile.year_of_birth = datetime.date.today().year - 25
+        if self.persona.user_profile.year_of_birth < self.now.year - 28:
+            self.persona.user_profile.year_of_birth = self.now.year - 28
+        if self.persona.user_profile.year_of_birth > self.now.year - 25:
+            self.persona.user_profile.year_of_birth = self.now.year - 25
         if self.persona.user_profile.highest_degree > job_pb2.BAC_BACPRO:
             self.persona.user_profile.highest_degree = job_pb2.BAC_BACPRO
-        self.persona.user_profile.family_situation = user_pb2.SINGLE
+        self.persona.user_profile.family_situation = user_profile_pb2.SINGLE
         if self.persona.project.employment_types == [job_pb2.CDI]:
             self.persona.project.employment_types.append(job_pb2.CDD_LESS_EQUAL_3_MONTHS)
         self.database.seasonal_jobbing.insert_one(
@@ -129,8 +129,8 @@ class AdviceSeasonalRelocateTestCase(scoring_test.ScoringModelTestBase):
     def test_older(self) -> None:
         """Do not trigger for older people."""
 
-        if self.persona.user_profile.year_of_birth > datetime.date.today().year - 36:
-            self.persona.user_profile.year_of_birth = datetime.date.today().year - 36
+        if self.persona.user_profile.year_of_birth > self.now.year - 36:
+            self.persona.user_profile.year_of_birth = self.now.year - 36
         score = self._score_persona(self.persona)
         self.assertEqual(score, 0, msg=f'Failed for "{self.persona.name}"')
 
@@ -146,7 +146,7 @@ class AdviceSeasonalRelocateTestCase(scoring_test.ScoringModelTestBase):
     def test_children(self) -> None:
         """Do not trigger for people who have children."""
 
-        self.persona.user_profile.family_situation = user_pb2.FAMILY_WITH_KIDS
+        self.persona.user_profile.family_situation = user_profile_pb2.FAMILY_WITH_KIDS
         score = self._score_persona(self.persona)
         self.assertEqual(score, 0, msg=f'Failed for "{self.persona.name}"')
 
@@ -162,11 +162,11 @@ class AdviceSeasonalRelocateTestCase(scoring_test.ScoringModelTestBase):
         """Young mobile single people without advanced diplomas should trigger."""
 
         self.persona.project.area_type = geo_pb2.COUNTRY
-        if self.persona.user_profile.year_of_birth < datetime.date.today().year - 28:
-            self.persona.user_profile.year_of_birth = datetime.date.today().year - 28
+        if self.persona.user_profile.year_of_birth < self.now.year - 28:
+            self.persona.user_profile.year_of_birth = self.now.year - 28
         if self.persona.user_profile.highest_degree > job_pb2.BAC_BACPRO:
             self.persona.user_profile.highest_degree = job_pb2.BAC_BACPRO
-        self.persona.user_profile.family_situation = user_pb2.SINGLE
+        self.persona.user_profile.family_situation = user_profile_pb2.SINGLE
         if self.persona.project.employment_types == [job_pb2.CDI]:
             self.persona.project.employment_types.append(job_pb2.CDD_LESS_EQUAL_3_MONTHS)
 
@@ -177,9 +177,9 @@ class AdviceSeasonalRelocateTestCase(scoring_test.ScoringModelTestBase):
         """Test that the advisor computes extra data for the seasonal-relocate advice."""
 
         self.now = datetime.datetime(2017, 2, 15)
-        self.persona.user_profile.year_of_birth = datetime.date.today().year - 28
+        self.persona.user_profile.year_of_birth = self.now.year - 28
         self.persona.user_profile.highest_degree = job_pb2.BAC_BACPRO
-        self.persona.user_profile.family_situation = user_pb2.SINGLE
+        self.persona.user_profile.family_situation = user_profile_pb2.SINGLE
         self.persona.project.area_type = geo_pb2.COUNTRY
         self._enforce_search_length_duration(self.persona.project, exact_months=7)
         self.persona.project.employment_types.append(job_pb2.CDD_LESS_EQUAL_3_MONTHS)

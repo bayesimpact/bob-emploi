@@ -71,7 +71,7 @@ SALARY_TESTS = [
 
 
 # TODO(pascal): Harmonize how we cope with tqdm in tests.
-@mock.patch(fhs_salaries.tqdm.__name__ + '.tqdm', lambda iterable: iterable)
+@mock.patch('tqdm.tqdm', lambda iterable: iterable)
 class FHSSalariesTestCase(unittest.TestCase):
     """Unit tests for the FHS salaries helper functions."""
 

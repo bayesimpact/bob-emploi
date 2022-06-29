@@ -3,7 +3,7 @@
 import logging
 import time
 import typing
-from typing import List, Optional
+from typing import Optional
 
 import flask
 
@@ -19,7 +19,7 @@ class _Tick(typing.NamedTuple):
 if typing.TYPE_CHECKING:
     class _AppContext:
         start: float
-        ticks: List[_Tick]
+        ticks: list[_Tick]
 
 
 def _get_context() -> '_AppContext':
@@ -35,11 +35,11 @@ def tick(tick_name: str) -> None:
 def before_request() -> None:
     """A function to run in a flask app before every request."""
 
-    _get_context().start = time.time()
-    _get_context().ticks = []
+    _get_context().start = time.time()  # pylint: disable=assigning-non-slot
+    _get_context().ticks = []  # pylint: disable=assigning-non-slot
 
 
-def teardown_request(unused_exception: Optional[Exception] = None) -> None:
+def teardown_request(unused_exception: Optional[BaseException] = None) -> None:
     """A function to run in a flask app after every request."""
 
     total_duration = time.time() - _get_context().start

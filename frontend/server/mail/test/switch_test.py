@@ -3,8 +3,9 @@
 import datetime
 import unittest
 
+from bob_emploi.frontend.api import email_pb2
 from bob_emploi.frontend.api import project_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server.mail.test import campaign_helper
 
 
@@ -22,9 +23,9 @@ class SwitchVarsTestCase(campaign_helper.CampaignTestBase):
         self.project.kind = project_pb2.FIND_A_NEW_JOB
 
         # TODO(cyrille): Move tests on firstName and gender to a test on get_default_variables.
-        self.user.profile.gender = user_pb2.MASCULINE
+        self.user.profile.gender = user_profile_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
-        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_ONCE_A_MONTH
 
     def test_basic(self) -> None:
         """Basic usage."""

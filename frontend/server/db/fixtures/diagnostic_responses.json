@@ -1,0 +1,514 @@
+[
+ {
+  "_id": "rec9RdhVrhURDo6wp",
+  "_order": 0,
+  "bobMainChallengeId": "enhance-methods-to-interview",
+  "responseId": "bravo:enhance-methods-to-interview",
+  "selfMainChallengeId": "bravo",
+  "text": "Ouah, vous avez un super profil ! D'après mes analyses, votre dernier défi est d'améliorer vos candidatures."
+ },
+ {
+  "_id": "recs5x72QxqV0Ewyx",
+  "_order": 1,
+  "bobMainChallengeId": "enhance-methods-to-interview",
+  "responseId": "enhance-methods-to-interview:enhance-methods-to-interview",
+  "selfMainChallengeId": "enhance-methods-to-interview",
+  "text": "Vous avez raison : la priorité est d'améliorer vos candidatures pour mettre toutes les chances de votre côté !"
+ },
+ {
+  "_id": "recyAq47E3dlynFba",
+  "_order": 2,
+  "bobMainChallengeId": "enhance-methods-to-interview",
+  "responseId": "find-what-you-like:enhance-methods-to-interview",
+  "selfMainChallengeId": "find-what-you-like",
+  "text": "Si vous souhaitez faire ce métier, sachez que vous avez toutes les chances de trouver en améliorant un peu vos candidatures !"
+ },
+ {
+  "_id": "recvFqRqhV6wD5KKW",
+  "_order": 3,
+  "bobMainChallengeId": "enhance-methods-to-interview",
+  "responseId": "missing-diploma:enhance-methods-to-interview",
+  "selfMainChallengeId": "missing-diploma",
+  "text": "D'après mes analyses, vous avez déjà le bon niveau de diplôme. La priorité est d'améliorer vos candidatures !"
+ },
+ {
+  "_id": "recQ9y9mWLF3VyJi4",
+  "_order": 4,
+  "bobMainChallengeId": "enhance-methods-to-interview",
+  "responseId": "start-your-search:enhance-methods-to-interview",
+  "selfMainChallengeId": "start-your-search",
+  "text": "Vous avez raison, il faut vous lancer dans votre recherche ! Mais avant : je vous conseille d'améliorer vos candidatures."
+ },
+ {
+  "_id": "recNeJpeJDLQVaTho",
+  "_order": 5,
+  "bobMainChallengeId": "enhance-methods-to-interview",
+  "responseId": "stuck-market:enhance-methods-to-interview",
+  "selfMainChallengeId": "stuck-market",
+  "text": "Rassurez-vous, il n'y a pas trop de concurrence dans ce métier. La priorité est d'améliorer vos candidatures !"
+ },
+ {
+  "_id": "recnyCi3Xd9WLwGJL",
+  "_order": 6,
+  "bobMainChallengeId": "enhance-methods-to-interview",
+  "responseId": "undefined-project:enhance-methods-to-interview",
+  "selfMainChallengeId": "undefined-project",
+  "text": "Si vous souhaitez faire ce métier, sachez que vous avez toutes les chances de trouver en travaillant un peu vos candidatures !"
+ },
+ {
+  "_id": "recqOkFolSmukOdyp",
+  "_order": 7,
+  "bobMainChallengeId": "find-what-you-like",
+  "responseId": "bravo:find-what-you-like",
+  "selfMainChallengeId": "bravo",
+  "text": "Êtes-vous sûr·e de vouloir améliorer vos candidatures pour un métier qui ne vous plaît pas tant que ça ? Regardons ensemble."
+ },
+ {
+  "_id": "recAReVVmWSDS9OVq",
+  "_order": 8,
+  "bobMainChallengeId": "find-what-you-like",
+  "responseId": "enhance-methods-to-interview:find-what-you-like",
+  "selfMainChallengeId": "enhance-methods-to-interview",
+  "text": "Selon moi, le vrai défi n'est pas la qualité de vos candidatures mais le fait que ce métier ne vous tient pas à cœur plus que ça."
+ },
+ {
+  "_id": "recUV67C5QA5aBjkc",
+  "_order": 9,
+  "bobMainChallengeId": "find-what-you-like",
+  "responseId": "find-what-you-like:find-what-you-like",
+  "selfMainChallengeId": "find-what-you-like",
+  "text": "Nous sommes d'accord : trouver un métier qui vous plaît est votre plus grande priorité avant de commencer votre recherche."
+ },
+ {
+  "_id": "rec6ixe9UxBopLWsE",
+  "_order": 10,
+  "bobMainChallengeId": "find-what-you-like",
+  "responseId": "missing-diploma:find-what-you-like",
+  "selfMainChallengeId": "missing-diploma",
+  "text": "Êtes-vous sûr·e de vouloir passer un diplôme pour un métier qui ne vous plaît pas tant que ça ? Regardons ensemble."
+ },
+ {
+  "_id": "recrv0eyGBqX14sNm",
+  "_order": 11,
+  "bobMainChallengeId": "find-what-you-like",
+  "responseId": "start-your-search:find-what-you-like",
+  "selfMainChallengeId": "start-your-search",
+  "text": "Ne vous précipitez pas. Pour le moment le plus important c'est vous et de trouver un projet qui vous anime."
+ },
+ {
+  "_id": "recmA6gHHDnSAr99a",
+  "_order": 12,
+  "bobMainChallengeId": "find-what-you-like",
+  "responseId": "stuck-market:find-what-you-like",
+  "selfMainChallengeId": "stuck-market",
+  "text": "Il y a beaucoup de concurrence pour votre métier, or j'ai cru comprendre qu'il ne vous plaisait pas tellement. On fait le point ?"
+ },
+ {
+  "_id": "recu31Nc9LVEdjRfX",
+  "_order": 13,
+  "bobMainChallengeId": "find-what-you-like",
+  "responseId": "undefined-project:find-what-you-like",
+  "selfMainChallengeId": "undefined-project",
+  "text": "Nous sommes d'accord : trouver un métier qui vous plaît est votre plus grande priorité avant de commencer votre recherche."
+ },
+ {
+  "_id": "recYORnBMEChgFNJW",
+  "_order": 14,
+  "bobMainChallengeId": "missing-diploma",
+  "responseId": "bravo:missing-diploma",
+  "selfMainChallengeId": "bravo",
+  "text": "Vous avancez bien ! Veillez à bien vérifier le niveau de diplôme demandé par les recruteurs, c'est un critère important."
+ },
+ {
+  "_id": "receFxTTDYEKwDG7D",
+  "_order": 15,
+  "bobMainChallengeId": "missing-diploma",
+  "responseId": "enhance-methods-to-interview:missing-diploma",
+  "selfMainChallengeId": "enhance-methods-to-interview",
+  "text": "Avant de travailler vos candidatures, faites bien attention au niveau de diplôme demandé par les recruteurs. On regarde ?"
+ },
+ {
+  "_id": "recn4h6SK63kvarA0",
+  "_order": 16,
+  "bobMainChallengeId": "missing-diploma",
+  "responseId": "find-what-you-like:missing-diploma",
+  "selfMainChallengeId": "find-what-you-like",
+  "text": "Ce métier ne vous passionne pas, c'est problématique. Mais votre plus grand défi : obtenir le diplôme attendu par le recruteur."
+ },
+ {
+  "_id": "recZgIKxcDNxERFzL",
+  "_order": 17,
+  "bobMainChallengeId": "missing-diploma",
+  "responseId": "missing-diploma:missing-diploma",
+  "selfMainChallengeId": "missing-diploma",
+  "text": "Nous sommes d'accord : la priorité pour ce métier est d'avoir le bon niveau de diplôme. Regardons !"
+ },
+ {
+  "_id": "recomEwX8tZF5TEeI",
+  "_order": 18,
+  "bobMainChallengeId": "missing-diploma",
+  "responseId": "start-your-search:missing-diploma",
+  "selfMainChallengeId": "start-your-search",
+  "text": "Avant de démarrer votre recherche, faites bien attention au niveau de diplôme demandé par les recruteurs. On regarde ?"
+ },
+ {
+  "_id": "recmvMFyi4bBDOqCE",
+  "_order": 19,
+  "bobMainChallengeId": "missing-diploma",
+  "responseId": "stuck-market:missing-diploma",
+  "selfMainChallengeId": "stuck-market",
+  "text": "Rassurez-vous, il n'y a pas trop de concurrence dans ce métier.  Votre priorité est de vous assurer d'avoir le bon diplôme."
+ },
+ {
+  "_id": "rec3VQsR5ehmFJYKv",
+  "_order": 20,
+  "bobMainChallengeId": "missing-diploma",
+  "responseId": "undefined-project:missing-diploma",
+  "selfMainChallengeId": "undefined-project",
+  "text": "Selon moi, passer un diplôme est votre plus grande priorité si vous souhaitez poursuivre sur le métier que vous avez sélectionné."
+ },
+ {
+  "_id": "rectXucCsZ8IwzZZ8",
+  "_order": 21,
+  "bobMainChallengeId": "start-your-search",
+  "responseId": "bravo:start-your-search",
+  "selfMainChallengeId": "bravo",
+  "text": "Nous sommes d'accord : tous les voyants sont au vert pour commencer votre recherche, c'est le moment de se lancer !"
+ },
+ {
+  "_id": "recJmctBzdgNFHtOx",
+  "_order": 22,
+  "bobMainChallengeId": "start-your-search",
+  "responseId": "enhance-methods-to-interview:start-your-search",
+  "selfMainChallengeId": "enhance-methods-to-interview",
+  "text": "Le meilleur moyen d'améliorer ses candidatures est de commencer à en envoyer, vous ne croyez pas ? Regardons !"
+ },
+ {
+  "_id": "recpFwvG3G26fwJvI",
+  "_order": 23,
+  "bobMainChallengeId": "start-your-search",
+  "responseId": "find-what-you-like:start-your-search",
+  "selfMainChallengeId": "find-what-you-like",
+  "text": "Si vous souhaitez exercer ce métier, sachez que vous avez toutes les chances de trouver un emploi en commençant à postuler !"
+ },
+ {
+  "_id": "recUopyXQwMZxSe9z",
+  "_order": 24,
+  "bobMainChallengeId": "start-your-search",
+  "responseId": "missing-diploma:start-your-search",
+  "selfMainChallengeId": "missing-diploma",
+  "text": "D'après mes analyses, vous avez déjà le bon niveau de diplôme. La priorité est de commencer votre recherche !"
+ },
+ {
+  "_id": "recVHNIovMTCuV6Uo",
+  "_order": 25,
+  "bobMainChallengeId": "start-your-search",
+  "responseId": "start-your-search:start-your-search",
+  "selfMainChallengeId": "start-your-search",
+  "text": "Vous avez raison : tout est prêt pour commencer votre recherche, c'est le moment de se lancer !"
+ },
+ {
+  "_id": "rec1Ze9VIG2FPZjb5",
+  "_order": 26,
+  "bobMainChallengeId": "start-your-search",
+  "responseId": "stuck-market:start-your-search",
+  "selfMainChallengeId": "stuck-market",
+  "text": "Rassurez-vous, il n'y a pas trop de concurrence dans ce métier. La priorité est de commencer votre recherche !"
+ },
+ {
+  "_id": "recGabbkDJHJP954O",
+  "_order": 27,
+  "bobMainChallengeId": "start-your-search",
+  "responseId": "undefined-project:start-your-search",
+  "selfMainChallengeId": "undefined-project",
+  "text": "Si vous souhaitez faire ce métier, sachez que vous avez le profil idéal pour trouver un emploi en commençant à postuler !"
+ },
+ {
+  "_id": "recSrQZkKifAGljvt",
+  "_order": 28,
+  "bobMainChallengeId": "stuck-market",
+  "responseId": "bravo:stuck-market",
+  "selfMainChallengeId": "bravo",
+  "text": "C'est vrai que vous êtes sur la bonne voie, mais attention : j'observe qu'il y a une très forte concurrence pour votre métier."
+ },
+ {
+  "_id": "recvDDqjEsYbqCGiM",
+  "_order": 29,
+  "bobMainChallengeId": "stuck-market",
+  "responseId": "enhance-methods-to-interview:stuck-market",
+  "selfMainChallengeId": "enhance-methods-to-interview",
+  "text": "J'observe une très forte concurrence pour ce métier : une belle candidature ne fera pas forcément la différence ! Regardons."
+ },
+ {
+  "_id": "rec6Rj4nUnw7wfq7A",
+  "_order": 30,
+  "bobMainChallengeId": "stuck-market",
+  "responseId": "find-what-you-like:stuck-market",
+  "selfMainChallengeId": "find-what-you-like",
+  "text": "Ce métier ne vous passionne pas, c'est problématique. Mais le plus grand frein : il n'y a pas assez d'offres pour tout le monde."
+ },
+ {
+  "_id": "recnRls1zmc3kMJ4Q",
+  "_order": 31,
+  "bobMainChallengeId": "stuck-market",
+  "responseId": "missing-diploma:stuck-market",
+  "selfMainChallengeId": "missing-diploma",
+  "text": "C'est super que vous vouliez obtenir un diplôme, mais attention : le vrai défi pour ce métier est la très forte concurrence. Regardons."
+ },
+ {
+  "_id": "recjgq9o6dAxwWBGE",
+  "_order": 32,
+  "bobMainChallengeId": "stuck-market",
+  "responseId": "start-your-search:stuck-market",
+  "selfMainChallengeId": "start-your-search",
+  "text": "C'est super de vouloir commencer, mais le vrai défi de ce métier, c'est qu'il n'y a pas assez de travail pour tout le monde."
+ },
+ {
+  "_id": "recA3VeTDDdGvjQRh",
+  "_order": 33,
+  "bobMainChallengeId": "stuck-market",
+  "responseId": "stuck-market:stuck-market",
+  "selfMainChallengeId": "stuck-market",
+  "text": "Nous sommes d'accord : réussir à contourner la concurrence est votre plus grande priorité. Regardons."
+ },
+ {
+  "_id": "recSvI8DI41fBUH5l",
+  "_order": 34,
+  "bobMainChallengeId": "stuck-market",
+  "responseId": "undefined-project:stuck-market",
+  "selfMainChallengeId": "undefined-project",
+  "text": "Vous m'avez devancé ! J'allais justement vous dire que le marché de l'emploi pour ce métier était très difficile."
+ },
+ {
+  "_id": "reczBa9fEyBFl75eB",
+  "_order": 35,
+  "bobMainChallengeId": "undefined-project",
+  "responseId": "bravo:undefined-project",
+  "selfMainChallengeId": "bravo",
+  "text": "Eh ? Je vous fais confiance si vous me dites que votre recherche avance bien, mais il me faut connaître votre projet pour juger."
+ },
+ {
+  "_id": "recdneE4Y42sgdKGO",
+  "_order": 36,
+  "bobMainChallengeId": "undefined-project",
+  "responseId": "enhance-methods-to-interview:undefined-project",
+  "selfMainChallengeId": "enhance-methods-to-interview",
+  "text": "Attention à ne pas vous précipiter dans vos candidatures : la première étape est de trouver un projet qui vous motive."
+ },
+ {
+  "_id": "recINytFiCLSr2UMl",
+  "_order": 37,
+  "bobMainChallengeId": "undefined-project",
+  "responseId": "find-what-you-like:undefined-project",
+  "selfMainChallengeId": "find-what-you-like",
+  "text": "Nous sommes d'accord : votre priorité est de trouver un métier qui vous motive !"
+ },
+ {
+  "_id": "reckrj45UZkiNZLp9",
+  "_order": 38,
+  "bobMainChallengeId": "undefined-project",
+  "responseId": "missing-diploma:undefined-project",
+  "selfMainChallengeId": "missing-diploma",
+  "text": "C'est vrai qu'avoir les bons diplômes est important, mais la première étape est de trouver un métier qui vous motive."
+ },
+ {
+  "_id": "rec7KZ7OO9CZjjd8N",
+  "_order": 39,
+  "bobMainChallengeId": "undefined-project",
+  "responseId": "start-your-search:undefined-project",
+  "selfMainChallengeId": "start-your-search",
+  "text": "Attention à ne pas vous précipiter dans vos candidatures : la première étape est de trouver un projet qui vous motive."
+ },
+ {
+  "_id": "recISg8EXyfmxb8ay",
+  "_order": 40,
+  "bobMainChallengeId": "undefined-project",
+  "responseId": "stuck-market:undefined-project",
+  "selfMainChallengeId": "stuck-market",
+  "text": "Même s'il est dur de trouver un emploi dans certains secteurs, l'important c'est vous : il faut trouver un projet qui vous motive."
+ },
+ {
+  "_id": "recyp48gQIIlSjoM6",
+  "_order": 41,
+  "bobMainChallengeId": "undefined-project",
+  "responseId": "undefined-project:undefined-project",
+  "selfMainChallengeId": "undefined-project",
+  "text": "Nous sommes d'accord : votre priorité est de trouver un métier qui vous motive !"
+ },
+ {
+  "_id": "recNGVzf3OYdT7yUa",
+  "_order": 42,
+  "bobMainChallengeId": "bravo",
+  "responseId": "bravo:bravo",
+  "selfMainChallengeId": "bravo",
+  "text": "Votre profil est idéal ! Vous avez toutes les chances de trouver un emploi rapidement en poursuivant votre recherche."
+ },
+ {
+  "_id": "recncvy6GiBxtgohi",
+  "_order": 43,
+  "bobMainChallengeId": "bravo",
+  "responseId": "enhance-methods-to-interview:bravo",
+  "selfMainChallengeId": "enhance-methods-to-interview",
+  "text": "Vous avez le profil idéal pour trouver un emploi rapidement ! Allons voir comment encore améliorer vos candidatures."
+ },
+ {
+  "_id": "recJbyqIIml18U5DZ",
+  "_order": 44,
+  "bobMainChallengeId": "bravo",
+  "responseId": "find-what-you-like:bravo",
+  "selfMainChallengeId": "find-what-you-like",
+  "text": "Votre profil est idéal ! Vous avez toutes les chances de trouver un emploi rapidement si vous restez sur cette voie."
+ },
+ {
+  "_id": "recw7vdieo21PMJPs",
+  "_order": 45,
+  "bobMainChallengeId": "bravo",
+  "responseId": "missing-diploma:bravo",
+  "selfMainChallengeId": "missing-diploma",
+  "text": "D'après mes analyses vos diplômes sont suffisants. Votre profil est idéal pour trouver un emploi rapidement !"
+ },
+ {
+  "_id": "recN4Qiu758noyNWe",
+  "_order": 46,
+  "bobMainChallengeId": "bravo",
+  "responseId": "start-your-search:bravo",
+  "selfMainChallengeId": "start-your-search",
+  "text": "Vous avez raison : la priorité est d'améliorer vos candidatures pour mettre toutes les chances de votre côté !"
+ },
+ {
+  "_id": "recnazT9ooMoBXr3F",
+  "_order": 47,
+  "bobMainChallengeId": "bravo",
+  "responseId": "stuck-market:bravo",
+  "selfMainChallengeId": "stuck-market",
+  "text": "Rassurez-vous, il n'y a pas trop de concurrence sur ce métier. Votre profil est idéal pour trouver un emploi rapidement !"
+ },
+ {
+  "_id": "recEgj25xoHY1u4Mr",
+  "_order": 48,
+  "bobMainChallengeId": "bravo",
+  "responseId": "undefined-project:bravo",
+  "selfMainChallengeId": "undefined-project",
+  "text": "Votre profil est idéal ! Vous avez toutes les chances de trouver un emploi rapidement si vous restez sur cette voie."
+ },
+ {
+  "_id": "recS7xcTyWVC2CP68",
+  "_order": 49,
+  "bobMainChallengeId": "covid-risk",
+  "responseId": "undefined-project:covid-risk",
+  "selfMainChallengeId": "undefined-project",
+  "text": "Nous sommes d'accord : votre priorité est de trouver un métier qui vous motive !"
+ },
+ {
+  "_id": "reczbq0ptdKIQwdBc",
+  "_order": 50,
+  "bobMainChallengeId": "covid-risk",
+  "responseId": "covid-risk:covid-risk",
+  "selfMainChallengeId": "covid-risk",
+  "text": "Nous sommes d'accord : la crise du Covid touche à votre métier. Ceci sera important à prendre en compte pour vos recherches."
+ },
+ {
+  "_id": "recUQHETiqpnYVDev",
+  "_order": 51,
+  "bobMainChallengeId": "covid-risk",
+  "responseId": "find-what-you-like:covid-risk",
+  "selfMainChallengeId": "find-what-you-like",
+  "text": "Nous sommes d'accord : votre priorité est de trouver un métier qui vous motive ! En plus, ce secteur est touché par le Covid."
+ },
+ {
+  "_id": "recBiF9JGUFXTdRUO",
+  "_order": 52,
+  "bobMainChallengeId": "covid-risk",
+  "responseId": "stuck-market:covid-risk",
+  "selfMainChallengeId": "stuck-market",
+  "text": "Nous sommes d'accord : le marché de l'emploi pour ce métier est dur. En plus, les recrutements sont touchés par le Covid."
+ },
+ {
+  "_id": "recrUCfVv8m26HbkM",
+  "_order": 53,
+  "bobMainChallengeId": "covid-risk",
+  "responseId": "missing-diploma:covid-risk",
+  "selfMainChallengeId": "missing-diploma",
+  "text": "C'est vrai qu'avoir les bons diplômes est important, le fait que ce métier soit touché par la crise du Covid est ce qui pose souci."
+ },
+ {
+  "_id": "rec91VZBHDqn6CZRx",
+  "_order": 54,
+  "bobMainChallengeId": "covid-risk",
+  "responseId": "start-your-search:covid-risk",
+  "selfMainChallengeId": "start-your-search",
+  "text": "Attention à ne pas vous précipiter dans vos candidatures : ce métier est dans un secteur touché par le Covid. Regardons."
+ },
+ {
+  "_id": "recKxmQhCUDM8n5Zh",
+  "_order": 55,
+  "bobMainChallengeId": "covid-risk",
+  "responseId": "enhance-methods-to-interview:covid-risk",
+  "selfMainChallengeId": "enhance-methods-to-interview",
+  "text": "Attention à ne pas vous précipiter dans vos candidatures : ce métier est dans un secteur touché par le Covid. Regardons."
+ },
+ {
+  "_id": "recNEva3boTeEKRwe",
+  "_order": 56,
+  "bobMainChallengeId": "covid-risk",
+  "responseId": "bravo:covid-risk",
+  "selfMainChallengeId": "bravo",
+  "text": "C'est vrai que vous êtes sur la bonne voie, mais attention : j'observe que votre secteur est touché par le Covid."
+ },
+ {
+  "_id": "recuzJnz3dTyJrTEA",
+  "_order": 57,
+  "bobMainChallengeId": "undefined-project",
+  "responseId": "covid-risk:undefined-project",
+  "selfMainChallengeId": "covid-risk",
+  "text": "Même si Covid impacte le recrutement de certains secteurs, l'important c'est vous : il faut trouver un projet qui vous motive."
+ },
+ {
+  "_id": "reczpZ5Ca4kWilcwj",
+  "_order": 58,
+  "bobMainChallengeId": "find-what-you-like",
+  "responseId": "covid-risk:find-what-you-like",
+  "selfMainChallengeId": "covid-risk",
+  "text": "Selon mes statistiques, votre secteur n'est pas trop touché par le Covid. Votre priorité est plutôt de trouver un métier qui vous plaît."
+ },
+ {
+  "_id": "recGBPzFqukVdXVwU",
+  "_order": 59,
+  "bobMainChallengeId": "stuck-market",
+  "responseId": "covid-risk:stuck-market",
+  "selfMainChallengeId": "covid-risk",
+  "text": "Selon mes statistiques, votre secteur n'est pas trop touché par le Covid. Votre priorité est plutôt de trouver un métier qui vous plaît."
+ },
+ {
+  "_id": "rec1BhIvg4TABE50N",
+  "_order": 60,
+  "bobMainChallengeId": "missing-diploma",
+  "responseId": "covid-risk:missing-diploma",
+  "selfMainChallengeId": "covid-risk",
+  "text": "Selon mes statistiques, votre secteur n'est pas trop touché par le Covid. La priorité serait de vérifier votre niveau de formation."
+ },
+ {
+  "_id": "recN6UtoBM5uT4eU3",
+  "_order": 61,
+  "bobMainChallengeId": "start-your-search",
+  "responseId": "covid-risk:start-your-search",
+  "selfMainChallengeId": "covid-risk",
+  "text": "Selon mes statistiques, votre secteur n'est pas trop touché par le Covid, le marché de l'emploi est plutôt bon. Allons-y !"
+ },
+ {
+  "_id": "recl8Y6lNFgzDDxLZ",
+  "_order": 62,
+  "bobMainChallengeId": "enhance-methods-to-interview",
+  "responseId": "covid-risk:enhance-methods-to-interview",
+  "selfMainChallengeId": "covid-risk",
+  "text": "Selon mes statistiques, votre secteur n'est pas trop touché par le Covid. La priorité est d'améliorer votre recherche d'emploi."
+ },
+ {
+  "_id": "recWZXwUm5wBzXYPb",
+  "_order": 63,
+  "bobMainChallengeId": "bravo",
+  "responseId": "covid-risk:bravo",
+  "selfMainChallengeId": "covid-risk",
+  "text": "Votre profil est idéal ! Vous avez toutes les chances de trouver un emploi rapidement si vous restez sur cette voie, malgré le Covid."
+ }
+]

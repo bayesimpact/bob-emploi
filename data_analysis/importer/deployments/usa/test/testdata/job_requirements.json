@@ -1,0 +1,54 @@
+[
+ {
+  "_id": "11-1011",
+  "diplomas": [
+   {
+    "diploma": {
+     "level": "DEA_DESS_MASTER_PHD"
+    },
+    "name": "Master's degree, PhD, or higher",
+    "percentRequired": 54.0
+   },
+   {
+    "diploma": {
+     "level": "LICENCE_MAITRISE"
+    },
+    "name": "Bachelor's degree",
+    "percentRequired": 35.0
+   }
+  ]
+ },
+ {
+  "_id": "11-1021",
+  "diplomas": [
+   {
+    "diploma": {
+     "level": "LICENCE_MAITRISE"
+    },
+    "name": "Bachelor's degree",
+    "percentRequired": 44.0
+   },
+   {
+    "diploma": {
+     "level": "BAC_BACPRO"
+    },
+    "name": "High school diploma / GED",
+    "percentRequired": 34.0
+   },
+   {
+    "diploma": {
+     "level": "BTS_DUT_DEUG"
+    },
+    "name": "Credential / Certification or Associate's degree",
+    "percentRequired": 18.0
+   },
+   {
+    "diploma": {
+     "level": "DEA_DESS_MASTER_PHD"
+    },
+    "name": "Master's degree, PhD, or higher",
+    "percentRequired": 4.0
+   }
+  ]
+ }
+]

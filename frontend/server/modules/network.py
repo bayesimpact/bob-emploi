@@ -25,8 +25,7 @@ class _ImproveYourNetworkScoringModel(scoring_base.ModelBase):
         if project.details.network_estimate != self._network_level:
             return scoring_base.NULL_EXPLAINED_SCORE
 
-        application_modes = project.job_group_info().application_modes.values()
-        first_modes = set(fap_modes.modes[0].mode for fap_modes in application_modes)
+        first_modes = project.get_fap_modes()
         first_modes.discard(job_pb2.UNDEFINED_APPLICATION_MODE)
         if first_modes == {job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS}:
             return scoring_base.ExplainedScore(3, [

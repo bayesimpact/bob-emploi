@@ -1,5 +1,7 @@
 {
   "From": "Bob Emploi <bob@bob-emploi.fr>",
   "Reply-To": "",
-  "Subject": "Modifiez votre mot de passe Bob Emploi"
+  "SenderEmail": "bob@bob-emploi.fr",
+  "SenderName": "Bob Emploi",
+  "Subject": "Modifiez votre mot de passe {{var:productName}}"
 }

@@ -4,15 +4,15 @@ import itertools
 import json
 import os
 import typing
-from typing import Any, Dict
+from typing import Any
 import unittest
 
 from bob_emploi.data_analysis.radar import config as radar_config
 
 
-def _read_json(filename: str) -> Dict[str, Any]:
-    with open(filename, 'r') as file:
-        return typing.cast(Dict[str, Any], json.load(file))
+def _read_json(filename: str) -> dict[str, Any]:
+    with open(filename, 'r', encoding='utf-8') as file:
+        return typing.cast(dict[str, Any], json.load(file))
 
 
 _FORM_PATH = os.path.join(os.path.dirname(__file__), '../forms')
@@ -27,7 +27,7 @@ class FormDefinitions(unittest.TestCase):
     """Sanity checks on Typeform definitions."""
 
     def _assert_same_structure(
-            self, def_a: Dict[str, Any], def_b: Dict[str, Any], *, msg: str,
+            self, def_a: dict[str, Any], def_b: dict[str, Any], *, msg: str,
             uses_same_descriptions: bool = False) -> None:
         self.assertEqual(set(def_a), set(def_b), msg=msg)
         for key, value_a in def_a.items():

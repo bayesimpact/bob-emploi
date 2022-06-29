@@ -1,0 +1,66 @@
+<mjml owa="desktop" version="4.6.3">
+  <mj-body background-color="#ffffff" color="#55575d" font-family="Arial, sans-serif">
+    <mj-section background-color="transparent" background-repeat="repeat" full-width="full-width" padding-bottom="12px" padding-top="12px" padding="20px 0px 20px 0px" text-align="center" vertical-align="top">
+      <mj-column>
+        <mj-text align="left" color="#000000" font-family="Arial, sans-serif" font-size="13px" letter-spacing="normal" padding-bottom="0px" padding-left="0px" padding-right="0px" padding-top="0px" padding="0px 25px 0px 25px">
+          <p style="text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px; line-height:1.38;font-size:14px;font-family:Arial;color:#000000;text-align:left;">Bonjour {{var:firstName:"Élise"}},</p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-repeat="repeat" padding-bottom="0px" padding-top="0px" padding="20px 0" text-align="center" vertical-align="top">
+      <mj-column>
+        <mj-text align="left" color="#000000" font-family="Arial, sans-serif" font-size="13px" letter-spacing="normal" padding-bottom="0px" padding-left="0px" padding-right="0px" padding-top="0px" padding="10px 25px">
+          <p class="text-build-content" data-testid="Npe8Ljf0XQ" style="margin: 10px 0; color:#000000;font-family:Arial;line-height:24px;">Comment allez-vous ?</p>
+          <p class="text-build-content" data-testid="Npe8Ljf0XQ" style="margin: 10px 0; color:#000000;font-family:Arial;line-height:24px;">Lors de votre inscription sur Bob, vous nous avez dit que {%if var:worstFrustration:"" == "SELF_CONFIDENCE"%}vous manquez parfois de confiance en vous{%elseif var:worstFrustration:"" == "INTERVIEW"%}vous avez l'impression de ne pas réussir vos entretiens{%else%}vous avez l'impression de ne pas rentrer dans les cases des recruteurs{%endif%}. Est-ce toujours le cas ?</p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-repeat="repeat" padding-bottom="0px" padding-top="0px" padding="20px 0" text-align="center" vertical-align="top">
+      <mj-column>
+        <mj-text align="left" color="#000000" font-family="Arial, sans-serif" font-size="13px" letter-spacing="normal" padding-bottom="0px" padding-left="0px" padding-right="0px" padding-top="0px" padding="10px 25px">
+          <p class="text-build-content" style="line-height: 24px; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px" data-testid="TB1Via7Eby"><span style="color:#000000;font-family:Arial;line-height:24px;">Je suis tombée, il y a quelque temps, sur </span><a class="link-build-content" style="color:inherit;" target="_blank" href="https://www.ted.com/talks/amy_cuddy_your_body_language_shapes_who_you_are?language=fr"><span style="color:#0000EE;font-family:Arial;line-height:24px;"><u>cette vidéo</u></span></a><span style="color:#000000;font-family:Arial;line-height:24px;"> de 20 min qui m'a fait penser à vous. Du coup je voulais vous la partager car je trouve que le petit conseil est utile à essayer (ne serait-ce que pour l'effet placebo) : <b>et si travailler sur votre langage corporel pouvait vous aider à vous rendre plus confiant{%if var:gender:"" == "FEMININE"%}e{%else%}{%if var:gender:"" == "MASCULINE"%}{%else%}·e{%endif%}{%endif%} ?</b></span></p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-repeat="repeat" padding-bottom="0px" padding-top="0px" padding="20px 0" text-align="center" vertical-align="top">
+      <mj-column>
+        <mj-text align="left" color="#000000" font-family="Arial, sans-serif" font-size="13px" letter-spacing="normal" padding-bottom="0px" padding-left="0px" padding-right="0px" padding-top="0px" padding="10px 25px">
+          <p class="text-build-content" style="line-height: 24px; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px" data-testid="IfvHvToCMU"><span style="color:#000000;font-family:Arial;line-height:24px;">Car même si ça fait un peu bâteau, une chose que j'ai apprise dans la vie, c'est que l'important c'est d'être vous-même et d'être fi{%if var:gender:"" == "FEMININE"%}ère{%else%}{%if var:gender:"" == "MASCULINE"%}er{%else%}er·e{%endif%}{%endif%} de qui vous êtes. Souvenez-vous lorsque vous postulez, c'est avant tout l'<i>entreprise</i> qui a besoin de <i>vous</i> !</span></p>
+        </mj-text>
+        <mj-image align="center" alt="" border="none" height="auto" href="https://www.ted.com/talks/amy_cuddy_your_body_language_shapes_who_you_are?language=fr" padding="10px 25px" src="https://t.bob-emploi.fr/tplimg/6u2u/b/4psz/24mpu.png" target="_blank" title="" width="700px"></mj-image>
+        <mj-text align="left" color="#000000" font-family="Arial, sans-serif" font-size="13px" letter-spacing="normal" padding-bottom="0px" padding-top="0px" padding="10px 25px">
+          <p style="text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px"><span style="line-height:24px;font-size:16px;font-family:Arial;color:#55575d;text-align:left;">Astuce 🇫🇷 Si les sous-titres en français ne sont pas activés sur la vidéo, cliquez sur l'icône </span><span style="line-height:24px;font-size:16px;font-family:Arial;color:#55575d;text-align:left;"><b>réglages</b></span><span style="line-height:24px;font-size:16px;font-family:Arial;color:#55575d;text-align:left;"> en bas de la vidéo, puis sur </span><span style="line-height:24px;font-size:16px;font-family:Arial;color:#55575d;text-align:left;"><b>subtitles</b></span><span style="line-height:24px;font-size:16px;font-family:Arial;color:#55575d;text-align:left;"> et choisissez </span><span style="line-height:24px;font-size:16px;font-family:Arial;color:#55575d;text-align:left;"><b>français ☕️</b></span></p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-color="#ffffff" background-repeat="repeat" background-size="auto" full-width="full-width" padding-bottom="0px" padding="20px 0" text-align="center" vertical-align="top">
+      <mj-column>
+        <mj-text align="left" color="#000000" font-family="Arial, sans-serif" font-size="13px" letter-spacing="normal" padding-bottom="0px" padding-left="0px" padding-right="0px" padding-top="0px" padding="10px 25px">
+          <p style="text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px"><span style="line-height:1.38;font-size:14.6667px;font-family:Arial;color:#000000;text-align:left;">J'espère que cette vidéo vous inspirera aussi !</span></p>
+        </mj-text>
+        <mj-text align="left" color="#000000" font-family="Arial, sans-serif" font-size="13px" letter-spacing="normal" padding-bottom="0px" padding-left="0px" padding-right="0px" padding-top="0px" padding="10px 25px">
+          <p style="text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px"><span style="line-height:1.38;font-size:14.6667px;font-family:Arial;color:#000000;text-align:left;">Joanna et l'équipe de Bob</span></p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-repeat="repeat" padding-bottom="0px" padding-top="0px" padding="20px 0" text-align="center" vertical-align="top">
+      <mj-column>
+        <mj-image align="left" alt="" border="none" height="auto" href="" padding-left="0px" padding-top="0px" padding="10px 25px" src="https://t.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png" target="_blank" title="" width="102px"></mj-image>
+      </mj-column>
+    </mj-section>
+    <mj-section background-repeat="repeat" padding-bottom="0px" padding-top="0px" padding="20px 0" text-align="center" vertical-align="top">
+      <mj-column>
+        <mj-text align="left" color="#000000" font-family="Arial, sans-serif" font-size="13px" letter-spacing="normal" padding-bottom="0px" padding-left="0px" padding-right="0px" padding-top="0px" padding="10px 25px">
+          <p style="text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px"><span style="line-height:24px;font-size:14px;font-family:Arial;color:#000000;text-align:left;">PS : Si le cœur vous en dit, vous pouvez me donner votre avis en répondant directement à ce mail.</span></p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-repeat="repeat" padding-bottom="0px" padding-top="0px" padding="20px 0" text-align="center" vertical-align="top">
+      <mj-column>
+        <mj-text align="left" color="#000000" font-family="Arial, sans-serif" font-size="13px" letter-spacing="normal" padding-bottom="0px" padding-left="0px" padding-right="0px" padding-top="0px" padding="10px 25px">
+          <p style="text-align: left; margin: 10px 0;; margin-top: 10px; margin-bottom: 10px"><span style="line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#55575d;font-family:Arial;">Vous recevez cet email car vous êtes inscrit{%if var:gender:""=="FEMININE"%}e{%else%}{%if var:gender:""=="MASCULINE"%}{%else%}·e{%endif%}{%endif%} sur </span><a href="https://www.bob-emploi.fr?utm_source=bob-emploi&amp;utm_medium=email" target="_blank"><span><u><span style="line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#0000EE;font-family:Arial;"><u>Bob</u></span></u></span></a><span style="line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#55575d;font-family:Arial;"> et avez demandé des emails de coaching. </span><a href="{{var:changeEmailSettingsUrl}}" target="_blank"><span><u><span style="line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#0000EE;font-family:Arial;"><u>Cliquez ici</u></span></u></span></a><span style="line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#55575d;font-family:Arial;"> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte Bob en veille ? </span><a href="{{var:statusUpdateUrl}}" target="_blank"><span><u><span style="line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#0000EE;font-family:Arial;"><u>cliquez ici</u></span></u></span></a><span style="line-height:22px;font-size:11px;letter-spacing:normal;text-align:left;color:#55575d;font-family:Arial;">.</span></p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

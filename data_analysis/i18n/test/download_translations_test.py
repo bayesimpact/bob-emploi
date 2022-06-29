@@ -45,8 +45,8 @@ class DownloadTranslationsTests(airtablemock.TestCase):
         })
         # Translation for a Mailjet template subject.
         base.create('translations', {
-            'en': 'Update your Bob password',
-            'string': 'Modifiez votre mot de passe Bob Emploi',
+            'en': 'Update your {{var:productName}} password',
+            'string': 'Modifiez votre mot de passe {{var:productName}}',
         })
 
         download_translations.main([
@@ -54,7 +54,7 @@ class DownloadTranslationsTests(airtablemock.TestCase):
             '--output', self._tmp_json_file,
         ])
 
-        with open(self._tmp_json_file, 'r') as output_file:
+        with open(self._tmp_json_file, 'r', encoding='utf-8') as output_file:
             output_json = json.load(output_file)
 
         self.assertEqual({
@@ -68,8 +68,8 @@ class DownloadTranslationsTests(airtablemock.TestCase):
             'Another string not in the server extraction': {
                 'fr': 'Another string to translate',
             },
-            'Modifiez votre mot de passe Bob Emploi': {
-                'en': 'Update your Bob password',
+            'Modifiez votre mot de passe {{var:productName}}': {
+                'en': 'Update your {{var:productName}} password',
             }
         }, output_json)
 

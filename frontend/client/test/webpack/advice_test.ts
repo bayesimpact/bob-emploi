@@ -1,11 +1,14 @@
 import {expect} from 'chai'
-import i18n, {TFunction} from 'i18next'
-import {getAdviceGoal, getAdviceShortTitle, getAdviceTitle} from 'store/advice'
+import type {TFunction} from 'i18next'
+import i18n from 'i18next'
+import {adviceModulesI18nFields, emailI18nFields, getAdviceGoal, getAdviceModule,
+  getAdviceShortTitle, getAdviceTitle, getEmailTemplates} from 'store/advice'
 
 import {ADVICE_MODULES} from 'components/advisor'
 
 
 i18n.init({
+  compatibilityJSON: 'v3',
   keySeparator: false,
   lng: 'fr',
   nsSeparator: false,
@@ -105,4 +108,113 @@ describe('getAdviceGoal', (): void => {
       const goal = getAdviceGoal({adviceId}, t)
       expect(goal).to.not.be.empty
     }))
+})
+
+describe('getAdviceModule', (): void => {
+  before((): void => {
+    getAdviceModule.cache.clear?.()
+  })
+
+  it('should return a proper module (check point)', (): void => {
+    i18n.changeLanguage('fr')
+    i18n.addResourceBundle('fr', 'adviceModules', {
+      'fresh-resume:goal': 'bien refaire votre CV',
+    })
+    const t = i18n.getFixedT('fr', 'translation')
+    const freshResumeModule = getAdviceModule('fresh-resume', t)
+    expect(freshResumeModule).to.be.ok
+    expect(freshResumeModule.goal).to.eq('bien refaire votre CV')
+  })
+
+  it('should return the right json format for another language than fr', (): void => {
+    i18n.addResourceBundle('en', 'adviceModules', {
+      'fresh-resume:goal': 'redo your resume properly',
+    }, true)
+    i18n.changeLanguage('en')
+    const t = i18n.getFixedT('en', 'translation')
+    const enModule = getAdviceModule('fresh-resume', t)
+    expect(enModule).to.be.ok
+    expect(enModule.goal).to.eq('redo your resume properly')
+  })
+})
+
+function toCamelCase(snakeCase: string): string {
+  return snakeCase.split('_').
+    map((word, index) => index ? word.slice(0, 1).toUpperCase() + word.slice(1) : word).
+    join('')
+}
+
+describe('adviceModulesI18nFields', (): void => {
+  let translatableFields: readonly string[] = []
+  before(async () => {
+    const {default: airtableFields} = await import('../../airtable_fields.json5')
+    translatableFields = (airtableFields.adviceModules.translatableFields || []).
+      filter(field => !field.startsWith('title_')).
+      map(toCamelCase)
+  })
+
+  it('should be in sync with translated values', () => {
+    expect(adviceModulesI18nFields).to.eql(translatableFields)
+  })
+})
+
+describe('emailI18nFields', (): void => {
+  let translatableFields: readonly string[] = []
+  before(async () => {
+    const {default: airtableFields} = await import('../../airtable_fields.json5')
+    translatableFields = (airtableFields.emailTemplates.translatableFields || []).map(toCamelCase)
+  })
+
+  it('should be in sync with translated values', () => {
+    expect(emailI18nFields).to.eql(translatableFields)
+  })
+})
+
+
+const emailTemplatesKeys = new Set([
+  'content',
+  'filters',
+  'personalizations',
+  'reason',
+  'title',
+  'type',
+])
+
+
+const isEmailTemplatesJson = (json: ReturnType<typeof getEmailTemplates>): void => {
+  expect(json).to.be.an('object')
+  for (const value of Object.values(json)) {
+    expect(value).to.be.an('array')
+    for (const template of value) {
+      const unexpectedKeys =
+        Object.keys(template).filter((key): boolean => !emailTemplatesKeys.has(key))
+      expect(unexpectedKeys).to.be.empty
+    }
+  }
+}
+
+
+describe('getEmailTemplates', (): void => {
+  // TODO(pascal): Consider dropping that test, it's covered by static typing already.
+  it('should return the right json format', (): void => {
+    i18n.changeLanguage('fr')
+    i18n.addResourceBundle('fr', 'emailTemplates', {
+      'recPzDMOZdVD0opz1:title': 'Demander un devis à une auto-école partenaire',
+    })
+    const t = i18n.getFixedT('fr', 'translation')
+    isEmailTemplatesJson(getEmailTemplates(t))
+  })
+
+  it('should return the right json format for another language than fr', (): void => {
+    i18n.addResourceBundle('en', 'emailTemplates', {
+      'recPzDMOZdVD0opz1:title': 'Ask in English',
+    }, true)
+    i18n.changeLanguage('en')
+    const t = i18n.getFixedT('en', 'translation')
+
+    const enTemplates = getEmailTemplates(t)
+    isEmailTemplatesJson(enTemplates)
+
+    expect(enTemplates['driving-license-euro'][0].title).to.eq('Ask in English')
+  })
 })

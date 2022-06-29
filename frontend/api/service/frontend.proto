@@ -10,6 +10,7 @@ import "bob_emploi/frontend/api/association.proto";
 import "bob_emploi/frontend/api/auth.proto";
 import "bob_emploi/frontend/api/commute.proto";
 import "bob_emploi/frontend/api/diagnostic.proto";
+import "bob_emploi/frontend/api/email.proto";
 import "bob_emploi/frontend/api/event.proto";
 import "bob_emploi/frontend/api/feedback.proto";
 import "bob_emploi/frontend/api/job.proto";

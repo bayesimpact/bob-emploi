@@ -1,0 +1,35 @@
+[
+ {
+  "_id": "1223",
+  "diplomas": [
+   {
+    "diploma": {
+     "level": "NO_DEGREE"
+    },
+    "name": "No high school diploma / GED"
+   }
+  ]
+ },
+ {
+  "_id": "1115",
+  "diplomas": [
+   {
+    "diploma": {
+     "level": "LICENCE_MAITRISE"
+    },
+    "name": "Bachelor's degree"
+   }
+  ]
+ },
+ {
+  "_id": "2150",
+  "diplomas": [
+   {
+    "diploma": {
+     "level": "DEA_DESS_MASTER_PHD"
+    },
+    "name": "Master's degree, PhD, or higher"
+   }
+  ]
+ }
+]

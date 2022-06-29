@@ -2,7 +2,8 @@ import React, {useCallback, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useDispatch} from 'react-redux'
 
-import {DispatchAllActions, emailCheck, silentlyRegisterUser} from 'store/actions'
+import type {DispatchAllActions} from 'store/actions'
+import {emailCheck, silentlyRegisterUser} from 'store/actions'
 import {validateEmail} from 'store/validations'
 
 import Button from 'components/button'
@@ -40,6 +41,9 @@ const CoachingConfirmationModal = (props: CoachingConfirmModalProps): React.Reac
   const dispatch = useDispatch<DispatchAllActions>()
   const {t} = useTranslation()
 
+  // TODO(pascal): Give the choice to the user.
+  const isPersistent = false
+
   const submitEmail = useCallback(async (): Promise<void> => {
     if (!validateEmail(email)) {
       return
@@ -52,8 +56,8 @@ const CoachingConfirmationModal = (props: CoachingConfirmModalProps): React.Reac
       setIsEmailAlreadyUsed(true)
       return
     }
-    dispatch(silentlyRegisterUser(email))
-  }, [dispatch, email])
+    dispatch(silentlyRegisterUser(email, isPersistent, t))
+  }, [dispatch, email, isPersistent, t])
 
   const submitEmailViaForm = useCallback((event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault()
@@ -70,7 +74,7 @@ const CoachingConfirmationModal = (props: CoachingConfirmModalProps): React.Reac
       <form onSubmit={submitEmailViaForm} style={formStyle}>
         <Input
           value={email} onChange={setEmail}
-          placeholder={t('votre@email.com')}
+          placeholder={t('votre@email.com')} name="email" autoComplete="email"
           style={isEmailAlreadyUsed ? errorStyle : undefined} />
         <Button
           disabled={!isEmailValid} onClick={submitEmail} isRound={true}

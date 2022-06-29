@@ -3,7 +3,7 @@
 import unittest
 
 from bob_emploi.frontend.api import boolean_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server.test import filters_test
 from bob_emploi.frontend.server.test import scoring_test
 
@@ -194,14 +194,14 @@ class LanguageFrustrationTestCase(filters_test.FilterTestBase):
     def test_no_language_issue(self) -> None:
         """User is not frustrated by language issues."""
 
-        if user_pb2.LANGUAGE in self.persona.user_profile.frustrations:
-            self.persona.user_profile.frustrations.remove(user_pb2.LANGUAGE)
+        if user_profile_pb2.LANGUAGE in self.persona.user_profile.frustrations:
+            self.persona.user_profile.frustrations.remove(user_profile_pb2.LANGUAGE)
         self._assert_fail_filter()
 
     def test_language_issue(self) -> None:
         """User is frustrated by not speaking the country's main language."""
 
-        self.persona.user_profile.frustrations.append(user_pb2.LANGUAGE)
+        self.persona.user_profile.frustrations.append(user_profile_pb2.LANGUAGE)
         self._assert_pass_filter()
 
 

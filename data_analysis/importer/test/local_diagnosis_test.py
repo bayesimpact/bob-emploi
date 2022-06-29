@@ -35,7 +35,7 @@ class BmoRomeImporterTestCase(unittest.TestCase):
             trainings_csv=path.join(self.data_folder, 'cpf_trainings.csv'),
             data_folder=self.data_folder)
 
-        self.assertEqual(54, len(collection))
+        self.assertEqual(55, len(collection))
         protos = dict(mongo.collection_to_proto_mapping(
             collection, job_pb2.LocalJobStats))
 

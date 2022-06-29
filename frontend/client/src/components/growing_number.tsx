@@ -1,8 +1,7 @@
-import PropTypes from 'prop-types'
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import VisibilitySensor from 'react-visibility-sensor'
+import React, {useEffect, useMemo, useRef, useState} from 'react'
 
 import useMedia from 'hooks/media'
+import useOnScreen from 'hooks/on_screen'
 
 
 interface Props {
@@ -18,8 +17,8 @@ const GrowingNumber = (props: Props): React.ReactElement => {
   const {durationMillisec = 1000, isSteady, number, style} = props
   const [growingForMillisec, setGrowingForMillisecs] = useState(0)
   const [hasGrown, setHasGrown] = useState(isForPrint)
-  const [hasStartedGrowing, setHasStartedGrowing] = useState(false)
-  const timeout = useRef<number|undefined>(undefined)
+  const domRef = useRef<HTMLSpanElement>(null)
+  const hasStartedGrowing = useOnScreen(domRef, {isActive: !isForPrint, isForAppearing: true})
   useEffect((): void|(() => void) => {
     if (!hasStartedGrowing || hasGrown) {
       return
@@ -28,16 +27,10 @@ const GrowingNumber = (props: Props): React.ReactElement => {
       setHasGrown(true)
       return
     }
-    timeout.current = window.setTimeout(
+    const timeout = window.setTimeout(
       (): void => setGrowingForMillisecs(growingForMillisec + 50), 50)
-    return (): void => window.clearTimeout(timeout.current)
+    return (): void => window.clearTimeout(timeout)
   }, [durationMillisec, hasGrown, hasStartedGrowing, growingForMillisec])
-  const startGrowing = useCallback((isVisible: boolean): void => {
-    if (!isVisible) {
-      return
-    }
-    setHasStartedGrowing(true)
-  }, [])
   const maxNumDigits = number ? Math.floor(Math.log10(number)) + 1 : 1
   const containerStyle = useMemo((): React.CSSProperties|undefined => isSteady ? {
     display: 'inline-block',
@@ -47,19 +40,10 @@ const GrowingNumber = (props: Props): React.ReactElement => {
     ...style,
   } : style, [isSteady, maxNumDigits, style])
   return <span style={containerStyle}>
-    <VisibilitySensor
-      active={!hasStartedGrowing} intervalDelay={250} onChange={startGrowing}>
-      <span>
-        {hasGrown ? number : Math.round(growingForMillisec / durationMillisec * number)}
-      </span>
-    </VisibilitySensor>
+    <span ref={domRef}>
+      {hasGrown ? number : Math.round(growingForMillisec / durationMillisec * number)}
+    </span>
   </span>
-}
-GrowingNumber.propTypes = {
-  durationMillisec: PropTypes.number,
-  isSteady: PropTypes.bool,
-  number: PropTypes.number.isRequired,
-  style: PropTypes.object,
 }
 
 

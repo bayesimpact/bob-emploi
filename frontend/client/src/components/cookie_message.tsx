@@ -1,11 +1,11 @@
 import CloseIcon from 'mdi-react/CloseIcon'
-import PropTypes from 'prop-types'
 import React from 'react'
 import {useTranslation} from 'react-i18next'
 import {useSelector} from 'react-redux'
 import {Link} from 'react-router-dom'
 
-import {RootState, acceptCookiesUsageAction, useDispatch} from 'store/actions'
+import type {RootState} from 'store/actions'
+import {acceptCookiesUsageAction, useDispatch} from 'store/actions'
 import isMobileVersion from 'store/mobile'
 
 import Banner from 'components/banner'
@@ -21,8 +21,8 @@ interface CookieMessageStore {
 }
 
 const useCookieStore = (): CookieMessageStore => {
-  const isMessageShown = useSelector(({app, user}: RootState) =>
-    !(user.userId || app.userHasAcceptedCookiesUsage))
+  const isMessageShown = useSelector(({app}: RootState) =>
+    !(app.userHasAcceptedCookiesUsage || !app.areAdsCookieUsageRequested))
   const dispatch = useDispatch()
   const onAcceptCookieUsage = (): void => {
     dispatch(acceptCookiesUsageAction)
@@ -39,12 +39,12 @@ const SimpleCookieMessageBase = ({isShown = true}: {isShown?: boolean}): React.R
     textDecoration: isMobileVersion ? 'underline' : 'none',
   }
   if (isMobileVersion) {
-    return <Trans>
+    return <Trans ns="components">
       Ce site utilise des <Link
         style={linkStyle} to={Routes.COOKIES_PAGE} tabIndex={isShown ? 0 : -1}>cookies</Link>.
     </Trans>
   }
-  return <Trans>
+  return <Trans ns="components">
     En poursuivant votre navigation sur ce site, vous acceptez l'utilisation de cookies pour
     améliorer la qualité du service et pour réaliser des statistiques de visite. Vos données ne
     seront ni cédées à des tiers, ni exploitées à des fins commerciales. <Link
@@ -77,15 +77,12 @@ const CookieMessageBase: React.FC<CookieMessageProps> =
       <SimpleCookieMessage />
     </Banner>
   }
-CookieMessageBase.propTypes = {
-  style: PropTypes.object,
-}
 const CookieMessage = React.memo(CookieMessageBase)
 
 
 const CookieMessageOverlayBase: React.FC = (): React.ReactElement => {
   const {isMessageShown, onAcceptCookieUsage} = useCookieStore()
-  const {t} = useTranslation()
+  const {t} = useTranslation('components')
   const containerStyle: React.CSSProperties = {
     backgroundColor: '#fff',
     borderRadius: 2,

@@ -1,10 +1,10 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 import React from 'react'
 import ReactDOMServer from 'react-dom/server'
 
-import {init as i18nInit} from 'store/i18n'
+import i18nInit from 'store/static_i18n?static'
 
-import favicon from 'images/favicon.ico'
+import favicon from 'deployment/favicon.ico'
 import WaitingPage from 'components/pages/waiting'
 
 
@@ -21,10 +21,7 @@ const Template = ({t}: {t: TFunction}): React.ReactElement => {
       <meta charSet="utf-8" />
       <title>{config.productName}</title>
       <meta httpEquiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-      <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-        id="viewport" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <meta property="og:type" content="website" />
       <meta property="og:title" content={config.productName} />
       <meta property="og:description" name="description" content={description} />
@@ -36,15 +33,11 @@ const Template = ({t}: {t: TFunction}): React.ReactElement => {
     </head>
     <body style={{margin: 0}}>
       <div id="app"><WaitingPage /></div>
+      <div id="modals" />
     </body>
   </html>
 }
 
+export default async (): Promise<string> =>
+  '<!doctype html>' + ReactDOMServer.renderToString(<Template t={await i18nInit()} />)
 
-async function renderTemplate(): Promise<string> {
-  const t = await i18nInit({isStatic: true})
-  return '<!doctype html>' + ReactDOMServer.renderToString(<Template t={t} />)
-}
-
-
-export default renderTemplate

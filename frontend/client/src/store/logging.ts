@@ -1,9 +1,11 @@
 import {detect} from 'detect-browser'
 
-import {AdviceAction, AllActions, AsyncAction, AuthenticateUserAction,
-  DisplayToastMessageAction, GetUserDataAction, LoadLandingPageAction, OnboardingPageAction,
-  PageIsLoadedAction, ProjectAction, RootState, StrategyAction, TipAction, VisualElementAction,
-  WithFeedback, isActionRegister, StaticAdviceAction} from './actions'
+import type {AdviceAction, AllActions, AsyncAction, AuthenticateUserAction, ActionOnAction,
+  DetailAction, DisplayToastMessageAction, GetUserDataAction, LoadLandingPageAction,
+  OnboardingPageAction, PageIsLoadedAction, ProjectAction, RootState, StrategyAction, TipAction,
+  VisualElementAction, WithProjectFeedback, StaticAdviceAction} from './actions'
+import {isActionRegister, isActionForActionPlan} from './actions'
+import isMobileVersion from './mobile'
 
 
 export const daysSince = (timestamp: number | string): number => {
@@ -92,8 +94,12 @@ export class Logger {
     if (this.browser.name) {
       properties['$browser'] = this.browser.name
     }
-    if (state.app && state.app.isMobileVersion) {
+    if (isMobileVersion) {
       properties['Mobile Version'] = true
+    }
+    if (action.type === 'PAGE_IS_LOADED') {
+      const path = action.location.pathname.slice(1)
+      properties['path'] = path
     }
     const user = getUser(action, state)
     if (user.registeredAt) {
@@ -115,15 +121,21 @@ export class Logger {
           loadLandingPageAction.defaultProjectProps.targetJob.masculineName
       }
     }
+    // TODO(cyrille): Decide whether we should keep this one or 'Action' property.
     const tipAction = action as TipAction<string>
     if (tipAction.action && tipAction.action.title) {
       properties['Action Title'] = tipAction.action.title
     }
-    const feedbackAction = action as WithFeedback
+    const feedbackAction = action as WithProjectFeedback
     if (feedbackAction.feedback) {
-      const {feedback, score} = feedbackAction.feedback
-      if (feedback) {
-        properties['Feedback'] = feedback
+      const {actionPlanBetterPreparedScore, actionPlanHelpsPlanScore,
+        actionPlanUsefulnessScore, score, text} = feedbackAction.feedback
+      if (actionPlanUsefulnessScore && actionPlanHelpsPlanScore &&
+        actionPlanBetterPreparedScore && text) {
+        properties['Feedback Action plan Is useful score'] = actionPlanUsefulnessScore
+        properties['Feedback Action plan Helps to plan score'] = actionPlanHelpsPlanScore
+        properties['Feedback Action plan Better prepared score'] = actionPlanBetterPreparedScore
+        properties['Feedback Action plan Want to see text'] = text
       }
       if (score) {
         properties['Score'] = score
@@ -196,6 +208,35 @@ export class Logger {
       if (strategyAction.strategyRank) {
         properties['Strategy Rank'] = strategyAction.strategyRank
       }
+      if (strategyAction.strategy.isPrincipal) {
+        properties['Is Main Strategy'] = strategyAction.strategy.isPrincipal
+      }
+      const selectedActionsCount =
+        strategyAction.project.actions?.filter(({acceptedFromStrategyId}) =>
+          acceptedFromStrategyId === strategyAction.strategy.strategyId).length
+      if (typeof selectedActionsCount === 'number') {
+        properties['Strategy Action Count'] = selectedActionsCount
+      }
+    }
+    const actionOnAction = action as ActionOnAction<string>
+    if (actionOnAction.action?.actionId) {
+      properties['Action'] = actionOnAction.action.actionId
+    }
+    if (actionOnAction.action?.acceptedFromStrategyId) {
+      properties['Strategy'] = actionOnAction.actionDiff?.acceptedFromStrategyId ||
+        actionOnAction.action.acceptedFromStrategyId
+    }
+    if (action.type === 'EXPLORE_ACTION' && action.link) {
+      properties['Target URL'] = action.link
+    }
+    if (isActionForActionPlan(action)) {
+      properties['Project Action Count'] =
+        action.project.actions?.
+          filter(({status}) => status === 'ACTION_CURRENT' || status === 'ACTION_DONE').length || 0
+    }
+    const detailAction = action as DetailAction<string>
+    if (action.type === 'EXPAND_ACTION_LIST' && detailAction.detail) {
+      properties['Expand action'] = detailAction.detail
     }
     const onboardingAction = action as OnboardingPageAction
     if (onboardingAction.user && onboardingAction.user.profile) {

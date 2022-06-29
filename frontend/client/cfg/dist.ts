@@ -3,14 +3,12 @@ import webpack from 'webpack'
 import TerserPlugin from 'terser-webpack-plugin'
 import HtmlWebpackPlugin from 'html-webpack-plugin'
 import WebpackPwaManifest from 'webpack-pwa-manifest'
-import _flatMap from 'lodash/flatMap'
 import _mapKeys from 'lodash/mapKeys'
 import _mapValues from 'lodash/mapValues'
-import _uniqBy from 'lodash/uniqBy'
 import {fileURLToPath} from 'url'
 
-import baseConfig from './base'
-import getAllDeployments from './deployment'
+import baseConfig, {createCSSRule, makeDefinitionFallback} from './base'
+import {getDistDeployments} from './deployment'
 
 const minify = {
   collapseWhitespace: true,
@@ -24,26 +22,20 @@ const minify = {
   removeStyleLinkTypeAttributes: true,
 }
 
-export default async function(): Promise<webpack.Configuration[]> {
-  const allDeployments = await getAllDeployments()
+const coreSrcPath = fileURLToPath(new URL('../src', import.meta.url))
 
-  const deploymentsRegexp = new RegExp(process.env.BOB_DEPLOYMENTS || '.*')
-  const keptDeployments = _uniqBy(
-    Object.keys(allDeployments).
-      filter(name => name !== 'test' &&
-        !name.toLowerCase().endsWith('dev') &&
-        deploymentsRegexp.test(name)).
-      map(name => allDeployments[name]),
-    'name')
+// TODO(cyrille): Test the output.
+export default async function(): Promise<readonly webpack.Configuration[]> {
+  const keptDeployments = await getDistDeployments(process.env.BOB_DEPLOYMENTS)
 
   const maxNameLength = Math.max(
     ...keptDeployments.flatMap(({name, plugins}) => plugins.map(({name: pluginName}) =>
       `${name}-${pluginName}`.length)))
   const rightPad = (name: string): string => name + ' '.repeat(maxNameLength - name.length)
 
-  return _flatMap(keptDeployments, ({name, plugins, prodName}) =>
+  return keptDeployments.flatMap(({name, plugins, prodName}) =>
     plugins.map(({
-      colors, constants, entrypoints, name: pluginName, srcPath,
+      constants: {colors, config: constants}, entrypoints, isCore, name: pluginName, srcPath,
     }): webpack.Configuration => ({
       ...baseConfig,
       bail: true,
@@ -60,18 +52,64 @@ export default async function(): Promise<webpack.Configuration[]> {
         ...baseConfig.module,
         rules: [
           ...baseConfig.module.rules,
-          {
-            include: [
-              fileURLToPath(new URL('../src', import.meta.url)),
-              fileURLToPath(new URL('../plugins', import.meta.url)),
-              srcPath,
-            ],
-            test: /\.[jt]sx?$/,
-            use: {
-              loader: 'babel-loader',
-              options: {cacheDirectory: true},
+          {oneOf: [
+            {
+              generator: {
+                filename: 'favicon.ico',
+                outputPath: '..',
+                publicPath: '/',
+              },
+              resource: path.join(coreSrcPath, 'deployments', prodName, 'favicon.ico'),
+              type: 'asset/resource',
             },
-          },
+            ...isCore ? [] : [{
+              generator: {
+                filename: 'favicon.ico',
+                outputPath: path.join('..', pluginName),
+                publicPath: '/',
+              },
+              resource: path.join(srcPath, 'deployments', prodName, 'favicon.ico'),
+              type: 'asset/resource',
+            }],
+            {
+              loader: 'null-loader',
+              test: /favicon\.ico$/,
+            },
+          ]},
+          createCSSRule(colors),
+          {oneOf: [
+            // Explicitly import as static, to make sure we don't do it in the main build.
+            // This should be used only in the HtmlWebpackPlugin templates.
+            {
+              include: [
+                coreSrcPath,
+                fileURLToPath(new URL('../plugins', import.meta.url)),
+                srcPath,
+              ],
+              resourceQuery: /static/,
+              test: /\.[jt]sx?$/,
+              use: {
+                loader: 'babel-loader',
+                options: {cacheDirectory: true},
+              },
+            },
+            // Forbid importing static_i18n.ts
+            {
+              exclude: [
+                fileURLToPath(new URL('../src/store/static_i18n.ts', import.meta.url)),
+              ],
+              include: [
+                fileURLToPath(new URL('../src', import.meta.url)),
+                fileURLToPath(new URL('../plugins', import.meta.url)),
+                srcPath,
+              ],
+              test: /\.[jt]sx?$/,
+              use: {
+                loader: 'babel-loader',
+                options: {cacheDirectory: true},
+              },
+            },
+          ]},
         ],
       },
       name: `${name}-${pluginName}`,
@@ -102,7 +140,9 @@ export default async function(): Promise<webpack.Configuration[]> {
         new webpack.DefinePlugin({
           ..._mapKeys(_mapValues(colors, JSON.stringify), (color, name) => `colors.${name}`),
           ..._mapKeys(_mapValues(constants, JSON.stringify), (value, key) => `config.${key}`),
+          'colors': makeDefinitionFallback(colors, 'colors', `${name}-${pluginName}`),
           'colorsMap': JSON.stringify(colors),
+          'config': makeDefinitionFallback(constants, 'config', `${name}-${pluginName}`),
           'process.env.NODE_ENV': '"production"',
         }),
         new webpack.LoaderOptionsPlugin({
@@ -123,7 +163,7 @@ export default async function(): Promise<webpack.Configuration[]> {
           // eslint-disable-next-line camelcase
           background_color: colors.BOB_BLUE,
           lang: 'fr-FR',
-          name: constants.productName,
+          name: constants.productName || 'Bob',
           // eslint-disable-next-line camelcase
           theme_color: colors.BOB_BLUE,
         }),
@@ -132,7 +172,11 @@ export default async function(): Promise<webpack.Configuration[]> {
         ...baseConfig.resolve,
         alias: {
           ...baseConfig.resolve.alias,
-          deployment: fileURLToPath(new URL(`../src/deployments/${prodName}`, import.meta.url)),
+          'deployment': fileURLToPath(new URL(`../src/deployments/${prodName}`, import.meta.url)),
+          'plugin/deployment': [
+            path.join(srcPath, 'deployments', prodName),
+            path.join(srcPath, 'deployments', 'default'),
+          ],
         },
       },
     })),

@@ -1,30 +1,33 @@
-import PropTypes from 'prop-types'
+import _uniqueId from 'lodash/uniqueId'
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {useDispatch} from 'react-redux'
 import {useLocation} from 'react-router'
 
 import useFastForward from 'hooks/fast_forward'
-import {Focusable} from 'hooks/focus'
-import {DispatchAllActions, registerNewGuestUser} from 'store/actions'
+import type {Focusable} from 'hooks/focus'
+import type {DispatchAllActions} from 'store/actions'
+import {registerNewGuestUser} from 'store/actions'
 import {inDepartement, lowerFirstLetter} from 'store/french'
-import {getLanguage, getTranslatedMainChallenges, isTuPossible} from 'store/i18n'
+import {getLanguage, isTuPossible} from 'store/i18n'
+import {getTranslatedMainChallenges} from 'store/main_challenges'
 import isMobileVersion from 'store/mobile'
 import {parseQueryString} from 'store/parse'
 import {NO_CHALLENGE_CATEGORY_ID} from 'store/project'
 import {useCancelablePromises} from 'store/promise'
-import {useSelfDiagnosticInIntro, useUserExample} from 'store/user'
+import {useActionPlan, useSelfDiagnosticInIntro, useUserExample} from 'store/user'
 
 import Button from 'components/button'
-import ExternalLink from 'components/external_link'
 import Trans from 'components/i18n_trans'
+import type {Inputable} from 'components/input'
 import LabeledToggle from 'components/labeled_toggle'
 import Markdown from 'components/markdown'
 import {PageWithNavigationBar} from 'components/navigation'
 import {BubbleToRead, Discussion, DiscussionBubble, NoOpElement,
   QuestionBubble} from 'components/phylactery'
-import {SelfDiagnostic} from 'components/pages/connected/profile/self_diagnostic'
 import RadioGroup from 'components/radio_group'
+import {SmartLink} from 'components/radium'
+import {SelfDiagnostic} from 'components/pages/connected/profile/self_diagnostic'
 import {Routes} from 'components/url'
 import ValidateInput from 'components/validate_input'
 
@@ -40,7 +43,9 @@ interface IntroProps {
   isGuest?: boolean
   job?: bayes.bob.Job
   name?: string
-  onSubmit: (userData: bayes.bob.AuthUserData, name: string) => Promise<boolean>
+  onSubmit: (
+    userData: bayes.bob.AuthUserData, name: string, isPersistent: boolean,
+  ) => Promise<boolean>
   stats?: bayes.bob.LaborStatsData
 }
 
@@ -57,9 +62,16 @@ interface IntroState {
 const boldStyle = {
   color: colors.BOB_BLUE,
 }
-const linkStyle: React.CSSProperties = {
-  color: colors.BOB_BLUE,
-  textDecoration: 'none',
+const linkStyle: RadiumCSSProperties = {
+  ':focus': {
+    textDecoration: 'underline',
+  },
+  ':hover': {
+    textDecoration: 'underline',
+  },
+  'color': colors.BOB_BLUE,
+  'fontWeight': 'bold',
+  'textDecoration': 'none',
 }
 const buttonStyle = {
   maxWidth: 250,
@@ -80,8 +92,18 @@ const tuStyle: React.CSSProperties = {
   justifyContent: 'space-between',
   margin: '20px 0',
 }
-const MarkdownSpan = (props: React.HTMLProps<HTMLParagraphElement>): React.ReactElement =>
-  <span {...props} />
+const submitBlockStyle: React.CSSProperties = {
+  alignItems: 'center',
+  display: 'flex',
+  flexDirection: 'column',
+  margin: '20px auto 0',
+}
+const errorStyle: React.CSSProperties = {
+  marginTop: 20,
+  textAlign: 'left',
+}
+const MarkdownSpan = ({children}: React.HTMLProps<HTMLParagraphElement>): React.ReactElement =>
+  <span>{children}</span>
 const markdownComponents = {p: MarkdownSpan}
 const IntroBase = (props: IntroProps): React.ReactElement => {
   const {
@@ -94,10 +116,12 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
   } = props
   const {i18n, t} = useTranslation()
   const [areCGUAccepted, setAreCguAccepted] = useState(!isGuest)
+  const [isUserPersistent, setIsUserPersistent] = useState(false)
   const isNameUpdateNeeded = !name
   const {search} = useLocation()
   const nameFromURL = parseQueryString(search).name || ''
   const [newName, setNewName] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitClicked, setIsSubmitClicked] = useState(false)
   // Keep it as state so that we do not change the question even if the language changes.
   const [isTuNeeded] = useState(isTuPossible(i18n.language))
@@ -116,11 +140,20 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
 
   const toggleCGU = useCallback((): void => {
     setAreCguAccepted((before: boolean): boolean => !before)
+    setErrorMessage('')
+  }, [])
+
+  const toggleIsUserPersistent = useCallback((): void => {
+    setIsUserPersistent((before: boolean): boolean => !before)
+  }, [])
+
+  const handleTutoieChange = useCallback((canTutoie: boolean): void => {
+    setCanTutoie(canTutoie)
+    setErrorMessage('')
   }, [])
 
   const finalName = isNameUpdateNeeded && newName || name
-  const canSubmit =
-    !!(areCGUAccepted && finalName && (!isTuNeeded || typeof canTutoie === 'boolean'))
+  const isTuMissing = isTuNeeded && typeof canTutoie !== 'boolean'
 
   const locale = `${getLanguage()}${canTutoie ? '@tu' : ''}`
 
@@ -128,8 +161,33 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
     i18n.changeLanguage(locale)
   }, [i18n, locale])
 
+  const nameRef = useRef<Inputable>(null)
+  const nameLabelId = useMemo(_uniqueId, [])
+  const tutoieLabelId = useMemo(_uniqueId, [])
+  const errorFieldId = useMemo(_uniqueId, [])
+  const [errorField, setErrorField] = useState('')
+
   const handleSubmit = useCallback(async (): Promise<void> => {
-    if (!canSubmit || !finalName) {
+    if (!finalName) {
+      setErrorMessage(t(
+        'Donnez-moi votre prénom ci-dessus avant de continuer. Si vous préférez rester ' +
+        'discret·e, vous pouvez mettre un prénom au hasard\u00A0: Camille, Laurent ou Lisa par ' +
+        'exemple.',
+      ))
+      setErrorField('name')
+      nameRef.current?.focus()
+      return
+    }
+    if (isTuMissing) {
+      setErrorMessage(t('Avant de continuer, choisissez ci-dessus si on va se tutoyer ou non.'))
+      setErrorField('tu')
+      tutoieRadioGroup.current?.focus()
+      return
+    }
+    if (!areCGUAccepted) {
+      setErrorMessage(t('Avant de continuer, lisez et acceptez les CGU ci-dessus.'))
+      setErrorField('cgu')
+      cguRef.current?.focus()
       return
     }
     setIsSubmitClicked(true)
@@ -137,9 +195,12 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
       isAlpha: isFastForwarded,
       locale,
       originalSelfDiagnostic: selfDiagnostic,
-    }, finalName))
+    }, finalName, isUserPersistent))
     setIsSubmitClicked(false)
-  }, [canSubmit, cancelOnUnmount, finalName, isFastForwarded, locale, onSubmit, selfDiagnostic])
+  }, [
+    areCGUAccepted, cancelOnUnmount, finalName, isFastForwarded, isTuMissing, isUserPersistent,
+    locale, onSubmit, selfDiagnostic, t,
+  ])
 
   const handleTutoieQuestionIsShown = useCallback((): void => {
     tutoieRadioGroup.current?.focus()
@@ -151,6 +212,7 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
 
   const updateName = useCallback((newName: string): void => {
     isNameUpdateNeeded && setNewName(newName.trim())
+    setErrorMessage('')
   }, [isNameUpdateNeeded])
 
   const challengesData = getTranslatedMainChallenges(t, 'UNKNOWN_GENDER')
@@ -225,23 +287,25 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
             plus vite.
           </Trans>
         </BubbleToRead>
-        {isNameUpdateNeeded ? <BubbleToRead>
+        {isNameUpdateNeeded ? <BubbleToRead id={nameLabelId}>
           <Trans parent={null}>
             Mais avant de commencer, comment vous appelez-vous&nbsp;?
           </Trans>
         </BubbleToRead> :
-          isTuNeeded ? <BubbleToRead>
+          isTuNeeded ? <BubbleToRead id={tutoieLabelId}>
             Mais avant de commencer, peut-on se tutoyer&nbsp;?
           </BubbleToRead> : null}
       </DiscussionBubble>
       {isNameUpdateNeeded ? <QuestionBubble isDone={!!newName}>
         <ValidateInput
           defaultValue={name || newName || nameFromURL} onChange={updateName}
-          autoComplete="given-name"
-          placeholder={t('Tapez votre prénom')}
-          style={nameStyle} shouldFocusOnMount={true} />
+          autoComplete="given-name" name="given-name"
+          placeholder={t('Tapez votre prénom')} ref={nameRef}
+          style={nameStyle} shouldFocusOnMount={true} aria-labelledby={nameLabelId}
+          aria-describedby={errorMessage && (errorField === 'name') && errorFieldId || undefined}
+          aria-required={true} aria-invalid={!!errorMessage && (errorField === 'name')} />
       </QuestionBubble> : null}
-      {isNameUpdateNeeded ? <BubbleToRead>
+      {isNameUpdateNeeded ? <BubbleToRead id={isTuNeeded ? tutoieLabelId : undefined}>
         <Trans parent={null}>
           Enchanté, {{newName}}&nbsp;!
         </Trans>{' '}{isTuNeeded ? <React.Fragment>
@@ -253,15 +317,20 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
         onShown={handleTutoieQuestionIsShown}>
         <RadioGroup
           style={tuStyle}
+          childStyle={{padding: isMobileVersion ? '12px 20px' : '12px 35px'}}
           ref={tutoieRadioGroup}
-          onChange={setCanTutoie}
+          onChange={handleTutoieChange}
           options={tutoiementOptions}
           value={canTutoie}
-          type="button" />
+          type="button"
+          aria-labelledby={tutoieLabelId}
+          aria-required={true}
+          aria-describedby={!!errorMessage && (errorField === 'tu') && errorFieldId || undefined}
+          aria-invalid={!!errorMessage && (errorField === 'tu')} />
       </QuestionBubble> : null}
       {hasSelfDiagnostic ? <DiscussionBubble>
         {isTuNeeded ? <BubbleToRead>
-          Parfait, c'est noté.
+          {t("Parfait, c'est noté.")}
         </BubbleToRead> : null}
         <BubbleToRead>
           <Trans parent={null}>
@@ -278,14 +347,15 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
       </DiscussionBubble> : null}
       {hasSelfDiagnostic ? <QuestionBubble isDone={isSelfDiagnosticAnswered}>
         <div style={{marginBottom: 5, marginTop: 15}}>
-          <SelfDiagnostic value={selfDiagnostic} onChange={setSelfDiagnostic} />
+          <SelfDiagnostic
+            value={selfDiagnostic} onChange={setSelfDiagnostic} isAlpha={isFastForwarded} />
         </div>
       </QuestionBubble> : null}
       {!hasSelfDiagnostic || isSelfDiagnosticAnswered ? <DiscussionBubble
         key={categoryId || status}>
         {!hasSelfDiagnostic && isTuNeeded || (isSelfDiagnosticAnswered && noPriority) ?
           <BubbleToRead>
-            Parfait, c'est noté.
+            {t("Parfait, c'est noté.")}
           </BubbleToRead> : null}
         {isSelfDiagnosticAnswered && selfDiagnosticDescription && !noPriority ? <BubbleToRead>
           <Trans parent={null}>
@@ -312,44 +382,34 @@ const IntroBase = (props: IntroProps): React.ReactElement => {
         </BubbleToRead>
       </DiscussionBubble> : null}
       {!hasSelfDiagnostic || isSelfDiagnosticAnswered ? <NoOpElement
-        style={{margin: '20px auto 0', textAlign: 'center'}}
-        onShown={handleFinalGroupIsShown}>
-        {isGuest ? <React.Fragment>
-          <LabeledToggle ref={cguRef} label={<Trans parent={null}>
-            J'ai lu et j'accepte
-            les <ExternalLink href={Routes.TERMS_AND_CONDITIONS_PAGE} style={linkStyle}>
-              CGU
-            </ExternalLink>
-          </Trans>} isSelected={areCGUAccepted} onClick={toggleCGU}
-          type="checkbox" /><br />
-        </React.Fragment> : null}
+        style={submitBlockStyle} onShown={handleFinalGroupIsShown}>
+        <div>
+          {isGuest ? <LabeledToggle
+            aria-describedby={errorMessage && (errorField === 'cgu') && errorFieldId || undefined}
+            aria-required={true} aria-invalid={!!errorMessage && (errorField === 'cgu')}
+            ref={cguRef} label={<Trans parent={null}>
+              J'ai lu et j'accepte
+              les <SmartLink href={Routes.TERMS_AND_CONDITIONS_PAGE} style={linkStyle}>
+                CGU
+              </SmartLink>
+            </Trans>} isSelected={areCGUAccepted} onClick={toggleCGU}
+            type="checkbox" /> : null}
+          <LabeledToggle
+            label={t('Sauver ma progression au fur et à mesure')} isSelected={isUserPersistent}
+            onClick={toggleIsUserPersistent} type="checkbox" />
+          <br />
+        </div>
         <Button
           isRound={true} onClick={handleSubmit} style={buttonStyle}
-          disabled={!canSubmit || isSubmitClicked} isProgressShown={isSubmitClicked}>
+          disabled={isSubmitClicked} isProgressShown={isSubmitClicked}>
           <Trans parent={null}>Commencer le questionnaire</Trans>
         </Button>
+        {errorMessage ? <div id={errorFieldId} style={errorStyle}>
+          {errorMessage}
+        </div> : null}
       </NoOpElement> : null}
     </Discussion>
   </React.Fragment>
-}
-IntroBase.propTypes = {
-  city: PropTypes.shape({
-    cityId: PropTypes.string.isRequired,
-  }),
-  isGuest: PropTypes.bool,
-  job: PropTypes.shape({
-    codeOgr: PropTypes.string.isRequired,
-  }),
-  name: PropTypes.string,
-  onSubmit: PropTypes.func.isRequired,
-  stats: PropTypes.shape({
-    jobGroupInfo: PropTypes.shape({
-      name: PropTypes.string.isRequired,
-    }),
-    localStats: PropTypes.shape({
-      imt: PropTypes.object,
-    }),
-  }),
 }
 const Intro = React.memo(IntroBase)
 
@@ -376,12 +436,16 @@ const IntroPageBase = (): React.ReactElement => {
   const dispatch = useDispatch<DispatchAllActions>()
   // TODO(cyrille): Also fetch the email, and pre-fill it in the relevant form.
   const {maVoieId, stepId} = parseQueryString(location.search)
-  const authUserData = useMemo((): bayes.bob.AuthUserData => maVoieId ? {
-    maVoie: {maVoieId, stepId},
-  } : {}, [maVoieId, stepId])
+  const isActionPlanEnabled = useActionPlan()
+  const authUserData = useMemo((): bayes.bob.AuthUserData => ({
+    ...maVoieId && {maVoie: {maVoieId, stepId}},
+    isActionPlanEnabled,
+  }), [isActionPlanEnabled, maVoieId, stepId])
   const handleSubmit = useCallback(
-    async (userData: bayes.bob.AuthUserData, name: string): Promise<boolean> =>
-      !!await dispatch(registerNewGuestUser(name, {...authUserData, ...userData})),
+    async (
+      userData: bayes.bob.AuthUserData, name: string, isPersistent: boolean,
+    ): Promise<boolean> =>
+      !!await dispatch(registerNewGuestUser(name, isPersistent, {...authUserData, ...userData})),
     [authUserData, dispatch],
   )
 

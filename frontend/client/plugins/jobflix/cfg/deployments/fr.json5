@@ -1,0 +1,9 @@
+{
+  config: {
+    canonicalUrl: 'https://www.jobflix.app',
+    googleUAID: 'G-6TLMDL5J4X',
+    hasFeedbackBanner: true,
+    hasOCR: true,
+    productName: 'Jobflix',
+  },
+}

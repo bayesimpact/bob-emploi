@@ -7,26 +7,27 @@ type ValidDiagnosticComment = bayes.bob.DiagnosticComment & {field: bayes.bob.Pr
 type ValidMainChallenge = bayes.bob.DiagnosticMainChallenge & {categoryId: string}
 
 interface ValidUpskillingJob extends bayes.upskilling.Job {
-  jobGroup: {romeId: string}
+  jobGroup: bayes.bob.JobGroup & {romeId: string}
 }
 
 interface AppState {
   adviceData: {[adviceId: string]: {[projectId: string]: unknown}}
   adviceTips?: {[adviceId: string]: {[projectId: string]: readonly {actionId: string}[]}}
   applicationModes?: {[romeId: string]: {[fap: string]: bayes.bob.RecruitingModesDistribution}}
+  areAdsCookieUsageRequested?: boolean
   authToken?: string
   defaultProjectProps?: bayes.bob.Project
-  demo?: keyof bayes.bob.Features
   diagnosticMainChallenges?: {[key: string]: bayes.bob.DiagnosticMainChallenges}
+  experiments?: readonly (keyof bayes.bob.Features)[]
   hasLoadedApp?: boolean
   hasSeenComment?: {
     [commentKey: string]: true
   }
   hasSeenShareModal?: boolean
   hasTokenExpired?: boolean
+  hasVolunteeredFeedback?: boolean
   initialFeatures?: InitialFeatures
   initialUtm?: bayes.bob.TrackingParameters
-  isMobileVersion?: boolean
   jobGroupInfos?: {[romeId: string]: bayes.bob.JobGroup}
   jobRequirements?: {[codeOgr: string]: bayes.bob.JobRequirements}
   laborStats?: {[projectId: string]: bayes.bob.LaborStatsData}

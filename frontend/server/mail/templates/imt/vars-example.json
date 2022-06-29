@@ -1,32 +1,39 @@
 {
   "applicationModes": {
-    "showSection": "True",
     "link": "https://www.bob-emploi.fr",
-    "title": "Le Réseau",
     "name": "leur réseau personnel ou professionnel",
-    "percent": "43"
-  },
-  "changeEmailSettingsUrl": "https://www.bob-emploi.fr",
-  "departements": {"showSection": ""},
-  "employmentType": {
+    "percent": "43",
     "showSection": "True",
+    "title": "Le Réseau"
+  },
+  "areEmailsAnswerRead": true,
+  "baseUrl": "https://www.bob-emploi.fr",
+  "changeEmailSettingsUrl": "https://www.bob-emploi.fr",
+  "departements": {
+    "showSection": ""
+  },
+  "employmentType": {
     "name": "CDI",
     "percent": "47",
     "ratio": 2,
+    "showSection": "True",
     "title": "CDI"
   },
   "firstName": "Angèle",
   "gender": "FEMININE",
-  "imtLink": "http://candidat.pole-emploi.fr/marche-du-travail/statistiques?codeMetier=123123&codeZoneGeographique=69&typeZoneGeographique=DEPARTEMENT",
+  "imtLink": "https://candidat.pole-emploi.fr/marche-du-travail/statistiques?codeMetier=123123&codeZoneGeographique=69&typeZoneGeographique=DEPARTEMENT",
   "inCity": "à Lyon",
   "jobNameInDepartement": "juriste dans le Rhône",
   "marketStress": {
-      "showSection": "True",
-      "candidates": "3",
-      "offers": "1"
+    "candidates": "3",
+    "offers": "1",
+    "showSection": "True"
   },
-  "months": {"showSection": ""},
+  "months": {
+    "showSection": ""
+  },
   "ofJobName": "de juriste",
   "ofJobNameInDepartement": "de juriste dans le Rhône",
+  "productName": "Bob",
   "statusUpdateUrl": "https://www.bob-emploi.fr"
 }

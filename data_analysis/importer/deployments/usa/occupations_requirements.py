@@ -5,12 +5,12 @@ requirements per job group.
 
 You can run it with:
     docker-compose run --rm data-analysis-prepare \
-        python bob_emploi/data_analysis/importer/occupations_requirements.py \
+        python bob_emploi/data_analysis/importer/deployments/usa/occupations_requirements.py \
         --soc_job_requirements_csv 'data/usa/onet_22_3/Education_Training_and_Experience.txt'
 """
 
 import typing
-from typing import Any, Dict, List
+from typing import Any
 
 import pandas as pd
 
@@ -45,7 +45,7 @@ _DEGREE_TO_DIPLOMA = {
 }
 
 
-def _get_education_requirements(requirements: pd.DataFrame) -> List[Dict[str, Any]]:
+def _get_education_requirements(requirements: pd.DataFrame) -> list[dict[str, Any]]:
 
     requirements['degree'] = requirements.Category.replace(_DIPLOMA_TO_DEGREE)
     requirements.degree.fillna(job_pb2.UNKNOWN_DEGREE)
@@ -57,17 +57,26 @@ def _get_education_requirements(requirements: pd.DataFrame) -> List[Dict[str, An
             typing.cast('job_pb2.DegreeLevel.V', int(deg)))})
 
     return typing.cast(
-        List[Dict[str, Any]],
+        list[dict[str, Any]],
         requirements.drop_duplicates('degree')[['diploma', 'name', 'percentRequired']]
         .sort_values('percentRequired', ascending=False).to_dict(orient='records'))
 
 
-# TODO(sil): Use Education_Training_and_Experience with a SOC2010 to SOC 2018 mapping.
+def _average_education_requirements(requirements: pd.DataFrame) -> pd.DataFrame:
+
+    averaged_requirements = requirements[requirements['O*NET-SOC Code'].str[-3:] == '.00']
+    if averaged_requirements.empty:
+        averaged_requirements = requirements.groupby(['2018 SOC Code', 'Element ID', 'Category'])\
+            .mean().reset_index()
+
+    return averaged_requirements
+
+
 def csv2dicts(
         soc_job_requirements_csv: str =
         f'data/usa/onet_{ONET_VERSION}/Education_Training_and_Experience.txt',
         soc_crosswalk_csv: str = 'data/usa/soc/2010_to_2018_SOC_Crosswalk.csv') \
-        -> List[Dict[str, Any]]:
+        -> list[dict[str, Any]]:
     """Import the education requirement from O*NET grouped by Job Group in MongoDB.
 
     Args:
@@ -83,18 +92,21 @@ def csv2dicts(
     job_requirements_2018 = job_requirements.join(
         soc_crosswalk_2010_2018.set_index('O*NET-SOC 2010 Code')[['2018 SOC Code']],
         on='O*NET-SOC Code')
+    # We keep detailed occupation (ending with .00), however for occupation groups where we have
+    # only detailed data, we average the data for sub occupations.
+    average_education_requirements = job_requirements_2018.groupby('2018 SOC Code')\
+        .apply(_average_education_requirements)\
+        .reset_index(drop=True)
     # We keep only required levels of education (2.D.1) that have already been observed.
-    # We only keep detailed occupation (ending with .00).
-    education_requirements = job_requirements_2018[
-        (job_requirements_2018['Element ID'] == '2.D.1') &
-        (job_requirements_2018['Data Value'] > 0) &
-        (job_requirements_2018['O*NET-SOC Code'].str[-3:] == '.00')]
+    education_requirements = average_education_requirements[
+        (average_education_requirements['Element ID'] == '2.D.1') &
+        (average_education_requirements['Data Value'] > 0)]
     soc_education_requirements = education_requirements.groupby('2018 SOC Code').apply(
         _get_education_requirements).rename('diplomas').reset_index()
     soc_education_requirements['_id'] = soc_education_requirements['2018 SOC Code']
 
     return typing.cast(
-        List[Dict[str, Any]],
+        list[dict[str, Any]],
         soc_education_requirements[['_id', 'diplomas']].to_dict(orient='records'))
 
 

@@ -28,6 +28,8 @@ const VertHistogramBarBase = (props: VertHistogramBarProps): React.ReactElement 
   const isUserBucket = userInterviewsBucket !== '0' && userInterviewsBucket === xLabel
   const {t} = useTranslation()
   const barStyle = useMemo((): React.CSSProperties => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ['WebkitPrintColorAdjust' as any]: 'exact',
     backgroundColor: colors.BOB_BLUE,
     height: percent,
     margin: 'auto 2px',

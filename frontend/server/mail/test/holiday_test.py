@@ -3,8 +3,9 @@
 import datetime
 import unittest
 
+from bob_emploi.frontend.api import email_pb2
 from bob_emploi.frontend.api import project_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server.mail.test import campaign_helper
 
 
@@ -16,10 +17,12 @@ class ChristmasVarsTestCase(campaign_helper.CampaignTestBase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.user.profile.gender = user_pb2.MASCULINE
+        self.now = datetime.datetime(2020, 12, 3)
+
+        self.user.profile.gender = user_profile_pb2.MASCULINE
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_ONCE_A_MONTH
         self.user.profile.name = 'Patrick'
-        self.project.job_search_started_at.FromDatetime(
-            datetime.datetime.now() - datetime.timedelta(days=180))
+        self.project.job_search_started_at.FromDatetime(datetime.datetime(2020, 6, 1))
         self.project.target_job.masculine_name = 'Juriste'
         self.project.target_job.job_group.rome_id = 'A1234'
         self.project.seniority = project_pb2.SENIOR
@@ -53,16 +56,24 @@ class ChristmasVarsTestCase(campaign_helper.CampaignTestBase):
             'adviceUrlRelocate',
             '/projet/0/methode/relocate',
         )
+        self._assert_has_unsubscribe_url('changeEmailSettingsUrl', **{
+            'coachingEmailFrequency': 'EMAIL_ONCE_A_MONTH',
+        })
+        self._assert_has_status_update_link('statusUpdateUrl')
 
         self._assert_remaining_variables({
             'adviceUrlBodyLanguage': '',
             'adviceUrlCreateYourCompany': '',
+            'adviceUrlExploreOtherJobs': '',
             'adviceUrlImproveInterview': '',
+            'adviceUrlVolunteer': '',
             'couldFreelance': 'True',
             'emailInUrl': 'patrick%40bayes.org',
             'inCommuteCity': 'à Boé',
             'inRelocateDepartement': 'en Haute-Garonne',
+            'nextYear': '2021',
             'startedSearchingSince': 'depuis six mois',
+            'year': '2020',
         })
 
     def test_has_not_started(self) -> None:
@@ -80,8 +91,8 @@ class ChristmasVarsTestCase(campaign_helper.CampaignTestBase):
     def test_started_recently(self) -> None:
         """User has started their jobsearch recently."""
 
-        self.project.job_search_started_at.FromDatetime(
-            datetime.datetime.now() - datetime.timedelta(days=30))
+        self.now = datetime.datetime(2020, 12, 3)
+        self.project.job_search_started_at.FromDatetime(datetime.datetime(2020, 11, 1))
 
         self._assert_user_receives_campaign()
 
@@ -90,8 +101,8 @@ class ChristmasVarsTestCase(campaign_helper.CampaignTestBase):
     def test_started_a_long_long_time_ago(self) -> None:
         """User has started their jobsearch a long long time ago."""
 
-        self.project.job_search_started_at.FromDatetime(
-            datetime.datetime.now() - datetime.timedelta(days=300))
+        self.now = datetime.datetime(2020, 12, 3)
+        self.project.job_search_started_at.FromDatetime(datetime.datetime(2019, 12, 1))
 
         self._assert_user_receives_campaign()
 
@@ -115,6 +126,12 @@ class ChristmasVarsTestCase(campaign_helper.CampaignTestBase):
 
         self.assertFalse(self._variables.get('couldFreelance'))
 
+    def test_in_summer(self) -> None:
+        """Do not send Christmas email in summer."""
+
+        self.now = datetime.datetime(2021, 8, 22)
+        self._assert_user_receives_campaign(should_be_sent=False)
+
 
 class NewYearTestCase(campaign_helper.CampaignTestBase):
     """Test for the new_year_vars function."""
@@ -124,8 +141,10 @@ class NewYearTestCase(campaign_helper.CampaignTestBase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.user.profile.gender = user_pb2.MASCULINE
+        self.now = datetime.datetime(2021, 1, 15)
+        self.user.profile.gender = user_profile_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_ONCE_A_MONTH
         self.project.kind = project_pb2.FIND_ANOTHER_JOB
         self.project.passionate_level = project_pb2.LIFE_GOAL_JOB
 
@@ -136,8 +155,16 @@ class NewYearTestCase(campaign_helper.CampaignTestBase):
 
         self._assert_has_default_vars()
 
+        self._assert_has_unsubscribe_url('changeEmailSettingsUrl', **{
+            'coachingEmailFrequency': 'EMAIL_ONCE_A_MONTH',
+        })
+        self._assert_has_status_update_link('statusUpdateUrl')
+
         self._assert_remaining_variables({
             'goal': 'trouver un poste qui vous épanouira',
+            'lastYear': '2020',
+            'numberUsers': '250\u00A0000',
+            'year': '2021',
         })
 
     def test_just_a_job(self) -> None:
@@ -158,6 +185,12 @@ class NewYearTestCase(campaign_helper.CampaignTestBase):
         self._assert_user_receives_campaign()
 
         self.assertEqual('décrocher votre prochain emploi', self._variables['goal'])
+
+    def test_in_summer(self) -> None:
+        """Do not send New Year email in summer."""
+
+        self.now = datetime.datetime(2021, 8, 22)
+        self._assert_user_receives_campaign(should_be_sent=False)
 
 
 if __name__ == '__main__':

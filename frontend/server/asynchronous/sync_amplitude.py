@@ -5,7 +5,7 @@ import datetime
 import logging
 import os
 import typing
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from google.protobuf import json_format
 import pymongo
@@ -18,8 +18,6 @@ from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.asynchronous import report
 
-
-_, _DB, _ = mongo.get_connections_from_env()
 
 _AMPLITUDE_API_URL = 'https://amplitude.com/api/2'
 _AMPLITUDE_AUTH = (os.getenv('AMPLITUDE_API_KEY'), os.getenv('AMPLITUDE_SECRET_KEY'))
@@ -56,15 +54,15 @@ def _get_amplitude_id(user_id: str) -> str:
         raise KeyError(f'No user "{user_id}" found in Amplitude.')
 
 
-def _get_amplitude_events(amplitude_id: str, limit: Optional[int] = None) -> List[Dict[str, Any]]:
-    params: Dict[str, Any] = {'user': amplitude_id}
+def _get_amplitude_events(amplitude_id: str, limit: Optional[int] = None) -> list[dict[str, Any]]:
+    params: dict[str, Any] = {'user': amplitude_id}
     if limit:
         params['limit'] = limit
     response = requests.get(
         f'{_AMPLITUDE_API_URL}/useractivity', auth=_AMPLITUDE_AUTH, params=params)
     _account_for_api_requests_limit(response)
     response.raise_for_status()
-    return typing.cast(List[Dict[str, Any]], response.json()['events'])
+    return typing.cast(list[dict[str, Any]], response.json()['events'])
 
 
 def _parse_time(amplitude_time: str) -> datetime.datetime:
@@ -76,7 +74,7 @@ def _parse_time(amplitude_time: str) -> datetime.datetime:
         return datetime.datetime.strptime(amplitude_time, '%Y-%m-%d %H:%M:%S')
 
 
-def compute_first_session_duration(events: List[Dict[str, Any]]) -> datetime.timedelta:
+def compute_first_session_duration(events: list[dict[str, Any]]) -> datetime.timedelta:
     """Compute the duration of the user's first session."""
 
     if not events:
@@ -98,7 +96,7 @@ def compute_first_session_duration(events: List[Dict[str, Any]]) -> datetime.tim
     return sorted_times[-1] - sorted_times[0]
 
 
-def _compute_is_mobile(events: List[Dict[str, Any]]) -> 'boolean_pb2.OptionalBool.V':
+def _compute_is_mobile(events: list[dict[str, Any]]) -> 'boolean_pb2.OptionalBool.V':
     """Compute whether a set of events contains at least one from a mobile version."""
 
     if not events:
@@ -136,7 +134,7 @@ def update_users_client_metrics(
 
 
 def _update_user_client_metric(
-        user_collection: pymongo.collection.Collection, user: Dict[str, Any],
+        user_collection: pymongo.collection.Collection, user: dict[str, Any],
         dry_run: bool) -> None:
     user_id = user['_id']
     client_metrics = proto.create_from_mongo(user.get('clientMetrics'), user_pb2.ClientSideMetrics)
@@ -176,11 +174,11 @@ def _update_user_client_metric(
         logging.info('Update user "%s":\n%s', user_id, dict_update)
     else:
         user_collection.update_one(user, {'$set': {
-            'clientMetrics.%s' % k: v for k, v in dict_update.items()
+            f'clientMetrics.{k}': v for k, v in dict_update.items()
         }})
 
 
-def main(string_args: Optional[List[str]] = None) -> None:
+def main(string_args: Optional[list[str]] = None) -> None:
     """Parse command line arguments and trigger the update_users_client_metrics function."""
 
     parser = argparse.ArgumentParser(
@@ -198,8 +196,10 @@ def main(string_args: Optional[List[str]] = None) -> None:
     if not report.setup_sentry_logging(args):
         return
 
+    user_db = mongo.get_connections_from_env().user_db
+
     update_users_client_metrics(
-        _DB.user, from_date=args.registered_from, to_date=args.registered_to,
+        user_db.user, from_date=args.registered_from, to_date=args.registered_to,
         dry_run=args.dry_run)
 
 

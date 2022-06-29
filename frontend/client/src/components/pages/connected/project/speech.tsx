@@ -1,13 +1,14 @@
-import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
+import type {ReactMarkdownProps} from 'react-markdown/lib/complex-types'
 
 import useFastForward from 'hooks/fast_forward'
 import useKeyListener from 'hooks/key_listener'
 import isMobileVersion from 'store/mobile'
 
 import Button from 'components/button'
-import Markdown, {MarkdownRendererProps} from 'components/markdown'
-import {Modal, ModalConfig} from 'components/modal'
+import Markdown from 'components/markdown'
+import type {ModalConfig} from 'components/modal'
+import {Modal} from 'components/modal'
 import bobHeadImage from 'images/bob-head.svg'
 
 
@@ -81,6 +82,7 @@ function isString(a: React.ReactNode): a is string {
 
 
 type BobTalkProps = BobPositionProps & {
+  // If children is a string, it is split into paragraphs.
   children: React.ReactNode
   style?: React.CSSProperties
 }
@@ -91,9 +93,9 @@ const BobTalkBase = (props: BobTalkProps): React.ReactElement => {
   const components = useMemo(() => {
     // False positive: we are memoizing the component already.
     // eslint-disable-next-line react/no-unstable-nested-components
-    const Paragraph = (paragraphProps: ParagraphProps & MarkdownRendererProps):
+    const Paragraph = (paragraphProps: ParagraphProps & ReactMarkdownProps):
     React.ReactElement => {
-      const {node: omittedNode, nodeKey: omittedNodeKey, ...props} = paragraphProps
+      const {node: omittedNode, ...props} = paragraphProps
       return <BobTalkParagraph {...{bobPosition, bobSize}} {...props} />
     }
     return {p: Paragraph}
@@ -104,11 +106,6 @@ const BobTalkBase = (props: BobTalkProps): React.ReactElement => {
       components={components} /> :
       <BobTalkParagraph {...{bobPosition, bobSize}}>{children}</BobTalkParagraph>}
   </div>
-}
-BobTalkBase.propTypes = {
-  // If children is a string, it is split into paragraphs.
-  children: PropTypes.oneOfType([PropTypes.node, PropTypes.string]).isRequired,
-  style: PropTypes.object,
 }
 const BobTalk = React.memo(BobTalkBase)
 
@@ -175,13 +172,6 @@ const BobModal = (props: ModalProps): React.ReactElement => {
       </div>
     </div>
   </Modal>
-}
-BobModal.propTypes = {
-  buttonText: PropTypes.string,
-  children: PropTypes.node,
-  isShown: PropTypes.bool,
-  onClose: PropTypes.func,
-  onConfirm: PropTypes.func,
 }
 
 

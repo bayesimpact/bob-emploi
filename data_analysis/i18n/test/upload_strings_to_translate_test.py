@@ -27,7 +27,6 @@ class UploadTestCase(airtablemock.TestCase):
         upload_strings_to_translate.main(
             (path.join(path.dirname(__file__), 'testdata/strings/frontend-server-strings.pot'),
              '--api-key', 'api-key'),
-            self.progress_stream,
         )
 
         translations = \
@@ -51,7 +50,6 @@ class UploadTestCase(airtablemock.TestCase):
             (path.join(
                 path.dirname(__file__), 'testdata/strings/frontend-server-strings-context.pot'),
              '--api-key', 'api-key'),
-            self.progress_stream,
         )
 
         translations = \
@@ -70,7 +68,6 @@ class UploadTestCase(airtablemock.TestCase):
         upload_strings_to_translate.main(
             (path.join(path.dirname(__file__), 'testdata/strings/frontend-server-strings-test.pot'),
              '--api-key', 'api-key'),
-            self.progress_stream,
         )
 
         translations = \
@@ -87,8 +84,7 @@ class UploadTestCase(airtablemock.TestCase):
         })
 
         with self.assertRaises(ValueError) as caught:
-            upload_strings_to_translate.main(
-                (__file__, '--api-key', 'api-key'), self.progress_stream)
+            upload_strings_to_translate.main((__file__, '--api-key', 'api-key'))
         self.assertIsInstance(caught.exception.__cause__, NotImplementedError)
 
     def test_strings_from_json(self) -> None:
@@ -101,7 +97,6 @@ class UploadTestCase(airtablemock.TestCase):
         upload_strings_to_translate.main(
             (path.join(path.dirname(__file__), 'testdata/strings/frontend-client-strings.json'),
              '--api-key', 'api-key'),
-            self.progress_stream,
         )
 
         translations = \
@@ -125,7 +120,6 @@ class UploadTestCase(airtablemock.TestCase):
         upload_strings_to_translate.main(
             (path.join(path.dirname(__file__), 'testdata/strings'),
              '--api-key', 'api-key'),
-            self.progress_stream,
         )
 
         translations = \
@@ -148,7 +142,6 @@ class UploadTestCase(airtablemock.TestCase):
         upload_strings_to_translate.main(
             (path.join(path.dirname(__file__), 'testdata/strings/frontend-client-strings.json'),
              '--api-key', 'api-key', '--lang', 'fr'),
-            self.progress_stream,
         )
 
         translations = \
@@ -165,6 +158,54 @@ class UploadTestCase(airtablemock.TestCase):
             t for t in translations if t['fields']['string'] == 'New message to translate')
         self.assertEqual('New message to translate in French', new_message['fields'].get('fr'))
 
+    def test_upload_same_translation(self) -> None:
+        """Do not upload translations that are the same as the key."""
+
+        airtablemock.create_empty_table('appkEc8N0Bw4Uok43', 'translations')
+        upload_strings_to_translate.main(
+            (path.join(path.dirname(__file__), 'testdata/same-translation/actionTemplates.json'),
+             '--api-key', 'api-key', '--lang', 'fr'),
+        )
+
+        translations = \
+            list(airtable.Airtable('appkEc8N0Bw4Uok43', '').iterate('translations'))
+        self.assertEqual(
+            ['apprenticeship:resource_content'],
+            sorted(t.get('fields', {}).get('string') for t in translations))
+
+        new_message = next(
+            t for t in translations if t['fields']['string'] == 'apprenticeship:resource_content')
+        self.assertFalse(new_message['fields'].get('fr'))
+
+    def test_namespace_prefix(self) -> None:
+        """Add namespace prefix before uploading."""
+
+        airtable.Airtable('appkEc8N0Bw4Uok43', '').create('translations', {
+            'string': 'Already translated',
+            'en': 'Already translated in English',
+        })
+        airtable.Airtable('appkEc8N0Bw4Uok43', '').create('translations', {
+            'string': 'frontend-client-strings:Already translated',
+            'en': 'Already translated in English',
+        })
+
+        upload_strings_to_translate.main(
+            (path.join(path.dirname(__file__), 'testdata/strings/frontend-client-strings.json'),
+             '--api-key', 'api-key', '--lang', 'fr', '--prefix-with-namespace'),
+        )
+
+        translations = \
+            list(airtable.Airtable('appkEc8N0Bw4Uok43', '').iterate('translations'))
+        self.assertEqual(
+            ['Already translated', 'frontend-client-strings:Already translated',
+             'frontend-client-strings:New message to translate'],
+            sorted(t.get('fields', {}).get('string') for t in translations))
+
+        new_message = next(
+            t for t in translations
+            if t['fields']['string'] == 'frontend-client-strings:New message to translate')
+        self.assertEqual('New message to translate in French', new_message['fields'].get('fr'))
+
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(buffer=True)

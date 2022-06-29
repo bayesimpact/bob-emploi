@@ -1,8 +1,9 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 import _uniqWith from 'lodash/uniqWith'
 import {stringify} from 'query-string'
 
-import {LocalizableString, prepareT} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {prepareT} from 'store/i18n'
 
 // Genderize a job name.
 function genderizeJob(job?: bayes.bob.Job, gender?: bayes.bob.Gender): string {

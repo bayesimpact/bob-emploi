@@ -1,4 +1,4 @@
-import webpack from 'webpack'
+import type {Configuration} from 'webpack'
 
 // Set the correct environment.
 if (!process.env.REACT_WEBPACK_ENV) {
@@ -20,10 +20,10 @@ function getValidEnv(env: string): ConfigName {
 /**
  * Build the webpack configuration
  */
-async function buildConfig(env: string): Promise<webpack.Configuration[]> {
+async function buildConfig(env: string): Promise<readonly Configuration[]> {
   const usedEnv = getValidEnv(env)
-  const {default: getConfig} = await import(`./${usedEnv}`)
-  return getConfig()
+  const {default: getConfiggetConfig} = await import(`./${usedEnv}`)
+  return getConfiggetConfig()
 }
 
 process.traceDeprecation = true

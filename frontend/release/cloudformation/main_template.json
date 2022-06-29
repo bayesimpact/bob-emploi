@@ -355,41 +355,173 @@
         }
       }
     },
+    "MongoSecret": {
+      "Type": "AWS::SecretsManager::Secret",
+      "Properties": {
+        "Description": "Mongo URLs used for interaction with the databases",
+        "SecretString": {
+          "Fn::Sub": "{\"evalWrite\": \"${MongoEvalWrite}\",\"userWrite\": \"${MongoUserWrite}\",\"userRead\": \"${MongoUserRead}\",\"dataWrite\": \"${MongoDataWrite}\",\"dataRead\": \"${MongoDataWrite}\"}"
+        }
+      }
+    },
+    "AdminAuthSecret": {
+      "Type": "AWS::SecretsManager::Secret",
+      "Properties": {
+        "Description": "Auto generated token with admin rights",
+        "GenerateSecretString": {
+          "PasswordLength": 32
+        }
+      }
+    },
+    "TaskExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2008-10-17",
+          "Statement": [
+            {
+              "Sid": "",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+        ],
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "secretsmanager:GetSecretValue"
+                  ],
+                  "Resource": [
+                    {
+                      "Ref": "AdminAuthSecret"
+                    },
+                    {
+                      "Ref": "ElasticSearchSecretARN"
+                    },
+                    {
+                      "Ref": "MongoSecret"
+                    },
+                    {
+                      "Ref": "SocialSecretsARN"
+                    },
+                    {
+                      "Ref": "AmplitudeSecretARN"
+                    }
+                  ]
+                }
+              ]
+            },
+            "PolicyName": {
+              "Fn::Sub": "${AWS::StackName}-task-definition-role-policy"
+            }
+          }
+        ]
+      }
+    },
     "TaskDefinition": {
       "Type": "AWS::ECS::TaskDefinition",
       "Properties": {
-        "Family": "bob-frontend-server",
+        "Family": {
+          "Fn::Sub": "${AWS::StackName}-frontend-server"
+        },
         "ContainerDefinitions": [
           {
-            "Environment": [
+            "Secrets": [
               {
-                "Name": "ADMIN_AUTH_TOKEN",
-                "Value": {
-                  "Ref": "EnvAdminAuthToken"
+                "Name": "USERS_MONGO_URL",
+                "ValueFrom": {
+                  "Fn::Sub": "${MongoSecret}:userWrite::"
                 }
               },
               {
-                "Name": "USERS_MONGO_URL",
-                "Value": {
-                  "Ref": "MongoUserWrite"
+                "Name": "MONGO_URL",
+                "ValueFrom": {
+                  "Fn::Sub": "${MongoSecret}:dataRead::"
+                }
+              },
+              {
+                "Name": "EVAL_MONGO_URL",
+                "ValueFrom": {
+                  "Fn::Sub": "${MongoSecret}:evalWrite::"
                 }
               },
               {
                 "Name": "EMPLOI_STORE_CLIENT_SECRET",
-                "Value": {
-                  "Ref": "EnvEmploiStoreClientSecret"
+                "ValueFrom": {
+                  "Fn::Sub": "${SocialSecretsARN}:emploiStore::"
                 }
               },
               {
                 "Name": "FACEBOOK_APP_SECRET",
-                "Value": {
-                  "Ref": "EnvFacebookAppSecret"
+                "ValueFrom": {
+                  "Fn::Sub": "${SocialSecretsARN}:facebook::"
                 }
               },
               {
                 "Name": "LINKED_IN_CLIENT_SECRET",
+                "ValueFrom": {
+                  "Fn::Sub": "${SocialSecretsARN}:linkedIn::"
+                }
+              },
+              {
+                "Name": "ADMIN_AUTH_TOKEN",
+                "ValueFrom": {
+                  "Ref": "AdminAuthSecret"
+                }
+              },
+              {
+                "Name": "ELASTICSEARCH_URL",
+                "ValueFrom": {
+                  "Fn::Sub": "${ElasticSearchSecretARN}:url::"
+                }
+              },
+              {
+                "Name": "ELASTICSEARCH_API_KEY",
+                "ValueFrom": {
+                  "Fn::Sub": "${ElasticSearchSecretARN}:apiKey::"
+                }
+              },
+              {
+                "Name": "AMPLITUDE_API_KEY",
+                "ValueFrom": {
+                  "Fn::Sub": "${AmplitudeSecretARN}:api::"
+                }
+              },
+              {
+                "Name": "AMPLITUDE_SECRET_KEY",
+                "ValueFrom": {
+                  "Fn::Sub": "${AmplitudeSecretARN}:secret::"
+                }
+              }
+            ],
+            "Environment": [
+              {
+                "Name": "ANONYMOUS_USER_EMAIL",
                 "Value": {
-                  "Ref": "EnvLinkedInClientSecret"
+                  "Ref": "EnvAnonymousUserEmail"
+                }
+              },
+              {
+                "Name": "ENABLE_ACTION_PLAN",
+                "Value": {
+                  "Ref": "EnvEnableActionPlan"
+                }
+              },
+              {
+                "Name": "EXPERIMENTS_ROLLOUTS",
+                "Value": {
+                  "Ref": "EnvExperimentRollouts"
                 }
               },
               {
@@ -411,18 +543,6 @@
                 }
               },
               {
-                "Name": "MONGO_URL",
-                "Value": {
-                  "Ref": "MongoDataRead"
-                }
-              },
-              {
-                "Name": "EVAL_MONGO_URL",
-                "Value": {
-                  "Ref": "MongoEvalWrite"
-                }
-              },
-              {
                 "Name": "SECRET_SALT",
                 "Value": {
                   "Ref": "EnvSecretSalt"
@@ -435,9 +555,33 @@
                 }
               },
               {
+                "Name": "SLACK_VOLUNTEER_FEEDBACK_CHANNEL",
+                "Value": {
+                  "Ref": "EnvSlackVolunteerFeedbackChannel"
+                }
+              },
+              {
                 "Name": "SLACK_WEBHOOK_URL",
                 "Value": {
                   "Ref": "EnvSlackWebhookUrl"
+                }
+              },
+              {
+                "Name": "SERVER_CONFIG",
+                "Value": {
+                  "Ref": "EnvServerConfig"
+                }
+              },
+              {
+                "Name": "SLACK_FEEDBACK_WEBHOOK_URL",
+                "Value": {
+                  "Ref": "EnvSlackFeedbackWebhookUrl"
+                }
+              },
+              {
+                "Name": "UPSKILLING_SLACK_WEBHOOK_URL",
+                "Value": {
+                  "Ref": "EnvSlackUpskillingWebhookUrl"
                 }
               },
               {
@@ -467,7 +611,15 @@
               {
                 "Name": "SERVER_VERSION",
                 "Value": {
-                  "Fn::Sub": "prod.${BobDeployment}.${FlaskDockerTag}"
+                  "Fn::If": [
+                    "HasDockerTag",
+                    {
+                      "Fn::Sub": "prod.${BobDeployment}.${DockerTag}"
+                    },
+                    {
+                      "Fn::Sub": "prod.${BobDeployment}.${FlaskDockerTag}"
+                    }
+                  ]
                 }
               },
               {
@@ -485,7 +637,15 @@
             ],
             "Essential": true,
             "Image": {
-              "Fn::Sub": "bayesimpact/bob-emploi-frontend-server:${FlaskDockerTag}"
+              "Fn::If": [
+                "HasDockerTag",
+                {
+                  "Fn::Sub": "bayesimpact/bob-emploi-frontend-server:${DockerTag}"
+                },
+                {
+                  "Fn::Sub": "bayesimpact/bob-emploi-frontend-server:${FlaskDockerTag}"
+                }
+              ]
             },
             "Name": "flask",
             "LogConfiguration": {
@@ -497,7 +657,9 @@
                 "awslogs-region": {
                   "Ref": "AWS::Region"
                 },
-                "awslogs-stream-prefix": "bob-frontend-server"
+                "awslogs-stream-prefix": {
+                  "Fn::Sub": "${AWS::StackName}-frontend-server"
+                }
               }
             },
             "PortMappings": [
@@ -509,7 +671,9 @@
           }
         ],
         "Cpu": 512,
-        "ExecutionRoleArn": "arn:aws:iam::951168128976:role/ecsTaskExecutionRole",
+        "ExecutionRoleArn": {
+          "Ref": "TaskExecutionRole"
+        },
         "Memory": 1024,
         "NetworkMode": "awsvpc",
         "RequiresCompatibilities": [
@@ -525,22 +689,20 @@
     "ImporterTaskDefinition": {
       "Type": "AWS::ECS::TaskDefinition",
       "Properties": {
-        "Family": "bob-data-importer",
+        "Family": {
+          "Fn::Sub": "${AWS::StackName}-data-importer"
+        },
         "ContainerDefinitions": [
           {
-            "Environment": [
+            "Secrets": [
               {
                 "Name": "MONGO_URL",
-                "Value": {
-                  "Ref": "MongoDataWrite"
+                "ValueFrom": {
+                  "Fn::Sub": "${MongoSecret}:dataWrite::"
                 }
-              },
-              {
-                "Name": "SLACK_IMPORT_URL",
-                "Value": {
-                  "Ref": "EnvSlackImportUrl"
-                }
-              },
+              }
+            ],
+            "Environment": [
               {
                 "Name": "SENTRY_DSN",
                 "Value": {
@@ -556,7 +718,15 @@
             ],
             "Essential": true,
             "Image": {
-              "Fn::Sub": "951168128976.dkr.ecr.eu-west-3.amazonaws.com/bob-emploi/data-analysis-prepare:${ImporterDockerTag}"
+              "Fn::If": [
+                "HasDockerTag",
+                {
+                  "Fn::Sub": "951168128976.dkr.ecr.eu-west-3.amazonaws.com/bob-emploi/data-analysis-prepare:${DockerTag}"
+                },
+                {
+                  "Fn::Sub": "951168128976.dkr.ecr.eu-west-3.amazonaws.com/bob-emploi/data-analysis-prepare:${ImporterDockerTag}"
+                }
+              ]
             },
             "Name": "importer",
             "LogConfiguration": {
@@ -570,7 +740,9 @@
           }
         ],
         "Cpu": 512,
-        "ExecutionRoleArn": "arn:aws:iam::951168128976:role/ecsTaskExecutionRole",
+        "ExecutionRoleArn": {
+          "Ref": "TaskExecutionRole"
+        },
         "Memory": 1024,
         "NetworkMode": "awsvpc",
         "RequiresCompatibilities": [
@@ -583,6 +755,554 @@
         }
       }
     },
+    "CloudfrontDistribution": {
+      "Type": "AWS::CloudFront::Distribution",
+      "Properties": {
+        "DistributionConfig": {
+          "Aliases": [
+            {
+              "Ref": "PublicDomainName"
+            }
+          ],
+          "CacheBehaviors": [
+            {
+              "CachedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "AllowedMethods": [
+                "HEAD",
+                "DELETE",
+                "POST",
+                "GET",
+                "OPTIONS",
+                "PUT",
+                "PATCH"
+              ],
+              "Compress": true,
+              "DefaultTTL": 86400,
+              "FieldLevelEncryptionId": "",
+              "ForwardedValues": {
+                "Cookies": {
+                  "Forward": "none"
+                },
+                "Headers": [
+                  "*"
+                ],
+                "QueryString": true,
+                "QueryStringCacheKeys": []
+              },
+              "MaxTTL": 31536000,
+              "MinTTL": 0,
+              "PathPattern": "api/*",
+              "ResponseHeadersPolicyId": "67f7725c-6f97-4210-82d7-5512b31e9d03",
+              "SmoothStreaming": false,
+              "TargetOriginId": "ELB-flask",
+              "ViewerProtocolPolicy": "https-only"
+            },
+            {
+              "CachedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "AllowedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "Compress": true,
+              "DefaultTTL": 600,
+              "FieldLevelEncryptionId": "",
+              "ForwardedValues": {
+                "Cookies": {
+                  "Forward": "none"
+                },
+                "QueryString": false,
+                "QueryStringCacheKeys": []
+              },
+              "MaxTTL": 600,
+              "MinTTL": 0,
+              "PathPattern": "index.html",
+              "ResponseHeadersPolicyId": "67f7725c-6f97-4210-82d7-5512b31e9d03",
+              "SmoothStreaming": false,
+              "TargetOriginId": "Client-Static-Assets",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            {
+              "CachedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "AllowedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "Compress": true,
+              "DefaultTTL": 600,
+              "FieldLevelEncryptionId": "",
+              "ForwardedValues": {
+                "Cookies": {
+                  "Forward": "none"
+                },
+                "QueryString": false,
+                "QueryStringCacheKeys": []
+              },
+              "MaxTTL": 600,
+              "MinTTL": 0,
+              "PathPattern": "favicon.ico",
+              "ResponseHeadersPolicyId": "67f7725c-6f97-4210-82d7-5512b31e9d03",
+              "SmoothStreaming": false,
+              "TargetOriginId": "Client-Static-Assets",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            {
+              "CachedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "AllowedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "Compress": false,
+              "DefaultTTL": 600,
+              "FieldLevelEncryptionId": "",
+              "ForwardedValues": {
+                "Cookies": {
+                  "Forward": "none"
+                },
+                "QueryString": false,
+                "QueryStringCacheKeys": []
+              },
+              "LambdaFunctionAssociations": [
+                {
+                  "EventType": "viewer-request",
+                  "IncludeBody": false,
+                  "LambdaFunctionARN": {
+                    "Ref": "LambdaAuxPageRedirect"
+                  }
+                }
+              ],
+              "MaxTTL": 600,
+              "MinTTL": 0,
+              "PathPattern": "/conseiller*",
+              "ResponseHeadersPolicyId": "67f7725c-6f97-4210-82d7-5512b31e9d03",
+              "SmoothStreaming": false,
+              "TargetOriginId": "Client-Static-Assets",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            {
+              "CachedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "AllowedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "Compress": false,
+              "DefaultTTL": 600,
+              "FieldLevelEncryptionId": "",
+              "ForwardedValues": {
+                "Cookies": {
+                  "Forward": "none"
+                },
+                "QueryString": false,
+                "QueryStringCacheKeys": []
+              },
+              "LambdaFunctionAssociations": [
+                {
+                  "EventType": "viewer-request",
+                  "IncludeBody": false,
+                  "LambdaFunctionARN": {
+                    "Ref": "LambdaAuxPageRedirect"
+                  }
+                }
+              ],
+              "MaxTTL": 600,
+              "MinTTL": 0,
+              "PathPattern": "/orientation*",
+              "ResponseHeadersPolicyId": "67f7725c-6f97-4210-82d7-5512b31e9d03",
+              "SmoothStreaming": false,
+              "TargetOriginId": "Client-Static-Assets",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            {
+              "CachedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "AllowedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "Compress": false,
+              "DefaultTTL": 600,
+              "FieldLevelEncryptionId": "",
+              "ForwardedValues": {
+                "Cookies": {
+                  "Forward": "none"
+                },
+                "QueryString": false,
+                "QueryStringCacheKeys": []
+              },
+              "LambdaFunctionAssociations": [
+                {
+                  "EventType": "viewer-request",
+                  "IncludeBody": false,
+                  "LambdaFunctionARN": {
+                    "Ref": "LambdaAuxPageRedirect"
+                  }
+                }
+              ],
+              "MaxTTL": 600,
+              "MinTTL": 0,
+              "PathPattern": "/eval*",
+              "ResponseHeadersPolicyId": "67f7725c-6f97-4210-82d7-5512b31e9d03",
+              "SmoothStreaming": false,
+              "TargetOriginId": "Client-Static-Assets",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            {
+              "CachedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "AllowedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "Compress": false,
+              "DefaultTTL": 600,
+              "FieldLevelEncryptionId": "",
+              "ForwardedValues": {
+                "Cookies": {
+                  "Forward": "none"
+                },
+                "QueryString": false,
+                "QueryStringCacheKeys": []
+              },
+              "LambdaFunctionAssociations": [
+                {
+                  "EventType": "viewer-request",
+                  "IncludeBody": false,
+                  "LambdaFunctionARN": {
+                    "Ref": "LambdaAuxPageRedirect"
+                  }
+                }
+              ],
+              "MaxTTL": 600,
+              "MinTTL": 0,
+              "PathPattern": "/unsubscribe*",
+              "ResponseHeadersPolicyId": "67f7725c-6f97-4210-82d7-5512b31e9d03",
+              "SmoothStreaming": false,
+              "TargetOriginId": "Client-Static-Assets",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            {
+              "CachedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "AllowedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "Compress": false,
+              "DefaultTTL": 600,
+              "FieldLevelEncryptionId": "",
+              "ForwardedValues": {
+                "Cookies": {
+                  "Forward": "none"
+                },
+                "QueryString": false,
+                "QueryStringCacheKeys": []
+              },
+              "LambdaFunctionAssociations": [
+                {
+                  "EventType": "viewer-request",
+                  "IncludeBody": false,
+                  "LambdaFunctionARN": {
+                    "Ref": "LambdaAuxPageRedirect"
+                  }
+                }
+              ],
+              "MaxTTL": 600,
+              "MinTTL": 0,
+              "PathPattern": "/statut*",
+              "ResponseHeadersPolicyId": "67f7725c-6f97-4210-82d7-5512b31e9d03",
+              "SmoothStreaming": false,
+              "TargetOriginId": "Client-Static-Assets",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            {
+              "CachedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "AllowedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "Compress": false,
+              "DefaultTTL": 600,
+              "FieldLevelEncryptionId": "",
+              "ForwardedValues": {
+                "Cookies": {
+                  "Forward": "none"
+                },
+                "QueryString": false,
+                "QueryStringCacheKeys": []
+              },
+              "LambdaFunctionAssociations": [
+                {
+                  "EventType": "viewer-request",
+                  "IncludeBody": false,
+                  "LambdaFunctionARN": {
+                    "Ref": "LambdaAuxPageRedirect"
+                  }
+                }
+              ],
+              "MaxTTL": 600,
+              "MinTTL": 0,
+              "PathPattern": "/first-followup-survey*",
+              "ResponseHeadersPolicyId": "67f7725c-6f97-4210-82d7-5512b31e9d03",
+              "SmoothStreaming": false,
+              "TargetOriginId": "Client-Static-Assets",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            {
+              "CachedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "AllowedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "Compress": false,
+              "DefaultTTL": 600,
+              "FieldLevelEncryptionId": "",
+              "ForwardedValues": {
+                "Cookies": {
+                  "Forward": "none"
+                },
+                "QueryString": false,
+                "QueryStringCacheKeys": []
+              },
+              "LambdaFunctionAssociations": [
+                {
+                  "EventType": "viewer-request",
+                  "IncludeBody": false,
+                  "LambdaFunctionARN": {
+                    "Ref": "LambdaAuxPageRedirect"
+                  }
+                }
+              ],
+              "MaxTTL": 600,
+              "MinTTL": 0,
+              "PathPattern": "/unml/a-li*",
+              "ResponseHeadersPolicyId": "67f7725c-6f97-4210-82d7-5512b31e9d03",
+              "SmoothStreaming": false,
+              "TargetOriginId": "Client-Static-Assets",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            {
+              "CachedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "AllowedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "Compress": false,
+              "DefaultTTL": 600,
+              "FieldLevelEncryptionId": "",
+              "ForwardedValues": {
+                "Cookies": {
+                  "Forward": "none"
+                },
+                "QueryString": false,
+                "QueryStringCacheKeys": []
+              },
+              "LambdaFunctionAssociations": [
+                {
+                  "EventType": "viewer-request",
+                  "IncludeBody": false,
+                  "LambdaFunctionARN": {
+                    "Ref": "LambdaAuxPageRedirect"
+                  }
+                }
+              ],
+              "MaxTTL": 600,
+              "MinTTL": 0,
+              "PathPattern": "/retours*",
+              "ResponseHeadersPolicyId": "67f7725c-6f97-4210-82d7-5512b31e9d03",
+              "SmoothStreaming": false,
+              "TargetOriginId": "Client-Static-Assets",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            {
+              "CachedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "AllowedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "Compress": true,
+              "DefaultTTL": 86400,
+              "FieldLevelEncryptionId": "",
+              "ForwardedValues": {
+                "Cookies": {
+                  "Forward": "none"
+                },
+                "QueryString": false,
+                "QueryStringCacheKeys": []
+              },
+              "MaxTTL": 31536000,
+              "MinTTL": 3600,
+              "PathPattern": "/assets/*",
+              "ResponseHeadersPolicyId": "67f7725c-6f97-4210-82d7-5512b31e9d03",
+              "SmoothStreaming": false,
+              "TargetOriginId": "Client-Static-Assets",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            }
+          ],
+          "DefaultCacheBehavior": {
+            "AllowedMethods": [
+              "HEAD",
+              "GET"
+            ],
+            "CachedMethods": [
+              "HEAD",
+              "GET"
+            ],
+            "Compress": true,
+            "DefaultTTL": 600,
+            "FieldLevelEncryptionId": "",
+            "ForwardedValues": {
+              "Cookies": {
+                "Forward": "none"
+              },
+              "Headers": [],
+              "QueryString": false,
+              "QueryStringCacheKeys": []
+            },
+            "LambdaFunctionAssociations": [
+              {
+                "EventType": "viewer-request",
+                "IncludeBody": false,
+                "LambdaFunctionARN": {
+                  "Ref": "LambdaOpenGraphRedirect"
+                }
+              }
+            ],
+            "MaxTTL": 600,
+            "MinTTL": 0,
+            "ResponseHeadersPolicyId": "67f7725c-6f97-4210-82d7-5512b31e9d03",
+            "SmoothStreaming": false,
+            "TargetOriginId": "Client-Static-Assets",
+            "ViewerProtocolPolicy": "redirect-to-https"
+          },
+          "DefaultRootObject": "index.html",
+          "Enabled": true,
+          "HttpVersion": "http2",
+          "IPV6Enabled": true,
+          "OriginGroups": {
+            "Items": [
+              {
+                "FailoverCriteria": {
+                  "StatusCodes": {
+                    "Items": [
+                      500,
+                      502,
+                      503
+                    ],
+                    "Quantity": 3
+                  }
+                },
+                "Id": "Client-Static-Assets",
+                "Members": {
+                  "Items": [
+                    {
+                      "OriginId": "PE Static Assets on OVH"
+                    },
+                    {
+                      "OriginId": "S3-bob-emploi-client"
+                    }
+                  ],
+                  "Quantity": 2
+                }
+              }
+            ],
+            "Quantity": 1
+          },
+          "Origins": [
+            {
+              "ConnectionAttempts": 3,
+              "ConnectionTimeout": 10,
+              "DomainName": "bob-emploi-client.s3.amazonaws.com",
+              "Id": "S3-bob-emploi-client",
+              "OriginPath": {
+                "Fn::Sub": "/${BobDeployment}"
+              },
+              "S3OriginConfig": {
+                "OriginAccessIdentity": ""
+              }
+            },
+            {
+              "ConnectionAttempts": 3,
+              "ConnectionTimeout": 10,
+              "CustomOriginConfig": {
+                "HTTPPort": 80,
+                "HTTPSPort": 443,
+                "OriginKeepaliveTimeout": 5,
+                "OriginProtocolPolicy": "https-only",
+                "OriginReadTimeout": 30,
+                "OriginSSLProtocols": [
+                  "TLSv1.2"
+                ]
+              },
+              "DomainName": {
+                "Ref": "DomainName"
+              },
+              "Id": "ELB-flask",
+              "OriginPath": ""
+            },
+            {
+              "ConnectionAttempts": 3,
+              "ConnectionTimeout": 10,
+              "CustomOriginConfig": {
+                "HTTPPort": 80,
+                "HTTPSPort": 443,
+                "OriginKeepaliveTimeout": 5,
+                "OriginProtocolPolicy": "https-only",
+                "OriginReadTimeout": 30,
+                "OriginSSLProtocols": [
+                  "TLSv1.2"
+                ]
+              },
+              "DomainName": "storage.gra.cloud.ovh.net",
+              "Id": "PE Static Assets on OVH",
+              "OriginPath": {
+                "Fn::Sub": "/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/PE%20Static%20Assets/${BobDeployment}"
+              }
+            }
+          ],
+          "PriceClass": "PriceClass_100",
+          "ViewerCertificate": {
+            "AcmCertificateArn": {
+              "Ref": "PublicDomainCertificate"
+            },
+            "MinimumProtocolVersion": "TLSv1.2_2021",
+            "SslSupportMethod": "sni-only"
+          },
+          "WebACLId": ""
+        }
+      }
+    },
     "ScheduledTaskCleanGuests": {
       "Type": "AWS::Events::Rule",
       "DependsOn": [
@@ -590,8 +1310,10 @@
         "TaskDefinition"
       ],
       "Properties": {
-        "Description": "Delete all personal information from guest accounts and support tickets older than a week.",
-        "Name": "clean-transient-pii",
+        "Description": "Delete  all personal information from accounts inactive for more than 30 months and guest accounts and support tickets older than a week.",
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-clean-transient-pii"
+        },
         "ScheduleExpression": "rate(24 hours)",
         "State": {
           "Ref": "ScheduledTasksStatus"
@@ -624,8 +1346,8 @@
                 "Ref": "TaskDefinition"
               }
             },
-            "Id": "clean-guest-user",
-            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python bob_emploi/frontend/server/asynchronous/clean_guests.py --registered-to-days-ago 7 --no-dry-run\"]}]}",
+            "Id": "clean-users",
+            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python\",\"bob_emploi/frontend/server/asynchronous/clean_users.py\",\"--max-users\",\"500\",\"--no-dry-run\"]}]}",
             "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
           },
           {
@@ -656,7 +1378,7 @@
               }
             },
             "Id": "clean-support-tickets",
-            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python bob_emploi/frontend/server/asynchronous/clean_support_tickets.py\"]}]}",
+            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python\",\"bob_emploi/frontend/server/asynchronous/clean_support_tickets.py\"]}]}",
             "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
           }
         ]
@@ -667,6 +1389,59 @@
         }
       }
     },
+    "ScheduledTaskCountUsers": {
+      "Type": "AWS::Events::Rule",
+      "DependsOn": [
+        "ECSCluster",
+        "MongoSecret",
+        "TaskDefinition"
+      ],
+      "Properties": {
+        "Description": "Count users by job market to populate a mongo table.",
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-count-users"
+        },
+        "ScheduleExpression": "rate(30 days)",
+        "State": {
+          "Ref": "ScheduledTasksStatus"
+        },
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "ECSCluster",
+                "Arn"
+              ]
+            },
+            "EcsParameters": {
+              "NetworkConfiguration": {
+                "AwsVpcConfiguration": {
+                  "AssignPublicIp": "ENABLED",
+                  "Subnets": {
+                    "Ref": "AvailabilitySubnets"
+                  },
+                  "SecurityGroups": [
+                    {
+                      "Ref": "ECSServiceSecurityGroup"
+                    }
+                  ]
+                }
+              },
+              "LaunchType": "FARGATE",
+              "TaskCount": 1,
+              "TaskDefinitionArn": {
+                "Ref": "TaskDefinition"
+              }
+            },
+            "Id": "count-users",
+            "Input": {
+              "Fn::Sub": "{\"containerOverrides\":[{\"command\":[\"python\",\"bob_emploi/frontend/server/asynchronous/count_users.py\"],\"environment\":[{\"name\":\"MONGO_URL\",\"value\":\"${MongoDataWrite}\"},{\"name\":\"USERS_MONGO_URL\",\"value\":\"${MongoUserRead}\"}],\"name\":\"flask\"}]}"
+            },
+            "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
+          }
+        ]
+      }
+    },
     "ScheduledTaskSendDailyMails": {
       "Type": "AWS::Events::Rule",
       "DependsOn": [
@@ -674,8 +1449,10 @@
         "TaskDefinition"
       ],
       "Properties": {
-        "Description": "Send a NPS email daily to the users that registered 7 days ago, an RER email daily to the users that registered 3 months ago, coaching emails to users that match.",
-        "Name": "send-daily-emails",
+        "Description": "Send an FFS email daily to the users that registered a week ago, an RER email daily to the users that registered 3 months ago, coaching emails to users that match.",
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-send-daily-emails"
+        },
         "ScheduleExpression": "cron(15 8 * * ? *)",
         "State": {
           "Ref": "ScheduledTasksStatus"
@@ -708,8 +1485,8 @@
                 "Ref": "TaskDefinition"
               }
             },
-            "Id": "send-daily-nps-email",
-            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python bob_emploi/frontend/server/mail/mail_blast.py\",\"nps\",\"send\",\"--days-since-any-email\",\"0\",\"--registered-to-days-ago\",\"7\"]}]}",
+            "Id": "send-daily-ffs-email",
+            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python\",\"bob_emploi/frontend/server/mail/mail_blast.py\",\"first-followup-survey\",\"send\",\"--days-since-any-email\",\"0\",\"--registered-to-days-ago\",\"5\",\"--registered-from-days-ago\",\"14\"]}]}",
             "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
           },
           {
@@ -740,7 +1517,7 @@
               }
             },
             "Id": "send-daily-rer-email",
-            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python bob_emploi/frontend/server/mail/mail_blast.py employment-status send --registered-from-days-ago 97 --registered-to-days-ago 90\"]}]}",
+            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python\",\"bob_emploi/frontend/server/mail/mail_blast.py\",\"employment-status\",\"send\",\"--registered-from-days-ago\",\"97\",\"--registered-to-days-ago\",\"90\"]}]}",
             "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
           },
           {
@@ -771,7 +1548,38 @@
               }
             },
             "Id": "send-coaching-email",
-            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python bob_emploi/frontend/server/mail/focus.py send\"]}]}",
+            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python\",\"bob_emploi/frontend/server/mail/focus.py\",\"send\"]}]}",
+            "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
+          },
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "ECSCluster",
+                "Arn"
+              ]
+            },
+            "EcsParameters": {
+              "NetworkConfiguration": {
+                "AwsVpcConfiguration": {
+                  "AssignPublicIp": "ENABLED",
+                  "Subnets": {
+                    "Ref": "AvailabilitySubnets"
+                  },
+                  "SecurityGroups": [
+                    {
+                      "Ref": "ECSServiceSecurityGroup"
+                    }
+                  ]
+                }
+              },
+              "LaunchType": "FARGATE",
+              "TaskCount": 1,
+              "TaskDefinitionArn": {
+                "Ref": "TaskDefinition"
+              }
+            },
+            "Id": "send-daily-activation-email",
+            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python\",\"bob_emploi/frontend/server/mail/mail_blast.py\",\"activation-email\",\"send\",\"--registered-from-days-ago\",\"0\",\"--registered-to-days-ago\",\"30\"]}]}",
             "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
           }
         ]
@@ -790,7 +1598,9 @@
       ],
       "Properties": {
         "Description": "Recreate ElasticSearch index",
-        "Name": "weekly-maintenance",
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-weekly-maintenance"
+        },
         "ScheduleExpression": "cron(0 2 ? * SUN *)",
         "State": {
           "Ref": "ScheduledTasksStatus"
@@ -825,7 +1635,7 @@
             },
             "Id": "sync-user-elasticsearch",
             "Input": {
-              "Fn::Sub": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python bob_emploi/frontend/server/asynchronous/sync_user_elasticsearch.py -r 2016-11 --no-dry-run --index bobusers-${BobDeployment} --force-recreate\"],\"environment\":[{\"name\":\"ELASTICSEARCH_URL\",\"value\":\"${EnvElasticSearchUrl}\"},{\"name\":\"USERS_MONGO_URL\",\"value\":\"${MongoUserRead}\"}]}],\"taskRoleArn\":\"arn:aws:iam::951168128976:role/ECS-ElasticSearch\"}"
+              "Fn::Sub": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python\",\"bob_emploi/frontend/server/asynchronous/sync_user_elasticsearch.py\",\"-r\",\"2016-11\",\"--no-dry-run\",\"--index\",\"bobusers-${BobDeployment}\",\"--force-recreate\"],\"environment\":[{\"name\":\"USERS_MONGO_URL\",\"value\":\"${MongoUserRead}\"}]}]}"
             },
             "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
           }
@@ -839,8 +1649,10 @@
         "TaskDefinition"
       ],
       "Properties": {
-        "Description": "Update ElasticSearch index.",
-        "Name": "sync-user-elasticsearch",
+        "Description": "Update ElasticSearch index, and Amplitude user IDs.",
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-sync-user-elasticsearch"
+        },
         "ScheduleExpression": "rate(12 hours)",
         "State": {
           "Ref": "ScheduledTasksStatus"
@@ -875,27 +1687,10 @@
             },
             "Id": "sync-user-elasticsearch",
             "Input": {
-              "Fn::Sub": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python bob_emploi/frontend/server/asynchronous/sync_user_elasticsearch.py -r 2018-01-01 --no-dry-run --index bobusers-${BobDeployment}\"],\"environment\":[{\"name\":\"ELASTICSEARCH_URL\",\"value\":\"${EnvElasticSearchUrl}\"},{\"name\":\"USERS_MONGO_URL\",\"value\":\"${MongoUserRead}\"}]}],\"taskRoleArn\":\"arn:aws:iam::951168128976:role/ECS-ElasticSearch\"}"
+              "Fn::Sub": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python\",\"bob_emploi/frontend/server/asynchronous/sync_user_elasticsearch.py\",\"-r\",\"2018-01-01\",\"--no-dry-run\",\"--index\",\"bobusers-${BobDeployment}\"],\"environment\":[{\"name\":\"USERS_MONGO_URL\",\"value\":\"${MongoUserRead}\"}]}]}"
             },
             "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
-          }
-        ]
-      }
-    },
-    "ScheduledTaskEvalPools": {
-      "Type": "AWS::Events::Rule",
-      "DependsOn": [
-        "ECSCluster",
-        "TaskDefinition"
-      ],
-      "Properties": {
-        "Description": "Create a pool of use-cases for evaluation.",
-        "Name": "create-eval-pool",
-        "ScheduleExpression": "cron(20 6 * * ? *)",
-        "State": {
-          "Ref": "ScheduledTasksStatus"
-        },
-        "Targets": [
+          },
           {
             "Arn": {
               "Fn::GetAtt": [
@@ -923,10 +1718,8 @@
                 "Ref": "TaskDefinition"
               }
             },
-            "Id": "create-eval-pool",
-            "Input": {
-              "Fn::Sub": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python bob_emploi/frontend/server/asynchronous/create_pool.py\"],\"environment\":[{\"name\":\"EVAL_MONGO_URL\",\"value\":\"${MongoEvalWrite}\"},{\"name\":\"USERS_MONGO_URL\",\"value\":\"${MongoUserRead}\"},{\"name\":\"SLACK_CREATE_POOL_URL\",\"value\":\"${EnvSlackWebhookUrl}\"}]}]}"
-            },
+            "Id": "sync-amplitude",
+            "Input": "{\"containerOverrides\":[{\"command\":[\"python\",\"bob_emploi/frontend/server/asynchronous/sync_amplitude.py\",\"--registered-from\",\"2017-06-01\",\"--no-dry-run\"],\"name\":\"flask\"}]}",
             "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
           }
         ]
@@ -940,7 +1733,9 @@
       ],
       "Properties": {
         "Description": "Update the \"sent status\" of the emails that we sent with Mailjet",
-        "Name": "update-email-sent-status",
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-update-email-sent-status"
+        },
         "ScheduleExpression": "rate(24 hours)",
         "State": {
           "Ref": "ScheduledTasksStatus"
@@ -974,7 +1769,7 @@
               }
             },
             "Id": "bob-users",
-            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python bob_emploi/frontend/server/asynchronous/update_email_sent_status.py\"]}]}",
+            "Input": "{\"containerOverrides\":[{\"name\":\"flask\",\"command\":[\"python\",\"bob_emploi/frontend/server/asynchronous/update_email_sent_status.py\"]}]}",
             "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
           }
         ]
@@ -988,7 +1783,9 @@
       ],
       "Properties": {
         "Description": "Import translations to Mongo nightly",
-        "Name": "import-translations",
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-import-translations"
+        },
         "ScheduleExpression": "cron(0 2 * * ? *)",
         "State": {
           "Ref": "ScheduledTasksStatus"
@@ -1023,7 +1820,7 @@
             },
             "Id": "import-translations",
             "Input": {
-              "Fn::Sub": "{\"containerOverrides\":[{\"name\":\"importer\",\"command\":[\"python bob_emploi/data_analysis/import_status.py --run translations\"],\"environment\":[{\"name\":\"AIRTABLE_API_KEY\",\"value\":\"${EnvAirtableApiKey}\"}]}]}"
+              "Fn::Sub": "{\"containerOverrides\":[{\"name\":\"importer\",\"command\":[\"python\",\"bob_emploi/data_analysis/importer/import_status.py\",\"--run\",\"translations\"],\"environment\":[{\"name\":\"AIRTABLE_API_KEY\",\"value\":\"${EnvAirtableApiKey}\"}]}]}"
             },
             "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
           }
@@ -1040,11 +1837,38 @@
       }
     }
   },
+  "Conditions": {
+    "HasDockerTag": {
+      "Fn::Not": [
+        {
+          "Fn::Equals": [
+            {
+              "Ref": "DockerTag"
+            },
+            ""
+          ]
+        }
+      ]
+    }
+  },
   "Parameters": {
+    "LambdaOpenGraphRedirect": {
+      "Type": "String",
+      "Default": "arn:aws:lambda:us-east-1:951168128976:function:opengraph-redirect:27",
+      "Description": "ARN for the versioned lambda for open graph redirection"
+    },
+    "LambdaAuxPageRedirect": {
+      "Type": "String",
+      "Default": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:21",
+      "Description": "ARN for the versioned lambda for auxiliary pages redirection"
+    },
     "PublicDomainName": {
       "Type": "String",
-      "Default": "www.bob-emploi.fr",
       "Description": "Hostnames to use to publicly serve this Bob client instance"
+    },
+    "PublicDomainCertificate": {
+      "Type": "String",
+      "Description": "The ARN of a us-east-1 ACM certificate for the public domain name."
     },
     "DomainName": {
       "Type": "String",
@@ -1063,30 +1887,35 @@
       "Type": "AWS::EC2::VPC::Id",
       "Description": "The VPC for the TargetGroup listing fargate instances"
     },
-    "EnvAdminAuthToken": {
+    "AmplitudeSecretARN": {
       "Type": "String",
-      "Description": "A unique token to allow admins to authenticate directly in the app"
+      "Description": "ARN to an AWS managed secret for amplitude API credentials, with 'api' and 'secret' values",
+      "Default": "arn:aws:secretsmanager:eu-west-3:951168128976:secret:bob/amplitude-J9K4O8"
     },
     "EnvAirtableApiKey": {
       "Type": "String",
       "Default": "",
       "Description": "The client secret to a read-access to Airtable API"
     },
-    "EnvElasticSearchUrl": {
+    "EnvAnonymousUserEmail": {
       "Type": "String",
-      "Description": "The ElasticSearch URL to save anonymized user data for analytics"
+      "Default": "",
+      "Description": "An email address where received emails are forwarded to the relevant user. See frontend.server.apps.evaluation#direct_email_to_user."
     },
-    "EnvEmploiStoreClientSecret": {
+    "ElasticSearchSecretARN": {
       "Type": "String",
-      "Description": "The client secret to access Emploi Store Dev APIs"
+      "Default": "arn:aws:secretsmanager:eu-west-3:951168128976:secret:elasticsearch-89JXTY",
+      "Description": "ARN to an AWS managed secret for elactisearch API credentials, with 'apiKey' and 'url' values."
     },
-    "EnvFacebookAppSecret": {
+    "EnvEnableActionPlan": {
       "Type": "String",
-      "Description": "The client secret to access Facebook APIs"
+      "Description": "Whether all new users should have the action plan feature",
+      "Default": ""
     },
-    "EnvLinkedInClientSecret": {
+    "EnvExperimentRollouts": {
       "Type": "String",
-      "Description": "The client secret to access LinkedIn APIs"
+      "Description": "A JSON-protobuf encoded setting to define rollout of experiments",
+      "Default": ""
     },
     "EnvMailjetSecret": {
       "Type": "String",
@@ -1100,14 +1929,35 @@
       "Type": "String",
       "Description": "Sentry DSN to report errors"
     },
-    "EnvSlackImportUrl": {
+    "EnvServerConfig": {
       "Type": "String",
-      "Description": "Slack webhook URL to report importer status"
+      "Description": "A JSON string for frontend server configuration. See frontend/server/product.py",
+      "Default": "{}"
+    },
+    "EnvSlackVolunteerFeedbackChannel": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Slack channel (for EnvSlackWebhookUrl) to report volunteers wanting to give feedback"
     },
     "EnvSlackWebhookUrl": {
       "Type": "String",
       "Default": "",
       "Description": "Slack webhook URL to report from server"
+    },
+    "EnvSlackFeedbackWebhookUrl": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Slack webhook URL to report user-feedback from server. Keep empty to use EnvSlackWebhookUrl instead"
+    },
+    "EnvSlackUpskillingWebhookUrl": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Slack webhook URL to report from server as Jobflix. Keep empty to use EnvSlackFeedbackWebhookUrl instead"
+    },
+    "DockerTag": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Docker tag for the flask server and importer tasks"
     },
     "FlaskDockerTag": {
       "Type": "String",
@@ -1119,7 +1969,7 @@
     },
     "ScheduledTasksStatus": {
       "Type": "String",
-      "Default": "ENABLED",
+      "Default": "DISABLED",
       "Description": "Status for the scheduled tasks relevant to the product"
     },
     "EnvMaVoieApiUrl": {
@@ -1161,11 +2011,16 @@
       "Type": "String",
       "Default": "",
       "Description": "The read-write Mongo URL of the DB containing evaluation data"
+    },
+    "SocialSecretsARN": {
+      "Type": "String",
+      "Default": "arn:aws:secretsmanager:eu-west-3:951168128976:secret:bob/social-asxS5H",
+      "Description": "A Secrets Manager secret with linkedIn, facebook and emploiStore keys, to access their respective APIs"
     }
   },
   "Outputs": {
     "LoadBalancerDnsName": {
-      "Description": "The DNSName of the Load Balancer",
+      "Description": "The DNSName of the Load Balancer.",
       "Value": {
         "Fn::GetAtt": [
           "LoadBalancer",
@@ -1183,6 +2038,15 @@
       "Description": "The ECS Cluster where the servers are run",
       "Value": {
         "Ref": "ECSCluster"
+      }
+    },
+    "DistributionDnsName": {
+      "Description": "The DNSName of the CloudFront distribution",
+      "Value": {
+        "Fn::GetAtt": [
+          "CloudfrontDistribution",
+          "DomainName"
+        ]
       }
     }
   }

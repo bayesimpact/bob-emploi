@@ -122,3 +122,39 @@ O*NET-SOC Code	Element ID	Element Name	Scale ID	Category	Data Value	N	Standard E
 11-1021.00	3.A.3	On-the-Job Training	OJ	7	2.68	54	2.18	0.51	12.86	N	07/2015	Incumbent
 11-1021.00	3.A.3	On-the-Job Training	OJ	8	4.50	54	4.12	0.68	24.39	N	07/2015	Incumbent
 11-1021.00	3.A.3	On-the-Job Training	OJ	9	0.31	54	0.32	0.04	2.36	N	07/2015	Incumbent
+11-3071.01	2.D.1	Required Level of Education	RL	1	0.00	35	0.00	n/a n/a N	07/2014 Incumbent
+11-3071.01	2.D.1	Required Level of Education	RL	2	34.21	35	9.42	18.17	54.90	N	07/2014 Incumbent
+11-3071.01	2.D.1	Required Level of Education	RL	3	0.00	35	0.00	n/a n/a N	07/2014 Incumbent
+11-3071.01	2.D.1	Required Level of Education	RL	4	1.05	35	1.06	0.13	7.80	N	07/2014 Incumbent
+11-3071.01	2.D.1	Required Level of Education	RL	5	23.95	35	8.97	10.37	46.16	N	07/2014 Incumbent
+11-3071.01	2.D.1	Required Level of Education	RL	6	40.79	35	10.83	21.68	63.16	N	07/2014 Incumbent
+11-3071.01	2.D.1	Required Level of Education	RL	7	0.00	35	0.00	n/a n/a N	07/2014 Incumbent
+11-3071.01	2.D.1	Required Level of Education	RL	8	0.00	35	0.00	n/a n/a N	07/2014 Incumbent
+11-3071.01	2.D.1	Required Level of Education	RL	9	0.00	35	0.00	n/a n/a N	07/2014 Incumbent
+11-3071.01	2.D.1	Required Level of Education	RL	10	0.00	35	0.00	n/a n/a N	07/2014 Incumbent
+11-3071.01	2.D.1	Required Level of Education	RL	11	0.00	35	0.00	n/a n/a N	07/2014 Incumbent
+11-3071.01	2.D.1	Required Level of Education	RL	12	0.00	35	0.00	n/a n/a N	07/2014 Incumbent
+11-3071.02	2.D.1	Required Level of Education	RL	1	4.17	24	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.02	2.D.1	Required Level of Education	RL	2	20.83	24	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.02	2.D.1	Required Level of Education	RL	3	4.17	24	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.02	2.D.1	Required Level of Education	RL	4	8.33	24	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.02	2.D.1	Required Level of Education	RL	5	8.33	24	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.02	2.D.1	Required Level of Education	RL	6	50.00	24	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.02	2.D.1	Required Level of Education	RL	7	4.17	24	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.02	2.D.1	Required Level of Education	RL	8	0.00	24	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.02	2.D.1	Required Level of Education	RL	9	0.00	24	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.02	2.D.1	Required Level of Education	RL	10	0.00	24	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.02	2.D.1	Required Level of Education	RL	11	0.00	24	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.02	2.D.1	Required Level of Education	RL	12	0.00	24	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.03	2.D.1	Required Level of Education	RL	1	0.00	30	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.03	2.D.1	Required Level of Education	RL	2	3.33	30	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.03	2.D.1	Required Level of Education	RL	3	0.00	30	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.03	2.D.1	Required Level of Education	RL	4	3.33	30	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.03	2.D.1	Required Level of Education	RL	5	6.67	30	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.03	2.D.1	Required Level of Education	RL	6	60.00	30	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.03	2.D.1	Required Level of Education	RL	7	10.00	30	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.03	2.D.1	Required Level of Education	RL	8	16.67	30	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.03	2.D.1	Required Level of Education	RL	9	0.00	30	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.03	2.D.1	Required Level of Education	RL	10	0.00	30	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.03	2.D.1	Required Level of Education	RL	11	0.00	30	n/a n/a n/a n/a 07/2017 Occupational Expert
+11-3071.03	2.D.1	Required Level of Education	RL	12	0.00	30	n/a n/a n/a n/a 07/2017 Occupational Expert

@@ -1,8 +1,18 @@
 {
+  actionTemplates: {
+    base: 'appXmyc7yYj0pOcae',
+    idField: 'action_template_id',
+    output: 'src/store/data/actionTemplates.json',
+    table: 'action_templates',
+    translatableFields: [
+      'resource_content',
+    ],
+    view: 'Ready to Import',
+  },
   adviceModules: {
     base: 'appXmyc7yYj0pOcae',
     idField: 'advice_id',
-    output: 'src/components/advisor/data/advice_modules.json',
+    output: 'src/store/data/advice_modules.json',
     table: 'advice_modules',
     translatableFields: [
       'static_explanations',
@@ -19,7 +29,7 @@
   diagnosticIllustrations: {
     base: 'appXmyc7yYj0pOcae',
     idField: 'id',
-    output: 'src/components/advisor/data/diagnosticIllustrations.json',
+    output: 'src/store/data/diagnosticIllustrations.json',
     table: 'convince_illustrations',
     translatableFields: [
       'highlight',
@@ -30,12 +40,12 @@
   diagnosticMainChallenges: {
     base: 'appXmyc7yYj0pOcae',
     idField: 'category_id',
-    output: 'src/components/strategist/data/diagnosticMainChallenges.json',
+    output: 'src/store/data/diagnosticMainChallenges.json',
     table: 'diagnostic_main_challenges',
     translatableFields: [
-      'category_description',
       'achievement_text',
       'bob_explanation',
+      'category_description',
       'description',
       'description_answer',
       'interesting_highlight',
@@ -51,7 +61,7 @@
   },
   emailTemplates: {
     base: 'appXmyc7yYj0pOcae',
-    output: 'src/components/advisor/data/email_templates.json',
+    output: 'src/store/data/email_templates.json',
     table: 'email_templates',
     translatableFields: [
       'content',
@@ -63,7 +73,7 @@
   goals: {
     base: 'appXmyc7yYj0pOcae',
     idField: 'goal_id',
-    output: 'src/components/strategist/data/goals.json',
+    output: 'src/store/data/strategy_goals.json',
     table: 'strategy_goals',
     translatableFields: [
       'content',
@@ -74,7 +84,7 @@
   impactMeasurement: {
     base: 'appXmyc7yYj0pOcae',
     idField: 'action_id',
-    output: 'src/components/strategist/data/impactMeasurement.json',
+    output: 'src/store/data/impactMeasurement.json',
     table: 'impact_measurement',
     translatableFields: [
       'name',
@@ -84,7 +94,7 @@
   resourceThemes: {
     base: 'appXmyc7yYj0pOcae',
     idField: 'theme_id',
-    output: 'src/components/advisor/data/resource_themes.json',
+    output: 'src/store/data/resource_themes.json',
     table: 'resource_themes',
     translatableFields: [
       'name',
@@ -93,7 +103,7 @@
   },
   vae: {
     base: 'appMRMtWV61Kibt37',
-    output: 'src/components/advisor/data/vae.json',
+    output: 'src/store/data/vae.json',
     table: 'VAE_Stats',
     translatableFields: [
       'name',

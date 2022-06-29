@@ -1,15 +1,15 @@
-import {TFunction} from 'i18next'
-import React, {useCallback} from 'react'
-import PropTypes from 'prop-types'
+import type {TFunction} from 'i18next'
+import React, {useMemo} from 'react'
 
-import {LocalizableString, prepareT} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {prepareT} from 'store/i18n'
 
 import GrowingNumber from 'components/growing_number'
 import Trans from 'components/i18n_trans'
-import {RadiumDiv} from 'components/radium'
-import Picto from 'images/advices/picto-other-work-env.svg'
+import {RadiumExternalLink} from 'components/radium'
 
-import {CardProps, MethodSuggestionList, useAdviceData} from './base'
+import type {CardProps} from './base'
+import {HandicapSuggestionWarning, MethodSuggestionList, useAdviceData} from './base'
 
 
 const emptyArray = [] as const
@@ -24,6 +24,7 @@ const OtherWorkEnvMethod = (props: CardProps): React.ReactElement => {
   }, loading} = useAdviceData<bayes.bob.OtherWorkEnvAdviceData>(props)
   const {
     handleExplore,
+    profile: {hasHandicap},
     project,
     t,
   } = props
@@ -49,13 +50,10 @@ const OtherWorkEnvMethod = (props: CardProps): React.ReactElement => {
       <Section
         kind={prepareT('types de structure')} items={structures} {...{project, t}}
         onExplore={handleExplore('structure')} />
+      <HandicapSuggestionWarning
+        hasHandicap={!!hasHandicap} types={t('environnements de travail')} />
     </div>
   </div>
-}
-OtherWorkEnvMethod.propTypes = {
-  handleExplore: PropTypes.func.isRequired,
-  project: PropTypes.object.isRequired,
-  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(OtherWorkEnvMethod)
 
@@ -63,7 +61,7 @@ const ExpandedAdviceCardContent = React.memo(OtherWorkEnvMethod)
 interface SearchableElementProps {
   onClick?: () => void
   project: bayes.bob.Project
-  style?: React.CSSProperties
+  style?: RadiumCSSProperties
   title: string
 }
 
@@ -71,21 +69,18 @@ interface SearchableElementProps {
 const SearchableElementBase = (props: SearchableElementProps): React.ReactElement => {
   const {onClick, project, title, style} = props
 
-  const handleClick = useCallback((): void => {
-    const url = `https://${config.googleTopLevelDomain}/search?q=${encodeURIComponent(title + ' ' + project.title)}`
-    window.open(url, '_blank')
-    onClick && onClick()
-  }, [onClick, project, title])
+  const url = useMemo(
+    () => `https://${config.googleTopLevelDomain}/search?q=${encodeURIComponent(title + ' ' + project.title)}`,
+    [project.title, title])
+  const linkStyle = useMemo((): RadiumCSSProperties => ({
+    color: 'inherit',
+    textDecoration: 'none',
+    ...style,
+  }), [style])
 
-  return <RadiumDiv style={style} onClick={handleClick}>
+  return <RadiumExternalLink style={linkStyle} onClick={onClick} href={url}>
     {title}
-  </RadiumDiv>
-}
-SearchableElementBase.propTypes = {
-  onClick: PropTypes.func,
-  project: PropTypes.object.isRequired,
-  style: PropTypes.object,
-  title: PropTypes.string.isRequired,
+  </RadiumExternalLink>
 }
 const SearchableElement = React.memo(SearchableElementBase)
 
@@ -114,14 +109,7 @@ const SectionBase = (props: SectionProps): React.ReactElement|null => {
       onClick={onExplore} />)}
   </MethodSuggestionList>
 }
-SectionBase.propTypes = {
-  items: PropTypes.arrayOf(PropTypes.node.isRequired),
-  kind: PropTypes.oneOf(['secteurs', 'types de structure']).isRequired,
-  onExplore: PropTypes.func.isRequired,
-  project: PropTypes.object.isRequired,
-  t: PropTypes.func.isRequired,
-}
 const Section = React.memo(SectionBase)
 
 
-export default {ExpandedAdviceCardContent, Picto}
+export default {ExpandedAdviceCardContent, pictoName: 'signPost' as const}

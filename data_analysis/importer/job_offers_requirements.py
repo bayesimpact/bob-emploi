@@ -21,7 +21,7 @@ import enum
 import itertools
 import logging
 import typing
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Iterator, Optional, Tuple
 
 import tqdm
 
@@ -231,9 +231,9 @@ class _RequirementsCollector:
 
     def __init__(self) -> None:
         self.num_offers = 0
-        self.suggestions: Dict[_RequirementKind, Dict[Any, int]] = \
+        self.suggestions: dict[_RequirementKind, dict[Any, int]] = \
             collections.defaultdict(lambda: collections.defaultdict(int))
-        self.requirements: Dict[_RequirementKind, Dict[Any, int]] = \
+        self.requirements: dict[_RequirementKind, dict[Any, int]] = \
             collections.defaultdict(lambda: collections.defaultdict(int))
 
     def collect(self, job_offer: 'job_offers._JobOffer') -> None:
@@ -337,7 +337,7 @@ class _RequirementsCollector:
             return
         self._add_suggestion(kind, str(int(job_offer.rome_profession_code)))
 
-    def get_proto_dict(self) -> Dict[str, List[Any]]:
+    def get_proto_dict(self) -> dict[str, list[Any]]:
         """Gets the requirements collected as a proto compatible dict.
 
         Returns:
@@ -358,9 +358,9 @@ class _RequirementsCollector:
             'specificJobs': list(self._get_jobs(_FILTER_JOB_RATIO * self.num_offers)),
         }
 
-    def _get_diplomas(self) -> Iterator[Dict[str, Any]]:
+    def _get_diplomas(self) -> Iterator[dict[str, Any]]:
         kind = _RequirementKind.DIPLOMAS
-        levels: Dict['job_pb2.DegreeLevel.V', Dict[str, int]] = \
+        levels: dict['job_pb2.DegreeLevel.V', dict[str, int]] = \
             collections.defaultdict(lambda: collections.defaultdict(int))
 
         num_suggestions = sum(self.suggestions[kind].values())
@@ -383,7 +383,7 @@ class _RequirementsCollector:
                 name=_DEGREE_TO_DIPLOMA[level],
                 diploma={'level': job_pb2.DegreeLevel.Name(level)})
 
-    def _get_driving_licenses(self, count_threshold: float) -> Iterator[Dict[str, Any]]:
+    def _get_driving_licenses(self, count_threshold: float) -> Iterator[dict[str, Any]]:
         # Sort by descending count, then ascending licence name.
         licenses = self._get_sorted_requirements(
             _RequirementKind.DRIVING_LICENSES, count_threshold)
@@ -394,7 +394,7 @@ class _RequirementsCollector:
                 'drivingLicense': license_name,
             }
 
-    def _get_desktop_tools(self, count_threshold: float) -> Iterator[Dict[str, Any]]:
+    def _get_desktop_tools(self, count_threshold: float) -> Iterator[dict[str, Any]]:
         # Sort by descending count, then ascending license name.
         tools = self._get_sorted_requirements(
             _RequirementKind.DESTKOP_TOOLS, count_threshold)
@@ -404,7 +404,7 @@ class _RequirementsCollector:
                 'officeSkillsLevel': level,
             }
 
-    def _get_contract_types(self) -> Iterator[Dict[str, Any]]:
+    def _get_contract_types(self) -> Iterator[dict[str, Any]]:
         contract_types = self._get_sorted_requirements(
             _RequirementKind.CONTRACT_TYPE, 0)
         for contract_type, count, unused_percent_required in contract_types:
@@ -414,7 +414,7 @@ class _RequirementsCollector:
                 'contractType': job_pb2.EmploymentType.Name(contract_type),
             }
 
-    def _get_jobs(self, count_threshold: float) -> Iterator[Dict[str, Any]]:
+    def _get_jobs(self, count_threshold: float) -> Iterator[dict[str, Any]]:
         jobs = self._get_sorted_requirements(_RequirementKind.JOB, count_threshold)
         for job_id, count, unused_percent_required in jobs:
             yield {
@@ -423,7 +423,7 @@ class _RequirementsCollector:
             }
 
 
-def csv2dicts(job_offers_csv: str, colnames_txt: str) -> List[Dict[str, Any]]:
+def csv2dicts(job_offers_csv: str, colnames_txt: str) -> list[dict[str, Any]]:
     """Import the requirement from job offers grouped by Job Group in MongoDB.
 
     Args:
@@ -433,7 +433,7 @@ def csv2dicts(job_offers_csv: str, colnames_txt: str) -> List[Dict[str, Any]]:
         Requirements as a JobRequirements JSON-proto compatible dict.
     """
 
-    job_groups: Dict[str, _RequirementsCollector] = collections.defaultdict(_RequirementsCollector)
+    job_groups: dict[str, _RequirementsCollector] = collections.defaultdict(_RequirementsCollector)
     all_job_offers = job_offers.iterate(job_offers_csv, colnames_txt, _REQUIRED_FIELDS)
     for job_offer in tqdm.tqdm(all_job_offers, total=_TOTAL_RECORDS):
         if job_offer.rome_profession_card_code:

@@ -2,8 +2,8 @@ syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
 
+import "bob_emploi/frontend/api/email.proto";
 import "bob_emploi/frontend/api/options.proto";
-import "bob_emploi/frontend/api/user.proto";
 
 package bayes.bob;
 option go_package="bayes.org/bob_emploi/frontend/api/review";

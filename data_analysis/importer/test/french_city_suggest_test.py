@@ -1,12 +1,12 @@
 """Tests for the bob_emploi.importer.french_city_suggest module."""
 
-import io
+import logging
 import os
 from os import path
 import unittest
+from unittest import mock
 
 from algoliasearch import exceptions
-import mock
 
 from bob_emploi.data_analysis.importer import french_city_suggest
 
@@ -59,6 +59,16 @@ class PrepareCitiesTestCase(unittest.TestCase):
 
         cities = french_city_suggest.prepare_cities(
             self.testdata_folder, stats_filename=self.stats_csv)
+
+        # Point check for coordinates.
+        abergement = next(c for c in cities if c.get('objectID') == '01001')
+        self.assertAlmostEqual(4.91667, abergement.get('longitude', 0))
+        self.assertAlmostEqual(46.15, abergement.get('latitude', 0))
+        # Drop coordinates, since we can't check them precisely.
+        for city in cities:
+            del city['latitude']
+            del city['longitude']
+
         self.assertEqual(
             [
                 {
@@ -153,7 +163,7 @@ class PrepareCitiesTestCase(unittest.TestCase):
             cities[1:3])
 
 
-@mock.patch(french_city_suggest.__name__ + '.search_client')
+@mock.patch(french_city_suggest.algolia.__name__ + '.search_client')
 @mock.patch.dict(os.environ, values={'ALGOLIA_API_KEY': 'my-api-key'})
 class UploadTestCase(unittest.TestCase):
     """Integration tests for the upload function."""
@@ -174,11 +184,11 @@ class UploadTestCase(unittest.TestCase):
         tmp_name = (set(indices) - {'cities'}).pop()
 
         index = mock_client.init_index()
-        self.assertTrue(index.add_objects.called)
+        self.assertTrue(index.save_objects.called)
         self.assertEqual(
             ['01001', '01002', '69123', '73002', '74002', '79202'],
             [city.get('objectID')
-             for call in index.add_objects.call_args_list
+             for call in index.save_objects.call_args_list
              for city in call[0][0]])
 
         mock_client.move_index.assert_called_once_with(tmp_name, 'cities')
@@ -187,18 +197,17 @@ class UploadTestCase(unittest.TestCase):
         """Test the full upload."""
 
         mock_client = mock_algoliasearch.SearchClient.create()
-        mock_client.init_index().add_objects.side_effect = exceptions.AlgoliaException
-
-        output = io.StringIO()
+        mock_client.init_index().save_objects.side_effect = exceptions.AlgoliaException
 
         with self.assertRaises(exceptions.AlgoliaException):
-            french_city_suggest.upload(data_folder=self.testdata_folder, out=output)
+            with self.assertLogs(level=logging.ERROR) as logged:
+                french_city_suggest.upload(data_folder=self.testdata_folder)
 
         mock_client.move_index.assert_not_called()
         mock_client.init_index().delete.assert_called_once_with()
-        output_value = output.getvalue()
-        self.assertTrue(
-            output_value.startswith('[\n  {\n    "objectID": "01001"'), msg=output_value)
+        output_value = logged.records[0].getMessage()
+        self.assertIn('An error occurred while saving to Algolia', output_value)
+        self.assertIn('\n[\n  {\n    "objectID": "01001"', output_value)
 
 
 if __name__ == '__main__':

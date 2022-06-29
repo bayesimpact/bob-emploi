@@ -1,26 +1,357 @@
 [
-  {
-    "_id" : "recpsXBCCvJE1bM3y",
-    "cardContent" : "Contacte%you</z> %you<tes/vos> amis qui habitent %inCity, peu importe qu'ils soient %jobName comme %you<toi/vous> ou pas",
-    "emailTemplate" : "Je cherche mon premier job. Si tu connais ou entends parler de quelqu'un qui cherche %aJobName, j'aimerais beaucoup que tu me contactes. Je suis disponible dès maintenant et j'ai vraiment envie de me lancer dans le monde du travail.",
-    "filters" : [ 
-      "for-first-job-search"
-    ],
-    "name" : "%you<Tes/Vos> amis qui habitent près %ofCity"
-  },
-  {
-    "_id" : "recq4utzcMfLup9Y8",
-    "cardContent" : "Contacte%you</z> %you<tes/vos> amis qui habitent %inCity, peu importe qu'ils soient %jobName comme %you<toi/vous> ou pas",
-    "emailTemplate" : "Je cherche à me reconvertir. Si tu connais ou entends parler de quelqu'un qui cherche %aJobName, j'aimerais beaucoup que tu me contactes. Je suis disponible dès maintenant et j'ai vraiment envie de me lancer dans ce nouveau métier.",
-    "filters" : [ 
-      "for-reorientation"
-    ],
-    "name" : "%you<Tes/Vos> amis qui habitent près %ofCity"
-  },
-  {
-    "_id" : "recpTAZdlfFhUdI9z",
-    "cardContent" : "Contacte%you</z> %you<tes/vos> amis qui habitent %inCity, peu importe qu'ils soient %jobName comme %you<toi/vous> ou pas",
-    "emailTemplate" : "Tu te souviens de ton ami qui travaille %inDomain dont tu m'avais parlé ? J'aimerais beaucoup le rencontrer pour parler de son travail et de mon projet professionnel",
-    "name" : "%you<Tes/Vos> amis et proches qui habitent %inCity ou ailleurs"
-  }
+ {
+  "_id": "recOKC9AwrLCxvtxo",
+  "_order": 0,
+  "cardContent": "Vous n'avez pas encore de réseau ? Demandez au ** maire %ofCity** de vous aider à rencontrer les chefs d'entreprise de la région.",
+  "contactTip": "Échangez avec votre maire à la fin d'un conseil municipal, au marché ou par email.",
+  "emailTemplate": "Je vis %inCity depuis 5 ans, je suis à la recherche de mon premier emploi %ofJobName. J'aimerais beaucoup rencontrer du monde si vous connaissez des chefs d'entreprises qui recrutent ou bien des personnes %inDomain, j'aimerais beaucoup les rencontrer !",
+  "filters": [
+   "for-small-city-inhabitant(20000)",
+   "for-network(1)"
+  ],
+  "name": "Le maire %ofCity"
+ },
+ {
+  "_id": "rec00eLXIkdvfeOiU",
+  "_order": 1,
+  "contactTip": "Échangez avec eux à un événement de la chambre de commerce, en vous présentant en personne ou par mail",
+  "emailTemplate": "Je suis à la recherche de mon premier emploi %ofJobName\nJ'adorerais travailler %inAWorkplace %likeYourWorkplace, mais j'ai du mal à approcher %placePlural. Auriez-vous quelques minutes à me consacrer pour me donner quelques conseils ?",
+  "filters": [
+   "for-small-city-inhabitant(20000)",
+   "for-first-job-search",
+   "for-job-applied-in-person"
+  ],
+  "name": "Des chefs d'entreprise de la région"
+ },
+ {
+  "_id": "recpsXBCCvJE1bM3y",
+  "_order": 2,
+  "cardContent": "Contactez **vos amis qui habitent %inCity**, peu importe qu'ils soient %masculineJobName comme vous ou pas",
+  "emailTemplate": "Je cherche mon premier job. Si tu connais ou entends parler de quelqu'un qui cherche %aJobName, j'aimerais beaucoup que tu me contactes. Je suis disponible dès maintenant et j'ai vraiment envie de me lancer dans le monde du travail.",
+  "filters": [
+   "for-first-job-search",
+   "not-for-reorientation"
+  ],
+  "name": "Vos amis qui habitent près %ofCity"
+ },
+ {
+  "_id": "recOqPsDaC2UrEod1",
+  "_order": 3,
+  "cardContent": "Vous connaissez quelques personnes, profitez-en pour contacter **des personnes que vous pouvez rencontrer grâce à eux**",
+  "contactTip": "Mettez en copie la personne qui vous a présentée",
+  "emailTemplate": "[Prénom Nom] m'a vivement recommandé de prendre contact avec vous. Je suis à la recherche de mon premier emploi et j'aimerais beaucoup échanger avec vous  sur votre métier, mon projet et sur les entreprises que je voudrais contacter afin que vous puissiez me donner quelques conseils. Auriez-vous quelques minutes à me consacrer autour d'un café ou par téléphone, pour me donner quelques conseils ?",
+  "filters": [
+   "for-first-job-search",
+   "for-network(2)"
+  ],
+  "name": "Des personnes rencontrées grâce à vos amis"
+ },
+ {
+  "_id": "recZCd39KFz38lAdU",
+  "_order": 4,
+  "emailTemplate": "J'ai vu que tu avais déjà trouvé un job. Félicitations !\nJe suis toujours en recherche et j'ai l'impression que mon CV n'est pas encore au top. Pourrais-tu m'aider à le rendre plus percutant ?",
+  "filters": [
+   "for-young(25)",
+   "for-qualified(bac+3)",
+   "for-exact-experienced(intern)"
+  ],
+  "name": "Vos connaissances d'université"
+ },
+ {
+  "_id": "recoFdTF51fi3Tv4P",
+  "_order": 5,
+  "cardContent": "Vous avez beaucoup d'expérience, profitez-en pour discuter de votre projet avec **un de vos ancien boss** !",
+  "emailTemplate": "Comment vas-tu depuis le temps ? Je suis entre deux jobs en ce moment et j'ai envie de prendre le temps de réfléchir avant de me lancer dans un nouveau défi. J'aimerais beaucoup échanger avec toi sur mon projet. Aurais-tu un moment à me consacrer autour d'un café ou par téléphone, pour me donner quelques conseils ?",
+  "filters": [
+   "for-job-applied-in-person",
+   "for-experienced(6)",
+   "not-for-long-search(7)",
+   "for-complex-application",
+   "not-for-network(1)",
+   "for-unemployed"
+  ],
+  "name": "Un de vos anciens boss"
+ },
+ {
+  "_id": "recTM1cgWoYXGs5KC",
+  "_order": 6,
+  "cardContent": "Contactez **vos connaissances qui travaillent %inDomain**, peu importe qu'ils soient %inCity comme vous ou pas",
+  "emailTemplate": "J'ai consulté il y a quelques jours ton profil Linkedin que je trouve vraiment inspirant. Je suis à la recherche d'un nouveau boulot en ce moment et j'aimerais beaucoup avoir tes conseils pour améliorer mon profil Linkedin. Aurais-tu du temps pour en discuter la semaine prochaine ?",
+  "filters": [
+   "for-job-applied-by-mail"
+  ],
+  "name": "Vos amis qui travaillent %inDomain"
+ },
+ {
+  "_id": "recuk7mu8dIzsNX7E",
+  "_order": 7,
+  "cardContent": "Vous avez de l'expérience, profitez-en pour discuter de votre projet avec **un de vos anciens collègues** !",
+  "emailTemplate": "J'espère que tu vas bien,\nJe suis entre deux jobs en ce moment et j'ai envie de prendre le temps de réfléchir avant de me lancer dans ma recherche. J'aimerais beaucoup échanger avec toi sur mon projet. Aurais-tu un moment à me consacrer ?",
+  "filters": [
+   "not-for-long-search(7)",
+   "for-experienced(2)",
+   "for-unemployed",
+   "not-for-potential-freelancer"
+  ],
+  "name": "Vos anciens collègues"
+ },
+ {
+  "_id": "recpym5tvKL1SOvhJ",
+  "_order": 8,
+  "contactTip": "Par mail, facebook, autour d'un café au téléphone",
+  "emailTemplate": "Comment vas-tu depuis le temps ? Après l'école j'ai commencé à travailler %inDomain %expDurationAgo, aujourd'hui je suis à la recherche d'un nouveau job.\nJ'ai vu que de ton côté tu avais eu plein de belles expériences.\nJe trouve ton parcours très inspirant et j'aimerais beaucoup échanger avec toi sur mon projet. Aurais-tu du temps pour en discuter autour d'un café ou par téléphone la semaine prochaine ?",
+  "filters": [
+   "for-qualified(bac+5)",
+   "for-experienced(6)"
+  ],
+  "name": "Vos anciennes connaissances de master"
+ },
+ {
+  "_id": "recE0GZNnJdWPxvuQ",
+  "_order": 9,
+  "cardContent": "Vous connaissez quelques personnes, profitez-en pour contacter **des personnes que vous pouvez rencontrer grâce à eux**",
+  "emailTemplate": "[Prénom Nom] m'a vivement recommandé de prendre contact avec vous. J'ai commencé à travailler %inDomain %expDurationAgo et je suis aujourd'hui à la recherche d'un nouveau challenge. J'aimerais beaucoup échanger avec vous sur votre parcours, mon métier, mon projet et sur les entreprises que je voudrais contacter afin que vous puissiez me donner quelques conseils. Auriez-vous du temps à me consacrer autour d'un café ou par téléphone la semaine prochaine ?",
+  "filters": [
+   "for-experienced(6)",
+   "for-network(2)",
+   "not-for-first-job-search"
+  ],
+  "name": "Des personnes rencontrées grâce à vos amis"
+ },
+ {
+  "_id": "reco2uBaehs3Q6Zqv",
+  "_order": 10,
+  "emailTemplate": "J'ai trouvé vos coordonnées sur Linkedin et je trouve votre parcours très inspirant.\nUn de mes amis m'a fait découvrir votre entreprise en 2016. Depuis j'ai suivi ses développements et %whatILoveAbout.\nJ'ai commencé comme %jobName %expDurationAgo. J'ai travaillé récemment sur plusieurs projets, qui je pense, pourront vous intéresser, je suis sûre que nous aurons des choses à partager.\nJ'aimerais beaucoup vous rencontrer autour d'un café, seriez-vous disponible jeudi à 17h ?\nMerci et à bientôt,\n%name\nPS : Voici mon Linkedin, pour le contexte : https://www.linkedin.com/in/%name%lastName/",
+  "filters": [
+   "for-job-applied-by-mail"
+  ],
+  "name": "Un chef d'entreprise qui vous inspire"
+ },
+ {
+  "_id": "recf82rIiJG4K2DdS",
+  "_order": 11,
+  "cardContent": "Demandez au **responsable des actions sociales %ofCity** de vous aider à rencontrer les bonnes personnes",
+  "emailTemplate": "Je vis %inCity depuis 5 ans, je suis à la recherche d'un poste %ofJobName. J'aimerais beaucoup rencontrer les personnes en charge de ce genre d'intervention sur la commune. Pourriez-vous m'aider à les rencontrer ?",
+  "filters": [
+   "for-reorientation",
+   "not-for-network(1)",
+   "not-for-small-city-inhabitant(20000)",
+   "not-for-big-city-inhabitant(100000)",
+   "for-job-group(K11, K12, K13, K14, K18)"
+  ],
+  "name": "Le responsable des actions sociales %ofCity"
+ },
+ {
+  "_id": "recq4utzcMfLup9Y8",
+  "_order": 12,
+  "cardContent": "Contactez **vos amis qui habitent %inCity**, peu importe qu'ils soient %masculineJobName comme vous ou pas",
+  "emailTemplate": "Je cherche à me reconvertir. Si tu connais ou entends parler de quelqu'un qui cherche %aJobName, j'aimerais beaucoup que tu me contactes. Je suis disponible dès maintenant et j'ai vraiment envie de me lancer dans ce nouveau métier.",
+  "filters": [
+   "for-reorientation"
+  ],
+  "name": "Vos amis qui habitent près %ofCity"
+ },
+ {
+  "_id": "rec98QYwnM9bG8d9b",
+  "_order": 13,
+  "cardContent": "Contactez **vos amis qui travaillent %inDomain**, peu importe qu'ils soient %inCity comme vous ou pas",
+  "emailTemplate": "Je cherche à me reconvertir. J'adorerais travailler %inDomain comme toi, mais j'ai l'impression que mon CV n'est pas encore au top. Aurais-tu quelques minutes à me consacrer, pour me donner quelques conseils ?",
+  "filters": [
+   "for-reorientation"
+  ],
+  "name": "Vos amis qui sont %inDomain mais pas %inCity"
+ },
+ {
+  "_id": "recNtgJaDom43KEWy",
+  "_order": 14,
+  "cardContent": "Pour les rédacteurs web les recommandations c'est essentiel : contactez **des gens avec lesquels vous avez déjà travaillé**",
+  "emailTemplate": "Depuis notre dernière collaboration, j'ai travaillé sur plusieurs projets vraiment passionnants. Aujourd'hui j'ai du temps et envie de me consacrer à de nouveaux projets. Si vous ou des entrepreneurs autour de vous ont besoin d'un %masculineJobName, n'hésitez pas à me contacter.",
+  "filters": [
+   "not-for-women",
+   "for-potential-freelancer"
+  ],
+  "name": "Des personnes avec lesquelles vous avez déjà travaillé"
+ },
+ {
+  "_id": "rec17IuqgfldqSYZh",
+  "_order": 15,
+  "emailTemplate": "Je me suis lancé·e comme %jobName %expDurationAgo. Je suis vos créations depuis un certain temps et j'aime beaucoup ce que vous faites. J'aimerais beaucoup échanger avec vous sur votre parcours et votre expérience du métier. Auriez-vous du temps pour en discuter autour d'un café ou par téléphone la semaine prochaine ?",
+  "filters": [
+   "for-potential-freelancer"
+  ],
+  "name": "Un %masculineJobName qui vous inspire"
+ },
+ {
+  "_id": "recmao9MsFNV1J6gR",
+  "_order": 16,
+  "emailTemplate": "J'ai vu que tu avais fait un très beau début de parcours. Félicitations !\nJe suis à la recherche d'un nouveau boulot en ce moment et j'ai l'impression que mon CV n'est pas vraiment au top. Pourrais-tu m'aider à le rendre plus désirable ?",
+  "filters": [
+   "for-qualified(bac+3)",
+   "for-experienced(2)",
+   "not-for-qualified(bac+5)"
+  ],
+  "name": "Vos connaissances et amis de licence"
+ },
+ {
+  "_id": "recyRXvlTz5FS6nSj",
+  "_order": 17,
+  "emailTemplate": "J'ai trouvé vos coordonnées sur Linkedin. Je trouve votre parcours très inspirant. J'ai commencé à travailler comme %jobName %expDurationAgo %inCity. Aujourd'hui je réfléchis à bouger %inCity.\nJ'aimerais beaucoup avoir votre regard sur mon profil et mieux comprendre comment aborder le marché. Auriez-vous du temps pour en discuter par téléphone la semaine prochaine ?\nMerci et à bientôt,\n%name\nPS : Voici mon Linkedin, pour le contexte :  https://www.linkedin.com/in/%name%lastName/",
+  "filters": [
+   "for-potential-freelancer",
+   "for-high-mobility(country)"
+  ],
+  "name": "Un %masculineJobName implanté %inCity par exemple"
+ },
+ {
+  "_id": "recpTAZdlfFhUdI9z",
+  "_order": 18,
+  "cardContent": "Contactez **vos amis qui habitent %inCity**, peu importe qu'ils soient %masculineJobName comme vous ou pas",
+  "emailTemplate": "Tu te souviens de ton ami qui travaille %inDomain dont tu m'avais parlé ? J'aimerais beaucoup le rencontrer pour parler de son travail et de mon projet professionnel.",
+  "filters": [
+   "not-for-first-job-search",
+   "not-for-reorientation"
+  ],
+  "name": "Vos amis et proches qui habitent %inCity ou ailleurs"
+ },
+ {
+  "_id": "recT5JFNauYSx1oly",
+  "_order": 19,
+  "emailTemplate": "J'ai été votre élève il y a quelques temps. Depuis j'ai décroché quelques stages mais je suis toujours à la recherche de mon premier emploi. Si vous connaissez ou entendez parler de quelqu'un qui cherche une personne pour un poste %jobName, j'aimerais beaucoup que vous me mettiez en relation. Je suis disponible dès maintenant et j'ai vraiment très envie de me lancer dans le monde du travail",
+  "filters": [
+   "for-young(25)",
+   "for-first-job-search",
+   "for-unqualified(bac)"
+  ],
+  "name": "Vos anciens professeurs de lycée technique"
+ },
+ {
+  "_id": "recxk4c2Te44iSH1g",
+  "_order": 20,
+  "emailTemplate": "Je suis à la recherche de mon premier emploi %ofJobName\nJ'adorerais travailler %inAWorkplace %likeYourWorkplace, mais j'ai du mal à approcher %placePlural.\nAuriez-vous quelques minutes à me consacrer pour me donner quelques conseils ?",
+  "filters": [
+   "for-first-job-search",
+   "not-for-small-city-inhabitant(20000)"
+  ],
+  "name": "Un chef d'entreprise pour lequel vous aimeriez travailler"
+ },
+ {
+  "_id": "recArN8jilZptbPeZ",
+  "_order": 21,
+  "cardContent": "Contactez **vos connaissances qui travaillent %inDomain**, peu importe qu'ils soient %inCity comme vous ou pas",
+  "emailTemplate": "Je suis à la recherche de mon premier emploi. J'adorerais travailler %inDomain comme toi, mais j'ai l'impression que mon CV n'est pas encore au top. Aurais-tu quelques minutes à me consacrer, pour me donner quelques conseils ?",
+  "filters": [
+   "for-first-job-search"
+  ],
+  "name": "Vos connaissances qui travaillent %inDomain"
+ },
+ {
+  "_id": "recGug3odCwTBPF0E",
+  "_order": 22,
+  "emailTemplate": "J'ai vu que tu avais déjà trouvé un job. Félicitations !\nJe suis toujours en recherche et j'ai l'impression que mon CV n'est pas encore au top. Pourrais-tu m'aider à le rendre plus percutant ?",
+  "filters": [
+   "for-young(25)",
+   "for-exact-experienced(intern)",
+   "for-unqualified(bac)"
+  ],
+  "name": "Vos connaissances de lycée"
+ },
+ {
+  "_id": "reccJcd1XuaDxP3sJ",
+  "_order": 23,
+  "cardContent": "Vous connaissez quelques personnes, profitez-en pour contacter **des personnes que vous pouvez rencontrer grâce à eux**",
+  "emailTemplate": "[Prénom Nom] m'a vivement recommandé de prendre contact avec vous. Actuellement en recherche d'emploi, j'aimerais beaucoup échanger avec vous sur votre métier, mon projet et sur les entreprises que je voudrais contacter. Auriez-vous quelques du temps à me consacrer la semaine prochaine, pour me donner quelques conseils ?",
+  "filters": [
+   "for-network(2)",
+   "not-for-long-search(7)",
+   "not-for-experienced(6)"
+  ],
+  "name": "Des personnes rencontrées grâce à vos amis"
+ },
+ {
+  "_id": "recMkeqNMnthUFLe1",
+  "_order": 24,
+  "emailTemplate": "Je suis à la recherche d'un poste %ofJobName.\nJ'adorerais travailler %inAWorkplace %likeYourWorkplace, mais j'ai du mal à approcher %placePlural.\nAuriez-vous quelques minutes à me consacrer autour d'un café ou par téléphone, pour me donner quelques conseils ?",
+  "filters": [
+   "not-for-first-job-search",
+   "not-for-small-city-inhabitant(20000)"
+  ],
+  "name": "Un chef d'entreprise pour lequel vous aimeriez travailler"
+ },
+ {
+  "_id": "recAVoqU4x5CN8u12",
+  "_order": 25,
+  "cardContent": "Vous avez beaucoup d'expérience, profitez-en pour discuter de votre projet avec **un de vos ancien boss** !",
+  "emailTemplate": "Comment vas-tu depuis le temps ? Je suis entre deux jobs en ce moment. J'ai plusieurs pistes en tête et j'aimerais beaucoup avoir ton avis. Aurais-tu un moment à me consacrer autour d'un café ou par téléphone, pour me donner quelques conseils ?",
+  "filters": [
+   "for-job-applied-in-person",
+   "for-experienced(6)",
+   "for-complex-application",
+   "for-long-search(7)",
+   "for-unemployed"
+  ],
+  "name": "Un de vos anciens boss"
+ },
+ {
+  "_id": "recixzdtfW6ESv9bL",
+  "_order": 26,
+  "cardContent": "Demandez conseils à un **%masculineJobName** pour réussir votre reconversion !",
+  "emailTemplate": "J'ai décidé de me reconvertir il y a quelques mois, je suis aujourd'hui à la recherche d'un poste de %jobName. Auriez-vous un moment à me consacrer pour me parler de votre expérience du métier et me donner quelques conseils ?",
+  "filters": [
+   "for-reorientation"
+  ],
+  "name": "Un %masculineJobName %ofCity"
+ },
+ {
+  "_id": "rec9AkfkfSEg6GXE7",
+  "_order": 27,
+  "cardContent": "Demandez au **responsable des actions culturelles %ofCity** de vous aider à rencontrer les bonnes personnes",
+  "emailTemplate": "Je vis %inCity depuis 5 ans, je suis à la recherche d'un poste %ofJobName. J'aimerais beaucoup rencontrer les personnes en charge de ce genre d'intervention sur la commune. Pourriez-vous m'aider à les rencontrer ?",
+  "filters": [
+   "for-reorientation",
+   "not-for-network(1)",
+   "not-for-small-city-inhabitant(20000)",
+   "not-for-big-city-inhabitant(100000)",
+   "for-job-group(K16)"
+  ],
+  "name": "Le responsable des actions culturelles %ofCity"
+ },
+ {
+  "_id": "recCrGAYaJfHds6b7",
+  "_order": 28,
+  "cardContent": "Pour les rédacteurs web les recommandations c'est essentiel : **contactez des gens avec lesquels vous avez déjà travaillé**",
+  "emailTemplate": "Depuis notre dernière collaboration, j'ai travaillé sur plusieurs projets vraiment passionnants. Aujourd'hui j'ai du temps et envie de me consacrer à de nouveaux projets. Si vous ou des entrepreneurs autour de vous ont besoin d'une %feminineJobName, n'hésitez pas à me contacter.",
+  "filters": [
+   "for-women",
+   "for-potential-freelancer"
+  ],
+  "name": "Des personnes avec lesquelles vous avez déjà travaillé"
+ },
+ {
+  "_id": "rec0WQNhzNFoFx11c",
+  "_order": 29,
+  "cardContent": "Vous n'avez pas encore de réseau ? Demandez au **responsable des actions sociales %ofCity** de vous aider à rencontrer les bonnes personnes",
+  "emailTemplate": "Je vis %inCity depuis 5 ans, je suis à la recherche d'un poste %ofJobName. J'aimerais beaucoup rencontrer les personnes en charge de ce genre d'intervention sur la commune. Pourriez-vous m'aider à les rencontrer ?",
+  "filters": [
+   "for-reorientation",
+   "for-network(1)",
+   "not-for-small-city-inhabitant(20000)",
+   "not-for-big-city-inhabitant(100000)",
+   "for-job-group(K11, K12, K13, K14, K18)"
+  ],
+  "name": "Le responsable des actions sociales %ofCity"
+ },
+ {
+  "_id": "rechK43ZB2hoKf4LD",
+  "_order": 30,
+  "cardContent": "Vous n'avez pas encore de réseau ? Demandez au **responsable des actions culturelles %ofCity** de vous aider à rencontrer les bonnes personnes",
+  "emailTemplate": "Je vis %inCity depuis 5 ans, je suis à la recherche d'un poste %ofJobName. J'aimerais beaucoup rencontrer les personnes en charge de ce genre d'intervention sur la commune. Pourriez-vous m'aider à les rencontrer ?",
+  "filters": [
+   "for-reorientation",
+   "for-network(1)",
+   "not-for-big-city-inhabitant(100000)",
+   "not-for-small-city-inhabitant(20000)",
+   "for-job-group(K16)"
+  ],
+  "name": "Le responsable des actions culturelles %ofCity"
+ }
 ]

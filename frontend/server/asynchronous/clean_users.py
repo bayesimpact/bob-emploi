@@ -1,8 +1,6 @@
 """Script to clean inactive and guest users from DB.
     Guests accounts are deleted after 1 week without interacting.
-    While signed in users' accounts are deleted after 2 years of inactivity (mail or app).
-    Note that signed in users should have received a notification email at least
-    1 week before deletion.
+    While signed in users' accounts are deleted after 3 months of inactivity (mail or app).
     More on the design here:
     https://docs.google.com/document/d/13Dc6Ysgn_qgNA1EgS3gKujwl-HQ_dw-omovsmY_VETA
 """
@@ -10,7 +8,7 @@
 import argparse
 import datetime
 import logging
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 import bson
 from bson import objectid
@@ -24,9 +22,8 @@ from bob_emploi.frontend.server.asynchronous import report
 from bob_emploi.frontend.server.mail import mail_send
 
 
-_, _DB, _ = mongo.get_connections_from_env()
 _MAX_GUEST_IDLE_TIME = datetime.timedelta(7)
-_MAX_SIGNED_IN_USER_IDLE_TIME = datetime.timedelta(730)
+_MAX_SIGNED_IN_USER_IDLE_TIME = datetime.timedelta(90)
 _TODAY_STRING = proto.datetime_to_json_string(datetime.datetime.now())
 
 
@@ -44,17 +41,6 @@ def _get_last_interaction_date(user_proto: user_pb2.User) -> datetime.datetime:
 
     last_interaction_date = max(email_interaction_dates + [last_interaction_date])
     return last_interaction_date
-
-
-def _get_latest_deletion_email_date(user_proto: user_pb2.User) -> Optional[datetime.datetime]:
-    """Get the date of the latest deletion notification email."""
-
-    deletion_email_dates = [
-        email.sent_at.ToDatetime() for email in user_proto.emails_sent
-        if email.campaign_id == 'account-deletion-notice']
-    if deletion_email_dates:
-        return max(deletion_email_dates)
-    return None
 
 
 def get_users(database: mongo.UsersDatabase) -> pymongo.cursor.Cursor:
@@ -78,6 +64,7 @@ def set_deletion_check_date(
 
     if dry_run:
         logging.info('Setting check date "%s"', str(user_proto.user_id))
+        return
 
     database.user.update_one(
         {'_id': objectid.ObjectId(user_proto.user_id)},
@@ -88,22 +75,15 @@ def compute_deletion_date(user_proto: user_pb2.User) -> datetime.datetime:
     """Compute the date when the user's account can be deleted."""
 
     last_interaction_date = _get_last_interaction_date(user_proto)
-    recent_interaction_delay = \
-        _MAX_SIGNED_IN_USER_IDLE_TIME if user_proto.has_account else _MAX_GUEST_IDLE_TIME
-
-    # Guests with accounts must have received the email notification.
+    # Users with an account shouldn't have interacted for a long while.
     if user_proto.has_account:
-        latest_deletion_email_date = _get_latest_deletion_email_date(user_proto)
-        # If they haven't we check again 2 weeks later.
-        if not latest_deletion_email_date:
-            return datetime.datetime.today() + datetime.timedelta(14)
-        # If the last notification is too recent, we wait a bit.
-        if latest_deletion_email_date > datetime.datetime.today() - _MAX_GUEST_IDLE_TIME:
-            return latest_deletion_email_date + _MAX_GUEST_IDLE_TIME
-    return last_interaction_date + recent_interaction_delay
+        return last_interaction_date + _MAX_SIGNED_IN_USER_IDLE_TIME
+    return last_interaction_date + _MAX_GUEST_IDLE_TIME
 
 
-def clean_users(database: mongo.UsersDatabase, dry_run: bool = True) -> Tuple[int, int, int]:
+def clean_users(
+        database: mongo.UsersDatabase, dry_run: bool = True,
+        max_users: int = 0) -> Tuple[int, int, int]:
     """Clean inactive users and guests who registered before a given date."""
 
     users = get_users(database)
@@ -113,6 +93,9 @@ def clean_users(database: mongo.UsersDatabase, dry_run: bool = True) -> Tuple[in
     num_errors = 0
     for user in users:
         user_proto = proto.create_from_mongo(user, user_pb2.User, 'user_id')
+
+        if max_users and (num_users_cleaned + num_users_updated + num_errors) >= max_users:
+            return num_users_cleaned, num_users_updated, num_errors
 
         if not user_proto:
             num_errors += 1
@@ -126,8 +109,8 @@ def clean_users(database: mongo.UsersDatabase, dry_run: bool = True) -> Tuple[in
             continue
 
         deletion_date = compute_deletion_date(user_proto)
+
         if deletion_date >= datetime.datetime.today():
-            # raise ValueError(user_proto, deletion_date)
             set_deletion_check_date(user_proto, deletion_date, database, dry_run)
             num_users_updated += 1
             continue
@@ -139,14 +122,18 @@ def clean_users(database: mongo.UsersDatabase, dry_run: bool = True) -> Tuple[in
             num_users_cleaned += 1
         else:
             num_errors += 1
+
     return num_users_cleaned, num_users_updated, num_errors
 
 
-def main(string_args: Optional[List[str]] = None) -> None:
+def main(string_args: Optional[list[str]] = None) -> None:
     """Parse command line arguments and trigger the clean_guest_users function."""
 
     parser = argparse.ArgumentParser(
         description='Clean guests and inactive users from the database.')
+
+    parser.add_argument(
+        '--max-users', help='Only consider a maximum of this number of users.', type=int)
 
     report.add_report_arguments(parser)
 
@@ -155,9 +142,11 @@ def main(string_args: Optional[List[str]] = None) -> None:
     if not report.setup_sentry_logging(args):
         return
 
+    user_db = mongo.get_connections_from_env().user_db
+
     logging.info(
         'Cleaned %d users, set check date for %d users and got %d errors',
-        *clean_users(_DB, args.dry_run))
+        *clean_users(user_db, args.dry_run, args.max_users))
 
 
 if __name__ == '__main__':

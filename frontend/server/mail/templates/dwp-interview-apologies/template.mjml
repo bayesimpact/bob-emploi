@@ -1,0 +1,24 @@
+<mjml owa="desktop" version="4.6.3">
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-text line-height="1.38">Bonjour !</mj-text>
+        <mj-text line-height="1.38">
+          <p>Nous nous excusons si vous recevez cet email pour la deuxième fois. <strong>Répondez à cet email si vous êtes intéressé{%if var:gender:"" == "FEMININE"%}e{%elseif var:gender:"" == "MASCULINE"%}{%else%}·e{%endif%} de discuter avec nous de votre recherche d'emploi. Nous vous enverrons une carte cadeau de 35€ en remerciement de votre temps !</strong></p>  
+          <p>Notez que si vous avez essayer de répondre à l'email précédent, nous n'avons pas reçu votre message. Si vous voulez participer vous devez répondre à cet email. Merci !</p>
+        </mj-text>
+        <mj-text line-height="1.38">Je vous contacte car vous avez récemment utilisé {{var:productName}}, le coach emploi digital, dans le cadre de votre recherche d'emploi.</mj-text>
+        <mj-text line-height="1.38"><strong>Aimeriez-vous parler avec nous de cette expérience dans votre recherche d'emploi ?</strong> Nous vous serions reconnaissants si vous pouvez consacrer un peu de votre temps pour une discussion avec nous (entre 30 et 45 minutes). C'est avec vos retours de recherche d'emploi que nous pourrons nous améliorer et ainsi aider d'autres personnes en recherche, comme vous.</mj-text>
+        <mj-text line-height="1.38">Si vous acceptez de discuter avec nous et êtes sélectionné{%if var:gender:"" == "FEMININE"%}e{%elseif var:gender:"" == "MASCULINE"%}{%else%}·e{%endif%} pour cette discussion, <strong>nous vous enverrons une carte cadeau de 35€ en remerciement du temps que vous nous aurez accordé</strong>.</mj-text>
+        <mj-text line-height="1.38">Pour participer, répondez simplement à cet email ! Merci d'avoir lu jusqu'au bout, et j'espère vous lire prochainement.</mj-text>
+        <mj-text line-height="1.38">À bientôt,</mj-text>
+        <mj-text line-height="1.38">Tabitha, de {{var:productName}}</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-text font-size="11px" color="#55575d" line-height="2">Vous recevez cet email car vous êtes inscrit{%if var:gender:""=="FEMININE"%}e{%elseif var:gender:""=="MASCULINE"%}{%else%}·e{%endif%} sur <a href="{{var:baseUrl}}?utm_source=bob-emploi&amp;utm_medium=email" target="_blank">{{var:productName}}</a> et avez demandé des emails de coaching. <a href="{{var:changeEmailSettingsUrl}}" target="_blank">Cliquez ici</a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte {{var:productName}} en veille ? <a href="{{var:statusUpdateUrl}}" target="_blank">cliquez ici</a>.</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

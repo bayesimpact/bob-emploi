@@ -1,5 +1,6 @@
 """Unit tests for the module TODO: module name."""
 
+import random
 import unittest
 
 from bob_emploi.frontend.api import project_pb2
@@ -105,7 +106,7 @@ class AdviceBetterJobInGroupTestCase(scoring_test.ScoringModelTestBase):
         """Never recommend a reconversion inside this job group, it's too diverse."""
 
         persona = self._random_persona().clone()
-        persona.project.target_job.job_group.rome_id = 'K2401'
+        persona.project.target_job.job_group.rome_id = random.choice(['K2401', 'K2107'])
         persona.project.target_job.code_ogr = '5678'
         persona.project.kind = project_pb2.REORIENTATION
         self.database.job_group_info.insert_one({

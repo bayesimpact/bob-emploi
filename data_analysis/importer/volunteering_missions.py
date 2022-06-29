@@ -1,7 +1,7 @@
 """Importer for Tous Bénévoles' volunteering missions into MongoDB."""
 
 import typing
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable
 
 import pandas as pd
 import requests
@@ -14,11 +14,11 @@ from bob_emploi.data_analysis.lib import mongo
 _EVERYWHERE_POSTCODES = '06000,13001,31000,33000,34000,35000,44000,59000,67000,69001,75001'
 
 
-def check_coverage(missions: List[Dict[str, Any]]) -> bool:
+def check_coverage(missions: list[dict[str, Any]]) -> bool:
     """Report if the new data are not dropping too much the expected coverage.
 
     Expected values are defined based on the following notebook:
-    https://github.com/bayesimpact/bob-emploi-internal/blob/master/data_analysis/notebooks/datasets/tous_benevoles.ipynb
+    https://github.com/bayesimpact/bob-emploi-internal/blob/HEAD/data_analysis/notebooks/datasets/tous_benevoles.ipynb
     """
 
     missions_data = pd.DataFrame(missions)
@@ -33,7 +33,7 @@ def check_coverage(missions: List[Dict[str, Any]]) -> bool:
     return True
 
 
-def get_missions_dicts() -> List[Dict[str, Any]]:
+def get_missions_dicts() -> list[dict[str, Any]]:
     """Download volunteering missions from Tous Bénévoles website and prepare them.
 
     Returns:
@@ -84,23 +84,26 @@ def get_missions_dicts() -> List[Dict[str, Any]]:
     departement_missions = missions[~missions.isAvailableEverywhere]\
         .groupby('departement').apply(_get_random_missions_picker(5))
 
-    returned_missions = country_wide_missions + [
-        {'_id': departement_id, 'missions': missions}
-        for departement_id, missions in departement_missions.iteritems()]
+    if departement_missions.empty:
+        returned_missions = country_wide_missions
+    else:
+        returned_missions = country_wide_missions + [
+            {'_id': departement_id, 'missions': missions}
+            for departement_id, missions in departement_missions.iteritems()]
     if not check_coverage(returned_missions):
         raise ValueError('The putative new data lacks coverage.')
     return returned_missions
 
 
 def _get_random_missions_picker(num_missions: int) \
-        -> Callable[[pd.DataFrame], List[Dict[str, Any]]]:
-    def _pick_random_missions(missions: pd.DataFrame) -> List[Dict[str, Any]]:
+        -> Callable[[pd.DataFrame], list[dict[str, Any]]]:
+    def _pick_random_missions(missions: pd.DataFrame) -> list[dict[str, Any]]:
         if len(missions) > num_missions:
             samples = missions.sample(num_missions)
         else:
             samples = missions
         return typing.cast(
-            List[Dict[str, Any]],
+            list[dict[str, Any]],
             samples[['associationName', 'title', 'link', 'description']].to_dict('records'))
     return _pick_random_missions
 

@@ -13,7 +13,7 @@ import pandas as pd
 
 from bob_emploi.data_analysis.lib import cleaned_data
 
-_ROME_VERSION = 'v346'
+_ROME_VERSION = 'v347'
 _BASIC_SKILL_RUBRIQUE_CODE = 6
 _BASIC_ACTIVITY_RUBRIQUE_CODE = 7
 

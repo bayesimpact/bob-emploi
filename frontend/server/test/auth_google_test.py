@@ -8,7 +8,7 @@ from bob_emploi.frontend.server import server
 from bob_emploi.frontend.server.test import base_test
 
 
-@mock.patch(server.__name__ + '.auth.id_token.verify_oauth2_token')
+@mock.patch(server.__name__ + '.auth.token.id_token.verify_oauth2_token')
 class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
     """Unit tests for the authenticate endpoint."""
 
@@ -21,7 +21,7 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(401, response.status_code)
         self.assertIn(
-            "Mauvais jeton d'authentification\xa0: foo bar",
+            'Mauvais jeton d&#x27;authentification\xa0: foo bar',
             response.get_data(as_text=True))
 
     def test_new_user(self, mock_verify_oauth2_token: mock.MagicMock) -> None:

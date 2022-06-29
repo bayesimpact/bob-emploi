@@ -9,7 +9,7 @@ from bob_emploi.frontend.api import application_pb2
 from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 
 _APPLICATION_PER_WEEK = {
     project_pb2.LESS_THAN_2: 0,
@@ -79,7 +79,7 @@ class _AdviceFreshResume(scoring_base.ModelBase):
                 'vous nous avez dit que vous en êtes au début de '
                 'vos candidatures')])
         if project.details.diagnostic.category_id == 'bravo' and \
-                user_pb2.RESUME in project.user_profile.frustrations:
+                user_profile_pb2.RESUME in project.user_profile.frustrations:
             return scoring_base.ExplainedScore(1, [project.translate_static_string(
                 'vous nous avez dit avoir du mal à rédiger votre CV')])
 
@@ -127,7 +127,7 @@ class _AdviceImproveResume(scoring_base.ModelBase):
                 "nous pensons qu'avec votre profil vous pourriez "
                 "décrocher plus d'entretiens")])
         if project.details.diagnostic.category_id == 'bravo' and \
-                user_pb2.RESUME in project.user_profile.frustrations:
+                user_profile_pb2.RESUME in project.user_profile.frustrations:
             return scoring_base.ExplainedScore(1, [project.translate_static_string(
                 'vous nous avez dit avoir du mal à rédiger votre CV')])
         return scoring_base.NULL_EXPLAINED_SCORE
@@ -251,12 +251,8 @@ class _BetterApplicationModes(scoring_base.ModelBase):
             raise scoring_base.NotEnoughDataException(
                 "Missing some information about user's application modes", fields=missing_fields)
 
-        first_modes = set(
-            fap_modes.modes[0].mode for fap_modes in application_modes
-            if len(fap_modes.modes))
-        second_modes = set(
-            fap_modes.modes[1].mode for fap_modes in application_modes
-            if len(fap_modes.modes) > 1)
+        first_modes = project.get_fap_modes()
+        second_modes = project.get_fap_modes(rank='second')
 
         if user_application_mode in first_modes:
             # User uses the correct application mode.

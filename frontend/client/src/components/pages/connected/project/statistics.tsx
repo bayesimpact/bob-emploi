@@ -3,11 +3,10 @@ import ChevronLeftIcon from 'mdi-react/ChevronLeftIcon'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import React, {useCallback, useEffect, useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
-import {Link} from 'react-router-dom'
 import {useDispatch, useSelector} from 'react-redux'
 
-import {DispatchAllActions, RootState, getLaborStats, openStatsPageAction,
-  statsPageIsShown} from 'store/actions'
+import type {DispatchAllActions, RootState} from 'store/actions'
+import {getLaborStats, openStatsPageAction, statsPageIsShown} from 'store/actions'
 import {lowerFirstLetter} from 'store/french'
 import {localizeOptions} from 'store/i18n'
 import {genderizeJob, getIMTURL, weeklyApplicationOptions} from 'store/job'
@@ -18,6 +17,7 @@ import {getJobSearchLengthMonths} from 'store/user'
 import Button from 'components/button'
 import ExternalLink from 'components/external_link'
 import Trans from 'components/i18n_trans'
+import LinkButton from 'components/link_button'
 import {PageWithNavigationBar} from 'components/navigation'
 import AutomationRiskGauge from 'components/statistics/automation_risk_gauge'
 import CountryMap from 'components/statistics/country_map'
@@ -42,6 +42,10 @@ interface SectionProps {
 }
 
 
+const sectionStyle: React.CSSProperties = {
+  breakInside: 'avoid',
+}
+
 const sectionHeaderStyle = {
   fontSize: 22,
   margin: '0 0 15px',
@@ -65,7 +69,7 @@ const detailsStyle = {
 
 const SectionBase: React.FC<SectionProps> =
 ({children, details, header}: SectionProps): React.ReactElement => {
-  return <section>
+  return <section style={sectionStyle}>
     <h2 style={sectionHeaderStyle}>{header}</h2>
     {details ? <div style={detailsStyle}>{details}</div> : null}
     {React.cloneElement(children, {style: {...cardStyle, ...children.props.style}})}
@@ -106,12 +110,10 @@ React.ReactElement => {
     verticalAlign: 'middle',
   }
   return <nav style={containerStyle}>
-    <Link to={baseUrl}>
-      <Button type="discreet" style={backButtonStyle}>
-        <ChevronLeftIcon style={chevronStyle} />
-        {t('Retour au diagnostic')}
-      </Button>
-    </Link>
+    <LinkButton to={baseUrl} type="discreet" style={backButtonStyle}>
+      <ChevronLeftIcon style={chevronStyle} />
+      {t('Retour au diagnostic')}
+    </LinkButton>
   </nav>
 }
 const BreadCrumbs = React.memo(BreadCrumbsBase)
@@ -389,7 +391,7 @@ null|React.ReactElement => {
   return <Section header={t("Risque d'automatisation de métiers proches")}>
     <RelatedAutomationRisk
       // TODO(cyrille): Update source once we have data for different deployments.
-      areMarketScoresShown={true} source="RSA Future of Work 2017"
+      areValuesShown={true} source="RSA Future of Work 2017"
       jobGroups={relatedJobGroups} targetJobGroups={targetJobGroups} />
   </Section>
 }

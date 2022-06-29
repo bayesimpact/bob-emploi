@@ -1,5 +1,4 @@
 import * as Sentry from '@sentry/browser'
-import PropTypes from 'prop-types'
 import React, {useCallback, useRef, useState} from 'react'
 
 
@@ -34,10 +33,6 @@ const ExternalImage = (props: Props): React.ReactElement => {
   }, [fallbackSrc, hasErred])
 
   return <img ref={imgRef} {...otherProps} alt={alt} onError={handleError} />
-}
-ExternalImage.propTypes = {
-  alt: PropTypes.string.isRequired,
-  fallbackSrc: PropTypes.string,
 }
 
 

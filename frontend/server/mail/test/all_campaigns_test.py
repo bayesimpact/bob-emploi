@@ -5,208 +5,13 @@ import os
 import unittest
 from unittest import mock
 
+from bob_emploi.frontend.api import action_pb2
+from bob_emploi.frontend.api import email_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server.mail.test import campaign_helper
-
-_FAKE_TRANSLATIONS_FILE = os.path.join(
-    os.path.dirname(__file__), '../../test/testdata/translations.json')
-
-
-class SpontaneousVarsTestCase(campaign_helper.CampaignTestBase):
-    """Test for the spontaneous_vars focus email."""
-
-    campaign_id = 'focus-spontaneous'
-
-    def setUp(self) -> None:
-        super().setUp()
-
-        self.database.job_group_info.insert_one({
-            '_id': 'A1234',
-            'applicationComplexity': 'SIMPLE_APPLICATION_PROCESS',
-            'applicationModes': {
-                'juriste': {
-                    'modes': [{'mode': 'SPONTANEOUS_APPLICATION', 'percentage': 100}],
-                },
-            },
-            'preferredApplicationMedium': 'APPLY_BY_EMAIL',
-            'toTheWorkplace': 'au cabinet',
-            'placePlural': 'des cabinets juridiques',
-            'inAWorkplace': 'dans un cabinet',
-            'likeYourWorkplace': 'comme le vôtre',
-            'atVariousCompanies': 'Auchan, Carrefour ou Lidl',
-            'whatILoveAbout': 'where I can belong',
-            'whySpecificCompany': 'different business styles',
-        })
-        self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=90))
-        self.user.profile.gender = user_pb2.MASCULINE
-        self.user.profile.name = 'Patrick'
-        self.user.profile.last_name = 'Benguigui'
-        self.user.profile.email = 'patrick@bayes.org'
-        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
-        self.project.target_job.masculine_name = 'Juriste'
-        self.project.target_job.job_group.rome_id = 'A1234'
-        self.project.city.name = 'Lyon'
-        self.project.city.departement_id = '69'
-        self.project.city.city_id = '69123'
-        self.project.seniority = project_pb2.SENIOR
-        self.project.created_at.FromDatetime(datetime.datetime.now())
-        self.project.weekly_applications_estimate = project_pb2.A_LOT
-        self.project.job_search_started_at.FromDatetime(
-            datetime.datetime.now() - datetime.timedelta(days=90))
-
-    def test_basic(self) -> None:
-        """Basic usage."""
-
-        self._assert_user_receives_campaign()
-
-        self._assert_has_default_vars()
-        self._assert_has_unsubscribe_url('changeEmailSettingsUrl', **{
-            'coachingEmailFrequency': 'EMAIL_ONCE_A_MONTH',
-        })
-        self._assert_has_status_update_link('statusUpdateUrl')
-
-        self._assert_remaining_variables({
-            'applicationComplexity': 'SIMPLE_APPLICATION_PROCESS',
-            'atVariousCompanies': 'Auchan, Carrefour ou Lidl',
-            'contactMode': 'BY_EMAIL',
-            'deepLinkLBB':
-            'https://labonneboite.pole-emploi.fr/entreprises/commune/69123/'
-            'rome/A1234?utm_medium=web&utm_source=bob&utm_campaign=bob-email',
-            'emailInUrl': 'patrick%40bayes.org',
-            'experienceAsText': 'plus de 6 ans',
-            'inWorkPlace': 'dans un cabinet',
-            'jobName': 'juriste',
-            'lastName': 'Benguigui',
-            'likeYourWorkplace': 'comme le vôtre',
-            'someCompanies': 'des cabinets juridiques',
-            'toTheWorkplace': 'au cabinet',
-            'weeklyApplicationsCount': '15',
-            'weeklyApplicationsOption': 'A_LOT',
-            'whatILoveAbout': 'where I can belong',
-            'whySpecificCompany': 'different business styles',
-        })
-
-    def test_no_project(self) -> None:
-        """No project, no email."""
-
-        del self.user.projects[:]
-        self._assert_user_receives_focus(should_be_sent=False)
-        self._user_database.user.drop()
-        self._assert_user_receives_campaign(should_be_sent=False)
-
-    def test_incomplete_project(self) -> None:
-        """Incomplete project, no email."""
-
-        self.project.is_incomplete = True
-        self._assert_user_receives_focus(should_be_sent=False)
-        self._user_database.user.drop()
-        self._assert_user_receives_campaign(should_be_sent=False)
-
-    def test_job_search_not_started(self) -> None:
-        """Job search not started, no email."""
-
-        self.project.job_search_has_not_started = True
-        self._assert_user_receives_campaign(should_be_sent=False)
-
-    def test_missing_job_group_info(self) -> None:
-        """No job group info, no email."""
-
-        self.project.target_job.job_group.rome_id = 'Z1234'
-        self._assert_user_receives_campaign(should_be_sent=False)
-
-    def test_missing_contact_mode(self) -> None:
-        """No contact mode, no email."""
-
-        self.database.job_group_info.update_one(
-            {'_id': 'A1234'}, {'$unset': {'preferredApplicationMedium': 1}})
-        self._assert_user_receives_campaign(should_be_sent=False)
-
-    def test_missing_in_a_workplace(self) -> None:
-        """No "in a workplace" phrasing, no email."""
-
-        self.database.job_group_info.update_one({'_id': 'A1234'}, {
-            '$unset': {'inAWorkplace': 1},
-            '$set': {'preferredApplicationMedium': 'APPLY_IN_PERSON'},
-        })
-        self._assert_user_receives_campaign(should_be_sent=False)
-
-    def test_missing_like_your_workplace(self) -> None:
-        """No "like your workplace" phrasing, no email."""
-
-        self.database.job_group_info.update_one({'_id': 'A1234'}, {
-            '$unset': {'likeYourWorkplace': 1},
-        })
-        self._assert_user_receives_campaign(should_be_sent=False)
-
-    def test_missing_to_the_workplace(self) -> None:
-        """No "to the workplace", or "workplaces" phrasing, fallback on entreprises."""
-
-        self.database.job_group_info.update_one({'_id': 'A1234'}, {
-            '$unset': {'toTheWorkplace': 1, 'placePlural': 1},
-        })
-        self._assert_user_receives_campaign()
-        self.assertEqual('des entreprises', self._variables.pop('someCompanies'))
-        self.assertEqual("à l'entreprise", self._variables.pop('toTheWorkplace'))
-
-    def test_missing_what_i_love_about(self) -> None:
-        """No "what I love about" phrasing, no email."""
-
-        self.database.job_group_info.update_one({'_id': 'A1234'}, {
-            '$unset': {'whatILoveAbout': 1},
-        })
-        self._assert_user_receives_campaign(should_be_sent=False)
-
-    def test_feminine_version_of_what_i_love_about(self) -> None:
-        """Use the genderized version of "what I love about" phrasing."""
-
-        self.database.job_group_info.update_one({'_id': 'A1234'}, {'$set': {
-            'whatILoveAbout': 'where I can belong as a man',
-            'whatILoveAboutFeminine': 'where I can belong as a woman',
-        }})
-
-        self.user.profile.gender = user_pb2.FEMININE
-        self._assert_user_receives_campaign()
-        self.assertEqual('where I can belong as a woman', self._variables.pop('whatILoveAbout'))
-
-    def test_missing_why_specific_company(self) -> None:
-        """No "why this specific company" phrasing, no email."""
-
-        self.database.job_group_info.update_one({'_id': 'A1234'}, {
-            '$unset': {'whySpecificCompany': 1},
-        })
-        self._assert_user_receives_campaign(should_be_sent=False)
-
-    def test_weekly_application_count_some(self) -> None:
-        """Check phrasing of weekly application count for SOME."""
-
-        self.project.weekly_applications_estimate = project_pb2.SOME
-        self._assert_user_receives_campaign()
-        self.assertEqual('5', self._variables.pop('weeklyApplicationsCount'))
-        self.assertEqual('SOME', self._variables.pop('weeklyApplicationsOption'))
-
-    def test_weekly_application_count_less_than_2(self) -> None:
-        """Check phrasing of weekly application count for LESS_THAN_2."""
-
-        self.project.weekly_applications_estimate = project_pb2.LESS_THAN_2
-        self._assert_user_receives_campaign()
-        self.assertEqual('', self._variables.pop('weeklyApplicationsCount'))
-        self.assertEqual('LESS_THAN_2', self._variables.pop('weeklyApplicationsOption'))
-
-    def test_i18n_sender_name_default(self) -> None:
-        """Check sender name has not been translated (default version)."""
-
-        self._assert_user_receives_campaign()
-        self._assert_sender_name("Joanna et l'équipe de Bob")
-
-    @mock.patch.dict(os.environ, {'I18N_TRANSLATIONS_FILE': _FAKE_TRANSLATIONS_FILE})
-    def test_i18n_sender_name(self) -> None:
-        """Check sender name has been translated."""
-
-        self.user.profile.locale = 'en_UK'
-        self._assert_user_receives_campaign()
-        self._assert_sender_name('Joanna and the Bob team')
 
 
 class SelfDevelopmentVarsTestCase(campaign_helper.CampaignTestBase):
@@ -216,12 +21,12 @@ class SelfDevelopmentVarsTestCase(campaign_helper.CampaignTestBase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.user.profile.gender = user_pb2.MASCULINE
+        self.user.profile.gender = user_profile_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
         self.user.profile.last_name = 'Benguigui'
         self.user.profile.email = 'patrick@bayes.org'
         self.user.profile.year_of_birth = 1958
-        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_MAXIMUM
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_MAXIMUM
         self.project.job_search_started_at.FromDatetime(
             datetime.datetime.now() - datetime.timedelta(days=180))
         self.project.target_job.masculine_name = 'Juriste'
@@ -240,6 +45,7 @@ class SelfDevelopmentVarsTestCase(campaign_helper.CampaignTestBase):
         self._assert_has_status_update_link('statusUpdateUrl')
         self._assert_remaining_variables({
             'hasEnoughExperience': 'True',
+            'hasVideo': 'True',
             'isAdministrativeAssistant': '',
             'isOld': 'True',
             'isOldNotWoman': 'True',
@@ -287,14 +93,14 @@ class BodyLanguageVarsTestCase(campaign_helper.CampaignTestBase):
         """Basic usage."""
 
         self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=90))
-        self.user.profile.gender = user_pb2.MASCULINE
+        self.user.profile.gender = user_profile_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
         del self.user.profile.frustrations[:]
-        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_MAXIMUM
-        self.user.profile.frustrations.append(user_pb2.NO_OFFERS)
-        self.user.profile.frustrations.append(user_pb2.INTERVIEW)
-        self.user.profile.frustrations.append(user_pb2.ATYPIC_PROFILE)
-        self.user.emails_sent.add(campaign_id='focus-network', status=user_pb2.EMAIL_SENT_CLICKED)
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_MAXIMUM
+        self.user.profile.frustrations.append(user_profile_pb2.NO_OFFERS)
+        self.user.profile.frustrations.append(user_profile_pb2.INTERVIEW)
+        self.user.profile.frustrations.append(user_profile_pb2.ATYPIC_PROFILE)
+        self.user.emails_sent.add(campaign_id='focus-network', status=email_pb2.EMAIL_SENT_CLICKED)
 
         self._assert_user_receives_campaign()
 
@@ -328,10 +134,15 @@ class BodyLanguageVarsTestCase(campaign_helper.CampaignTestBase):
         """No relevant frustration, no email."""
 
         del self.user.profile.frustrations[:]
-        self.user.profile.frustrations.append(user_pb2.NO_OFFERS)
+        self.user.profile.frustrations.append(user_profile_pb2.NO_OFFERS)
         self._assert_user_receives_campaign(should_be_sent=False)
 
 
+_FAKE_TRANSLATIONS_FILE = os.path.join(
+    os.path.dirname(__file__), '../../test/testdata/translations.json')
+
+
+@mock.patch.dict(os.environ, {'I18N_TRANSLATIONS_FILE': _FAKE_TRANSLATIONS_FILE})
 class EmploymentVarsTestCase(campaign_helper.CampaignTestBase):
     """Test for the RER campaign."""
 
@@ -341,7 +152,7 @@ class EmploymentVarsTestCase(campaign_helper.CampaignTestBase):
         """Basic usage."""
 
         self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=90))
-        self.user.profile.gender = user_pb2.MASCULINE
+        self.user.profile.gender = user_profile_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
         self.user.profile.email = 'patrick@bayes.org'
         self.project.target_job.masculine_name = 'Juriste'
@@ -365,7 +176,39 @@ class EmploymentVarsTestCase(campaign_helper.CampaignTestBase):
             'stopSeekingUrl',
             r'^.*/api/employment-status?.*&token=\d+\.[a-f0-9]+.*ne-recherche-plus$')
         self._assert_remaining_variables({
-            'registeredMonthsAgo': 'trois',
+            'registeredSince': 'trois mois',
+        })
+
+    def test_i18n(self) -> None:
+        """Email in English."""
+
+        self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=90))
+        self.user.profile.gender = user_profile_pb2.MASCULINE
+        self.user.profile.name = 'Patrick'
+        self.user.profile.email = 'patrick@bayes.org'
+        self.user.profile.locale = 'en'
+        self.project.target_job.masculine_name = 'Juriste'
+        self.project.target_job.job_group.rome_id = 'A1234'
+        self.project.created_at.FromDatetime(
+            datetime.datetime.now() - datetime.timedelta(days=90))
+        self.project.job_search_started_at.FromDatetime(
+            datetime.datetime.now() - datetime.timedelta(days=270))
+        self.project.city.name = 'Lyon'
+        self.project.city.departement_id = '69'
+        self.project.city.city_id = '69123'
+        self.project.seniority = project_pb2.SENIOR
+        self.project.weekly_applications_estimate = project_pb2.A_LOT
+
+        self._assert_user_receives_campaign()
+
+        self._assert_has_default_vars()
+        self._assert_regex_field(
+            'seekingUrl', r'^.*/api/employment-status?.*&token=\d+\.[a-f0-9]+.*en-recherche$')
+        self._assert_regex_field(
+            'stopSeekingUrl',
+            r'^.*/api/employment-status?.*&token=\d+\.[a-f0-9]+.*ne-recherche-plus$')
+        self._assert_remaining_variables({
+            'registeredSince': 'three months',
         })
 
     @mock.patch('logging.warning', mock.MagicMock)
@@ -423,10 +266,10 @@ class Galita1VarsTestCase(campaign_helper.CampaignTestBase):
         super().setUp()
         self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=150))
         # TODO(cyrille): Move tests on firstName and gender to a test on get_default_variables.
-        self.user.profile.gender = user_pb2.MASCULINE
+        self.user.profile.gender = user_profile_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
-        self.user.profile.frustrations.append(user_pb2.MOTIVATION)
-        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
+        self.user.profile.frustrations.append(user_profile_pb2.MOTIVATION)
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_ONCE_A_MONTH
 
     def test_basic(self) -> None:
         """Basic usage."""
@@ -450,7 +293,7 @@ class Galita1VarsTestCase(campaign_helper.CampaignTestBase):
 
 
 class Galita2VarsTestCase(campaign_helper.CampaignTestBase):
-    """Test of galita1 mail campaign variables."""
+    """Test of galita2 mail campaign variables."""
 
     campaign_id = 'galita-2'
 
@@ -459,9 +302,9 @@ class Galita2VarsTestCase(campaign_helper.CampaignTestBase):
 
         # TODO(cyrille): Again, move tests on firstName and gender to a test
         # on get_default_variables.
-        self.user.profile.gender = user_pb2.MASCULINE
+        self.user.profile.gender = user_profile_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
-        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_ONCE_A_MONTH
         self.project.target_job.masculine_name = 'Maçon'
         self.project.previous_job_similarity = project_pb2.NEVER_DONE
         self.project.kind = project_pb2.FIND_A_NEW_JOB
@@ -479,6 +322,34 @@ class Galita2VarsTestCase(campaign_helper.CampaignTestBase):
         })
 
 
+class Galita2ShortVarsTestCase(campaign_helper.CampaignTestBase):
+    """Test of galita2 short mail campaign variables."""
+
+    campaign_id = 'galita-2-short'
+
+    def test_basic(self) -> None:
+        """Basic usage."""
+
+        # TODO(cyrille): Again, move tests on firstName and gender to a test
+        # on get_default_variables.
+        self.user.profile.gender = user_profile_pb2.MASCULINE
+        self.user.profile.name = 'Patrick'
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_ONCE_A_MONTH
+        self.project.target_job.masculine_name = 'Maçon'
+        self.project.previous_job_similarity = project_pb2.NEVER_DONE
+        self.project.kind = project_pb2.FIND_A_NEW_JOB
+
+        self._assert_user_receives_campaign()
+
+        self._assert_has_default_vars()
+        self._assert_has_unsubscribe_url(field='changeEmailSettingsUrl', **{
+            'coachingEmailFrequency': 'EMAIL_ONCE_A_MONTH',
+        })
+        self._assert_has_status_update_link(field='statusUpdateUrl')
+
+        self._assert_remaining_variables({})
+
+
 class Galita3VarsTestCase(campaign_helper.CampaignTestBase):
     """Test of galita3 mail campaign variables."""
 
@@ -488,10 +359,10 @@ class Galita3VarsTestCase(campaign_helper.CampaignTestBase):
         """Basic usage."""
 
         self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=150))
-        self.user.profile.gender = user_pb2.MASCULINE
+        self.user.profile.gender = user_profile_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
-        self.user.profile.frustrations.append(user_pb2.NO_OFFER_ANSWERS)
-        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
+        self.user.profile.frustrations.append(user_profile_pb2.NO_OFFER_ANSWERS)
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_ONCE_A_MONTH
 
         self._assert_user_receives_campaign()
 
@@ -509,8 +380,8 @@ class Galita3VarsTestCase(campaign_helper.CampaignTestBase):
         """With a follow-up advice."""
 
         self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=150))
-        self.user.profile.frustrations.append(user_pb2.NO_OFFER_ANSWERS)
-        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
+        self.user.profile.frustrations.append(user_profile_pb2.NO_OFFER_ANSWERS)
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_ONCE_A_MONTH
 
         self.project.project_id = '123'
         advice = self.project.advices.add()
@@ -528,6 +399,55 @@ class Galita3VarsTestCase(campaign_helper.CampaignTestBase):
             'deepLinkToAdvice',
             '/projet/123/methode/follow-up',
         )
+
+
+class Galita3ShortVarsTestCase(campaign_helper.CampaignTestBase):
+    """Test of galita3-short mail campaign variables."""
+
+    campaign_id = 'galita-3-short'
+
+    @mock.patch('logging.warning')
+    def test_basic(self, mock_logging: mock.MagicMock) -> None:
+        """Basic usage."""
+
+        self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=150))
+        self.user.profile.gender = user_profile_pb2.MASCULINE
+        self.user.profile.name = 'Patrick'
+        self.user.profile.frustrations.append(user_profile_pb2.NO_OFFER_ANSWERS)
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_ONCE_A_MONTH
+        self._assert_user_receives_campaign()
+        self._assert_has_default_vars()
+        self._assert_has_unsubscribe_url(field='changeEmailSettingsUrl', **{
+            'coachingEmailFrequency': 'EMAIL_ONCE_A_MONTH',
+        })
+        self._assert_has_status_update_link(field='statusUpdateUrl')
+        self._assert_remaining_variables({
+            'advicePageUrl': 'https://www.ionos.fr/startupguide/productivite/mail-de-relance-candidature',
+            'hasImageUrl': False,
+            'weeklyApplicationsEstimate': 'UNKNOWN_NUMBER_ESTIMATE_OPTION',
+        })
+        self.assertFalse(mock_logging.called)
+
+    def test_en_content(self) -> None:
+        """User with EN locale."""
+
+        self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=150))
+        self.user.profile.gender = user_profile_pb2.MASCULINE
+        self.user.profile.name = 'Patrick'
+        self.user.profile.frustrations.append(user_profile_pb2.NO_OFFER_ANSWERS)
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_ONCE_A_MONTH
+        self.user.profile.locale = 'en_UK'
+        self._assert_user_receives_campaign()
+        self._assert_has_default_vars()
+        self._assert_has_unsubscribe_url(field='changeEmailSettingsUrl', **{
+            'coachingEmailFrequency': 'EMAIL_ONCE_A_MONTH',
+        })
+        self._assert_has_status_update_link(field='statusUpdateUrl')
+        self._assert_remaining_variables({
+            'advicePageUrl': 'https://zety.com/blog/how-to-follow-up-on-a-job-application',
+            'hasImageUrl': True,
+            'weeklyApplicationsEstimate': 'UNKNOWN_NUMBER_ESTIMATE_OPTION',
+        })
 
 
 class PostCovidVarsTestCase(campaign_helper.CampaignTestBase):
@@ -589,70 +509,6 @@ class PostCovidVarsTestCase(campaign_helper.CampaignTestBase):
         self._assert_user_receives_campaign(should_be_sent=False)
 
 
-class ViralSharingVarsTestCase(campaign_helper.CampaignTestBase):
-    """Test of viral mail campaign variables."""
-
-    campaign_id = 'viral-sharing-1'
-
-    def test_recent_user(self) -> None:
-        """User registered less than a year ago."""
-
-        self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=150))
-        self.user.profile.gender = user_pb2.MASCULINE
-        self.user.profile.name = 'Patrick'
-
-        self._assert_user_receives_campaign(should_be_sent=False)
-
-    def test_not_good_hash_user(self) -> None:
-        """User hash is not selected."""
-
-        self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=400))
-        self.user.profile.gender = user_pb2.MASCULINE
-        self.user.profile.name = 'Patrick'
-        # Golden value: its SHA1 starts with 6.
-        self.user.user_id = '7b18313aa35d807e631ea3f2'
-
-        self._assert_user_receives_campaign(
-            should_be_sent=False, extra_args=['--user-hash', '1'])
-
-    def test_old_user(self) -> None:
-        """User registered more than a year ago."""
-
-        self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=400))
-        self.user.profile.gender = user_pb2.MASCULINE
-        self.user.profile.name = 'Patrick'
-        # Golden value: its SHA1 starts with 1.
-        self.user.user_id = '7b18313aa35d807e631ea3f3'
-
-        self._assert_user_receives_campaign(extra_args=['--user-hash', '1'])
-
-        self._assert_has_default_vars()
-
-        self._assert_remaining_variables({})
-
-
-class HandicapComTestCase(campaign_helper.CampaignTestBase):
-    """Test of handicap-week newsletter email."""
-
-    campaign_id = 'handicap-week'
-
-    def test_newsletter(self) -> None:
-        """User asked for the newsletter."""
-
-        self.user.profile.name = 'Patrick'
-        self.user.profile.is_newsletter_enabled = True
-        self._assert_user_receives_campaign()
-        self._assert_remaining_variables({
-            'firstName': 'Patrick',
-        })
-
-    def test_no_newsletter(self) -> None:
-        """User didn't ask for the newsletter."""
-
-        self.user.profile.is_newsletter_enabled = False
-        self._assert_user_receives_campaign(should_be_sent=False)
-
-
 class OpenClassroomsVarsTestCase(campaign_helper.CampaignTestBase):
     """Test of open classrooms mail campaign variables."""
 
@@ -664,12 +520,12 @@ class OpenClassroomsVarsTestCase(campaign_helper.CampaignTestBase):
             '_id': 'A1234',
             'applicationComplexity': 'SIMPLE_APPLICATION_PROCESS',
         })
-        self.user.profile.gender = user_pb2.FEMININE
+        self.user.profile.gender = user_profile_pb2.FEMININE
         self.user.profile.name = 'Nathalie'
         self.user.profile.year_of_birth = datetime.datetime.now().year - 20
         self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=100))
         self.user.profile.highest_degree = job_pb2.BAC_BACPRO
-        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_MAXIMUM
+        self.user.profile.coaching_email_frequency = email_pb2.EMAIL_MAXIMUM
         self.project.target_job.job_group.rome_id = 'A1234'
 
     def test_basic(self) -> None:
@@ -820,70 +676,181 @@ class OpenClassroomsVarsTestCase(campaign_helper.CampaignTestBase):
         self._assert_user_receives_campaign(should_be_sent=False)
 
 
-class UpskillingResearchVarsTestCase(campaign_helper.CampaignTestBase):
-    """Test of upskilling-user-research mail campaign variables."""
+class ActionPlanVarsTestCase(campaign_helper.CampaignTestBase):
+    """Tests for the action-plan campaign."""
 
-    campaign_id = 'upskilling-user-research'
+    campaign_id = 'action-plan'
+
+    def test_no_actions(self) -> None:
+        """User has no selected actions."""
+
+        del self.project.actions[:]
+        self.project.action_plan_started_at.GetCurrentTime()
+        self.project.actions.add(
+            action_id='training',
+            status=action_pb2.ACTION_UNREAD)
+        self._assert_user_receives_campaign(should_be_sent=False)
+
+    def test_action_plan_not_started(self) -> None:
+        """User hasn't started their plan yet."""
+
+        self.project.actions.add(
+            action_id='training',
+            status=action_pb2.ACTION_CURRENT)
+        self.project.ClearField('action_plan_started_at')
+        self._assert_user_receives_campaign(should_be_sent=False)
+
+    def test_basic(self) -> None:
+        """Basic behaviour."""
+
+        del self.project.actions[:]
+        self.project.action_plan_started_at.FromDatetime(datetime.datetime(2021, 11, 12))
+        self.project.actions.add(
+            action_id='for-today',
+            title="Une action que je veux faire aujourd'hui",
+            status=action_pb2.ACTION_CURRENT,
+        ).expected_completion_at.FromDatetime(datetime.datetime.now())
+        self.project.actions.add(
+            action_id='for-tomorrow',
+            title='Une action que je veux faire demain',
+            status=action_pb2.ACTION_CURRENT,
+        ).expected_completion_at.FromDatetime(
+            datetime.datetime.today().replace(hour=10) + datetime.timedelta(hours=27))
+        self.project.actions.add(
+            action_id='for-week',
+            title='Une action que je veux faire la semaine prochaine',
+            status=action_pb2.ACTION_CURRENT,
+        ).expected_completion_at.FromDatetime(
+            datetime.datetime.today().replace(hour=22) + datetime.timedelta(hours=27))
+        self.project.actions.add(
+            action_id='not-selected',
+            title='Une action que je ne veux pas faire',
+            status=action_pb2.ACTION_UNREAD,
+        )
+        self.project.actions.add(
+            action_id='done',
+            title="Une action que j'ai déjà faite",
+            status=action_pb2.ACTION_DONE,
+        )
+        self._assert_user_receives_campaign()
+        self._assert_has_status_update_link('statusUpdateUrl')
+        self._assert_has_default_vars()
+        self._assert_has_unsubscribe_url(field='changeEmailSettingsUrl', **{
+            'coachingEmailFrequency': 'UNKNOWN_EMAIL_FREQUENCY',
+        })
+        self._assert_has_logged_url(field='actionPlanUrl', path='/projet/0/plan-action')
+
+        actions = self._variables.pop('actions')
+
+        self._assert_remaining_variables({
+            'creationDate': '2021-11-12',
+            'numActionsBySections': {
+                'today': 1, 'tomorrow': 1, 'week': 1, 'done': 1, 'unscheduled': 0},
+        })
+        self.assertEqual([
+            "Une action que je veux faire aujourd'hui"
+        ], [a['title'] for a in actions.get('today')])
+        self.assertEqual([
+            'Une action que je veux faire demain'
+        ], [a['title'] for a in actions.get('tomorrow')])
+        self.assertEqual([
+            'Une action que je veux faire la semaine prochaine'
+        ], [a['title'] for a in actions.get('week')])
+        self.assertEqual([
+            "Une action que j'ai déjà faite"
+        ], [a['title'] for a in actions.get('done')])
+
+
+class DwpInterviewVarsTestCase(campaign_helper.CampaignTestBase):
+    """Test of dwp interview mail campaign variables."""
+
+    campaign_id = 'dwp-interview'
 
     def setUp(self) -> None:
         super().setUp()
-        self.user.profile.highest_degree = job_pb2.NO_DEGREE
-        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
+        self.user.origin.source = 'dwp'
+        self.user.profile.gender = user_profile_pb2.FEMININE
+        self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=100))
 
     def test_basic(self) -> None:
         """Basic usage."""
 
         self._assert_user_receives_campaign()
 
-        self._assert_has_unsubscribe_url()
-        self._assert_has_status_update_link(field='statusUpdateUrl')
+        self._assert_has_status_update_link('statusUpdateUrl')
+        self._assert_has_default_vars(gender='FEMININE')
 
-    def test_high_degree(self) -> None:
-        """User with high degree should not receive the campaign."""
+    def test_recent_user(self) -> None:
+        """User registered less than 3 weeks ago."""
 
-        self.user.profile.highest_degree = job_pb2.BTS_DUT_DEUG
+        self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=10))
+        self._assert_user_receives_campaign(should_be_sent=False)
+
+    def test_user_is_not_dwp(self) -> None:
+        """User is not coming from dwp."""
+
+        self.user.origin.source = ''
 
         self._assert_user_receives_campaign(should_be_sent=False)
 
 
-class UpskillingUndefinedProjectVarsTest(campaign_helper.CampaignTestBase):
-    """Test of upskilling-undefined-project mail campaign variables."""
+class DwpInterviewApologiesTestCase(campaign_helper.CampaignTestBase):
+    """Test of dwp interview apologies mail campaign trigger."""
 
-    campaign_id = 'upskilling-undefined-project'
+    campaign_id = 'dwp-interview-apologies'
 
     def setUp(self) -> None:
         super().setUp()
-        self.project.diagnostic.category_id = 'undefined-project'
-        self.project.city.departement_id = '31'
-        self.user.profile.gender = user_pb2.FEMININE
-        self.user.profile.locale = 'fr@tu'
-        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
+        self.user.origin.source = 'dwp'
+        self.user.profile.gender = user_profile_pb2.FEMININE
+        self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=100))
+        self.user.emails_sent.add(campaign_id='dwp-interview')
 
     def test_basic(self) -> None:
         """Basic usage."""
 
         self._assert_user_receives_campaign()
 
-        self._assert_has_unsubscribe_url()
-        self._assert_has_status_update_link(field='statusUpdateUrl')
-        self._assert_url_field(
-            'upskillingUrl', 'https://www.bob-emploi.fr/orientation/accueil',
-            departement='31', gender='FEMININE', hl='fr@tu',
-            utm_medium='email', utm_campaign='upskilling-beta')
-        self.assertTrue(self._variables.get('userId'))
+        self._assert_has_status_update_link('statusUpdateUrl')
+        self._assert_has_default_vars(gender='FEMININE')
 
-    def test_no_project(self) -> None:
-        """User without any project should not receive the campaign."""
+    def test_recent_user(self) -> None:
+        """User registered less than 3 weeks ago."""
 
-        del self.user.projects[:]
+        self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=10))
+        self._assert_user_receives_campaign(should_be_sent=False)
+
+    def test_user_is_not_dwp(self) -> None:
+        """User is not coming from dwp."""
+
+        self.user.origin.source = ''
+
+        self._assert_user_receives_campaign(should_be_sent=False)
+
+    def test_user_did_not_receive_first(self) -> None:
+        """User did not receive the first dwp-interview email."""
+
+        del self.user.emails_sent[:]
 
         self._assert_user_receives_campaign(should_be_sent=False)
 
 
-class UpskillingUndefinedProjectBetaVarsTest(UpskillingUndefinedProjectVarsTest):
-    """Test of upskilling-undefined-project-beta mail campaign variables."""
+class ConfidenceBoostVarsTestCase(campaign_helper.CampaignTestBase):
+    """Test of confidence-boost mail campaign variables."""
 
-    campaign_id = 'upskilling-undefined-project-beta'
+    campaign_id = 'confidence-boost'
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.user.profile.gender = user_profile_pb2.FEMININE
+        self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=10))
+
+    def test_basic(self) -> None:
+        """Basic usage."""
+
+        self._assert_user_receives_campaign()
+        self._assert_has_status_update_link('statusUpdateUrl')
+        self._assert_has_default_vars(gender='FEMININE')
 
 
 if __name__ == '__main__':

@@ -11,7 +11,10 @@ from unittest import mock
 import mongomock
 import requests
 
+from bob_emploi.common.python.test import nowmock
+from bob_emploi.frontend.api import email_pb2
 from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server.mail import campaign
 from bob_emploi.frontend.server.mail import focus
 from bob_emploi.frontend.server.mail.templates import mailjet_templates
@@ -25,13 +28,15 @@ real_random = random.random
 # The sorted list of campaign IDs corresponding to focus email. Keep this list
 # updated as the tests here depend on it to be complete and accurate.
 _GOLDEN_FOCUS_CAMPAIGNS = (
-    'focus-body-language', 'focus-network', 'focus-self-develop', 'focus-spontaneous',
-    'galita-1', 'galita-2', 'galita-3', 'get-diploma', 'improve-cv', 'imt', 'jobbing',
-    'network-plus', 'post-covid', 'prepare-your-application', 'switch-grant',
+    'christmas', 'confidence-boost', 'focus-body-language', 'focus-network', 'focus-self-develop',
+    'focus-spontaneous', 'galita-1', 'galita-2', 'galita-2-short', 'galita-3', 'galita-3-short',
+    'get-diploma', 'get-diploma-short', 'improve-cv', 'imt', 'jobbing', 'jobbing-short',
+    'jobflix-invite', 'network-plus', 'post-covid', 'prepare-your-application',
+    'prepare-your-application-short', 'spontaneous-short', 'switch-grant',
 )
 
 
-@mock.patch(focus.auth.__name__ + '.SECRET_SALT', new=b'prod-secret')
+@mock.patch(focus.auth_token.__name__ + '.SECRET_SALT', new=b'prod-secret')
 @mailjetmock.patch()
 class SendFocusEmailTest(unittest.TestCase):
     """Unit tests for the main function."""
@@ -47,7 +52,7 @@ class SendFocusEmailTest(unittest.TestCase):
             focus.mongo.UsersDatabase.from_database(self._db.user_test),
             focus.mongo.NoPiiMongoDatabase(self._db.eval_test))
 
-        patcher = mock.patch(focus.now.__name__ + '.get')
+        patcher = nowmock.patch()
         self.mock_now = patcher.start()
         self.addCleanup(patcher.stop)
         self.mock_now.return_value = datetime.datetime(2018, 5, 31, 12, 38)
@@ -55,7 +60,7 @@ class SendFocusEmailTest(unittest.TestCase):
         self._db.user_test.user.insert_one({
             'profile': {
                 'coachingEmailFrequency': 'EMAIL_MAXIMUM',
-                'email': 'pascal@example.fr',
+                'email': 'pascal@bayes.org',
                 'frustrations': ['SELF_CONFIDENCE', 'INTERVIEW'],
             },
             'projects': [{
@@ -74,7 +79,7 @@ class SendFocusEmailTest(unittest.TestCase):
             'inDomain': 'dans le domaine',
         })
 
-    @mock.patch(focus.logging.__name__ + '.info')
+    @mock.patch('logging.info')
     def test_list_campaigns(self, mock_logging: mock.MagicMock) -> None:
         """List existing focus email campaigns."""
 
@@ -92,13 +97,13 @@ class SendFocusEmailTest(unittest.TestCase):
         else:  # pragma: no-cover
             self.fail('No logging call about potential focus emails.')
 
-    @mock.patch(focus.__name__ + '.logging')
+    @mock.patch('logging.info')
     def test_list_emails(self, mock_logging: mock.MagicMock) -> None:
         """List uses logging extensively but does not send any email."""
 
         focus.main(['list'])
 
-        mock_logging.info.assert_called()
+        mock_logging.assert_called()
 
         self.assertFalse(mailjetmock.get_all_sent_messages())
 
@@ -108,7 +113,7 @@ class SendFocusEmailTest(unittest.TestCase):
         focus.main(['send', '--disable-sentry'])
 
         self.assertEqual(
-            ['pascal@example.fr'],
+            ['pascal@bayes.org'],
             [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
 
         user_data = self._db.user_test.user.find_one()
@@ -162,7 +167,7 @@ class SendFocusEmailTest(unittest.TestCase):
         focus.main(['send', '--disable-sentry'])
 
         self.assertEqual(
-            ['pascal@example.fr'],
+            ['pascal@bayes.org'],
             [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
 
         user_data = self._db.user_test.user.find_one()
@@ -198,7 +203,7 @@ class SendFocusEmailTest(unittest.TestCase):
         focus.main(['send', '--disable-sentry'])
 
         self.assertEqual(
-            ['pascal@example.fr'],
+            ['pascal@bayes.org'],
             [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
 
         user_data = self._db.user_test.user.find_one()
@@ -217,7 +222,7 @@ class SendFocusEmailTest(unittest.TestCase):
         focus.main(['send', '--disable-sentry'])
 
         self.assertEqual(
-            ['pascal@example.fr'],
+            ['pascal@bayes.org'],
             [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
 
         user_data = self._db.user_test.user.find_one()
@@ -225,7 +230,7 @@ class SendFocusEmailTest(unittest.TestCase):
         self.assertEqual(2, len(user_data.get('emailsSent')))
         self.assertIn(user_data['emailsSent'][1]['campaignId'], _GOLDEN_FOCUS_CAMPAIGNS)
 
-    @mock.patch(focus.logging.__name__ + '.info')
+    @mock.patch('logging.info')
     def test_send_all_focus_emails(self, unused_mock_logging: mock.MagicMock) -> None:
         """Sending all focus emails in 6 months."""
 
@@ -246,7 +251,7 @@ class SendFocusEmailTest(unittest.TestCase):
             self.mock_now.return_value += datetime.timedelta(days=1)
 
         emails_sent = mailjetmock.get_all_sent_messages()
-        self.assertEqual({'pascal@example.fr'}, {m.recipient['Email'] for m in emails_sent})
+        self.assertEqual({'pascal@bayes.org'}, {m.recipient['Email'] for m in emails_sent})
         self.assertLessEqual(len(emails_sent), len(_GOLDEN_FOCUS_CAMPAIGNS))
 
         user_data = self._db.user_test.user.find_one()
@@ -272,8 +277,8 @@ class SendFocusEmailTest(unittest.TestCase):
             self.mock_now.return_value + datetime.timedelta(days=30),
             datetime.datetime.fromisoformat(user_data['sendCoachingEmailAfter'][:-1]))
 
-    @mock.patch(focus.logging.__name__ + '.info')
-    @mock.patch(focus.random.__name__ + '.random', new=lambda: 0.5)
+    @mock.patch('logging.info')
+    @mock.patch('random.random', new=lambda: 0.5)
     def test_change_setting(self, unused_mock_logging: mock.MagicMock) -> None:
         """Changing the settings after the first email has been sent."""
 
@@ -302,7 +307,7 @@ class SendFocusEmailTest(unittest.TestCase):
             focus.main(['send', '--disable-sentry'])
 
         self.assertEqual(
-            ['pascal@example.fr'],
+            ['pascal@bayes.org'],
             [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
         user_data = self._db.user_test.user.find_one()
         assert user_data
@@ -340,7 +345,8 @@ class SendFocusEmailTest(unittest.TestCase):
 
         self.assertFalse(mailjetmock.get_all_sent_messages())
 
-    def test_dont_send_to_example(self) -> None:
+    @mock.patch('logging.warning')
+    def test_dont_send_to_example(self, mock_warning: mock.MagicMock) -> None:
         """Do not send focus emails to users with an example email address."""
 
         self._db.user_test.user.update_one({}, {'$set': {
@@ -350,6 +356,7 @@ class SendFocusEmailTest(unittest.TestCase):
         focus.main(['send', '--disable-sentry'])
 
         self.assertFalse(mailjetmock.get_all_sent_messages())
+        mock_warning.assert_not_called()
 
     def test_restrict_campaign(self) -> None:
         """Restrict to only one campaign."""
@@ -397,7 +404,8 @@ class SendFocusEmailTest(unittest.TestCase):
     def test_error_no_secret_salt(self) -> None:
         """Error when trying to send without a secret salt."""
 
-        with mock.patch(focus.auth.__name__ + '.SECRET_SALT', new=focus.auth.FAKE_SECRET_SALT):
+        with mock.patch(
+                focus.auth_token.__name__ + '.SECRET_SALT', new=focus.auth_token.FAKE_SECRET_SALT):
             with self.assertRaises(ValueError):
                 focus.main(['send', '--disable-sentry'])
 
@@ -425,14 +433,13 @@ class SendFocusEmailTest(unittest.TestCase):
         """Test the ghost mode."""
 
         user = user_pb2.User()
-        user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
-        user.profile.frustrations.append(user_pb2.SELF_CONFIDENCE)
+        user.profile.coaching_email_frequency = email_pb2.EMAIL_ONCE_A_MONTH
+        user.profile.frustrations.append(user_profile_pb2.SELF_CONFIDENCE)
         user.projects.add()
 
         campaign_id = focus.send_focus_email_to_user(
             'ghost', user,
             database=focus.mongo.NoPiiMongoDatabase(self._db.test),
-            users_database=focus.mongo.UsersDatabase.from_database(self._db.user_test),
             instant=datetime.datetime.now())
 
         self.assertIn(campaign_id, _GOLDEN_FOCUS_CAMPAIGNS)
@@ -441,11 +448,27 @@ class SendFocusEmailTest(unittest.TestCase):
 
         self.assertFalse(mailjetmock.get_all_sent_messages())
 
+    def test_ghost_email_none(self) -> None:
+        """Test the ghost mode for users that don't want any emails."""
+
+        user = user_pb2.User()
+        user.profile.coaching_email_frequency = email_pb2.EMAIL_NONE
+        user.profile.frustrations.append(user_profile_pb2.SELF_CONFIDENCE)
+        user.projects.add()
+
+        campaign_id = focus.send_focus_email_to_user(
+            'ghost', user,
+            database=focus.mongo.NoPiiMongoDatabase(self._db.test),
+            instant=datetime.datetime.now())
+
+        self.assertFalse(campaign_id)
+        self.assertFalse(mailjetmock.get_all_sent_messages())
+
     @mock.patch(focus.__name__ + '._FOCUS_CAMPAIGNS', {
         'coaching-campaign': campaign.Campaign(
             typing.cast(mailjet_templates.Id, 'coaching-campaign'),
-            {}, lambda user, **unused_kwargs: {'key': 'value'},
-            'Sender', 'sender@example.com', is_coaching=True,
+            get_vars=lambda user, **unused_kwargs: {'key': 'value'},
+            sender_name='Sender', sender_email='sender@example.com', is_coaching=True,
         ),
     })
     @mock.patch.dict(mailjet_templates.MAP, {
@@ -465,8 +488,8 @@ class SendFocusEmailTest(unittest.TestCase):
         mailjetmock.clear_sent_messages()
 
         user = user_pb2.User()
-        user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
-        user.profile.frustrations.append(user_pb2.SELF_CONFIDENCE)
+        user.profile.coaching_email_frequency = email_pb2.EMAIL_ONCE_A_MONTH
+        user.profile.frustrations.append(user_profile_pb2.SELF_CONFIDENCE)
         user.projects.add()
 
         focus.main(['send', '--disable-sentry'])
@@ -476,8 +499,8 @@ class SendFocusEmailTest(unittest.TestCase):
     @mock.patch(focus.__name__ + '._FOCUS_CAMPAIGNS', {
         'post-covid': campaign.Campaign(
             typing.cast(mailjet_templates.Id, 'post-covid'),
-            {}, lambda user, **unused_kwargs: {'key': 'value'},
-            'Sender', 'sender@example.com', is_big_focus=False,
+            get_vars=lambda user, **unused_kwargs: {'key': 'value'},
+            sender_name='Sender', sender_email='sender@example.com', is_big_focus=False,
         ),
     })
     def test_focus_with_no_scoring_model(self) -> None:
@@ -491,8 +514,8 @@ class SendFocusEmailTest(unittest.TestCase):
         mailjetmock.clear_sent_messages()
 
         user = user_pb2.User()
-        user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
-        user.profile.frustrations.append(user_pb2.SELF_CONFIDENCE)
+        user.profile.coaching_email_frequency = email_pb2.EMAIL_ONCE_A_MONTH
+        user.profile.frustrations.append(user_profile_pb2.SELF_CONFIDENCE)
         user.projects.add()
 
         focus.main(['send', '--disable-sentry'])
@@ -505,23 +528,23 @@ class SendFocusEmailTest(unittest.TestCase):
     @mock.patch(focus.__name__ + '._FOCUS_CAMPAIGNS', {
         'big-important': campaign.Campaign(
             typing.cast(mailjet_templates.Id, 'big-important'),
-            {}, lambda user, **unused_kwargs: {'key': 'value'},
-            'Sender', 'sender@example.com', is_big_focus=True,
+            get_vars=lambda user, **unused_kwargs: {'key': 'value'},
+            sender_name='Sender', sender_email='sender@example.com', is_big_focus=True,
         ),
         'small-very-important': campaign.Campaign(
             typing.cast(mailjet_templates.Id, 'small-very-important'),
-            {}, lambda user, **unused_kwargs: {'key': 'value'},
-            'Sender', 'sender@example.com', is_big_focus=False,
+            get_vars=lambda user, **unused_kwargs: {'key': 'value'},
+            sender_name='Sender', sender_email='sender@example.com', is_big_focus=False,
         ),
         'big-no-priority': campaign.Campaign(
             typing.cast(mailjet_templates.Id, 'big-no-priority'),
-            {}, lambda user, **unused_kwargs: {'key': 'value'},
-            'Sender', 'sender@example.com', is_big_focus=True,
+            get_vars=lambda user, **unused_kwargs: {'key': 'value'},
+            sender_name='Sender', sender_email='sender@example.com', is_big_focus=True,
         ),
         'big-less-important': campaign.Campaign(
             typing.cast(mailjet_templates.Id, 'big-less-important'),
-            {}, lambda user, **unused_kwargs: {'key': 'value'},
-            'Sender', 'sender@example.com', is_big_focus=True,
+            get_vars=lambda user, **unused_kwargs: {'key': 'value'},
+            sender_name='Sender', sender_email='sender@example.com', is_big_focus=True,
         ),
     })
     @mock.patch.dict(mailjet_templates.MAP, {
@@ -557,7 +580,7 @@ class SendFocusEmailTest(unittest.TestCase):
         ])
 
         self.assertEqual(
-            ['pascal@example.fr'],
+            ['pascal@bayes.org'],
             [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
 
         user_data = self._db.user_test.user.find_one()
@@ -568,18 +591,18 @@ class SendFocusEmailTest(unittest.TestCase):
     @mock.patch(focus.__name__ + '._FOCUS_CAMPAIGNS', {
         'first-one': campaign.Campaign(
             typing.cast(mailjet_templates.Id, 'first-one'),
-            {}, lambda user, **unused_kwargs: {'key': 'value'},
-            'Sender', 'sender@example.com', is_coaching=True,
+            get_vars=lambda user, **unused_kwargs: {'key': 'value'},
+            sender_name='Sender', sender_email='sender@example.com', is_coaching=True,
         ),
         'second-one': campaign.Campaign(
             typing.cast(mailjet_templates.Id, 'second-one'),
-            {}, lambda user, **unused_kwargs: {'key': 'value'},
-            'Sender', 'sender@example.com', is_coaching=True,
+            get_vars=lambda user, **unused_kwargs: {'key': 'value'},
+            sender_name='Sender', sender_email='sender@example.com', is_coaching=True,
         ),
         'third-one': campaign.Campaign(
             typing.cast(mailjet_templates.Id, 'third-one'),
-            {}, lambda user, **unused_kwargs: {'key': 'value'},
-            'Sender', 'sender@example.com', is_coaching=True,
+            get_vars=lambda user, **unused_kwargs: {'key': 'value'},
+            sender_name='Sender', sender_email='sender@example.com', is_coaching=True,
         ),
     })
     @mock.patch.dict(mailjet_templates.MAP, {
@@ -612,7 +635,7 @@ class SendFocusEmailTest(unittest.TestCase):
         ])
 
         self.assertEqual(
-            ['pascal@example.fr'],
+            ['pascal@bayes.org'],
             [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
 
         mock_notify_slack.assert_called_once_with(textwrap.dedent('''\
@@ -623,13 +646,13 @@ class SendFocusEmailTest(unittest.TestCase):
     @mock.patch(focus.__name__ + '._FOCUS_CAMPAIGNS', {
         'just-big': campaign.Campaign(
             typing.cast(mailjet_templates.Id, 'just-big'),
-            {}, lambda user, **unused_kwargs: {'key': 'value'},
-            'Sender', 'sender@example.com', is_big_focus=True,
+            get_vars=lambda user, **unused_kwargs: {'key': 'value'},
+            sender_name='Sender', sender_email='sender@example.com', is_big_focus=True,
         ),
         'small-very-important': campaign.Campaign(
             typing.cast(mailjet_templates.Id, 'small-very-important'),
-            {}, lambda user, **unused_kwargs: {'key': 'value'},
-            'Sender', 'sender@example.com', is_big_focus=False,
+            get_vars=lambda user, **unused_kwargs: {'key': 'value'},
+            sender_name='Sender', sender_email='sender@example.com', is_big_focus=False,
         ),
     })
     @mock.patch.dict(mailjet_templates.MAP, {
@@ -640,7 +663,7 @@ class SendFocusEmailTest(unittest.TestCase):
         'just-big': 'Un mail gros',
         'small-very-important': 'Un mail petit et très important',
     }[campaign_id])
-    @mock.patch(focus.random.__name__ + '.random')
+    @mock.patch('random.random')
     def test_send_shuffle_random(self, mock_random_random: mock.MagicMock) -> None:
         """Test random in shuffle."""
 
@@ -659,7 +682,7 @@ class SendFocusEmailTest(unittest.TestCase):
         mock_random_random.assert_called()
 
         self.assertEqual(
-            ['pascal@example.fr'],
+            ['pascal@bayes.org'],
             [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
 
         user_data = self._db.user_test.user.find_one()
@@ -671,13 +694,13 @@ class SendFocusEmailTest(unittest.TestCase):
     @mock.patch(focus.__name__ + '._FOCUS_CAMPAIGNS', {
         'just-big': campaign.Campaign(
             typing.cast(mailjet_templates.Id, 'just-big'),
-            {}, lambda user, **unused_kwargs: {'key': 'value'},
-            'Sender', 'sender@example.com', is_big_focus=True,
+            get_vars=lambda user, **unused_kwargs: {'key': 'value'},
+            sender_name='Sender', sender_email='sender@example.com', is_big_focus=True,
         ),
         'small-very-important': campaign.Campaign(
             typing.cast(mailjet_templates.Id, 'small-very-important'),
-            {}, lambda user, **unused_kwargs: {'key': 'value'},
-            'Sender', 'sender@example.com', is_big_focus=False,
+            get_vars=lambda user, **unused_kwargs: {'key': 'value'},
+            sender_name='Sender', sender_email='sender@example.com', is_big_focus=False,
         ),
     })
     @mock.patch.dict(mailjet_templates.MAP, {
@@ -688,7 +711,7 @@ class SendFocusEmailTest(unittest.TestCase):
         'big-important': 'Un mail gros',
         'small-very-important': 'Un mail petit et très important',
     }[campaign_id])
-    @mock.patch(focus.random.__name__ + '.random')
+    @mock.patch('random.random')
     def test_send_shuffle(self, mock_random_random: mock.MagicMock) -> None:
         """Send the mail with a better score first."""
 
@@ -706,7 +729,7 @@ class SendFocusEmailTest(unittest.TestCase):
         ])
 
         self.assertEqual(
-            ['pascal@example.fr'],
+            ['pascal@bayes.org'],
             [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
 
         user_data = self._db.user_test.user.find_one()

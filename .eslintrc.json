@@ -3,33 +3,51 @@
     "eslint:recommended",
     "plugin:import/recommended",
     // TODO(cyrille): consider adding promise/recommended.
-    "plugin:jsx-a11y/recommended",
+    "plugin:jsx-a11y/strict",
     "plugin:react/recommended",
     "plugin:unicorn/recommended",
     "plugin:you-dont-need-lodash-underscore/compatible"
   ],
-  "overrides": [{
-    "files": ["*.ts", "*.tsx"],
-    "extends": [
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx"],
+          "settings": {
+        "import/resolver": {
+          "typescript": {}
+        }
+      },
+      "extends": [
         "plugin:@typescript-eslint/eslint-recommended",
         "plugin:@typescript-eslint/recommended"
-    ],
-    "rules": {
+      ],
+      "rules": {
         "@typescript-eslint/ban-ts-comment": 0,
         "@typescript-eslint/ban-ts-ignore": 0,
         "@typescript-eslint/explicit-module-boundary-types": "error",
         "@typescript-eslint/indent": ["error", 2, {"SwitchCase": 1}],
         "@typescript-eslint/member-delimiter-style": ["error", {"multiline": {"delimiter": "none"}}],
         "@typescript-eslint/no-unused-vars": ["error", {
-            "argsIgnorePattern": "^unused[A-Z]",
-            "varsIgnorePattern": "^omitted[A-Z]"
+          "argsIgnorePattern": "^unused[A-Z]",
+          "varsIgnorePattern": "^omitted[A-Z]"
         }],
         "@typescript-eslint/no-var-requires": 0
+      }
+    },
+    {
+      "files": ["*.js"],
+      "rules": {
+        "unicorn/prefer-module": 0
+      }
+    },
+    {
+      "files": ["*.json5"],
+      "rules": {
+        "unicorn/prefer-module": 0
+      }
     }
-  }],
+  ],
   "parser": "@typescript-eslint/parser",
   "plugins": [
-    "@mysticatea",
     "@typescript-eslint",
     "import",
     "json5",
@@ -40,17 +58,6 @@
     "react-perf",
     "unicorn"
   ],
-  "settings": {
-    "import/resolver": {
-      "typescript": {},
-      "webpack": {
-        "config": "cfg/base.ts"
-      }
-    },
-    "react": {
-      "version": "16.8"
-    }
-  },
   "parserOptions": {
     "ecmaFeatures": {
       "jsx": true,
@@ -65,7 +72,7 @@
   },
   "reportUnusedDisableDirectives": true,
   "rules": {
-    "@mysticatea/no-this-in-static": "error",
+    "@typescript-eslint/consistent-type-imports": ["error", {"disallowTypeAnnotations": false}],
     "array-bracket-spacing": "error",
     "arrow-spacing": "error",
     "brace-style": ["error", "1tbs", {"allowSingleLine": false}],
@@ -95,6 +102,7 @@
         "ExternalLink",
         "FooterLink",
         "HelpDeskLink",
+        "LoggedLink",
         "MenuLink",
         "RadiumExternalLink",
         "SmartLink"
@@ -146,10 +154,9 @@
         {"char": "}", "alternatives": ["&#125;"]},
         {"char": "•", "alternatives": ["&bull;", "·"]}
     ]}],
-    // TODO(cyrille): Fix and re-enable with .
-    "react/no-unused-prop-types": ["warn", {"skipShapeProps": true}],
+    "react/no-unused-prop-types": 0,
     "react/no-unused-state": "error",
-    "react/prop-types": "error",
+    "react/prop-types": 0,
     "react/sort-comp": ["error", {
         "order":  [
             "static-variables",
@@ -181,7 +188,7 @@
     "spaced-comment": "error",
     "switch-colon-spacing": "error",
     "template-curly-spacing": "error",
-    "unicorn/catch-error-name": ["error", {"caughtErrorsIgnorePattern": "^unusedError$"}],
+    "unicorn/catch-error-name": ["error", {"ignore": ["^unusedError$"]}],
     "unicorn/explicit-length-check": 0,
     "unicorn/filename-case": ["error", {"case": "snakeCase"}],
     // TODO(pascal): Consider reenabling.
@@ -196,12 +203,16 @@
     "unicorn/prefer-add-event-listener": 0,
     "unicorn/prefer-dom-node-append": 0,
     "unicorn/prefer-dom-node-remove": 0,
+    // TODO(pascal): Re-enable once we switch to node v16.
+    "unicorn/prefer-node-protocol": 0,
     "unicorn/prefer-query-selector": 0,
     "unicorn/prevent-abbreviations": 0,
     "unicorn/string-content": ["error", {"patterns": {
         "’": "'",
         "Pôle Emploi": "Pôle emploi"
     }}],
+    // This is useful for node, but is hurting HTML charSet.
+    "unicorn/text-encoding-identifier-case": 0,
     // Lodash throttle has a useful cancel option, we'd rather use it than the default implementation.
     "you-dont-need-lodash-underscore/throttle": 0
   }

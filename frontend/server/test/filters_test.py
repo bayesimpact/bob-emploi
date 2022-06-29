@@ -5,11 +5,12 @@ from typing import Set
 import unittest
 from unittest import mock
 
+from bob_emploi.frontend.api import boolean_pb2
+from bob_emploi.frontend.api import features_pb2
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
-from bob_emploi.frontend.api import boolean_pb2
 from bob_emploi.frontend.api import project_pb2
-from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import user_profile_pb2
 from bob_emploi.frontend.server import companies
 from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server.test import scoring_test
@@ -92,20 +93,20 @@ class SingleParentFilterTestCase(FilterTestBase):
     def test_single_parent(self) -> None:
         """Single parent."""
 
-        self.persona.user_profile.family_situation = user_pb2.SINGLE_PARENT_SITUATION
+        self.persona.user_profile.family_situation = user_profile_pb2.SINGLE_PARENT_SITUATION
         self._assert_pass_filter()
 
     def test_single_parent_old_field(self) -> None:
         """Single parent using the old field."""
 
-        self.persona.user_profile.frustrations.append(user_pb2.SINGLE_PARENT)
+        self.persona.user_profile.frustrations.append(user_profile_pb2.SINGLE_PARENT)
         self._assert_pass_filter()
 
     def test_non_single_parent(self) -> None:
         """Non single parent."""
 
         del self.persona.user_profile.frustrations[:]
-        self.persona.user_profile.family_situation = user_pb2.IN_A_RELATIONSHIP
+        self.persona.user_profile.family_situation = user_profile_pb2.IN_A_RELATIONSHIP
         self._assert_fail_filter()
 
 
@@ -326,14 +327,14 @@ class FrustratedOldFilterTestCase(FilterTestBase):
         """Old and frustrated person."""
 
         self.persona.user_profile.year_of_birth = self.year - 47
-        self.persona.user_profile.frustrations.append(user_pb2.AGE_DISCRIMINATION)
+        self.persona.user_profile.frustrations.append(user_profile_pb2.AGE_DISCRIMINATION)
         self._assert_fail_filter()
 
     def test_old_frustrated_person(self) -> None:
         """Old and frustrated person."""
 
         self.persona.user_profile.year_of_birth = self.year - 60
-        self.persona.user_profile.frustrations.append(user_pb2.AGE_DISCRIMINATION)
+        self.persona.user_profile.frustrations.append(user_profile_pb2.AGE_DISCRIMINATION)
         self._assert_pass_filter()
 
 
@@ -361,7 +362,7 @@ class OtherFrustratedOldFilterTestCase(FilterTestBase):
         """Old and frustrated person."""
 
         self.persona.user_profile.year_of_birth = self.year - 47
-        self.persona.user_profile.frustrations.append(user_pb2.AGE_DISCRIMINATION)
+        self.persona.user_profile.frustrations.append(user_profile_pb2.AGE_DISCRIMINATION)
         self._assert_pass_filter()
 
 
@@ -383,14 +384,14 @@ class FrustratedYoungFilterTestCase(FilterTestBase):
         """Old and frustrated person."""
 
         self.persona.user_profile.year_of_birth = self.year - 60
-        self.persona.user_profile.frustrations.append(user_pb2.AGE_DISCRIMINATION)
+        self.persona.user_profile.frustrations.append(user_profile_pb2.AGE_DISCRIMINATION)
         self._assert_fail_filter()
 
     def test_young_frustrated_person(self) -> None:
         """Young and frustrated person."""
 
         self.persona.user_profile.year_of_birth = self.year - 21
-        self.persona.user_profile.frustrations.append(user_pb2.AGE_DISCRIMINATION)
+        self.persona.user_profile.frustrations.append(user_profile_pb2.AGE_DISCRIMINATION)
         self._assert_pass_filter()
 
 
@@ -402,19 +403,19 @@ class UnemployedFilterTestCase(FilterTestBase):
     def test_lost_quit(self) -> None:
         """User lost or quit their last job."""
 
-        self.persona.user_profile.situation = user_pb2.LOST_QUIT
+        self.persona.user_profile.situation = user_profile_pb2.LOST_QUIT
         self._assert_pass_filter()
 
     def test_student(self) -> None:
         """Student."""
 
-        self.persona.user_profile.situation = user_pb2.FIRST_TIME
+        self.persona.user_profile.situation = user_profile_pb2.FIRST_TIME
         self._assert_pass_filter()
 
     def test_employed(self) -> None:
         """User has a job."""
 
-        self.persona.user_profile.situation = user_pb2.EMPLOYED
+        self.persona.user_profile.situation = user_profile_pb2.EMPLOYED
         self._assert_fail_filter()
 
 
@@ -426,7 +427,7 @@ class EmployedFilterTestCase(FilterTestBase):
     def test_first_job(self) -> None:
         """This is the first job for the user."""
 
-        self.persona.user_profile.situation = user_pb2.FIRST_TIME
+        self.persona.user_profile.situation = user_profile_pb2.FIRST_TIME
         self.persona.project.kind = project_pb2.FIND_A_FIRST_JOB
         self._assert_fail_filter()
 
@@ -439,7 +440,7 @@ class EmployedFilterTestCase(FilterTestBase):
     def test_employed(self) -> None:
         """User has a job."""
 
-        self.persona.user_profile.situation = user_pb2.EMPLOYED
+        self.persona.user_profile.situation = user_profile_pb2.EMPLOYED
         self._assert_pass_filter()
 
 
@@ -451,19 +452,19 @@ class NotEmployedAnymoreFilterTestCase(FilterTestBase):
     def test_lost_quit(self) -> None:
         """User lost or quit their last job."""
 
-        self.persona.user_profile.situation = user_pb2.LOST_QUIT
+        self.persona.user_profile.situation = user_profile_pb2.LOST_QUIT
         self._assert_pass_filter()
 
     def test_student(self) -> None:
         """Student."""
 
-        self.persona.user_profile.situation = user_pb2.FIRST_TIME
+        self.persona.user_profile.situation = user_profile_pb2.FIRST_TIME
         self._assert_fail_filter()
 
     def test_employed(self) -> None:
         """User has a job."""
 
-        self.persona.user_profile.situation = user_pb2.EMPLOYED
+        self.persona.user_profile.situation = user_profile_pb2.EMPLOYED
         self._assert_fail_filter()
 
 
@@ -475,7 +476,7 @@ class CompanyCreatorFilterTestCase(FilterTestBase):
     def test_first_job(self) -> None:
         """This is the first job for the user."""
 
-        self.persona.user_profile.situation = user_pb2.FIRST_TIME
+        self.persona.user_profile.situation = user_profile_pb2.FIRST_TIME
         self.persona.project.kind = project_pb2.FIND_A_FIRST_JOB
         self._assert_fail_filter()
 
@@ -632,7 +633,7 @@ class NegateConstantFilterTestCase(FilterTestBase):
 class NotWorkingNegateFilterTestCase(unittest.TestCase):
     """Unit tests for a negate filter on a non-existing scorer."""
 
-    @mock.patch(scoring.logging.__name__ + '.error')
+    @mock.patch('logging.error')
     def test_cant_create(self, mock_error: mock.MagicMock) -> None:
         """Cannot create a negated filter if the original one does not exist."""
 
@@ -1069,7 +1070,7 @@ class FrustrationFilterTestCase(FilterTestBase):
     def test_frustrated_user(self) -> None:
         """User is frustrated by their interviews."""
 
-        self.persona.user_profile.frustrations.append(user_pb2.INTERVIEW)
+        self.persona.user_profile.frustrations.append(user_profile_pb2.INTERVIEW)
         self._assert_pass_filter()
 
     def test_not_frustrated(self) -> None:
@@ -1083,7 +1084,7 @@ class UnknownFrustrationFilterTestCase(unittest.TestCase):
     """Unit test for the FrustrationFilter class for projects about a
     frustration that does not exist."""
 
-    @mock.patch(scoring.logging.__name__ + '.error')
+    @mock.patch('logging.error')
     def test_inexistant_frustration(self, mock_error: mock.MagicMock) -> None:
         """Cannot make scoring model for inexistant frustration."""
 
@@ -1106,6 +1107,24 @@ class DepartementFilterTestCase(FilterTestBase):
         """User is looking for a job in Lyon."""
 
         self.persona.project.city.departement_id = '69'
+        self._assert_fail_filter()
+
+
+class RegionFilterTestCase(FilterTestBase):
+    """Unit tests for the _RegionFilter class for projects about region PA."""
+
+    model_id = 'for-region(PA)'
+
+    def test_pittsburg(self) -> None:
+        """User is looking for a job in Pennsylvania."""
+
+        self.persona.project.city.region_id = 'PA'
+        self._assert_pass_filter()
+
+    def test_san_francisco(self) -> None:
+        """User is looking for a job in San Francisco."""
+
+        self.persona.project.city.region_id = 'CA'
         self._assert_fail_filter()
 
 
@@ -1163,7 +1182,7 @@ class FilterActiveExperimentTestCase(FilterTestBase):
     def test_in_control(self) -> None:
         """User is in the control group."""
 
-        self.persona.features_enabled.lbb_integration = user_pb2.CONTROL
+        self.persona.features_enabled.lbb_integration = features_pb2.CONTROL
         self._assert_fail_filter()
 
     def test_not_in_experiment(self) -> None:
@@ -1175,21 +1194,21 @@ class FilterActiveExperimentTestCase(FilterTestBase):
     def test_in_experiment(self) -> None:
         """User is in the experiment."""
 
-        self.persona.features_enabled.lbb_integration = user_pb2.ACTIVE
+        self.persona.features_enabled.lbb_integration = features_pb2.ACTIVE
         self._assert_pass_filter()
 
 
 class FilterActiveUnknownExperimentTestCase(unittest.TestCase):
     """Unit tests for the _ActiveExperimentFilter class when experiment does not exist."""
 
-    @mock.patch(scoring.logging.__name__ + '.error')
+    @mock.patch('logging.error')
     def test_unknown_field(self, mock_error: mock.MagicMock) -> None:
         """Tries to create a filter based on an experiment that does not exist."""
 
         self.assertFalse(scoring.get_scoring_model('for-active-experiment(unknown)'))
         mock_error.assert_called_once()
 
-    @mock.patch(scoring.logging.__name__ + '.error')
+    @mock.patch('logging.error')
     def test_wrong_type_field(self, mock_error: mock.MagicMock) -> None:
         """Tries to create a filter based on a field that is not a binary experiment."""
 
@@ -1255,7 +1274,7 @@ class UnknownPassionateFilterTestCase(unittest.TestCase):
     """Unit test for the PassionateFilter class for projects about a
     passionate level that does not exist."""
 
-    @mock.patch(scoring.logging.__name__ + '.error')
+    @mock.patch('logging.error')
     def test_inexistant_passionate(self, mock_error: mock.MagicMock) -> None:
         """Cannot make scoring model for inexistant passionate level."""
 
@@ -1395,7 +1414,7 @@ class LBBFilterTestCase(FilterTestBase):
         self._assert_fail_filter()
 
     @mock.patch(companies.__name__ + '.get_lbb_companies')
-    @mock.patch(companies.logging.__name__ + '.warning')
+    @mock.patch('logging.warning')
     def test_failed_lbb_response_parsing(
             self, mock_log_warning: mock.MagicMock, mock_get_lbb_companies: mock.MagicMock) -> None:
         """Test that companies not recruiting does not pass the filter."""
@@ -1740,8 +1759,8 @@ class LongTermMomFilterTestCase(FilterTestBase):
     def test_frustrated_woman(self) -> None:
         """A woman frustrated by her stay-at-homeness passes the filter."""
 
-        self.persona.user_profile.gender = user_pb2.FEMININE
-        self.persona.user_profile.frustrations.append(user_pb2.STAY_AT_HOME_PARENT)
+        self.persona.user_profile.gender = user_profile_pb2.FEMININE
+        self.persona.user_profile.frustrations.append(user_profile_pb2.STAY_AT_HOME_PARENT)
         self._assert_pass_filter()
 
     def test_not_frustrated(self) -> None:
@@ -1753,7 +1772,7 @@ class LongTermMomFilterTestCase(FilterTestBase):
     def test_not_woman(self) -> None:
         """A man fails the filter."""
 
-        self.persona.user_profile.gender = user_pb2.MASCULINE
+        self.persona.user_profile.gender = user_profile_pb2.MASCULINE
         self._assert_fail_filter()
 
 
@@ -1921,8 +1940,9 @@ class VeryFrustratedTestCase(FilterTestBase):
         """User has a lot of frustrations."""
 
         self.persona.user_profile.frustrations.extend([
-            user_pb2.NO_OFFERS, user_pb2.MOTIVATION, user_pb2.ATYPIC_PROFILE,
-            user_pb2.AGE_DISCRIMINATION, user_pb2.SINGLE_PARENT])
+            user_profile_pb2.NO_OFFERS, user_profile_pb2.MOTIVATION,
+            user_profile_pb2.ATYPIC_PROFILE,
+            user_profile_pb2.AGE_DISCRIMINATION, user_profile_pb2.SINGLE_PARENT])
         self._assert_pass_filter()
 
     def buggy_frustrated(self) -> None:
@@ -1931,8 +1951,8 @@ class VeryFrustratedTestCase(FilterTestBase):
         del self.persona.user_profile.frustrations[:]
         del self.persona.user_profile.custom_frustrations[:]
         self.persona.user_profile.frustrations.extend([
-            user_pb2.NO_OFFERS, user_pb2.NO_OFFERS, user_pb2.NO_OFFERS, user_pb2.NO_OFFERS,
-            user_pb2.NO_OFFERS])
+            user_profile_pb2.NO_OFFERS, user_profile_pb2.NO_OFFERS, user_profile_pb2.NO_OFFERS,
+            user_profile_pb2.NO_OFFERS, user_profile_pb2.NO_OFFERS])
         self._assert_fail_filter()
 
     def much_customly_frustrated(self) -> None:
@@ -1954,7 +1974,8 @@ class VeryFrustratedTestCase(FilterTestBase):
     def much_frustrated_custom_or_not(self) -> None:
         """User has both custom and prepared frustrations."""
 
-        self.persona.user_profile.frustrations.extend([user_pb2.NO_OFFERS, user_pb2.MOTIVATION])
+        self.persona.user_profile.frustrations.extend([
+            user_profile_pb2.NO_OFFERS, user_profile_pb2.MOTIVATION])
         self.persona.user_profile.custom_frustrations.extend([
             'la famille', 'les transports', 'la fatigue'])
 
@@ -2081,22 +2102,22 @@ class ForMigrantTestCase(FilterTestBase):
     def test_foreign_language(self) -> None:
         """User is frustrated because of the language barrier."""
 
-        self.persona.user_profile.frustrations.append(user_pb2.LANGUAGE)
+        self.persona.user_profile.frustrations.append(user_profile_pb2.LANGUAGE)
         self._assert_pass_filter()
 
     def test_foreign_diploma(self) -> None:
         """User is frustrated because their diploma is not recognized."""
 
-        self.persona.user_profile.frustrations.append(user_pb2.FOREIGN_QUALIFICATIONS)
+        self.persona.user_profile.frustrations.append(user_profile_pb2.FOREIGN_QUALIFICATIONS)
         self._assert_pass_filter()
 
     def test_not_frustrated(self) -> None:
         """User doesn't have a foreign language or diploma issue."""
 
-        if user_pb2.LANGUAGE in self.persona.user_profile.frustrations:
-            self.persona.user_profile.frustrations.remove(user_pb2.LANGUAGE)
-        if user_pb2.FOREIGN_QUALIFICATIONS in self.persona.user_profile.frustrations:
-            self.persona.user_profile.frustrations.remove(user_pb2.FOREIGN_QUALIFICATIONS)
+        if user_profile_pb2.LANGUAGE in self.persona.user_profile.frustrations:
+            self.persona.user_profile.frustrations.remove(user_profile_pb2.LANGUAGE)
+        if user_profile_pb2.FOREIGN_QUALIFICATIONS in self.persona.user_profile.frustrations:
+            self.persona.user_profile.frustrations.remove(user_profile_pb2.FOREIGN_QUALIFICATIONS)
         self._assert_fail_filter()
 
 
@@ -2139,6 +2160,24 @@ class ForRiskyCovidTests(FilterTestBase):
             '_id': 'M1601',
         })
         self._assert_missing_fields({'data.job_group_info.M1601.covid_risk'})
+
+
+class ForArmyVeteranTests(FilterTestBase):
+    """Tests for the army veteran filter."""
+
+    model_id = 'for-army-veteran'
+
+    def test_not_army_veteran(self) -> None:
+        """User is not an army veteran."""
+
+        self.persona.user_profile.is_army_veteran = False
+        self._assert_fail_filter()
+
+    def test_army_veteran(self) -> None:
+        """User is an army veteran."""
+
+        self.persona.user_profile.is_army_veteran = True
+        self._assert_pass_filter()
 
 
 if __name__ == '__main__':

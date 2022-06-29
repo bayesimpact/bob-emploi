@@ -18,12 +18,16 @@ _SUBJECT_REGEX = re.compile(r'^\[[^\]]+\]')
 # Matches '(#123456)' at end of line, and captures the number.
 _PR_REGEX = re.compile(r'\(#(\d+)\)$')
 
-_DROPPED_SUBJECTS = [f'[{subject}]' for subject in ['Clean Code', 'Small Fix', 'Easy Dev']]
+_DROPPED_SUBJECTS = [
+    f'[{subject}]' for subject in
+    ['Bump', 'Clean Code', 'Small Fix', 'Easy Dev', 'Lib Upgrade']]
 
 
 def _subject_key(line: str) -> str:
     """Get the subject for the line or an empty string."""
 
+    if line.startswith('Bump '):
+        return '[Bump]'
     if subject_match := _SUBJECT_REGEX.search(line):
         return subject_match.group()
     return ''

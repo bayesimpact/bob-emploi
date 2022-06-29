@@ -1,0 +1,113 @@
+// All the data that is linked to the OCR specific section should be added here.
+/* eslint-disable unicorn/numeric-separators-style */
+{
+  id: 'open-classrooms',
+  isOCR: true,
+  jobs: [
+    {
+      jobGroup: {
+        description: "En tant qu'attaché·e commercial·e, vous aidez à développer le chiffre \
+        d'affaires de l'entreprise en étant en charge d'un portefeuille clients. Vous avez pour \
+        mission de trouver de nouveaux clients, de les démarcher, puis d'échanger sur leurs \
+        besoins, dans le but de conclure une vente. Après la signature du contrat, vous vous \
+        assurez du suivi de la commande et entretenez la relation avec votre client, afin de le \
+        fidéliser.",
+        // OCR-specific IDs to have a different picture.
+        romeId: 'OCR-D1402',
+        samples: [{
+          feminineName: 'Attachée commerciale',
+          masculineName: 'Attaché commercial',
+          name: 'Attaché·e commercial·e',
+        }]},
+      localStats: {
+        juniorSalary: {
+          maxSalary: 30000,
+          minSalary: 20400,
+          unit: 'ANNUAL_GROSS_SALARY',
+        },
+        seniorSalary: {
+          minSalary: 44400,
+          unit: 'ANNUAL_GROSS_SALARY',
+        },
+      },
+      perks: ['NOW_HIRING', 'PAID_TRAINING'],
+    },
+    {
+      jobGroup: {
+        description: 'Vous intervenez sur tous les aspects du parc informatique: du déploiement à \
+        la maintenance. Polyvalent·e, vous êtes aussi le point de contact des utilisateurs pour \
+        résoudre leurs problèmes au quotidien.',
+        romeId: 'OCR-I1401',
+        samples: [{
+          feminineName: 'Technicienne informatique',
+          masculineName: 'Technicien informatique',
+          name: 'Technicien·ne informatique',
+        }]},
+      localStats: {
+        juniorSalary: {
+          minSalary: 20000,
+          unit: 'ANNUAL_GROSS_SALARY',
+        },
+        seniorSalary: {
+          minSalary: 30000,
+          unit: 'ANNUAL_GROSS_SALARY',
+        },
+      },
+      perks: ['NOW_HIRING', 'PAID_TRAINING'],
+    },
+    {
+      jobGroup: {
+        description: "En tant que gestionnaire de paie, vous êtes au coeur de la vie de \
+        l'entreprise. Vous êtes spécialiste de la paie et des questions administratives liées à la \
+        gestion du personnel. Vous rassemblez et analysez les informations liées aux situations \
+        des salariés. Vous maîtrisez la préparation de la paie, l'établissement des bulletins de \
+        paie, ainsi que le paramétrage et l'utilisation d'un logiciel de paie. Vous êtes amené·e à \
+        participer aux activités d'administration du personnel, telles que la rédaction d'un \
+        contrat de travail et le suivi des congés. Vous pouvez également avoir un rôle de conseil \
+        auprès de l'entreprise ou des salariés, en cas de contestation des calculs de paie ou \
+        lorsqu'une situation sensible se présente. A ce titre, vous devrez faire preuve de \
+        discrétion et de confidentialité.",
+        romeId: 'OCR-M1501',
+        samples: [{name: 'Gestionnaire de paye'}]},
+      localStats: {
+        juniorSalary: {
+          maxSalary: 30000,
+          minSalary: 22000,
+          unit: 'ANNUAL_GROSS_SALARY',
+        },
+        seniorSalary: {
+          maxSalary: 55000,
+          minSalary: 31000,
+          unit: 'ANNUAL_GROSS_SALARY',
+        },
+      },
+      perks: ['NOW_HIRING', 'PAID_TRAINING'],
+    },
+    {
+      jobGroup: {
+        description: "En tant que développeur·se web, vous êtes indispensable dans une équipe de \
+        développement. L'informatique n'a aucun secret pour vous et vous avez pour mission de \
+        donner vie aux maquettes visuelles d'un site ou d'une application web. Vous devez traduire,\
+         en langage web, ses recommandations graphiques en rédigeant du code HTML, CSS, mais aussi \
+        JavaScript.",
+        romeId: 'OCR-M1805',
+        samples: [{
+          feminineName: 'Développeuse web',
+          masculineName: 'Développeur web',
+          name: 'Développeur·se web',
+        }]},
+      localStats: {
+        juniorSalary: {
+          minSalary: 30000,
+          unit: 'ANNUAL_GROSS_SALARY',
+        },
+        seniorSalary: {
+          minSalary: 65000,
+          unit: 'ANNUAL_GROSS_SALARY',
+        },
+      },
+      perks: ['NOW_HIRING', 'PAID_TRAINING'],
+    },
+  ],
+  name: "Formez-vous gratuitement sur 4 métiers d'avenir\u00A0!",
+}

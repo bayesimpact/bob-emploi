@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 
@@ -102,12 +101,12 @@ const noListItemStyle: React.CSSProperties = {
 
 const BulletBase = (props: BulletProps): React.ReactElement => {
   const {index, isSelected, onClick} = props
-  const {t} = useTranslation()
+  const {t} = useTranslation('components')
   const handleClick = useCallback((): void => onClick(index), [index, onClick])
   return <li style={noListItemStyle}>
     <button
       onClick={handleClick} style={isSelected ? selectedBulletStyle : bulletStyle}
-      aria-label={t('témoignage n°{{index}}', {index})} />
+      aria-label={t('témoignage n°{{index}}', {index})} type="button" />
   </li>
 }
 const Bullet = React.memo(BulletBase)
@@ -190,11 +189,6 @@ const TestimonialsBase = (props: TestimonialsProps): React.ReactElement => {
     </ol>
   </div>
 }
-TestimonialsBase.propTypes = {
-  cardStyle: PropTypes.object,
-  carouselAutoRotationDurationMs: PropTypes.number,
-  children: PropTypes.arrayOf(PropTypes.node.isRequired).isRequired,
-}
 const Testimonials = React.memo(TestimonialsBase)
 
 
@@ -214,7 +208,7 @@ interface CardProps {
 
 const TestimonialCardBase: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
   const {author, children, isLong, style} = props
-  const {t} = useTranslation()
+  const {t} = useTranslation('components')
   const horizontalPadding = isMobileVersion && !isLong ? 30 : 75
   const containerStyle = useMemo((): React.CSSProperties => ({
     backgroundColor: '#fff',
@@ -267,18 +261,6 @@ const TestimonialCardBase: React.FC<CardProps> = (props: CardProps): React.React
     {children}
     {isLong ? null : <div style={authorStyle}> {authorName}{authorAge} {authorJobName}</div>}
   </div>
-}
-TestimonialCardBase.propTypes = {
-  author: PropTypes.shape({
-    age: PropTypes.number,
-    imageLink: PropTypes.string,
-    isMan: PropTypes.bool,
-    jobName: PropTypes.string,
-    name: PropTypes.string.isRequired,
-  }).isRequired,
-  children: PropTypes.node,
-  isLong: PropTypes.bool,
-  style: PropTypes.object,
 }
 const TestimonialCard = React.memo(TestimonialCardBase)
 

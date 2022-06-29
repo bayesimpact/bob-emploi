@@ -1,7 +1,8 @@
-import {MdiReactIconProps} from 'mdi-react/dist/typings'
+import type {MdiReactIconProps} from 'mdi-react/dist/typings'
 import React, {useMemo} from 'react'
 
-import Input, {Inputable} from 'components/input'
+import type {Inputable} from 'components/input'
+import Input from 'components/input'
 
 
 interface Props extends React.ComponentProps<typeof Input> {
@@ -38,7 +39,7 @@ const IconInput = (props: Props, ref: React.Ref<Inputable>): React.ReactElement 
   return <div style={{position: 'relative', ...style}}>
     <Input {...otherProps} ref={ref} style={finalInputStyle} />
     <span style={iconContainer}>
-      <Icon style={iconStyle} />
+      <Icon style={iconStyle} aria-hidden={true} focusable={false} />
     </span>
   </div>
 }

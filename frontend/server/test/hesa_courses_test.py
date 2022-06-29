@@ -16,7 +16,8 @@ class CarifTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        with open(path.join(path.dirname(__file__), 'testdata/hesa_courses.json')) as courses_file:
+        courses_file_name = path.join(path.dirname(__file__), 'testdata/hesa_courses.json')
+        with open(courses_file_name, encoding='utf-8') as courses_file:
             cls._hesa_json_response = courses_file.read()
 
     def test_get_trainings(self, mock_requests: 'requests_mock._RequestObjectProxy') -> None:

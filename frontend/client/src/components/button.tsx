@@ -1,10 +1,13 @@
 import React, {useCallback, useEffect, useState} from 'react'
 
+import {useIsTabNavigationUsed} from 'hooks/tab_navigation'
+
 import CircularProgress from 'components/circular_progress'
 import {colorToAlpha} from 'components/colors'
 import {useRadium} from 'components/radium'
 import {SmoothTransitions} from 'components/theme'
 
+import type {ConfigColor} from 'config'
 
 type CSSTransform = React.CSSProperties['transform']
 const combineTransforms = (a: CSSTransform, b: CSSTransform): CSSTransform => {
@@ -22,23 +25,11 @@ interface TypeStyle extends Omit<RadiumCSSProperties, 'background'> {
   // Note that it's OK to add other alpha values of existing colors here.
   backgroundColor: ConfigColor|'transparent'|'rgba(255, 255, 255, .3)'
   ':disabled'?: React.CSSProperties
+  ':focus-visible'?: React.CSSProperties
 }
 
 
 export const BUTTON_TYPE_STYLES = {
-  back: {
-    ':active': {
-      boxShadow: 'none',
-    },
-    ':disabled': {
-      backgroundColor: colorToAlpha(colors.SILVER, .5),
-    },
-    ':hover': {
-      boxShadow: 'none',
-    },
-    'backgroundColor': colors.SILVER,
-    'boxShadow': 'none',
-  },
   deletion: {
     ':disabled': {
       backgroundColor: colorToAlpha(colors.RED_PINK, .5),
@@ -51,6 +42,9 @@ export const BUTTON_TYPE_STYLES = {
       boxShadow: 'none',
       transform: 'translateY(0)',
     },
+    ':focus-visible': {
+      outline: 'solid 2px',
+    },
     ':hover': {
       backgroundColor: colors.BACKGROUND_GREY,
       boxShadow: 'none',
@@ -59,22 +53,33 @@ export const BUTTON_TYPE_STYLES = {
     'backgroundColor': 'transparent',
     'boxShadow': 'none',
     'color': colors.SLATE,
-    ...SmoothTransitions,
+    'transition': SmoothTransitions.transition + ', outline 0s',
   },
   navigation: {
     ':disabled': {
-      backgroundColor: colorToAlpha(colors.BOB_BLUE, .5),
+      backgroundColor: colorToAlpha(colors.NAVIGATION_BUTTON_BACKGROUND, .5),
     },
-    'backgroundColor': colors.BOB_BLUE,
+    'backgroundColor': colors.NAVIGATION_BUTTON_BACKGROUND,
+    'textShadow': '0 0 6px rgba(0, 0, 0, .6)',
   },
   navigationOnImage: {
     backgroundColor: 'rgba(255, 255, 255, .3)',
   },
   outline: {
-    backgroundColor: 'transparent',
-    border: `solid 1px ${colors.SILVER}`,
-    boxShadow: 'none',
-    color: colors.DARK_TWO,
+    ':active': {
+      boxShadow: 'none',
+    },
+    ':focus-visible': {
+      outline: 'solid 2px',
+    },
+    ':hover': {
+      boxShadow: 'none',
+    },
+    'backgroundColor': 'transparent',
+    'border': `solid 1px ${colors.SILVER}`,
+    'boxShadow': 'none',
+    'color': colors.DARK_TWO,
+    'transition': SmoothTransitions.transition + ', outline 0s',
   },
   validation: {
     ':disabled': {
@@ -83,17 +88,28 @@ export const BUTTON_TYPE_STYLES = {
     'backgroundColor': colors.GREENISH_TEAL,
   },
 } as const
-type ButtonType = keyof typeof BUTTON_TYPE_STYLES
+export type ButtonType = keyof typeof BUTTON_TYPE_STYLES
 
 
-interface Props extends Omit<React.ComponentPropsWithoutRef<'button'>, 'type'> {
+interface InertProps {
   bounceDurationMs?: number
+  children?: React.ReactNode
+  disabled?: boolean
+  isActive?: boolean
   isHighlighted?: boolean
   isNarrow?: boolean
   isProgressShown?: boolean
   isRound?: boolean
+  isTabNavigationUsed?: boolean
   style?: RadiumCSSProperties
   type?: ButtonType
+}
+
+interface Props extends
+  Omit<React.ComponentPropsWithoutRef<'button'>, 'role'|'style'|'type'>, InertProps {
+  // Add roles if they make sense here, but never accept the role "none". If you need the
+  // role "none", you probably should be using an InertButton.
+  role?: 'button'|'radio'|'checkbox'
 }
 
 
@@ -108,34 +124,10 @@ const progressContainerStyle: React.CSSProperties = {
   width: '100%',
 }
 
-
-const Button = (props: Props, ref: React.Ref<HTMLButtonElement>): React.ReactElement => {
-  const [clickingEvent, setClickingEvent] =
-    useState<React.MouseEvent<HTMLButtonElement>|undefined>()
-  const {bounceDurationMs = 50, children, disabled, isNarrow, isProgressShown, type, style,
-    isHighlighted, isRound, onClick, ...otherProps} = props
-
-  const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>): void => {
-    if (!onClick) {
-      return
-    }
-    event?.stopPropagation?.()
-    event?.preventDefault?.()
-    setClickingEvent(event)
-  }, [onClick])
-
-  useEffect((): (() => void)|void => {
-    if (!clickingEvent) {
-      return
-    }
-    const timeout = window.setTimeout((): void => {
-      setClickingEvent(undefined)
-      onClick?.(clickingEvent)
-    }, bounceDurationMs)
-    return (): void => window.clearTimeout(timeout)
-  }, [bounceDurationMs, clickingEvent, onClick])
-
-  const {':disabled': disabledStyle, ...typeStyle}: TypeStyle =
+function getButtonStyle(props: InertProps): RadiumCSSProperties {
+  const {bounceDurationMs = 50, disabled, isActive, isNarrow, type, style, isHighlighted,
+    isRound, isTabNavigationUsed} = props
+  const {':disabled': disabledStyle, ':focus-visible': focusVisibleStyle, ...typeStyle}: TypeStyle =
     BUTTON_TYPE_STYLES[type || 'navigation']
 
   const buttonStyle: RadiumCSSProperties = {
@@ -144,6 +136,7 @@ const Button = (props: Props, ref: React.Ref<HTMLButtonElement>): React.ReactEle
     ...!disabled && {boxShadow: '0 4px 6px rgba(0, 0, 0, .11), 0 1px 3px rgba(0, 0, 0, .08)'},
     color: '#fff',
     cursor: 'pointer',
+    display: 'inline-block',
     flexShrink: 0,
     fontSize: isRound ? 15 : 16,
     fontStyle: 'normal',
@@ -159,7 +152,10 @@ const Button = (props: Props, ref: React.Ref<HTMLButtonElement>): React.ReactEle
   if (!disabled) {
     buttonStyle[':hover'] = {
       backgroundColor: buttonStyle.backgroundColor,
-      boxShadow: '0 4px 6px rgba(0, 0, 0, .11), 0 1px 3px rgba(0, 0, 0, .08)',
+      boxShadow: (isTabNavigationUsed ?
+        `0px 0px 0px 2px #fff, 0px 0px 0px 5px ${buttonStyle.backgroundColor}, ` : '') +
+        '0 4px 6px rgba(0, 0, 0, .11), 0 1px 3px rgba(0, 0, 0, .08)',
+      outline: 'none',
       ...typeStyle[':hover'],
       ...(style ? style[':hover'] : {}),
       transform: combineTransforms(
@@ -167,6 +163,12 @@ const Button = (props: Props, ref: React.Ref<HTMLButtonElement>): React.ReactEle
         typeStyle[':hover']?.transform || 'translateY(-1px)'),
     }
     buttonStyle[':focus'] = buttonStyle[':hover']
+    if (isTabNavigationUsed && focusVisibleStyle) {
+      buttonStyle[':focus'] = {
+        ...buttonStyle[':focus'],
+        ...focusVisibleStyle,
+      }
+    }
     buttonStyle[':active'] = {
       boxShadow: '0 4px 6px rgba(0, 0, 0, .11), 0 1px 3px rgba(0, 0, 0, .08)',
       ...typeStyle[':active'],
@@ -183,14 +185,83 @@ const Button = (props: Props, ref: React.Ref<HTMLButtonElement>): React.ReactEle
   if (isHighlighted) {
     Object.assign(buttonStyle, buttonStyle[':hover'])
   }
-  if (clickingEvent) {
+  if (isActive) {
     Object.assign(buttonStyle, buttonStyle[':active'])
   }
+  return buttonStyle
+}
+
+interface ClickingProps<T> {
+  delayMillisecs?: number
+  isClickAnyway?: boolean
+  isDefaultPrevented?: boolean
+  onClick?: (event: React.MouseEvent<T>) => void
+}
+
+interface ClickingState<T> {
+  isActive: boolean
+  onClick: (event: React.MouseEvent<T>) => void
+}
+
+// Wrap a click event to only trigger after a delay and have an active state during that delay.
+export function useClicking<T>(props: ClickingProps<T>): ClickingState<T> {
+  const {delayMillisecs = 50, isClickAnyway, isDefaultPrevented = true, onClick} = props
+  const [clickingEvent, setClickingEvent] = useState<React.MouseEvent<T>|undefined>()
+
+  const handleClick = useCallback((event: React.MouseEvent<T>): void => {
+    if (!onClick) {
+      return
+    }
+    if (isDefaultPrevented) {
+      event?.preventDefault?.()
+    }
+    setClickingEvent(event)
+  }, [isDefaultPrevented, onClick])
+
+  useEffect((): (() => void)|void => {
+    if (!clickingEvent) {
+      return
+    }
+    let hasClicked = false
+    const actuallyClick = (): void => {
+      if (hasClicked) {
+        return
+      }
+      hasClicked = true
+      setClickingEvent(undefined)
+      onClick?.(clickingEvent)
+    }
+    const timeout = window.setTimeout(actuallyClick, delayMillisecs)
+    return (): void => {
+      if (isClickAnyway) {
+        actuallyClick()
+      }
+      window.clearTimeout(timeout)
+    }
+  }, [delayMillisecs, clickingEvent, isClickAnyway, onClick])
+
+  return {isActive: !!clickingEvent, onClick: handleClick}
+}
+
+const Button = (props: Props, ref: React.Ref<HTMLButtonElement>): React.ReactElement => {
+  const {bounceDurationMs = 50, children, disabled, isNarrow, isProgressShown, type, style,
+    isActive: isForceActive, isHighlighted, isRound, onClick, ...otherProps} = props
+
+  const {isActive, onClick: handleClick} =
+    useClicking<HTMLButtonElement>({delayMillisecs: bounceDurationMs, onClick})
+
+  const isTabNavigationUsed = useIsTabNavigationUsed()
+
+  const buttonStyle = getButtonStyle({
+    bounceDurationMs, disabled, isActive: isActive || isForceActive, isHighlighted, isNarrow,
+    isProgressShown, isRound, isTabNavigationUsed, style, type,
+  })
+
   const [radiumProps] =
     useRadium<HTMLButtonElement, Omit<Props, 'type'>>({...otherProps, style: buttonStyle})
   return <button
-    disabled={disabled} tabIndex={!disabled && onClick ? 0 : -1} {...radiumProps}
-    onClick={onClick && handleClick} ref={ref}>
+    disabled={disabled} tabIndex={!disabled && onClick ? undefined : -1} {...radiumProps}
+    onClick={onClick && handleClick} ref={ref} type="button">
     {isProgressShown ? <React.Fragment>
       <div style={progressContainerStyle}>
         <CircularProgress size={23} style={{color: '#fff'}} thickness={2} />
@@ -201,6 +272,24 @@ const Button = (props: Props, ref: React.Ref<HTMLButtonElement>): React.ReactEle
     </React.Fragment> : children}
   </button>
 }
+
+const InertButtonBase = (props: InertProps): React.ReactElement => {
+  const {children, ...otherProps} = props
+  const isTabNavigationUsed = useIsTabNavigationUsed()
+  const buttonStyle = getButtonStyle({...otherProps, isTabNavigationUsed})
+  return <span style={buttonStyle}>
+    {otherProps.isProgressShown ? <React.Fragment>
+      <div style={progressContainerStyle}>
+        <CircularProgress size={23} style={{color: '#fff'}} thickness={2} />
+      </div>
+      <span style={{opacity: 0}}>
+        {children}
+      </span>
+    </React.Fragment> : children}
+  </span>
+}
+export const InertButton = React.memo(InertButtonBase)
+
 
 
 export default React.memo(React.forwardRef(Button))

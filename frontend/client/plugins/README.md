@@ -65,6 +65,38 @@ To import files from the current plugin, you should import using relative path:
 import Foo from './components/foo'
 ```
 
+## Deployment-specific sources
+
+Some modules may need to be defined differently at the deployment level.
+We use the `${pluginName}/src/deployments` folder for them. Here is how it's structured:
+
+```
+deployments
+    |
+    |-- default
+    |       |
+    |       |- filename.ts   
+    |
+    |-- ${deploymentName}
+    |       |
+    |       |- deploment_specific_file_used_in_filename.ts
+    |       |- filename.ts   
+```
+
+Each module should have at least a default implementation in `default`.
+
+The describing interface for the module (common for all its implementation) must be described in `${pluginName}/custom.d.ts`:
+```typescript
+declare module 'plugin/deployment/my_module' {
+  const CommonInterface: ... // Define common interface...
+  export CommonInterface // export as default if relevant to your usage.
+}
+
+```
+
+To use the deployment-specific implementation (or the default one if no deployment-specific one is available for the current deployment), you can then `import from 'plugin/deployment/my_module'` in plugin files.
+
+
 ## Typescript
 
 For plugins with typed files, you need to define a tsconfig.json file at the root of your plugin folder.

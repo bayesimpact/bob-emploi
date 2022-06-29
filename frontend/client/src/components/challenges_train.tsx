@@ -1,8 +1,7 @@
-import PropTypes from 'prop-types'
 import React, {useEffect, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 
-import {getTranslatedMainChallenges} from 'store/i18n'
+import {getTranslatedMainChallenges} from 'store/main_challenges'
 import isMobileVersion from 'store/mobile'
 import {CHALLENGE_RELEVANCE_COLORS, NO_CHALLENGE_CATEGORY_ID} from 'store/project'
 
@@ -10,6 +9,8 @@ import Button from 'components/button'
 import {colorToAlpha} from 'components/colors'
 import Emoji from 'components/emoji'
 import {Modal, useModal} from 'components/modal'
+
+import type {ConfigColor} from 'config'
 
 const ICON_SIZE = 24
 const CHALLENGE_WIDTH = isMobileVersion ? 100 : 95
@@ -63,7 +64,7 @@ const modalButtonStyle: React.CSSProperties = {
 }
 const MainChallengeDetailModalBase = (props: MainChallengeDetailModalProps): React.ReactElement => {
   const {emoji = '', hideModal, isShown, metricDetails = '', metricTitle = ''} = props
-  const {t} = useTranslation()
+  const {t} = useTranslation('components')
   return <Modal {...{isShown}} style={modalStyle}>
     <div style={modalContentStyle}>
       <h2 style={modalTitleStyle}>{metricTitle}</h2>
@@ -125,7 +126,7 @@ interface BubblesProps {
   showSelfBubble?: boolean
 }
 const BubblesBase = (props: BubblesProps) => {
-  const {t} = useTranslation()
+  const {t} = useTranslation('components')
   const {challengeWidth, mainChallenges, selfDiagnostic, showSelfBubble = true} = props
   const mainChallenge = mainChallenges.
     findIndex(({relevance}) => relevance === 'NEEDS_ATTENTION')
@@ -195,7 +196,7 @@ interface WagonProps extends ValidMainChallenge {
 }
 
 const WagonBase = (props: WagonProps): React.ReactElement => {
-  const {t} = useTranslation()
+  const {t} = useTranslation('components')
   const isBravo = props.categoryId === NO_CHALLENGE_CATEGORY_ID
   const {
     challengeWidth,
@@ -261,7 +262,7 @@ const WagonBase = (props: WagonProps): React.ReactElement => {
     <MainChallengeDetailModal
       isShown={isModalShown} hideModal={hideModal} emoji={emoji} metricDetails={metricDetails}
       metricTitle={metricTitle} />
-    <button style={buttonStyle} onClick={showModal}>
+    <button style={buttonStyle} onClick={showModal} type="button">
       <span style={iconStyle}>
         <Emoji size={14}>{emoji}</Emoji>
         <span style={challengeStatusStyle} />
@@ -269,12 +270,6 @@ const WagonBase = (props: WagonProps): React.ReactElement => {
       <span style={titleStyle}>{metricTitle}</span>
     </button>
   </li>
-}
-WagonBase.propTypes = {
-  emoji: PropTypes.string,
-  metricTitle: PropTypes.string,
-  relevance: PropTypes.string,
-  style: PropTypes.object,
 }
 const Wagon = React.memo(WagonBase)
 
@@ -295,7 +290,7 @@ interface Props {
 const MainChallengesTrain = (props: Props): React.ReactElement => {
   const {mainChallenges, challengeWidth = CHALLENGE_WIDTH, gender, selfDiagnostic,
     showSelfDiagnostic, style} = props
-  const {t} = useTranslation()
+  const {t} = useTranslation('components')
   const challengesData = getTranslatedMainChallenges(t, gender)
   let hasMainChallenge = false
   const challengesWithData = mainChallenges.

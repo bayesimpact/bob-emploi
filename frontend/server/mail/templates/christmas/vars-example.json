@@ -1,0 +1,22 @@
+{
+  "adviceUrlBodyLanguage": "https://www.bob-emploi.fr/advice/focus-body-language",
+  "adviceUrlCommute": "https://www.bob-emploi.fr/advice/commute",
+  "adviceUrlCreateYourCompany": "https://www.bob-emploi.fr/advice/create-your-company",
+  "adviceUrlExploreOtherJobs": "https://www.bob-emploi.fr/advice/explore-other-jobs",
+  "adviceUrlRelocate": "https://www.bob-emploi.fr/advice/relocate",
+  "adviceUrlVolunteer": "https://www.bob-emploi.fr/advice/volunteer",
+  "areEmailsAnswerRead": true,
+  "baseUrl": "https://www.bob-emploi.fr",
+  "couldFreelance": "True",
+  "emailInUrl": "pierre%40example.com",
+  "firstName": "Pierre",
+  "gender": "MASCULINE",
+  "inCommuteCity": "à Besançon",
+  "inRelocateDepartement": "dans le Jura",
+  "nextYear": "2022",
+  "productLogoUrl": "https://t.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
+  "productName": "Bob",
+  "startedSearchingSince": "depuis 6 mois",
+  "unsubscribeLink": "https://www.bob-emploi.fr/unusbscribe",
+  "year": "2021"
+}

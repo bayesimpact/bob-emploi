@@ -13,12 +13,11 @@ import "bob_emploi/frontend/api/options.proto";
 import "bob_emploi/frontend/api/seasonal_jobbing.proto";
 import "bob_emploi/frontend/api/strategy.proto";
 import "bob_emploi/frontend/api/training.proto";
-import "bob_emploi/frontend/api/upskilling.proto";
 
 package bayes.bob;
 option go_package="bayes.org/bob_emploi/frontend/api/project";
 
-// Next available tag: 52.
+// Next available tag: 55.
 message Project {
   // A unique identifier for this project.
   string project_id = 1 [(field_usage) = PERSONAL_IDENTIFIER];
@@ -57,13 +56,8 @@ message Project {
   // export, but nowhere else.
   map<string, bool> activated_chantiers = 18 [deprecated = true, (field_usage) = APP_ONLY];
 
-  // List of current actions for this project. They stay in here until the next
-  // generation of new actions and then the finished or declined ones are moved
-  // to past_actions. They are sorted by their created_at field: most recent
-  // last.
-  // NOTE: We do not use it anymore but old projects might still have this
-  // field set from previous versions.
-  repeated Action actions = 25 [deprecated = true, (field_usage) = ALGORITHM_RESULT];
+  // List of current actions for this project.
+  repeated Action actions = 25 [(field_usage) = ALGORITHM_RESULT];
 
   // List of past actions that were done or declined in previous days. They are
   // sorted by their stopped_at field: most recent last.
@@ -85,7 +79,9 @@ message Project {
   google.protobuf.Timestamp created_at = 15 [(field_usage) = APP_ONLY];
 
   // The date and time at which the main conclusions of this project were shown.
-  google.protobuf.Timestamp diagnostic_shown_at = 44 [(field_usage) = APP_ONLY];
+  // DEPRECATED: 2021-05, we just don't show a full diagnostic anymore. We keep the value for old
+  // users.
+  google.protobuf.Timestamp diagnostic_shown_at = 44 [(field_usage) = APP_ONLY, deprecated = true];
 
   // The kind of project (e.g. to find a job).
   ProjectKind kind = 19;
@@ -149,6 +145,9 @@ message Project {
   // User feedback on this project.
   ProjectFeedback feedback = 17 [(field_usage) = USER_FEEDBACK];
 
+  // Whether user feedback was requested.
+  bool was_feedback_requested = 54 [(field_usage) = APP_ONLY];
+
   Diagnostic diagnostic = 28 [(field_usage) = ALGORITHM_RESULT];
 
   // User level of involvement in this job.
@@ -187,11 +186,14 @@ message Project {
   // answer the question.
   SelfDiagnostic original_self_diagnostic = 49;
 
-  // The jobs selected by the user in Upskilling.
-  repeated upskilling.Job upskilling_selected_jobs = 50 [(list_format) = REPLACEABLE];
-
   // Whether the user has reviewed information linked to this project.
   ProjectReview user_has_reviewed = 51 [(field_usage) = APP_ONLY];
+
+  // Name of the action plan, given by the user.
+  string action_plan_name = 52;
+
+  // The time when user had finished selecting actions, and started working on their plan.
+  google.protobuf.Timestamp action_plan_started_at = 53;
 }
 
 // Features of the project review and whether the user has reviewed them.
@@ -223,6 +225,8 @@ message WorkingStrategy {
 
 message ProjectFeedback {
   // General score: 0 means unknown, and then from 1 to 5.
+  // TODO(sil): Cleanup the data for users between the launch of the action plan and the creation of
+  // advocacy_score to move score values to advocacy_score.
   int32 score = 1;
 
   // Freeform text feedback given by the user.
@@ -234,6 +238,31 @@ message ProjectFeedback {
   // How much does the user agrees that Bob's idea of the main challenge is correct. 0 means unknown
   // then from 1 to 5 (users actually rates from 0 to 4, but we shift it when we store it).
   int32 challenge_agreement_score = 4;
+
+  // User believes their action plan will be useful for their job search. 0 means unknown
+  // then from 1 to 5 (users actually rates No/Somewhat/Yes, but we shift it when we store it).
+  int32 action_plan_usefulness_score = 5 [deprecated = true];
+
+  // User believes their action plan helps them better plan their job search. 0 means unknown
+  // then from 1 to 5 (users actually rates No/Somewhat/Yes, but we shift it when we store it).
+  int32 action_plan_helps_plan_score = 6;
+
+  // User feels better prepared to search for jobs after making their action plan. 0 means unknown
+  // then from 1 to 5 (users actually rates No/Somewhat/Yes, but we shift it when we store it).
+  int32 action_plan_better_prepared_score = 7 [deprecated = true];
+
+  // How much does the user is willing to recommend Bob to a friend. 0 means unknown
+  // then from 1 to 5 (users actually rates No/Maybe/Yes, but we shift it when we store it).
+  // We've stopped asking for this around 2022-02-28.
+  int32 advocacy_score = 8 [deprecated = true];
+
+  // User believes they learn new information about improving their job search. 0 means unknown
+  // then from 1 to 5 (users actually rates from Not at all / Somewhat / A lot).
+  int32 new_info_improve_score = 9;
+
+  // User feels more motivated to continue their job search after using the product. 0 means unknown
+  // then from 1 to 5 (users actually rates from Not at all / Somewhat / A lot).
+  int32 motivation_score = 10;
 }
 
 // Next ID: 36.
@@ -534,6 +563,10 @@ enum ProjectWorkload {
   UNKNOWN_PROJECT_WORKLOAD = 0;
   PART_TIME = 1;
   FULL_TIME = 2;
+  // The two values were added for a very short period in 2021 but we got some users having it.
+  // TODO(pascal): Clean up the DB and drop them.
+  EXEMPT = 3 [deprecated = true];
+  NON_EXEMPT = 4 [deprecated = true];
 }
 
 enum PreviousJobSimilarity {

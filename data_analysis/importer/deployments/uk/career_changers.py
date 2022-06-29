@@ -2,7 +2,7 @@
 
 import argparse
 import json
-from typing import Optional, Iterable, List, TextIO, Union
+from typing import Optional, Iterable, TextIO, Union
 
 import pandas as pd
 import requests
@@ -12,7 +12,7 @@ from bob_emploi.data_analysis.lib import batch
 ONET_VERSION = '22_3'
 
 
-def _soc_to_onet_api(codes: List[str]) -> requests.Response:
+def _soc_to_onet_api(codes: list[str]) -> requests.Response:
     batch_codes = ','.join(codes)
     return requests.get(
         f'http://api.lmiforall.org.uk/api/v1/o-net/onet2soc?onetCodes={batch_codes}',
@@ -53,7 +53,7 @@ def main(output_csv: Union[str, TextIO], career_changers_tsv: str) -> None:
         }, axis='columns').to_csv(output_csv, index=False)
 
 
-def _parser_main(string_args: Optional[List[str]] = None) -> None:
+def _parser_main(string_args: Optional[list[str]] = None) -> None:
 
     parser = argparse.ArgumentParser(
         description='Make a career changers matrix for SOC codes.')

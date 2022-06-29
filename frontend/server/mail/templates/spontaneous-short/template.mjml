@@ -1,0 +1,29 @@
+<mjml owa="desktop" version="4.6.3">
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-text line-height="1.38">Bonjour {{var:firstName:"Rémi"}},</mj-text>
+        <mj-text line-height="1.38">J'espère que tout va bien pour vous. Peut-être avez-vous {%if var:isJobFoundSurprising:""=="True"%}déjà{%endif%} retrouvé du travail ? Je vous le souhaite vraiment. Sinon j'ai pensé à un truc qui me trotte dans la tête et qui me semble super important pour postuler.</mj-text>
+        <mj-text line-height="1.38">Pour une offre d'emploi ou une candidature spontanée, tou·te·s les candidat·e·s essaient de montrer leur motivation en général mais les recruteur·e·s cherchent d'abord des personnes motivées par leur entreprise en particulier.</mj-text>
+        <mj-image src="https://t.bob-emploi.fr/tplimg/6u2u/b/xsm4q/i1rpy.png" id="i0fs" width="auto" padding-top="20px" padding-left="20%" padding-right="20%" padding-bottom="0"></mj-image>
+        <mj-text line-height="1.38" padding-left="15%" padding-right="15%" padding-top="5px" font-size="small">Le temps passé sur une candidature augmente de 40% si la lettre de motivation est vraiment personnalisée. Source : Tilkee, 2019.</mj-text>
+        <mj-text line-height="1.38">La technique la plus utilisée c'est d'avoir un modèle de lettre de motivation et de l'adapter pour chaque offre à laquelle vous postulez, mais j'ai pensé à une autre approche : elle prend plus de temps, demande un peu d'organisation mais elle est beaucoup plus efficace. Au lieu de partir d'une offre d'emploi et de trouver comment expliquer votre motivation, je vous propose de <strong>trouver d'abord des entreprises qui vous plaisent</strong>, pour lesquelles vous avez déjà de la motivation !</mj-text>
+        <mj-text line-height="1.38">Prenez le temps de trouver les entreprises pour lesquelles vous avez vraiment envie de travailler. Vous êtes unique, et les entreprises sont toutes différentes. {%if var:atVariousCompanies:""!=""%}Travailler {{var:atVariousCompanies:""}} ça n'est pas la même chose. {%endif%}Il y a forcément {{var:someCompanies:"des entreprises"}} qui vous parlent plus que d'autres, parce que {{var:whySpecificCompany:"vous vous reconnaissez dans leurs valeurs, leur équipe, leur service client ou ce qu'elles vendent"}}.</mj-text>
+        <mj-image src="https://t.bob-emploi.fr/tplimg/6u2u/b/xsm4q/i1r5m.png" id="ib4s9" padding-left="20%" padding-right="20%"></mj-image>
+        <mj-text line-height="1.38">Ça peut paraître fou d'écrire sa lettre de motivation avant de savoir si une entreprise embauche mais j'ai lu que plus de 75% des recruteurs lisaient les candidatures spontanées donc même s'ils n'ont pas d'offre d'emploi sur internet aujourd'hui, il est possible qu'ils pensent à recruter ou tout simplement que votre motivation les touche.</mj-text>
+        {%if var:advicePageUrl:""!=""%}
+        <mj-text line-height="1.38">Si ça vous tente d'essayer cette technique et que vous avez besoin d'un coup de pouce, n'hésitez pas {%if var:areEmailsAnswerRead%}à me contacter ou {%endif%}à lire <a href="{{var:advicePageUrl}}">cette page</a> qui explique comment s'y prendre.</mj-text>
+        {%elseif var:areEmailsAnswerRead%}
+        <mj-text line-height="1.38">Si ça vous tente d'essayer cette technique et que vous avez besoin d'un coup de pouce, n'hésitez pas à me contacter.</mj-text>
+        {%endif%}
+        <mj-text line-height="1.38">En attendant je vous souhaite bon courage pour votre recherche d'emploi, {{var:firstName:"Rémi"}} et je reviens vers vous si j'ai d'autres idées.</mj-text>
+        <mj-text line-height="1.38">Pascal, de {{var:productName}}</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-text font-size="11px" color="#55575d" line-height="2">Vous recevez cet email car vous êtes inscrit{%if var:gender:""=="FEMININE"%}e{%elseif var:gender:""=="MASCULINE"%}{%else%}·e{%endif%} sur <a href="{{var:baseUrl}}?utm_source=bob-emploi&amp;utm_medium=email" target="_blank">{{var:productName}}</a> et avez demandé des emails de coaching. <a href="{{var:changeEmailSettingsUrl}}" target="_blank">Cliquez ici</a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte {{var:productName}} en veille ? <a href="{{var:statusUpdateUrl}}" target="_blank">cliquez ici</a>.</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

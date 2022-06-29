@@ -1,3 +1,5 @@
+import type {ConfigColor} from 'config'
+
 // Extract color components.
 const colorToComponents = (color: ConfigColor|'#fff'|'#000'): [number, number, number] => {
   if (color.length === 7) {

@@ -1,0 +1,653 @@
+[
+ {
+  "_id": "recJFtemAKpvhZjNm",
+  "_order": 0,
+  "actionTemplateId": "alternance",
+  "adviceId": "alternance",
+  "duration": "ONE_HOUR",
+  "shortDescription": "L'alternance est un moyen efficace de gagner en expérience et d'augmenter vos chances d'être embauché·e ensuite. Ce site vous permettra de comprendre les conditions de l'alternance et de trouver des opportunités !",
+  "tags": [
+   "link"
+  ],
+  "title": "Trouver des opportunités en l'alternance",
+  "triggerScoringModel": "advice-try-alternance"
+ },
+ {
+  "_id": "recWY1DoOog52Q5zy",
+  "_order": 1,
+  "actionTemplateId": "association-help",
+  "adviceId": "association-help",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "shortDescription": "Plus de 800.000 Français·es font appel à des associations pour les aider dans leur recherche d'emploi, pourquoi pas vous ?",
+  "tags": [
+   "link"
+  ],
+  "title": "Trouver une association pour m'accompagner dans ma recherche",
+  "triggerScoringModel": "advice-association-help"
+ },
+ {
+  "_id": "rechKKgprG8S8RKeP",
+  "_order": 2,
+  "actionTemplateId": "better-job-in-group",
+  "adviceId": "better-job-in-group",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "shortDescription": "Regarder la liste de tous les métiers qui correspondent à vos compétences afin d'augmenter vos chances de trouver du travail en postulant à d'autres postes.",
+  "tags": [
+   "tool"
+  ],
+  "title": "Découvrir des métiers que je peux faire avec mes compétences",
+  "triggerScoringModel": "advice-better-job-in-group"
+ },
+ {
+  "_id": "rec8hVWHTVQTDvJCe",
+  "_order": 3,
+  "actionTemplateId": "body-language",
+  "adviceId": "body-language",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "shortDescription": "Travailler son langage corporel est très important pour les entretiens car une grande partie de la communication est non-verbale.",
+  "tags": [
+   "video"
+  ],
+  "title": "Booster ma confiance en travaillant sur mon langage corporel",
+  "triggerScoringModel": "advice-body-language"
+ },
+ {
+  "_id": "recaTiCTcAPjkYCsm",
+  "_order": 4,
+  "actionTemplateId": "check-resume-mistakes",
+  "duration": "ONE_HOUR",
+  "resourceContent": "Voici quelques erreurs courantes dans les CV et des conseils pour les éviter :\n\n**1) Fautes d'orthographe et de grammaire**\n\nAssurez-vous de vérifier l'orthographe et de relire votre CV avant de le soumettre - si vous le pouvez, il est même préférable de le faire relire par un ami ou un membre de la famille, car il est parfois difficile de voir ses propres erreurs.\n\n**2) Ne pas inclure les mots-clés qui correspondent à l'offre d'emploi**\n\nFaire correspondre les mots de votre CV aux mots clés de l'offre d'emploi aidera vraiment votre CV à se démarquer auprès des recruteurs. Lisez votre CV en parallèle avec l'offre d'emploi et essayez d'intégrer les mots de l'offre dans votre CV.\n\n**3) Ne pas mettre à jour vos compétences et vos antécédents professionnels**\n\nAssurez-vous de faire la meilleure première impression possible en incluant les dernières informations sur vos compétences, vos expériences professionnelles et vos réalisations.\n\n**4) Trop se concentrer sur ce que vous avez fait, plutôt que sur les résultats que vous avez obtenus**\n\nN'oubliez pas que les recruteurs lisent probablement des centaines de CV, il est donc important d'éviter de rédiger des CV qui se contentent d'énumérer vos fonctions précédentes. Faites ressortir votre CV en utilisant des mots actifs et en mettant l'accent sur vos réalisations avec des exemples concrets. Ex : J'ai augmenté les ventes de 10% et j'ai été nommé trois fois meilleur vendeur du mois\"\n\nVous trouverez d'autres exemples d'erreurs courantes à éviter dans [cet article](https://www.jobsense.fr/conseils/cv-erreurs-a-eviter)",
+  "shortDescription": "Il y a des erreurs classiques sur le CV qu'on peut eviter, et vérifier les erreurs les plus répandues avant d'envoyer une candidature vous gagnera de rassurance et peut-être plus de réponses",
+  "tags": [
+   "link"
+  ],
+  "title": "Vérifier que des erreurs courantes ne sont pas sur mon CV",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "recb87EPU9659BcN5",
+  "_order": 5,
+  "actionTemplateId": "commute",
+  "adviceId": "commute",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "shortDescription": "Avoir accès à la liste de toutes les villes qui recrutent dans votre secteur d'activité est un atout. Parfois 30 min de transport supplémentaire augmentent beaucoup vos chances d'être embauché·e !",
+  "tags": [
+   "tool"
+  ],
+  "title": "Découvrir la liste des villes proches qui recrutent le mieux dans mon secteur d'activité",
+  "triggerScoringModel": "advice-commute"
+ },
+ {
+  "_id": "recU6owy6K548cHqo",
+  "_order": 6,
+  "actionTemplateId": "connect-recruiter",
+  "duration": "BETWEEN_1_AND_3_HOURS",
+  "resourceContent": "Lorsque vous n'êtes pas sûr de l'emploi à viser ou du type de travail qui vous conviendrait, parler avec un recruteur peut vous aider à savoir quels emplois correspondent à vos compétences et à votre expérience.\n\nLes agences de recrutement qui sont membres d'une confédération sont tenues aux normes professionnelles. Vous pouvez donc être sûr·e que vous travaillerez avec un recruteur qui vous aidera à trouver une excellente opportunité.\n\nVous pouvez en savoir plus sur la REC [ici] (https://www.rec.uk.com/jobseekers/choosing-recruitment-agency) et rechercher des agences de recrutement par lieu ou par secteur [ici] (https://www.rec.uk.com/jobseekers/member-directory?&q=&sector=All%20sectors&placementType=all&sortBy=A%20-%20Z&auditedOnly=false&page=1).",
+  "shortDescription": "Les recruteurs sont une excellente ressource pour savoir quelles options d'emploi pourraient vous convenir. Ils peuvent évaluer votre expérience professionnelle et vos compétences, et vous proposer des emplois correspondant à votre profil !",
+  "tags": [
+   "link"
+  ],
+  "title": "Consulter un recruteur pour trouver un emploi qui me corresponde",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "recFKtonyafG1auIL",
+  "_order": 7,
+  "actionTemplateId": "create-your-company",
+  "adviceId": "create-your-company",
+  "duration": "ONE_HOUR",
+  "shortDescription": "Créer sa propre activité est un vrai défi qui peut vous correspondre. Il faut savoir que 68% des micro-entreprises financées par l'Adie existent encore après 2 ans : c'est donc possible !",
+  "tags": [
+   "video",
+   "link"
+  ],
+  "title": "Envisager de créer ma propre activité",
+  "triggerScoringModel": "advice-create-your-company"
+ },
+ {
+  "_id": "rectQwZvqfh5vlqO1",
+  "_order": 8,
+  "actionTemplateId": "events",
+  "adviceId": "events",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "resourceUrl": "https://www.pole-emploi.fr/informations/ma-recherche.html#RechercheEvenement",
+  "shortDescription": "Assister à des événements est un excellent moyen de rencontrer directement des recruteurs, dans un contexte plus décontracté qu'un entretien.",
+  "tags": [
+   "tool"
+  ],
+  "title": "Assister à des évènements en lien avec votre recherche d'emploi",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "recKpz0LgAqLDD1tn",
+  "_order": 9,
+  "actionTemplateId": "explore-assess",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "resourceContent": "Il est parfois difficile de savoir ce que l'on veut faire et de trouver des idées de métiers inspirants.\n\nNous avons sélectionné pour vous le site [cidj](https://www.cidj.com/metiers/metiers-par-centres-d-interets) qui vous permet d'explorer des métiers selon vos centres d'intérêt.",
+  "shortDescription": "Explorer des métiers selon vos centres d'intérêt vous permettra d'identifier ce que vous aimez et ce qui vous attire vraiment.",
+  "tags": [
+   "link"
+  ],
+  "title": "Utiliser cet outil pour identifier un métier à cibler",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "recuEmdg4RJoVuwFB",
+  "_order": 10,
+  "actionTemplateId": "explore-other-jobs",
+  "adviceId": "explore-other-jobs",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "shortDescription": "Explorer d'autres métiers vous donnera les idées pour ce que vous pourriez faire autrement pour cibler un métier avec moins de concurrence",
+  "tags": [
+   "tool"
+  ],
+  "title": "Explorer de nombreux métiers en vidéo",
+  "triggerScoringModel": "constant(2.4)"
+ },
+ {
+  "_id": "recBsaTCItQvRjKRB",
+  "_order": 11,
+  "actionTemplateId": "find-a-jobboard",
+  "adviceId": "find-a-jobboard",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "shortDescription": "Ces sites vous permettront de mieux cibler les offres d'emploi qui vous correspondent.",
+  "tags": [
+   "link"
+  ],
+  "title": "Découvrir des sites d'offres d'emploi sélectionnés pour moi",
+  "triggerScoringModel": "advice-job-boards"
+ },
+ {
+  "_id": "recI6xXXcSRBunDd3",
+  "_order": 12,
+  "actionTemplateId": "find-right-job",
+  "duration": "ONE_HOUR",
+  "resourceContent": "Ce site web est dédié à la recherche du bon emploi et contient toutes les infos clés pour apprendre plus et pour vous aider à identifier le bon travail pour vous.\n\nIl contient plusieurs ressources pour cibler votre recherche dans certaines regions de la France. Vous pouvez également en apprendre plus sur les secteurs variés, les types de rôles qui existent parmi les secteurs, et où commencer pour postuler aux offres d'emploi.\n\nPour aller plus loin, vous pouvez consulter le site web [name].",
+  "shortDescription": "Postuler à des emplois peut être difficile lorsqu'on n'est pas sûr de l'emploi qui nous convient le mieux. Ce site dédié à la recherche du bon emploi peut vous aider à y parvenir !",
+  "tags": [
+   "link"
+  ],
+  "title": "Trouver le bon emploi pour moi",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "recSj0nShdVNLtN59",
+  "_order": 13,
+  "actionTemplateId": "find-work-you-love-video",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "resourceContent": "Parfois, vous devez vous contenter du métier que vous pouvez décrocher même s'il ne vous passionne pas. Pourtant, sur le long-terme il est idéal de pouvoir combiner travail et passion. Cette [vidéo](https://www.ted.com/talks/scott_dinsmore_how_to_find_work_you_love?language=fr) propose d'excellents conseils pour trouver un métier qui vous passionne.\n\n### 3 astuces à garder en tête :\n\n**1 - Devenez un·e expert·e de vous-même** -- qui êtes-vous, qu'aimez-vous et quelles sont vos forces ?\n\n**2 - Identifier vos valeurs et votre processus de prise de décision** -- quelles sont vos valeurs clés et comment sont-elles connectées au type de travail que vous voudriez faire ?\n\n**3 - Comprendre vos expériences passées** -- qu'avez-vous le plus apprécié, quelle expérience voudriez-vous renouveler ?",
+  "shortDescription": "Regarder cette vidéo vous aidera à mieux vous comprendre. Identifier vos forces, ce que vous aimez bien et les expériences qui vous inspirent vous permettra de cibler un emploi que vous trouverez gratifiant.",
+  "tags": [
+   "video"
+  ],
+  "title": "Regarder cette vidéo sur mieux se comprendre et trouver un métier que j'aime",
+  "triggerScoringModel": "constant(2.5)"
+ },
+ {
+  "_id": "rec5JPKFSr3cLexa2",
+  "_order": 14,
+  "actionTemplateId": "finding-work",
+  "duration": "ONE_HOUR",
+  "resourceContent": "Le site Finding Work de Job Help est un excellent endroit pour explorer des informations et des ressources sur les opportunités d'emploi dans un large éventail de secteurs, ainsi que pour savoir quels secteurs recrutent actuellement !\n\nSur ce site, vous pouvez en apprendre davantage sur les types de rôles disponibles, les avantages de travailler dans chaque secteur, les types de compétences qui seraient utiles dans ce travail et la direction pour trouver des emplois dans ce secteur sur le site web Find a Job.\n\nConsultez le [site web](https://jobhelp.campaign.gov.uk/finding-work/) et apprenez-en plus sur les emplois qui pourraient vous convenir !",
+  "shortDescription": "Le site web \"Trouver du travail\" fournit un aperçu utile des différents types d'emplois dans différents secteurs, des compétences nécessaires et des avantages à travailler dans ces secteurs, ainsi que des informations sur la façon de trouver ces emplois afin que vous puissiez commencer à postuler !",
+  "tags": [
+   "link"
+  ],
+  "title": "Découvrir un site web pour apprendre les métiers disponibles et qui recrutent en ce moment",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "recL4y47oFWUkDjbM",
+  "_order": 15,
+  "actionTemplateId": "follow-up-article",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "resourceContent": "Lorsqu'un recruteur ne répond pas, cela ne veut pas dire que votre candidature n'est pas de qualité. C'est souvent par manque de temps, ou parce que le recruteur ne croit pas avoir de poste à vous proposer (il s'agit de le convaincre !). Cet [article](https://www.cadremploi.fr/editorial/conseils/conseils-candidature/detail/article/quand-reprendre-contact-apres-un-entretien-dembauche.html) répond aux questions principales que l'on se pose quand on veut relancer un recruteur : quand ? qui ? comment ? Et propose quelques exemples de mails de relance.",
+  "shortDescription": "Lire cet article vous permettra d'apprendre à relancer un employeur après avoir postulé pour une offre, et ainsi vous démarquer des autres.",
+  "tags": [
+   "link"
+  ],
+  "title": "Lire un article pour apprendre à relancer après avoir postulé",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "recMhpP5175H0gJAP",
+  "_order": 16,
+  "actionTemplateId": "follow-up-examples",
+  "adviceId": "follow-up",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "shortDescription": "Regarder des exemples d'emails pour relancer un recruteur vous permettra d'avoir des bonnes astuces et des exemples concrets pour comment le faire",
+  "tags": [
+   "link",
+   "tool"
+  ],
+  "title": "Regarder des exemples d'emails pour apprendre comment relancer un recruteur",
+  "triggerScoringModel": "advice-follow-up"
+ },
+ {
+  "_id": "rec4BSRIzKAsS2okr",
+  "_order": 17,
+  "actionTemplateId": "identify-strengths",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "resourceContent": "Même si vous n'avez pas beaucoup d'expérience professionnelle, vous pouvez identifier vos points forts et vos compétences transférables sur la base de vos emplois précédents.\n\nCommencez par réfléchir à vos expériences professionnelles antérieures, même s'il s'agissait d'emplois à court terme ou à temps partiel. Par exemple, si vous avez travaillé dans un restaurant, vous savez probablement comment gérer les relations avec les clients, jongler avec plusieurs responsabilités à la fois et communiquer entre équipes.\n\nAprès avoir identifié vos propres forces et compétences, réfléchissez à la manière dont vous aimeriez les utiliser dans un futur poste. Vous pouvez cibler votre recherche d'emploi en fonction de ce que vous savez faire et trouver des occasions de mettre en valeur ces compétences.\n\nVous trouverez des informations supplémentaire dans cet [article de Pôle emploi](https://www.pole-emploi.fr/candidat/vos-recherches/preparer-votre-candidature/les-3-types-de-competences-a-v-1.html).",
+  "shortDescription": "Vous avez des forces et des compétences uniques qui font de vous un·e bon·ne candidat·e. En examinant vos expériences professionnelles passées, vous pouvez identifier vos points forts et envisager de les utiliser dans votre prochain emploi.",
+  "tags": [
+   "tool"
+  ],
+  "title": "Identifier mes points forts et mes compétences",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "recK6FgnOhITOg64A",
+  "_order": 18,
+  "actionTemplateId": "immersion",
+  "adviceId": "immersion",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "shortDescription": "Les immersions sont essentielles pour savoir si on métier est fait pour vous, mais aussi pour augmenter les chances d'être embauché·e ensuite !\n",
+  "tags": [
+   "video"
+  ],
+  "title": "Apprendre comment découvrir la réalité d'un métier grâce à une immersion professionnelle",
+  "triggerScoringModel": "category-find-what-you-like"
+ },
+ {
+  "_id": "recUcGvI3zhdCKqyw",
+  "_order": 19,
+  "actionTemplateId": "improve-resume",
+  "duration": "ONE_HOUR",
+  "resourceContent": "Voici quelques ressources selon vos besoins :\n\n**Vous n'avez jamais fait de CV avant ? Vous n'aimez pas votre CV actuel ?** Voici un [guide](https://zety.fr/blog/comment-faire-un-cv) complet pour se mettre au travail et réussir son CV\n\n**Vous avez besoin d'inspiration ou d'un modèle pour créer votre CV ?** Voici un [site](https://www.creeruncv.com/exemple-de-cv/classique/) avec différents modèles classiques.\n\n**Besoin de conseils supplémentaires ?** N'hésitez pas à lire cet [article](https://www.welcometothejungle.com/fr/articles/reussir-mise-en-page-cv) qui pourra vous aider.\n\n**Vous aussi vous êtes fatigué·e de refaire votre CV ?** Lisez cet [article](https://www.welcometothejungle.com/fr/articles/faire-son-cv-actualiser-mettre-a-jour-postuler) humoristique pour vous rendre compte que vous n'êtes pas seul·e.",
+  "shortDescription": "Votre CV est souvent la première impression que vous donnez au recruteur - c'est votre première occasion de démontrer pourquoi vous êtes la personne idéale pour le poste. Il est donc important d'avoir un bon CV et qu'il soit à jour !",
+  "tags": [
+   "link"
+  ],
+  "title": "Améliorer mon CV pour attirer l'œil des recruteurs",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "rec7GAeytCcbAML0z",
+  "_order": 20,
+  "actionTemplateId": "interview-good-impression",
+  "adviceId": "improve-interview",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "resourceContent": "Voici 5 détails importants pour les recruteurs qui vous aideront à faire bonne impression et augmenteront vos chances d'être recruté·e :\n\n* Choisissez une tenue adaptée.\n* Vérifiez votre itinéraire et prévoyez d'avoir 10 min d'avance.\n* Prenez tous les documents nécessaires (CV, pièce d'identité, notes préparatoires).\n* Prenez aussi un cahier (propre !) et un crayon pour prendre des notes.\n* Juste avant l'entretien, mettez votre téléphone en mode silencieux.\n\nCe [guide](https://www.keljob.com/editorial/chercher-un-emploi/entretien-dembauche/detail/article/entretien-dembauche-les-7-details-qui-font-la-difference.html) décrit 7 détails qui font la différence en entretien.",
+  "shortDescription": "Voici 5 détails importants pour les recruteurs qui vous aideront à faire bonne impression et augmenteront vos chances d'être recruté·e.",
+  "tags": [
+   "link"
+  ],
+  "title": "Apprendre ces 5 bonnes pratiques pour faire bonne impression en entretien",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "rec4uwIpRhRG9djX2",
+  "_order": 21,
+  "actionTemplateId": "jobflix",
+  "adviceId": "jobflix",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "resourceContent": "[Jobflix](https://www.jobflix.app/?utm_source=bob&utm_campaign=action-plan) est un outil d'exploration de l'emploi qui vous montre les secteurs qui embauchent et qui paient le mieux dans votre région, et vous aide également à voir quels programmes de formation vous aideront à avoir les bonnes qualifications pour chaque emploi !",
+  "resourceUrl": "https://www.jobflix.app/?utm_source=bob&utm_campaign=action-plan",
+  "shortDescription": "Cet outil vous permet d'explorer des emplois dans différents secteurs et vous indique ceux dans votre région qui offrent un salaire compétitif et qui recrutent le plus.",
+  "tags": [
+   "link"
+  ],
+  "title": "Explorer des métiers dans votre région par secteur, salaire, et niveau recrutement",
+  "triggerScoringModel": "constant(2.5)"
+ },
+ {
+  "_id": "recPkbH8J3EvYBAWy",
+  "_order": 22,
+  "actionTemplateId": "keep-spirit-up",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "resourceContent": "Lorsque vous sentez que vous ne progressez pas ou que vous perdez votre concentration dans votre recherche d'emploi, essayez quelques-unes de ces idées pour vous aider à rester motivé·e :\n\n**1) Respectez une routine quotidienne**\n\nAvoir une routine bien établie vous aidera les jours où vous vous sentez démotivé·e pour revenir à votre recherche d'emploi.\n\n**2) Soyez sociable**\n\nLa recherche d'emploi peut être un processus solitaire et c'est important de passer du temps avec des personnes qui vous soutiennent dans votre cheminement.\n\n**3) Apprenez une nouvelle compétence**\n\nFaites une pause dans votre recherche d'emploi pour acquérir une nouvelle compétence - cela peut même aider à booster votre CV ! Essayez de trouver des cours gratuits en ligne [ici](https://www.pole-emploi.fr/actualites/a-laffiche/je-developpe-mes-competences-gra.html#) ou à votre bibliothèque locale.\n\n**4) Allez vous promener**\n\nMême les personnes les plus productives ont besoin de pauses. Assurez-vous de vous éloigner de votre écran en vous promenant si vous le pouvez.",
+  "shortDescription": "La recherche de travail peut être un défi épuisant. C'est important de prendre du temps pour garder la motivation.",
+  "tags": [
+   "link"
+  ],
+  "title": "Essayer quelque chose de nouveau pour garder un bon moral",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "rec1b0JHgfej4J30Q",
+  "_order": 23,
+  "actionTemplateId": "life-balance",
+  "adviceId": "life-balance",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "resourceContent": "**Prendre du temps pour soi et prendre soin de soi est un moyen de s'épanouir.** Cela peut sembler difficile à faire - surtout si vous avez déjà une vie bien remplie. Mais il existe de petites façons de prendre soin de nous qui ne demandent pas beaucoup d'efforts, de temps, ou de l'argent.\n\n**À bien des égards, prendre soin de nos besoins fondamentaux, c'est prendre soin de soi.** Si vous avez une alimentation saine, dormez suffisamment, trouvez du temps pour faire de l'exercice et passez du temps à l'extérieur, vous prenez soin de vous. Faire ces choses vous aidera à vous sentir bien et peut même mener à une vie plus longue.\n\nVous pouvez aussi prendre du temps pour **réfléchir et faire des activités gratifiantes.**\n\nComment pouvez-vous faire ça ? **Pensez aux activités qui vous donnent de l'énergie et de la joie.** Participez à ces activités régulièrement. Réfléchissez à ce que cela vous fait ressentir et aidez vous de vos proches pour vous assurer que vous faites ces activités régulièrement.\n\nNous savons que tout le monde n'a pas le luxe de prendre du temps pour soi, mais nous espérons que vous pourrez trouver des activités pour améliorer votre bien-être.\n\nVous pouvez trouver des exemples d'activités à essayer [ici](https://www.lafabriquecrepue.com/2020/11/10/10-idees-de-self-care-qui-ne-coutent-rien-ou-presque/) et [ici](https://heureuxtoutsimplement.com/prendre-soin-de-soi/).",
+  "shortDescription": "La recherche d'emploi peut être très fatiguante, il est aussi important de prendre du temps pour souffler avant de se relancer !",
+  "tags": [
+   "tool"
+  ],
+  "title": "Penser à prendre du repos et me protéger pendant ma recherche",
+  "triggerScoringModel": "advice-life-balance"
+ },
+ {
+  "_id": "rechu5uqaFYJQI7dP",
+  "_order": 24,
+  "actionTemplateId": "motivation-email-examples",
+  "adviceId": "motivation-email",
+  "duration": "ONE_HOUR",
+  "shortDescription": "Les mails de motivation sont une partie clé de chaque candidature, et vous pouvez en créer quelques de nouveau grâce à ces exemples",
+  "tags": [
+   "tool"
+  ],
+  "title": "Créer des nouveaux mails de motivation basés sur des exemples",
+  "triggerScoringModel": "advice-more-offer-answers"
+ },
+ {
+  "_id": "recgyHHv2fwpVXOJE",
+  "_order": 25,
+  "actionTemplateId": "motivation-email-websites",
+  "duration": "BETWEEN_1_AND_3_HOURS",
+  "resourceContent": "La lettre de motivation est un exercice délicat et à la fois essentiel pour réussir à décrocher un entretien. Il faut aussi savoir que les personnes qui les lisent ne sont pas toujours des professionnels et qu'elles ne vont pas passer beaucoup de temps dessus. Le but : se démarquer et être impactant·e. Voici quelques éléments clés pour réussir cela.\n\n**#1. Structure :**\n\nIl est important que votre lettre de motivation soit bien structurée et bien organisée. Le modèle classique : une page maximum articulée autour de 4 paragraphes. Les 4 paragraphes sont :\n\n1. une introduction\n2. pourquoi cette entreprise vous plait\n3. pourquoi vous seriez le bon choix, parlez de votre cursus, vos forces, compétences et experiences\n4. et enfin pourquoi ensemble ça fonctionnerait bien.\n\n**#2. Personnalisation :**\n\nLes recruteurs n'ont pas beaucoup de temps et s'aperçoivent très vite quand une lettre de motivation est un simple copié-collé. Et la réaction est souvent la même, ils ne la liront pas en entier. La personnalisation d'une lettre de motivation est l'une des clés si ce n'est la plus importante pour avancer dans le processus. Elle permet à l'entreprise de mesurer l'intérêt que vous lui portez et de savoir si elle a affaire à quelqu'un de motivé·e par la mission de l'entreprise ou qui recherche un travail comme un autre. N'hésitez pas à détailler pourquoi c'est cette entreprise en particulier qui vous intéresse.\n\n**#3. Simple :**\n\nVous n'avez qu'une page. Il faut donc aller à l'essentiel et faire des phrases courtes et impactantes. Dites vous que le recruteur a peut-être déjà lu 10 lettres de motivation dans la même journée et qu'il va lire la vôtre rapidement. Simple ne veut pas dire facile, gardez donc en tête la question suivante pour chaque phrase que vous écrivez : \"Si je ne devais dire que l'essentiel qu'est ce que ce serait ?\"\n\nVous trouverez plus de détails sur ces éléments dans cet [article](https://www.welcometothejungle.com/fr/articles/lettre-de-motivation-les-indispensables-qui-feront-la-difference), et en bonus je vous partage un [article](https://www.welcometothejungle.com/fr/articles/les-erreurs-a-ne-plus-faire-dans-sa-lettre-de-motivation) sur les erreurs à ne plus faire dans votre lettre de motivation.",
+  "shortDescription": "Améliorer ses lettres de motivation est clé pour les recruteurs et vous permettra de décrocher plus d'entretiens.",
+  "tags": [
+   "link"
+  ],
+  "title": "Vérifier que ma lettre de motivation est au top",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "rec6VoINVgAXdnJmZ",
+  "_order": 26,
+  "actionTemplateId": "network-application",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "resourceContent": "Communiquer avec votre réseau professionnel au sujet d'une offre d'emploi ou pour obtenir des conseils peut s'avérer gênant, mais voici quelques conseils pour vous aider à prendre contact :\n\n* Choisissez la bonne méthode de communication, qu'il s'agisse d'un e-mail, d'un coup de téléphone ou d'une réunion autour d'un café, en personne\n* Utilisez une ouverture forte et soyez clair sur ce que vous demandez\n* Reconnaissez si cela fait un moment que vous n'avez pas parlé\n* Personnalisez cette prise de contact\n* Soyez concis et courtois\n* Offrez quelque chose en retour, réfléchissez à la façon dont vous pouvez aider\n* Proposez une rencontre en personne si possible\n* Partagez quelque chose qui intéresse votre interlocuteur, comme un article, une actualité ou un événement",
+  "shortDescription": "La moitié des embauches se font grâce au bouche-à-oreille. Voici des astuces qui vous permettront de trouver un emploi grâce en faisant appel à vos connaissances.",
+  "tags": [
+   "link"
+  ],
+  "title": "Apprendre comment faire appel à mon réseau professionnel",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "rec6EimtrEPkxrAGw",
+  "_order": 27,
+  "actionTemplateId": "online-salons",
+  "adviceId": "online-salons",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "resourceContent": "* [salonenligne.pole-emploi.fr](https://salonenligne.pole-emploi.fr/candidat/)\n* [seekube.com](https://www.seekube.com/)",
+  "shortDescription": "Les salons en ligne vous permettent d'accéder à des offres d'emploi avant qu'elles n'apparaissent. Ne soyez pas timide, inscrivez-vous !",
+  "tags": [
+   "tool"
+  ],
+  "title": "Trouver des salons en ligne auxquels participer pour booster ma recherche",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "recZgzOe07mYGxb64",
+  "_order": 28,
+  "actionTemplateId": "other-work-env",
+  "adviceId": "other-work-env",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "shortDescription": "Examinez les secteurs d'activité où il y a moins de concurrence",
+  "tags": [
+   "tool"
+  ],
+  "title": "Examiner les secteurs d'activité où il y a moins de concurrence",
+  "triggerScoringModel": "advice-other-work-env"
+ },
+ {
+  "_id": "rec8dTXRHIt4wiWzQ",
+  "_order": 29,
+  "actionTemplateId": "personality-test",
+  "duration": "ONE_HOUR",
+  "resourceContent": "Les indicateurs de personnalité nous permettent de déterminer les principaux aspects de notre personnalité en fonction de notre façon de voir le monde et des jugements que nous portons. Ceux-ci incluent :\n\n* Nos préférences pour le monde extérieur ou notre monde intérieur\n* Comment nous interprétons et donnons du sens à l'information\n* Comment nous prenons des décisions\n* Comment nous interagissons avec le monde extérieur\n\nVous pouvez passer un test de personnalité gratuit en cliquant sur ce [lien](https://www.16personalities.com/fr/test-de-personnalite).",
+  "shortDescription": "En découvrant des informations sur votre type de personnalité, vous apprendrez à mieux vous connaitre. Cela vous permettra de trouver un type de travail qui vous convient le mieux.",
+  "tags": [
+   "link"
+  ],
+  "title": "Faire un bilan de personnalité pour me comprendre",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "recrzGZ6CRNVv1Pnl",
+  "_order": 30,
+  "actionTemplateId": "prepare-interview-answers",
+  "duration": "ONE_HOUR",
+  "resourceContent": "Préparer à l'avance les questions les plus posées permet d'être confiant·e et d'aborder en confiance son entretien.\n\nVoici un exemple des 8 questions les plus souvent posées :\n\n* Pouvez-vous me parler de vous… ?\n* Pourquoi avoir postulé à ce poste et dans notre entreprise en particulier ?\n* Quelle est la réalisation professionnelle dont vous êtes le plus fier ?\n* Quelle est votre plus grande force / faiblesse ?\n* Que mettriez-vous en place en arrivant à ce poste ?\n* Pourquoi devrions-nous vous embaucher ?\n* Quelles sont vos prétentions salariales ?\n* Avez-vous des questions ?\n\nPour y répondre, retrouvez plein d'idées dans cet [article](https://www.welcometothejungle.com/fr/articles/entretien-questions-preparer).",
+  "shortDescription": "Apprendre à répondre à ces questions boostera votre confiance en vous au moment des entretiens et améliorera vos performances.",
+  "tags": [
+   "link"
+  ],
+  "title": "Apprendre à répondre aux questions courantes pour préparer mon entretien",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "receDAYiLY8opQhzY",
+  "_order": 31,
+  "actionTemplateId": "prepare-interview-questions",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "resourceContent": "Les entretiens ne portent pas uniquement sur la manière dont vous répondez aux questions - vous êtes également évalué·e sur les questions que vous posez. Un entretien est l'occasion pour vous d'apprendre à connaître l'entreprise, tout comme c'est l'occasion pour elle d'apprendre à vous connaître.\n\nEn posant de bonnes questions à votre interlocuteur, vous montrerez que vous êtes bien informé·e sur le poste et motivé·e pour en apprendre davantage. Essayez de poser les questions suivantes :\n\n**Questions sur le rôle**\n* Quelles seraient mes responsabilités au quotidien ?\n* Existe-t-il des possibilités de formation complémentaire ?\n* Si j'étais embauché·e pour ce rôle, que voudriez-vous que je réalise au cours de mes deux premiers mois ?\n* Quel est le plus grand défi que quelqu'un devrait relever dans ce poste au cours des six premiers mois ?\n* Comment mesurez-vous les performances professionnelles ?\n\n**Questions sur l'entreprise**\n* Quels sont les objectifs de l'entreprise pour l'année à venir ?\n* Comment voyez-vous le potentiel de croissance de votre équipe au cours des trois prochaines années ?\n\n**Questions sur votre candidature**\n* Quand puis-je m'attendre à recevoir des informations sur les prochaines étapes ?\n* Si je n'ai pas de nouvelles de vous avant le [date de reprise de contact], quel serait le bon moment pour faire un suivi ?\n\nJe vous ai trouvé un [site web](https://www.welcometothejungle.com/fr/articles/entretien-embauche-meilleures-poser) avec d'autres exemples de question à poser.",
+  "shortDescription": "Poser les bonnes questions aux recruteurs permet de montrer votre intérêt pour l'entreprise et augmenter les chance d'être recruté.e. Ces 20 questions vous aideront à préparer vos entretiens !",
+  "tags": [
+   "link"
+  ],
+  "title": "Découvrir les questions importantes à poser pendant l'entretien",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "rec2SmvXRoWRVfMPA",
+  "_order": 32,
+  "actionTemplateId": "relocate",
+  "adviceId": "relocate",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "shortDescription": "Il y a peut-être moins de concurrence ou plus de demande dans d'autres départements en France où vous pouvez trouver les opportunités qui vous correspondent le mieux",
+  "tags": [
+   "tool"
+  ],
+  "title": "Trouver les départements en France qui ont le plus de chances de recruter",
+  "triggerScoringModel": "advice-relocate"
+ },
+ {
+  "_id": "reclxAImJOfayX3v3",
+  "_order": 33,
+  "actionTemplateId": "reorient-jobbing",
+  "adviceId": "reorient-jobbing",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "shortDescription": "Regarder la liste de tous les métiers qui correspondent à vos compétences afin d'augmenter vos chances de trouver du travail en postulant à d'autres postes.",
+  "tags": [
+   "tool"
+  ],
+  "title": "Découvrir des métiers que je peux faire avec mes compétences",
+  "triggerScoringModel": "advice-reorient-jobbing"
+ },
+ {
+  "_id": "recHtNQwIeftjs71l",
+  "_order": 34,
+  "actionTemplateId": "reorient-to-close-job",
+  "adviceId": "reorient-to-close-job",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "shortDescription": "Regarder la liste de tous les métiers qui correspondent à vos compétences afin d'augmenter vos chances de trouver du travail en postulant à d'autres postes.",
+  "tags": [
+   "tool"
+  ],
+  "title": "Découvrir des métiers que je peux faire avec mes compétences",
+  "triggerScoringModel": "advice-reorient-to-close-job"
+ },
+ {
+  "_id": "recaPUutQo9iTK04C",
+  "_order": 35,
+  "actionTemplateId": "set-objectives",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "resourceContent": "Se donner des objectifs clairs est un élément clé pour progresser dans votre recherche. Ce [site](https://laruche.wizbii.com/comment-fixer-objectifs-atteindre-travail) vous donnera des éléments pour y parvenir.",
+  "shortDescription": "Se donner des objectifs clairs et atteignables est très important pour le moral et la productivité. Ce site vous y aidera !",
+  "tags": [
+   "link"
+  ],
+  "title": "Apprendre à me fixer des objectifs clairs et réalistes pour booster mon moral",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "recqWPb9V4vcoa3GQ",
+  "_order": 36,
+  "actionTemplateId": "short-training",
+  "duration": "BETWEEN_1_AND_3_HOURS",
+  "resourceContent": "Un diplôme ou une certification est souvent nécessaire pour obtenir un emploi mieux rémunéré, mais un programme diplômant de quatre ans n'est pas toujours la meilleure option pour tout le monde.\n\nIl existe des programmes de formation à plus court terme qui pourraient vous convenir davantage si le travail correspond à vos intérêts et à vos objectifs de carrière.\n\nVous trouverez dans [cet article](https://www.reconversionprofessionnelle.org/liste-metiers-bien-payes-formation-courte/) 37 idées de métiers bien payés après une formation courte.",
+  "shortDescription": "Les formations courtes peuvent vous aider à acquérir rapidement les qualifications dont vous avez besoin pour un emploi mieux rémunéré - certaines de ces options pourraient vous intéresser !",
+  "tags": [
+   "link"
+  ],
+  "title": "Me renseigner sur les formations de courte durée pour me qualifier plus rapidement",
+  "triggerScoringModel": "constant(1)"
+ },
+ {
+  "_id": "recBF1dHPogEtgp8D",
+  "_order": 37,
+  "actionTemplateId": "show-motivation-in-interview",
+  "duration": "BETWEEN_1_AND_3_HOURS",
+  "resourceContent": "Ce [conseil](https://www.youtube.com/watch?v=FhF2RRFdahs) vous aidera à montrer votre motivation pendant un entretien et améliorer vos chances d'être recruté·e !",
+  "shortDescription": "La motivation est un facteur très important pour les employeurs, ces techniques vous permettront d'apprendre à montrer que vous êtes motivé.e et augmenter vos chances d'être embauché·e.",
+  "tags": [
+   "link",
+   "tool"
+  ],
+  "title": "Apprendre ces techniques pour montrer ma motivation en entretien",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "rec5asuvlc9mBAI3N",
+  "_order": 38,
+  "actionTemplateId": "skill-for-future",
+  "adviceId": "skill-for-future",
+  "duration": "ONE_HOUR",
+  "shortDescription": "Acquérir des compétences d'avenir grâce à des formations augmentera beaucoup vos chances de vous distinguer des autres candidats lors des entretiens !",
+  "tags": [
+   "tool"
+  ],
+  "title": "Apprendre quelles compétences seront essentielles à l'avenir",
+  "triggerScoringModel": "advice-skill-for-future"
+ },
+ {
+  "_id": "rec0qU590FAXMkgTI",
+  "_order": 39,
+  "actionTemplateId": "skills-assessment",
+  "duration": "BETWEEN_1_AND_3_HOURS",
+  "resourceContent": "À mesure que la technologie progresse, les compétences numériques deviennent un facteur encore plus important pour obtenir un emploi stable et bien rémunéré. Presque tous les emplois exigent un certain niveau de compétences numériques, même les emplois en dehors de l'industrie technologique.\n\nSi vous n'avez pas encore beaucoup de compétences numériques pour le moment, pas d'inquiétude, **vous avez la capacité d'apprendre !**\n\nJ'ai trouvé pour vous [Pix](https://pix.org/fr/), un site internet pour évaluer, développer et certifier vos compétences numériques. Vous allez pouvoir tester vos compétences numériques et les améliorer si besoin.\n\nVous pouvez également vous adresser à votre conseiller Pôle Emploi pour trouver une formation en présentiel près de chez vous.",
+  "shortDescription": "Acquérir des compétences d'avenir grâce à des formations augmentera beaucoup vos chances de vous distinguer des autres candidats lors des entretiens !",
+  "tags": [
+   "link"
+  ],
+  "title": "Acquérir des compétences d'avenir pour anticiper les attentes des recruteurs",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "recr0Qvt2TWO8xupQ",
+  "_order": 40,
+  "actionTemplateId": "spontaneous-application",
+  "adviceId": "spontaneous-application",
+  "duration": "ONE_HOUR",
+  "resourceContent": "Les études montrent que seuls **18% des employé·e·s nouvellement embauché·e·s ont obtenu leur poste à partir d'une annonce sur un site d'emploi**.\n\nLes sites d'offres d'emploi peuvent être utiles pour se renseigner sur les différentes offres disponibles, mais il existe de nombreux autres moyens efficaces de rechercher et de postuler à des emplois.\n\nUne nouvelle approche que je recommande : **cibler les employeurs et/ou entreprises, pas seulement les offres d'emploi.**\n\nVoici ce que je veux dire :\n\n**Étape 1 :**\n\nIdentifiez les entreprises que vous appréciez et pour lesquels vous aimeriez travailler.\n\n**Étape 2 :**\n\nCommencez à faire des recherches sur ces entreprises -- vous pouvez les suivre sur Twitter et LinkedIn, et lire les dernières nouvelles sur leur site Web.\n\n**Étape 3 :**\n\nIdentifiez les personnes à contacter (ressources humaines, chargé de recrutement) et recherchez leur contact (email) sur le site de l'entreprise ou sur Linkedin et parfois même directement sur Google. Ensuite, contactez les de manière proactive par mail ou sur LinkedIn pour en savoir plus. Il s'agit d'un premier contact pour avoir plus d'information et montrer votre intérêt. Vous pouvez également demander s'il y a des possibilités d'emploi dans un avenir proche - de cette manière, vous serez informé des nouveaux emplois avant qu'ils ne soient publiés en ligne !\n\nDans certains cas, si vous postulez pour un emploi dans une entreprise ou un magasin local, vous pouvez même vous rendre en personne et demander à parler à un recruteur ou à un directeur (remarque : s'ils ne sont pas disponibles lors de votre visite, ne vous inquiétez pas ! Demandez simplement quand ce serait le bon moment pour que vous reveniez leur parler).\n\nCette approche peut sembler audacieuse mais la plupart des meilleurs offres ne sont même jamais publiés et le fait de venir en personne peut jouer en votre faveur.\n\nLe message clé est le suivant : **concentrez-vous sur les entreprises, pas seulement sur les emplois et soyez créatifs dans votre approche**.\n\nVoici [un article](https://www.oriane.info/adopter-une-attitude-proactive-pour-faciliter-ma-recherche-dentreprise) qui détaille cette méthode.",
+  "resourceUrl": "https://www.pole-emploi.fr/candidat/vos-recherches/preparer-votre-candidature/la-candidature-spontanee--mode-d.html",
+  "shortDescription": "La majorité des offres d'emploi ne sont pas mises sur internet, c'est pourquoi les candidatures spontanées augmentes vos chances d'être recruté·e.",
+  "tags": [
+   "link",
+   "tool"
+  ],
+  "title": "Apprendre à faire des candidatures spontanées",
+  "triggerScoringModel": "advice-spontaneous-application"
+ },
+ {
+  "_id": "recWwMHf21CHWmtVT",
+  "_order": 41,
+  "actionTemplateId": "stay-motivated-tips",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "resourceContent": "Une recherche d'un emploi n'est pas facile, notamment s'il faut beaucoup de temps pour trouver le bon emploi. Voici quelques conseils pour vous aider à rester motivé·e tout au long du processus :\n\n**1. Soyez indulgent·e avec vous-même**\n\nIl est important d'apprendre à lâcher prise et relâcher la pression pour ne pas vous accabler. Même si vos recherches d'emploi n'aboutissent pas encore, ne le vivez pas comme un échec personnel. Il s'agit d'un processus long qui est influencé par différents facteurs.\n\n**2. Repensez votre organisation**\n\nOrganiser sa recherche d'emploi est important pour savoir ou l'on en est et savoir ce qu'il faut faire. Également, il est important de changer votre routine et de diversifier les différents action afin de pas faire les mêmes chaque jour.\n\n**3. Continuez à sortir**\n\nUne recherche d'emploi peut s'avérer stréssante et on peut se sentir seul. Il est donc important de continuer à voir ses ami·e·s et à faire des activités que l'on aime. Cela permet de créer un équilibre de vie sain et de rester motivé·e.\n\nVous trouverez des idées complémentaires dans cet [article](https://www.jobboom.com/carriere/7-conseils-rester-motivee-recherche-emploi/) pour rester motivé·e.",
+  "shortDescription": "La recherche d'emploi peut être difficile. Prendre soin de son corps et de son esprit est très important pour garder le courage de continuer. Ces conseils vous y aideront !",
+  "tags": [
+   "link"
+  ],
+  "title": "Découvrir des conseils pour rester motivé·e tout au long de ma recherche d'emploi",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "recOUCACB8h6sHt5l",
+  "_order": 42,
+  "actionTemplateId": "stay-positive",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "resourceContent": "Entourez-vous de personnes qui vous apportent un regard positif.\n* Dites à vos proches comment ils peuvent mieux vous aider. Par exemple, en évitant de vous critiquer.\n* Un·e ami·e qui se plaint beaucoup et qui vous tire vers le bas ? Ce n'est pas le bon moment de se voir.\n* Une activité ou un endroit où vous vous sentez bien ? C'est le moment d'y aller plus souvent pour baigner dans une ambiance positive.",
+  "resourceUrl": "https://www.ted.com/talks/diana_nyad_never_ever_give_up?language=fr",
+  "shortDescription": "La recherche d'emploi peut être difficile, prendre soin de son corps et de son esprit est très important pour garder le courage de continuer. Cette vidéo vous donnera des forces !",
+  "tags": [
+   "video"
+  ],
+  "title": "Regarder une vidéo pour me rappeler de ne jamais abandonner",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "recXPvw2MEtG6vT9X",
+  "_order": 43,
+  "actionTemplateId": "thank-after-interview",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "resourceContent": "Ces [trois modèles de lettres](https://www.lexpress.fr/emploi/conseils-emploi/lettre-de-remerciement-apres-un-entretien-d-embauche_1609017.html) vous seront très utiles pour faire bonne impression !",
+  "shortDescription": "Envoyer un mail de remerciement après un entretien augmente vos chances d'être embauché·e pour un poste.",
+  "tags": [
+   "link"
+  ],
+  "title": "Apprendre à écrire des mails de remerciements après un entretien",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "recqq15xeFSXIspVa",
+  "_order": 44,
+  "actionTemplateId": "training",
+  "adviceId": "training",
+  "duration": "ONE_HOUR",
+  "shortDescription": "Compléter votre parcours professionnel par une formation certifiante augmentera énormément vos chances de trouver un emploi, et vous permettra de monter en compétences. À vous de jouer !",
+  "tags": [
+   "tool"
+  ],
+  "title": "Trouver une formation faites pour moi",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "recJXXI15uLQNd22w",
+  "_order": 45,
+  "actionTemplateId": "trust-the-process",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "resourceContent": "Explorer pour comprendre ce que vous aimez, ce à quoi vous excellez et ce que vous appréciez sont des étapes importantes dans le processus de recherche d'emploi. Mais ne vous arrêtez pas là ! Après vous être mieux compris, continuez à définir clairement où et comment diriger vos efforts et ce que vous devez apprendre en cours de route pour **atteindre vos objectifs**.\n\nVous pouvez utiliser le processus ci-dessous pour vous aider à passer de l'**exploration** à l'**action** :\n\n* **Explorer** - Explorez les différents secteurs et types d'emploi qui pourraient vous intéresser, et engagez-vous dans une démarche de découverte de soi pour en savoir plus sur vous, sur ce que vous recherchez dans un emploi et sur les domaines dans lesquels vous pourriez le mieux utiliser vos talents.\n* **Affiner** - Identifiez les emplois les plus intéressants pour vous et ceux qui vous conviennent le mieux parmi les options que vous avez explorées.\n* **Apprendre** - Contactez des personnes travaillant dans ces professions pour leur poser des questions sur leur travail, et recherchez des événements et des groupes communautaires où vous pourriez en apprendre davantage.\n* **Cibler** - Définissez les prochaines étapes spécifiques en fonction de votre profession cible — il peut s'agir de suivre un cours de formation nécessaire ou de soumettre des candidatures immédiatement — et passez à l'action pour atteindre vos objectifs !",
+  "shortDescription": "Il est important de prendre le temps de vous comprendre et d'explorer des idées d'emploi en fonction de qui vous êtes et de ce dont vous avez besoin. Il faut aussi que l'exploration se transforme en action pour une recherche d'emploi réussie. Cette méthode vous aidera à aller de l'avant pour identifier les prochaines étapes de votre recherche.",
+  "tags": [
+   "tool"
+  ],
+  "title": "Apprendre à orienter mes efforts vers l'action après avoir exploré mes options professionnelles",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "recmcpz49sJIEi7az",
+  "_order": 46,
+  "actionTemplateId": "understand-job-offer",
+  "duration": "ONE_HOUR",
+  "resourceContent": "Décrypter une offre c'est :\n\nÉtape 1 : Lire attentivement l'annonce et repérer les mots-clés (ex : identifier les compétences requises et/ou complémentaires pour le poste).\n\nÉtape 2 : Cerner le profil recherché et être sûr·e que l'on correspond à ce que le recruteur recherche.\n\nÉtape 3 : Approfondir sa connaissance de l'employeur.\n\nNe perdez pas de temps à répondre à des offres qui ne correspondent pas à votre profil, vos compétences et vos envies. Ensuite, il est important de ré utiliser toutes les informations que vous aurez récoltées afin d'adapter votre CV et votre candidature à l'offre.\n\nSi vous souhaitez approfondir le sujet, vous pouvez suivre cette [formation](https://openclassrooms.com/fr/courses/5218241-obtenez-lemploi-qui-vous-correspond) gratuite d'openclassroom qui vous aidera à décrypter une offre, valoriser votre candidature et bien d'autres choses.",
+  "shortDescription": "Apprendre comment décrypter une offre vous donnera la possibilité de valoriser votre profil et montrer pourquoi vous êtes le bon choix.",
+  "tags": [
+   "link"
+  ],
+  "title": "Apprendre à décrypter une offre et valoriser ma candidature",
+  "triggerScoringModel": "constant(1.5)"
+ },
+ {
+  "_id": "recJ6QkIB083fhT2c",
+  "_order": 47,
+  "actionTemplateId": "vae",
+  "adviceId": "vae",
+  "duration": "BETWEEN_1_AND_3_HOURS",
+  "shortDescription": "Saviez-vous que 91% des entreprises se disent prêtes à engager un candidat qui a le potentiel d'acquérir les compétences nécessaires ? Une VAE permet d'obtenir une certification (diplôme, titre professionnel) qui valide les acquis de son expérience professionnelle. Un vrai boost pour votre recherche d'emploi !",
+  "tags": [
+   "link"
+  ],
+  "title": "Valoriser mes années d'expérience grâce à une VAE et obtenir un diplôme",
+  "triggerScoringModel": "advice-vae"
+ },
+ {
+  "_id": "recucltZfaD2lcqxv",
+  "_order": 48,
+  "actionTemplateId": "volunteer",
+  "adviceId": "volunteer",
+  "duration": "FIFTEEN_TO_30_MIN",
+  "resourceContent": "Le bénévolat est important pour changer sa routine, acquérir de nouvelles compétences, rester actif pendant sa recherche ainsi que rencontrer du monde.\n\nIl peut aussi être un élément clé de votre recherche. Par exemple, si l'emploi que vous visez exige des compétences en matière de communication, vous pourriez vous porter volontaire pour participer à des activités de collecte de fonds pour une association, et améliorer ainsi vos compétences en matière de communication.\n\nVous pouvez utiliser ces sites web pour trouver des possibilités de bénévolat dans votre région :\n\n* [France Bénévolat](https://www.francebenevolat.org/)\n\n* [Bénévolt](https://www.benevolt.fr/)\n\n* [Benenova](https://www.benenova.fr/)\n\n... vous pouvez également contacter la mairie de votre ville afin de connaitre les associations présentes autour de vous.\n\nVous trouverez plus d'informations sur comment le benevolat peut vous aider dans recherche d'emploi dans [cet article](https://www.cidj.com/vie-quotidienne/citoyennete-volontariat/etre-benevole-ou-volontaire-un-tremplin-vers-l-emploi).",
+  "shortDescription": "Le bénévolat est peut se révéler intéressant pour acquérir de nouvelles compétences, rencontrer des gens et gagner en expérience. C'est aussi un très bon moyen de faire bonne impression en entretien !",
+  "tags": [
+   "link"
+  ],
+  "title": "Découvrir des missions bénévoles pour gagner de l'expérience",
+  "triggerScoringModel": "constant(1.5)"
+ }
+]

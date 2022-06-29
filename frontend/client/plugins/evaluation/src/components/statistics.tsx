@@ -1,17 +1,19 @@
-import {TFunction} from 'i18next'
+import type {TFunction} from 'i18next'
 import _keyBy from 'lodash/keyBy'
 import _mapValues from 'lodash/mapValues'
 import React, {useMemo} from 'react'
 import {useTranslation} from 'react-i18next'
 
 import {getMonthName, lowerFirstLetter} from 'store/french'
-import {LocalizableString, localizeOptions} from 'store/i18n'
+import type {LocalizableString} from 'store/i18n'
+import {localizeOptions} from 'store/i18n'
 import {genderizeJob, getApplicationModeText, getApplicationModes, getPEJobBoardURL,
   weeklyApplicationOptions} from 'store/job'
 import {PROJECT_EMPLOYMENT_TYPE_OPTIONS, SALARY_TO_GROSS_ANNUAL_FACTORS} from 'store/project'
 import {getSearchLenghtCounts} from 'store/statistics'
 import {getJobSearchLengthMonths} from 'store/user'
 
+import CircularProgress from 'components/circular_progress'
 import ExternalLink from 'components/external_link'
 import AutomationRiskGauge from 'components/statistics/automation_risk_gauge'
 import CountryMap from 'components/statistics/country_map'
@@ -158,17 +160,18 @@ const SalaryBars = React.memo(SalaryBarsBase)
 
 
 interface StatsProps {
-  mainChallenges?: readonly bayes.bob.DiagnosticMainChallenge[]
+  isLoading: boolean
   jobGroupInfo?: bayes.bob.JobGroup
+  mainChallenges?: readonly bayes.bob.DiagnosticMainChallenge[]
   profile: bayes.bob.UserProfile
   project: bayes.bob.Project
   userCounts?: bayes.bob.UsersCount
 }
 
 const Stats: React.FC<StatsProps> = (props: StatsProps) => {
-  // TODO(pascal): Add more.
   const {
     mainChallenges = emptyArray,
+    isLoading,
     jobGroupInfo = {}, jobGroupInfo: {
       // TODO(cyrille): Drop fake value once it's imported in Bob UK.
       automationRisk = 40,
@@ -239,6 +242,9 @@ const Stats: React.FC<StatsProps> = (props: StatsProps) => {
     boxShadow: '0 5px 20px 0 rgba(0, 0, 0, 0.15)',
     padding: 20,
   }
+  if (isLoading) {
+    return <CircularProgress />
+  }
   return <div>
     <section>
       <h2>{t('Facteurs pris en compte pour votre score')}</h2>
@@ -280,7 +286,7 @@ const Stats: React.FC<StatsProps> = (props: StatsProps) => {
     </section> : <h2>{t('Pas de canal de candidature clairement déterminé')}</h2>}
     {departements.length && config.countryMapName ? <section>
       <h2>{
-        // i18next-extract-mark-context-next-line ["fr", "uk", "us"]
+        // i18next-extract-mark-context-next-line ["fr", "uk", "usa"]
         t(
           'Concurrence en France en {{jobGroupName}}',
           {context: config.countryId, jobGroupName: lowerFirstLetter(jobGroupName || '')},
@@ -342,7 +348,7 @@ const Stats: React.FC<StatsProps> = (props: StatsProps) => {
     {lessStressfulJobGroups.length ? <section>
       <h2>{t('Meilleurs domaines dans le département')}</h2>
       <JobGroupStressBars
-        targetJobGroups={targetJobGroups} areMarketScoresShown={true}
+        targetJobGroups={targetJobGroups} areValuesShown={true}
         jobGroups={lessStressfulJobGroups} style={{maxWidth: 600}} />
     </section> : <h2>
       {t('Les métiers proches ont autant, voire plus, de concurrence dans ce département')}

@@ -32,6 +32,10 @@
             ],
             "environment": [
               {
+                "name": "AIRTABLE_API_KEY",
+                "value": "REDACTED"
+              },
+              {
                 "name": "MAILJET_APIKEY_PUBLIC",
                 "value": "REDACTED"
               },

@@ -1,7 +1,7 @@
-import {AmplitudeClient} from 'amplitude-js'
+import type {AmplitudeClient} from 'amplitude-js'
 import _isEqual from 'lodash/isEqual'
 import _pickBy from 'lodash/pickBy'
-import {Action, Dispatch, AnyAction, Middleware, MiddlewareAPI} from 'redux'
+import type {Action, Dispatch, AnyAction, Middleware, MiddlewareAPI} from 'redux'
 
 import {parseQueryString} from './parse'
 
@@ -37,11 +37,14 @@ const initAmplitude = async (defer: AmplitudeDefer, token: string): Promise<void
   // More info about Amplitude client options:
   // https://amplitude.zendesk.com/hc/en-us/articles/115001361248#settings-configuration-options
   instance.init(token, undefined, {
+    batchEvents: true,
     disableCookies: true,
+    eventUploadPeriodMillis: 500,
     includeGclid: true,
     includeReferrer: true,
     includeUtm: true,
     saveParamsReferrerOncePerSession: false,
+    storage: 'sessionStorage',
   })
   for (const callback of defer.callbacks) {
     callback(instance)
