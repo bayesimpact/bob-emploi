@@ -21,7 +21,7 @@ nbformat==5.3.0
 # For pdf2txt.py in Makefile
 pdfminer==20191125
 polib==1.1.1
-protobuf==3.20.0
+protobuf==3.20.2
 pycodestyle==2.8.0
 pyjson5==1.6.1
 pylint-doc-spacing==0.0.4
