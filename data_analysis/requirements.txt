@@ -32,7 +32,7 @@ python-emploi-store==0.10.2
 requests-aws4auth==1.1.2
 requests_mock==1.9.3
 runipy==0.1.5
-sentry-sdk==1.5.8
+sentry-sdk==1.14.0
 termcolor==1.1.0
 typeform==1.1.0
 types-certifi==2021.10.8.1
